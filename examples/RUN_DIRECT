@@ -1,0 +1,29 @@
+#!/bin/bash
+
+ARCH=MAC_OSX
+
+# number of procs
+num_procs=1
+
+# executable
+exe=../install/examples/direct
+
+# program arguments
+args=
+
+#------
+#
+# run commands
+#
+
+if [ "$ARCH" = "MAC_OSX" ]; then
+
+mpiexec -l -n $num_procs $exe $args
+
+#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
+
+#dsymutil $exe ; mpiexec -l -n $num_procs valgrind -q $exe $args
+
+#dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe $args
+
+fi
