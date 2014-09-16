@@ -2,7 +2,7 @@ project                     (Decaf)
 cmake_minimum_required      (VERSION 2.8)
 
 option                      (debug              "Build Decaf with debugging on"                OFF)
-option                      (optimize           "Build Decaf with optimization"                ON)
+option                      (optimize           "Build Decaf with optimization"                OFF)
 
 find_package                (MPI REQUIRED)
 set                         (mpi_libraries              ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})

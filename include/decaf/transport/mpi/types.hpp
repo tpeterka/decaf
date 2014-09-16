@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// decaf top-level interface
+// decaf mpi transport layer
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -10,13 +10,12 @@
 //
 //--------------------------------------------------------------------------
 
-#ifndef DECAF_HPP
-#define DECAF_HPP
+#ifndef DECAF_TRANSPORT_MPI_TYPES_HPP
+#define DECAF_TRANSPORT_MPI_TYPES_HPP
 
-#include "types.hpp"
-#include "comm.hpp"
+#include<mpi.h>
 
-// transport layer implementations
-#include "transport/mpi/comm.hpp"
+typedef MPI_Comm DecafComm;
+typedef MPI_Datatype DecafDatatype;
 
 #endif

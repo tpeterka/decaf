@@ -11,6 +11,9 @@
 //--------------------------------------------------------------------------
 #include <decaf/decaf.hpp>
 
+#include <assert.h>
+#include <mpi.h>
+
 // user-defined producer code
 void prod_code(void* args)
 {
@@ -40,30 +43,49 @@ void fault_check(void *args)
 //
 int main(int argc, char** argv)
 {
-  // create (split) new communicators
-  int prod_size = 8;  // fake some communicator sizes: producer
-  int con_size = 4;   // consumer
-  int dflow_size = 2; // dataflow size defines number of aggregator and other intermediate nodes
-  decaf::Comm prod_comm(MPI_COMM_WORLD, prod_size);
-  decaf::Comm con_comm(MPI_COMM_WORLD, con_size);
-  decaf::Comm dflow_comm(MPI_COMM_WORLD, dflow_size);
 
-  // describe producer, consumer intrinsic data properties
-  decaf::Data prod_data;
-  decaf::Data con_data;
+  MPI_Init(&argc, &argv);
+
+  int err; // decaf error status, 0 is ok
+
+  // create (split) new communicators
+  int prod_size = 4;  // fake some communicator sizes: producer
+  int con_size = 2;   // consumer
+  int dflow_size = 1; // dataflow size defines number of aggregator and other intermediate nodes
+
+  // TODO: need to use pointer instead of automatic variable because otherwise will go
+  // out of scope after MPI_Finalize, and the desctructor needs to free the communicator
+  decaf::Comm* comm = new decaf::Comm(MPI_COMM_WORLD, prod_size, con_size, dflow_size, err);
+  assert(!err);
+
+  // TODO: need to use pointers because their scope spans several conditionals
+  decaf::Producer* prod;
+  decaf::Consumer* con;
+  decaf::Dataflow* dflow;
 
   // create producer, consumer, dataflow
-  decaf::Producer prod(prod_comm,
-                       &prod_code,
-                       prod_data);
-  decaf::Consumer con(con_comm,
-                      &con_code,
-                      &sel_type,
-                      &pipe_type,
-                      &aggr_type,
-                      &fault_check,
-                      con_data);
-  decaf::Dataflow dflow(dflow_comm);
+  if (comm->type() == DECAF_PRODUCER_COMM)
+  {
+    decaf::Data prod_data;
+    prod = new decaf::Producer(*comm,
+                         &prod_code,
+                         prod_data);
+  }
+  else if (comm->type() == DECAF_CONSUMER_COMM)
+  {
+    decaf::Data con_data;
+    con = new decaf::Consumer(*comm,
+                        &con_code,
+                        &sel_type,
+                        &pipe_type,
+                        &aggr_type,
+                        &fault_check,
+                        con_data);
+  }
+  else if (comm->type() == DECAF_DATAFLOW_COMM)
+  {
+    dflow = new decaf::Dataflow(*comm);
+  }
 
   // simulation loop
   // producer runs multiple time steps and calls the consumer at some interval
@@ -74,10 +96,34 @@ int main(int argc, char** argv)
   for (int t = 0; t < tot_time_steps; t++)
   {
     // custom producer code
-    prod.exec(data);
+    if (comm->type() == DECAF_PRODUCER_COMM)
+      prod->exec(data);
 
-    // run the consumer code
-    if (!(t % con_interval))
-      con.exec(data);
+    // run the consumer code TODO: only for ranks in consumer comm?
+    if (comm->type() == DECAF_CONSUMER_COMM)
+    {
+      if (!(t % con_interval))
+        con->exec(data);
+    }
   }
+
+  // cleanup
+  // TODO: annoying that I need to delete these instead of letting them go out of scope
+  switch(comm->type())
+  {
+  case DECAF_PRODUCER_COMM:
+    delete prod;
+    break;
+  case DECAF_CONSUMER_COMM:
+    delete con;
+    break;
+  case DECAF_DATAFLOW_COMM:
+    delete dflow;
+    break;
+  default:
+    break;
+  }
+  delete comm;
+
+  MPI_Finalize();
 }
