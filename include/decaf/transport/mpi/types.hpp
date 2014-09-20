@@ -15,7 +15,7 @@
 
 #include<mpi.h>
 
-typedef MPI_Comm DecafComm;
-typedef MPI_Datatype DecafDatatype;
+typedef MPI_Comm CommHandle;
+typedef MPI_Datatype Datatype;
 
 #endif

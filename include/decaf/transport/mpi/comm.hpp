@@ -13,38 +13,48 @@
 #ifndef DECAF_TRANSPORT_MPI_COMM_HPP
 #define DECAF_TRANSPORT_MPI_COMM_HPP
 
-#include<mpi.h>
+#include <mpi.h>
+#include <stdio.h>
 
 using namespace decaf;
 
-Comm::Comm(DecafComm old_comm, int prod_size, int con_size, int dflow_size, int err)
+// standalone utility, not part of a class
+void WorldOrder(CommHandle world_comm, int& world_rank, int& world_size)
 {
-  // split ranks into {ranks} = {producer}, {consumer}, {dataflow}, {world (remainder)}
-  // wrt increasing rank order in old communicator
-  int world_rank, world_size; // MPI usual
-  MPI_Comm_rank(old_comm, &world_rank);
-  MPI_Comm_size(old_comm, &world_size);
-  // debug
-//   fprintf(stderr, "world_size = %d prod_size = %d con_size = %d dflow_size = %d\n",
-//           world_size, prod_size, con_size, dflow_size);
-  if (prod_size + con_size + dflow_size > world_size)
-  {
-    err = DECAF_COMM_SIZES_ERR;
-    return;
-  }
-  if (world_rank < prod_size)
-    type_ = DECAF_PRODUCER_COMM;
-  else if (world_rank < prod_size + con_size)
-    type_ = DECAF_CONSUMER_COMM;
-  else if (world_rank < prod_size + con_size + dflow_size)
-    type_ = DECAF_DATAFLOW_COMM;
-  else
-    type_ = DECAF_WORLD_COMM;
-  MPI_Comm_split(old_comm, type_, world_rank, &comm_);
-  // debug
-//   fprintf(stderr, "comm_type = %d\n", type_);
+  MPI_Comm_rank(world_comm, &world_rank);
+  MPI_Comm_size(world_comm, &world_size);
+}
 
-  err = DECAF_OK;
+// use this version of communicator constructor when splitting a world communicator
+// NB: collective over all ranks of world_comm
+Comm::Comm(CommHandle world_comm, CommType type, int world_rank)
+{
+  MPI_Comm_split(world_comm, type, world_rank, &handle_);
+
+  MPI_Comm_rank(handle_, &rank_);
+  MPI_Comm_size(handle_, &size_);
+}
+
+// use this version of communicator constructor when forming a communicator from contiguous ranks
+// NB: only collective over the ranks in the range [min_rank, max_rank]
+Comm::Comm(CommHandle world_comm, int min_rank, int max_rank)
+{
+  MPI_Group group, newgroup;
+  int range[3];
+  range[0] = min_rank;
+  range[1] = max_rank;
+  range[2] = 1;
+  MPI_Comm_group(world_comm, &group);
+  MPI_Group_range_incl(group, 1, &range, &newgroup);
+  MPI_Comm_create_group(world_comm, newgroup, 0, &handle_);
+
+  MPI_Comm_rank(handle_, &rank_);
+  MPI_Comm_size(handle_, &size_);
+}
+
+Comm::~Comm()
+{
+  MPI_Comm_free(&handle_);
 }
 
 #endif

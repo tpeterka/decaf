@@ -13,6 +13,8 @@
 #ifndef DECAF_TYPES_HPP
 #define DECAF_TYPES_HPP
 
+#include <stdio.h>
+
 enum Decomposition
 {
   DECAF_ROUND_ROBIN_DECOMP,
@@ -26,6 +28,8 @@ enum CommType
   DECAF_PRODUCER_COMM,
   DECAF_CONSUMER_COMM,
   DECAF_DATAFLOW_COMM,
+  DECAF_PROD_DFLOW_COMM,
+  DECAF_CON_DFLOW_COMM,
   DECAF_WORLD_COMM,
   DECAF_NUM_COMM_TYPES,
 };
@@ -36,5 +40,20 @@ enum Error
   DECAF_COMM_SIZES_ERR,
   DECAF_NUM_ERRS,
 };
+
+void
+all_err(int err_code)
+{
+  switch (err_code) {
+  case DECAF_OK :
+    break;
+  case DECAF_COMM_SIZES_ERR :
+    fprintf(stderr, "Decaf error: Group sizes of producer, consumer, and dataflow exceed total "
+            "size of world communicator\n");
+    break;
+  default:
+    break;
+  }
+}
 
 #endif

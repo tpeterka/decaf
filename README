@@ -1,0 +1,28 @@
+Building decaf:
+
+Decaf is built using CMake. Assuming that you created an install directory one level below the decaf home directory, then:
+
+cd install
+
+Here is a sample cmake command line. We recommend saving this into a script and running the script:
+
+cmake .. \
+-DCMAKE_CXX_COMPILER=mpicxx \
+-Ddebug=on \
+-Doptimize=off \
+-Dtransport_mpi=on \
+
+Currently, the available options are:
+debug              "Build Decaf with debugging on"                OFF/ON, default OFF
+optimize           "Build Decaf with optimization"                OFF/ON, default OFF
+transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
+
+Building your project with decaf:
+
+Simply,
+
+#include <decaf/decaf.hpp>
+
+Using decaf:
+
+See the documentation in the doc directory.
