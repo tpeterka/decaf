@@ -57,4 +57,37 @@ Comm::~Comm()
   MPI_Comm_free(&handle_);
 }
 
+void
+Comm::put(void* addr, int num, Datatype dtype)
+{
+  MPI_Request req;
+
+  // TODO: prepend size and typemap
+
+  // TODO: looping over all destinations for now, need to specify destinations more
+  // carefully (or broadcast?)
+  for (int dest = 0; dest < size_; dest++)
+    MPI_Isend(addr, num, dtype, dest, 0, handle_, &req);
+
+  // TODO: technically, ought to wait or test to complete the isend?
+}
+
+void*
+Comm::get(int num, Datatype dtype)
+{
+  MPI_Request req;
+  MPI_Status status;
+
+  // TODO: read type from typemap instead of argument?
+
+  MPI_Probe(MPI_ANY_SOURCE, 0, handle_, &status);
+
+  // allocate
+  int nbytes; // number of bytes in the message
+  MPI_Get_count(&status, MPI_BYTE, &nbytes);
+  unsigned char* addr = new unsigned char[nbytes];
+  MPI_Recv(addr, 1, dtype, status.MPI_SOURCE, 0, handle_, &status);
+  return addr;
+}
+
 #endif

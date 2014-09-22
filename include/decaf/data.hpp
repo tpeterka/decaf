@@ -27,11 +27,16 @@ namespace decaf
   // intrinsic data description
   struct Data
   {
-    Datatype complete_datatype;
-    Datatype chunk_datatype;
-    enum Decomposition decomp_type;
+    Datatype complete_datatype_;
+    Datatype chunk_datatype_;
+    enum Decomposition decomp_type_;
+    void* base_addr_; // base address of complete datatype
     int err_; // last error
 
+    Data(Datatype dtype) : complete_datatype_(dtype), base_addr_(NULL) {}
+    ~Data() {}
+
+    void* data_ptr() { return base_addr_; }
     void err() { ::all_err(err_); }
 
   };

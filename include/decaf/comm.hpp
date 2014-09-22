@@ -34,8 +34,12 @@ namespace decaf
     Comm(CommHandle world_comm, int min_rank, int max_rank);
     ~Comm();
 
+    CommHandle handle() { return handle_; }
     int size() { return size_; }
     int rank() { return rank_; }
+    void put(void* addr, int num, Datatype dtype);
+    void* get(int num, Datatype dtype);
+
   };
 
 } // namespace

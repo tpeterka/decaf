@@ -52,11 +52,20 @@ namespace decaf
       data_(data) {}
     ~Consumer() {}
 
+    void* get();
+    void del_data() { delete[] (unsigned char*)data_.base_addr_; }
     void exec(void* data);
     void err() { ::all_err(err_); }
   };
 
 } // namespace
+
+void*
+Consumer::get()
+{
+  data_.base_addr_ = comm_->get(1, data_.complete_datatype_);
+  return data_.base_addr_;
+}
 
 void
 decaf::

@@ -33,6 +33,7 @@ namespace decaf
   struct Decaf
   {
     CommHandle world_comm_; // original world communicator
+    // TODO: is the individual communicator needed?
     Comm* comm_; // communicator of producer, consumer or dataflow
     CommType type_; // whether this instance is producer, consumer, dataflow, or other
     Comm* prod_dflow_comm_; // communicator covering producer and dataflow
@@ -63,6 +64,8 @@ Decaf::Decaf(CommHandle world_comm, int prod_size, int con_size, int dflow_size)
     err_ = DECAF_COMM_SIZES_ERR;
     return;
   }
+
+  // TODO: is comm_ (the individual communicator) needed at all?
 
   if (world_rank < prod_size) // producer
   {

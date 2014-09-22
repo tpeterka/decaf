@@ -32,18 +32,22 @@ namespace decaf
     int err_; // last error
     void (*prod_code_)(void *);    // user-defined producer code
 
-    Producer(Comm* comm,
-             void (*prod_code)(void *),
-             Data& data) :
-      comm_(comm),
-      prod_code_(prod_code),
-      data_(data) {}
+    Producer(Comm* comm, Data& data) :
+      comm_(comm), data_(data) {}
     ~Producer() {}
 
-    void exec(void* data) { prod_code_(data); }
+    void put(void* d);
+    void* data_ptr() { return data_.data_ptr(); }
     void err() { ::all_err(err_); }
   };
 
 } // namespace
+
+void
+Producer::put(void* d)
+{
+  data_.base_addr_ = d;
+  comm_->put(data_.base_addr_, 1, data_.complete_datatype_);
+}
 
 #endif
