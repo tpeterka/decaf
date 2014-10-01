@@ -14,11 +14,11 @@
 #define DECAF_DATA_HPP
 
 #include "types.hpp"
-#include "comm.hpp"
+#include <vector>
 
 // transport layer implementations
 #ifdef TRANSPORT_MPI
-#include "transport/mpi/comm.hpp"
+#include "transport/mpi/types.hpp"
 #endif
 
 namespace decaf
@@ -30,13 +30,15 @@ namespace decaf
     Datatype complete_datatype_;
     Datatype chunk_datatype_;
     enum Decomposition decomp_type_;
-    void* base_addr_; // base address of complete datatype
+    std::vector <unsigned char> items_; // all items in contiguous order
+    void* dp_; // data pointer when items is not used
     int err_; // last error
 
-    Data(Datatype dtype) : complete_datatype_(dtype), base_addr_(NULL) {}
+    Data(Datatype dtype) : complete_datatype_(dtype), dp_(NULL) {}
     ~Data() {}
 
-    void* data_ptr() { return base_addr_; }
+    void* data_ptr() { return(items_.size() ? &items_[0] : dp_); }
+    int nitems() { return items_.size() / DatatypeSize(complete_datatype_); }
     void err() { ::all_err(err_); }
 
   };

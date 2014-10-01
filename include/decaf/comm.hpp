@@ -14,11 +14,7 @@
 #define DECAF_COMM_HPP
 
 #include "types.hpp"
-
-// transport layer specific types
-#ifdef TRANSPORT_MPI
-#include "transport/mpi/types.hpp"
-#endif
+#include "data.hpp"
 
 namespace decaf
 {
@@ -37,8 +33,8 @@ namespace decaf
     CommHandle handle() { return handle_; }
     int size() { return size_; }
     int rank() { return rank_; }
-    void put(void* addr, int num, Datatype dtype);
-    void* get(int num, Datatype dtype);
+    void put(void* addr, int num, int dest, Datatype dtype);
+    void get(Data& data);
 
   };
 

@@ -15,6 +15,8 @@ No library is needed; all functions are contained in header files only.
 
 ## [Communicators](comm.md)
 
+## [Selection and aggregation](select.md)
+
 ## [Error Handling](errors.md)
 
 ## [Examples](examples.md)

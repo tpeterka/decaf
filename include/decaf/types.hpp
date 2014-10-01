@@ -41,6 +41,14 @@ enum Error
   DECAF_NUM_ERRS,
 };
 
+struct DecafSizes
+{
+  int prod_size; // size of producer communicator
+  int con_size; // size of consumer communicator
+  int dflow_size; // size of dataflow communicator
+  int nsteps; // number of dataflow (consumer) time steps to execute (<= producer time steps)
+};
+
 void
 all_err(int err_code)
 {

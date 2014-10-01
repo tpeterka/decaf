@@ -13,20 +13,13 @@
 #ifndef DECAF_TRANSPORT_MPI_COMM_HPP
 #define DECAF_TRANSPORT_MPI_COMM_HPP
 
+#include "../../comm.hpp"
 #include <mpi.h>
 #include <stdio.h>
 
-using namespace decaf;
-
-// standalone utility, not part of a class
-void WorldOrder(CommHandle world_comm, int& world_rank, int& world_size)
-{
-  MPI_Comm_rank(world_comm, &world_rank);
-  MPI_Comm_size(world_comm, &world_size);
-}
-
 // use this version of communicator constructor when splitting a world communicator
 // NB: collective over all ranks of world_comm
+decaf::
 Comm::Comm(CommHandle world_comm, CommType type, int world_rank)
 {
   MPI_Comm_split(world_comm, type, world_rank, &handle_);
@@ -37,6 +30,8 @@ Comm::Comm(CommHandle world_comm, CommType type, int world_rank)
 
 // use this version of communicator constructor when forming a communicator from contiguous ranks
 // NB: only collective over the ranks in the range [min_rank, max_rank]
+
+decaf::
 Comm::Comm(CommHandle world_comm, int min_rank, int max_rank)
 {
   MPI_Group group, newgroup;
@@ -52,30 +47,29 @@ Comm::Comm(CommHandle world_comm, int min_rank, int max_rank)
   MPI_Comm_size(handle_, &size_);
 }
 
+decaf::
 Comm::~Comm()
 {
   MPI_Comm_free(&handle_);
 }
 
 void
-Comm::put(void* addr, int num, Datatype dtype)
+decaf::
+Comm::put(void* addr, int num, int dest, Datatype dtype)
 {
   MPI_Request req;
 
-  // TODO: prepend size and typemap
+  // TODO: prepend typemap?
 
-  // TODO: looping over all destinations for now, need to specify destinations more
-  // carefully (or broadcast?)
-  for (int dest = 0; dest < size_; dest++)
-    MPI_Isend(addr, num, dtype, dest, 0, handle_, &req);
+  MPI_Isend(addr, num, dtype, dest, 0, handle_, &req);
 
   // TODO: technically, ought to wait or test to complete the isend?
 }
 
-void*
-Comm::get(int num, Datatype dtype)
+void
+decaf::
+Comm::get(Data& data)
 {
-  MPI_Request req;
   MPI_Status status;
 
   // TODO: read type from typemap instead of argument?
@@ -83,11 +77,14 @@ Comm::get(int num, Datatype dtype)
   MPI_Probe(MPI_ANY_SOURCE, 0, handle_, &status);
 
   // allocate
-  int nbytes; // number of bytes in the message
-  MPI_Get_count(&status, MPI_BYTE, &nbytes);
-  unsigned char* addr = new unsigned char[nbytes];
-  MPI_Recv(addr, 1, dtype, status.MPI_SOURCE, 0, handle_, &status);
-  return addr;
+  int nitems; // number of items (of type dtype) in the message
+  MPI_Get_count(&status, data.complete_datatype_, &nitems);
+  MPI_Aint extent; // datatype size in bytes
+  MPI_Type_extent(data.complete_datatype_, &extent);
+  int old_size = data.items_.size();
+  data.items_.resize(data.items_.size() + nitems * extent);
+  MPI_Recv(&data.items_[0] + old_size, nitems, data.complete_datatype_, status.MPI_SOURCE, 0,
+           handle_, &status);
 }
 
 #endif
