@@ -6,7 +6,11 @@ its type or by a continuous range of ranks. The size and rank within a
 communicator can be queried anytime. Starting with the world
 communicator provided by the user, decaf creates 2 communicators
 (prod_dflow_comm_ and dflow_con_comm_) as shown in Figure
-![Decaf communicators](https://bitbucket.org/tpeterka1/decaf/src/ba83607d929e4d6372835414f58fd9df0f591385/doc/figs/comms.png?at=master)
+
+![Decaf communicators](https://bitbucket.org/tpeterka1/decaf/src/doc/figs/comms.png)
+
+![Alt text](http://www.addictedtoibiza.com/wp-content/uploads/2012/12/example.png)
+
 that overlap the producer with
 dataflow, and dataflow with consumer, respectively.
 
