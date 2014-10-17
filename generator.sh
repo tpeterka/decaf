@@ -19,9 +19,11 @@ function setup
 					;;
 			esac
 			;;
-		*) echo "Your platform is not defined in $0. Using default parameters"
+		*) echo "Your platform is not defined in $0."
 			install_path="$PWD/install"
 			options="-Ddebug=OFF -Doptimize=OFF -Dtransport_mpi=ON"
+			echo -n "Path MPI library [default]/path : "
+			read mpi_path_overide
 			;;
 	esac
 	# Setting links to executables
@@ -30,12 +32,12 @@ function setup
 		export PATH=$mpi_path_overide/bin:$PATH
 		export LD_LIBRARY_PATH=$mpi_path_overide/lib:$LD_LIBRARY_PATH
 	fi
-	mpi_compiler=`which mpicxx`
-	mpi_run=`which mpiexec`
+	mpi_c=`which mpicxx`
+	mpi_r=`which mpiexec`
 	# Summary
 	echo "============================== Configuration summary =============================="
-	echo "MPI compiler : $mpi_compiler"
-	echo "MPI runner : $mpi_run"
+	echo "MPI compiler : $mpi_c"
+	echo "MPI runner : $mpi_r"
 	echo "Options $options"
 	echo "==================================================================================="
 }
@@ -45,7 +47,7 @@ function build
 	setup &&
 	mkdir -p build &&
 	cd build &&
-	cmake -DCMAKE_CXX_COMPILER=$mpi_compiler						\
+	cmake -DCMAKE_CXX_COMPILER=$mpi_c						\
 				-DCMAKE_INSTALL_PREFIX:PATH=$install_path			\
 				$options																			\
 				.. &&
@@ -56,9 +58,9 @@ function build
 
 function launch
 {
-	echo "======= RUNNING EXAMPLES ======"
-	echo "command : $mpi_run -n 10 build/examples/direct"
-	$mpi_run -n 10 build/examples/direct
+	echo "================================ RUNNING EXAMPLES ================================="
+	echo "command : $mpi_r -n 10 build/examples/direct"
+	$mpi_r -n 10 build/examples/direct
 }
 
 function remove
