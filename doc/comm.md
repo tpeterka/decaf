@@ -8,7 +8,7 @@ communicator provided by the user, decaf creates 2 communicators
 (prod_dflow_comm_ and dflow_con_comm_) as shown in Figure
 
 ![Decaf communicators](../doc/figs/comms.png)
-
+![Decaf communicators](https://bitbucket.org/tpeterka1/decaf/src/1fdb0c7285168e4391f1b27cff0f65e4286e56fc/doc/figs/comms.png)
 that overlap the producer with
 dataflow, and dataflow with consumer, respectively.
 
