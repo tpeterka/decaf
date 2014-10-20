@@ -23,16 +23,11 @@ enum Decomposition
   DECAF_NUM_DECOMPS,
 };
 
-enum CommType
-{
-  DECAF_PRODUCER_COMM,
-  DECAF_CONSUMER_COMM,
-  DECAF_DATAFLOW_COMM,
-  DECAF_PROD_DFLOW_COMM,
-  DECAF_CON_DFLOW_COMM,
-  DECAF_WORLD_COMM,
-  DECAF_NUM_COMM_TYPES,
-};
+typedef unsigned char CommType;
+#define DECAF_OTHER_COMM    0x0
+#define DECAF_PRODUCER_COMM 0x1
+#define DECAF_DATAFLOW_COMM 0x2
+#define DECAF_CONSUMER_COMM 0x4
 
 enum Error
 {
@@ -44,8 +39,11 @@ enum Error
 struct DecafSizes
 {
   int prod_size; // size of producer communicator
-  int con_size; // size of consumer communicator
   int dflow_size; // size of dataflow communicator
+  int con_size; // size of consumer communicator
+  int prod_start; // size of producer communicator
+  int dflow_start; // size of dataflow communicator
+  int con_start; // size of consumer communicator
   int nsteps; // number of dataflow (consumer) time steps to execute (<= producer time steps)
 };
 

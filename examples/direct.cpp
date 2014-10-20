@@ -50,18 +50,37 @@ void checker(Decaf* decaf)
 {
 }
 
+//
+// gets command line args
+//
+void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes, int& tot_time_steps,
+             int& con_interval)
+{
+  assert(argc >= 9);
+
+  decaf_sizes.prod_size   = atoi(argv[1]);
+  decaf_sizes.dflow_size  = atoi(argv[2]);
+  decaf_sizes.con_size    = atoi(argv[3]);
+
+  decaf_sizes.prod_start  = atoi(argv[4]);
+  decaf_sizes.dflow_start = atoi(argv[5]);
+  decaf_sizes.con_start   = atoi(argv[6]);
+
+  tot_time_steps          = atoi(argv[7]);
+  con_interval            = atoi(argv[8]);
+}
+
 int main(int argc, char** argv)
 {
 
   MPI_Init(&argc, &argv);
 
-  // create (split) new communicators
-  int prod_size = 4;  // fake some communicator sizes: producer
-  int con_size = 2;   // consumer
-  int dflow_size = 1; // dataflow size defines number of aggregator and other intermediate nodes
-  int tot_time_steps = 3; // total time steps
-  int con_interval = 2; // consumer frequency (in time steps)
-  int nsteps = ceil((double)tot_time_steps / con_interval); // consumer time steps
+  // decaf size info
+  DecafSizes decaf_sizes;
+  int tot_time_steps; // total number of producer time steps
+  int con_interval; // consumer is called every so many time steps
+  GetArgs(argc, argv, decaf_sizes, tot_time_steps, con_interval);
+  decaf_sizes.nsteps = ceil((double)tot_time_steps / con_interval); // consumer time steps
 
   // define the data type
   Data data(MPI_INT);
@@ -69,10 +88,7 @@ int main(int argc, char** argv)
   // start decaf, allocate on the heap instead of on the stack so that it can be deleted
   // before MPI_Finalize is called at the end
   Decaf* decaf = new Decaf(MPI_COMM_WORLD,
-                           prod_size,
-                           con_size,
-                           dflow_size,
-                           nsteps,
+                           decaf_sizes,
                            &prod_selector,
                            &dflow_selector,
                            &pipeliner,
@@ -80,9 +96,8 @@ int main(int argc, char** argv)
                            &data);
   decaf->err();
 
-
   // producer
-  if (decaf->type() == DECAF_PRODUCER_COMM)
+  if (decaf->is_prod())
   {
     int* d = new int[1];
     for (int t = 0; t < tot_time_steps; t++)
@@ -100,7 +115,7 @@ int main(int argc, char** argv)
   }
 
   // consumer
-  else if (decaf->type() == DECAF_CONSUMER_COMM)
+  if (decaf->is_con())
   {
     for (int t = 0; t < tot_time_steps; t+= con_interval)
     {

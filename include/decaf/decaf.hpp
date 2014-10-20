@@ -30,7 +30,6 @@ namespace decaf
   struct Decaf
   {
     CommHandle world_comm_; // handle to original world communicator
-    CommType type_; // whether this instance is producer, consumer, dataflow, or other
     Comm* prod_dflow_comm_; // communicator covering producer and dataflow
     Comm* dflow_con_comm_; // communicator covering dataflow and consumer
     Data* data_;
@@ -42,10 +41,7 @@ namespace decaf
     int err_; // last error
 
     Decaf(CommHandle world_comm,
-          int prod_size,
-          int con_size,
-          int dflow_size,
-          int nsteps,
+          DecafSizes& decaf_sizes,
           int (*prod_selector)(Decaf*, int),
           int (*dflow_selector)(Decaf*, int),
           void (*pipeliner)(Decaf*),
@@ -54,15 +50,19 @@ namespace decaf
 
     ~Decaf();
 
-    int type() { return type_; }
     void put(void* d);
     void* get();
     Data* data() { return data_; }
     DecafSizes* sizes() { return &sizes_; }
     void del() { data_->items_.clear(); }
     void err() { ::all_err(err_); }
+    // whether this rank is producer, dataflow, or consumer (may have multiple roles)
+    bool is_prod()  { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
+    bool is_dflow() { return((type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM); }
+    bool is_con()   { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
 
   private:
+    CommType type_; // whether this instance is producer, consumer, dataflow, or other
     void dataflow();
   };
 
@@ -70,10 +70,7 @@ namespace decaf
 
 decaf::
 Decaf::Decaf(CommHandle world_comm,
-             int prod_size,
-             int con_size,
-             int dflow_size,
-             int nsteps,
+             DecafSizes& decaf_sizes,
              int (*prod_selector)(Decaf*, int),
              int (*dflow_selector)(Decaf*, int),
              void (*pipeliner)(Decaf*),
@@ -86,48 +83,69 @@ Decaf::Decaf(CommHandle world_comm,
   dflow_selector_(dflow_selector),
   pipeliner_(pipeliner),
   checker_(checker),
-  data_(data)
+  data_(data),
+  type_(DECAF_OTHER_COMM)
 {
   // sizes is a POD struct, initialization not allowed in C++03; need to use assignment workaround
-  const static DecafSizes sizes = {prod_size, con_size, dflow_size, nsteps};
+  const static DecafSizes sizes = {
+    decaf_sizes.prod_size,  decaf_sizes.dflow_size,  decaf_sizes.con_size,
+    decaf_sizes.prod_start, decaf_sizes.dflow_start, decaf_sizes.con_start,
+    decaf_sizes.nsteps
+  };
   sizes_ = sizes;
 
   int world_rank, world_size; // place in the world
   WorldOrder(world_comm, world_rank, world_size);
 
-  // ensure sizes match
-  if (prod_size + con_size + dflow_size > world_size)
+  // ensure sizes and starts fit in the world
+  if (sizes_.prod_start + sizes_.prod_size > world_size   ||
+      sizes_.dflow_start + sizes_.dflow_size > world_size ||
+      sizes_.con_start + sizes_.con_size > world_size)
   {
     err_ = DECAF_COMM_SIZES_ERR;
     return;
   }
 
   // communicators
-  if (world_rank < prod_size) // producer
-  {
-    type_ = DECAF_PRODUCER_COMM;
-    prod_dflow_comm_ = new Comm(world_comm, 0, prod_size + dflow_size - 1);
-  }
-  else if (world_rank < prod_size + dflow_size) // dataflow
-  {
-    type_ = DECAF_DATAFLOW_COMM;
-    prod_dflow_comm_ = new Comm(world_comm, 0, prod_size + dflow_size - 1);
-    dflow_con_comm_ = new Comm(world_comm, prod_size, prod_size + dflow_size + con_size - 1);
+  int prod_dflow_start = sizes_.prod_start;
+  int prod_dflow_end   = std::max(sizes_.dflow_start + sizes_.dflow_size - 1,
+                                  sizes_.prod_start + sizes_.prod_size - 1);
+  int dflow_con_start  = std::min(sizes_.dflow_start, sizes_.con_start);
+  int dflow_con_end    = sizes_.con_start + sizes_.con_size - 1;
+
+  if (world_rank >= sizes_.prod_start &&
+      world_rank < sizes_.prod_start + sizes_.prod_size) // producer
+    type_ |= DECAF_PRODUCER_COMM;
+  if (world_rank >= sizes_.dflow_start &&
+           world_rank < sizes_.dflow_start + sizes_.dflow_size) // dataflow
+    type_ |= DECAF_DATAFLOW_COMM;
+  if (world_rank >= sizes_.con_start &&
+           world_rank < sizes_.con_start + sizes_.con_size) // consumer
+    type_ |= DECAF_CONSUMER_COMM;
+
+  if (world_rank >= prod_dflow_start && world_rank <= prod_dflow_end)
+    prod_dflow_comm_ = new Comm(world_comm, prod_dflow_start, prod_dflow_end);
+  if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
+    dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end);
+
+  if (is_dflow())
     dataflow();
-  }
-  else if (world_rank < prod_size + dflow_size + con_size) // consumer
-  {
-    type_ = DECAF_CONSUMER_COMM;
-    dflow_con_comm_ = new Comm(world_comm, prod_size, prod_size + dflow_size + con_size - 1);
-  }
-  else // other
-    type_ = DECAF_WORLD_COMM;
 
   // debug
-//   if (prod_dflow_comm_)
-//     fprintf(stderr, "type prod_dflow rank %d of size %d\n", prod_dflow_comm_->rank(), prod_dflow_comm_->size());
-//   if (dflow_con_comm_)
-//     fprintf(stderr, "type dflow_con rank %d of size %d\n", dflow_con_comm_->rank(), dflow_con_comm_->size());
+  if (is_prod())
+    fprintf(stderr, "I am a producer process\n");
+  if (is_dflow())
+    fprintf(stderr, "I am a dataflow process\n");
+  if (is_con())
+    fprintf(stderr, "I am a consumer process\n");
+
+  // debug
+  if (prod_dflow_comm_)
+    fprintf(stderr, "I am rank %d of size %d in the prod_dflow communicator\n",
+            prod_dflow_comm_->rank(), prod_dflow_comm_->size());
+  if (dflow_con_comm_)
+    fprintf(stderr, "I am rank %d of size %d in the dflow_con communicator\n",
+            dflow_con_comm_->rank(), dflow_con_comm_->size());
 
   err_ = DECAF_OK;
 }
@@ -161,8 +179,11 @@ Decaf::put(void* d)
 
     // TODO: not looping over pipeliner chunks yet
     if (nitems)
-      prod_dflow_comm_->put(data_->data_ptr(), nitems, sizes_.prod_size + i,
+    {
+      fprintf(stderr, "1: dest = %d\n", sizes_.dflow_start + i);
+      prod_dflow_comm_->put(data_->data_ptr(), nitems, sizes_.dflow_start - sizes_.prod_start + i,
                             data_->complete_datatype_);
+    }
   }
 }
 
@@ -200,8 +221,11 @@ Decaf::dataflow()
 
       // TODO: not looping over pipeliner chunks yet
       if (nitems)
-        dflow_con_comm_->put(data_->data_ptr(), nitems, sizes_.dflow_size + k,
+      {
+        fprintf(stderr, "2: dest = %d\n", sizes_.con_start + k);
+        dflow_con_comm_->put(data_->data_ptr(), nitems, sizes_.con_start - sizes_.dflow_start + k,
                              data_->complete_datatype_);
+      }
     }
 
     data_->items_.clear();
