@@ -7,7 +7,7 @@ communicator can be queried anytime. Starting with the world
 communicator provided by the user, decaf creates 2 communicators
 (prod_dflow_comm_ and dflow_con_comm_) as shown in Figure
 
-![Decaf communicators](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/comms.png)
+![Decaf communicators](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/figs/comms.png)
 that overlap the producer with
 dataflow, and dataflow with consumer, respectively.
 
