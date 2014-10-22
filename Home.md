@@ -23,7 +23,7 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [Tom](individual-docs/tom/tom.md)
 
-### Jay (TBD)
+### [Jay](individual-docs/jay/jay.md)
 
 ### Franck (TBD)
 
