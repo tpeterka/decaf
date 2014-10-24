@@ -17,22 +17,10 @@
 #include <mpi.h>
 #include <stdio.h>
 
-// use this version of communicator constructor when splitting a world communicator
-// NB: collective over all ranks of world_comm
-decaf::
-Comm::Comm(CommHandle world_comm, CommType type, int world_rank)
-{
-  MPI_Comm_split(world_comm, type, world_rank, &handle_);
-
-  MPI_Comm_rank(handle_, &rank_);
-  MPI_Comm_size(handle_, &size_);
-}
-
-// use this version of communicator constructor when forming a communicator from contiguous ranks
+// communicator constructor forming a communicator from contiguous world ranks
 // NB: only collective over the ranks in the range [min_rank, max_rank]
-
 decaf::
-Comm::Comm(CommHandle world_comm, int min_rank, int max_rank)
+Comm::Comm(CommHandle world_comm, int min_rank, int max_rank) : min_rank_(min_rank)
 {
   MPI_Group group, newgroup;
   int range[3];
@@ -55,36 +43,42 @@ Comm::~Comm()
 
 void
 decaf::
-Comm::put(void* addr, int num, int dest, Datatype dtype)
+Comm::put(Data *data, int dest)
 {
-  MPI_Request req;
-
   // TODO: prepend typemap?
 
-  MPI_Isend(addr, num, dtype, dest, 0, handle_, &req);
-
-  // TODO: technically, ought to wait or test to complete the isend?
+  // short-circuit put to self
+  if (world_rank(dest) == world_rank(rank()))
+    data->put_self(true);
+  else
+  {
+    MPI_Request req;
+    MPI_Isend(data->data_ptr(), data->put_nitems(), data->complete_datatype_, dest, 0, handle_,
+              &req);
+  }
+  // TODO: wait or test at the very end to complete any remaining requests
 }
 
 void
 decaf::
-Comm::get(Data& data)
+Comm::get(Data* data)
 {
-  MPI_Status status;
-
-  // TODO: read type from typemap instead of argument?
-
-  MPI_Probe(MPI_ANY_SOURCE, 0, handle_, &status);
-
-  // allocate
-  int nitems; // number of items (of type dtype) in the message
-  MPI_Get_count(&status, data.complete_datatype_, &nitems);
-  MPI_Aint extent; // datatype size in bytes
-  MPI_Type_extent(data.complete_datatype_, &extent);
-  int old_size = data.items_.size();
-  data.items_.resize(data.items_.size() + nitems * extent);
-  MPI_Recv(&data.items_[0] + old_size, nitems, data.complete_datatype_, status.MPI_SOURCE, 0,
-           handle_, &status);
+  if (data->put_self())
+    data->put_self(false);
+  else
+  {
+    // TODO: read type from typemap instead of argument?
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, handle_, &status);
+    int nitems; // number of items (of type dtype) in the message
+    MPI_Get_count(&status, data->complete_datatype_, &nitems);
+    MPI_Aint extent; // datatype size in bytes
+    MPI_Type_extent(data->complete_datatype_, &extent);
+    int old_size = data->get_items_.size();
+    data->get_items_.resize(data->get_items_.size() + nitems * extent);
+    MPI_Recv(&data->get_items_[0] + old_size, nitems, data->complete_datatype_, status.MPI_SOURCE,
+             0, handle_, &status);
+  }
 }
 
 #endif

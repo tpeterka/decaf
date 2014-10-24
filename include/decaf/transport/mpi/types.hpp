@@ -17,12 +17,22 @@
 
 typedef MPI_Comm CommHandle;
 typedef MPI_Datatype Datatype;
+typedef MPI_Request CommRequest;
 
 // standalone utilities, not part of a class
-void WorldOrder(CommHandle world_comm, int& world_rank, int& world_size)
+
+int CommRank(CommHandle comm)
 {
-  MPI_Comm_rank(world_comm, &world_rank);
-  MPI_Comm_size(world_comm, &world_size);
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+  return rank;
+}
+
+int CommSize(CommHandle comm)
+{
+  int size;
+  MPI_Comm_size(comm, &size);
+  return size;
 }
 
 size_t DatatypeSize(Datatype dtype)

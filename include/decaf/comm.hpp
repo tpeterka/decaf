@@ -20,21 +20,23 @@ namespace decaf
 {
 
   // generic communication mechanism for producer, consumer, dataflow
+  // ranks in communicator are contiguous in the world
   struct Comm
   {
     CommHandle handle_; // communicator handle in the transport layer
     int size_; // communicator size
     int rank_; // rank in communicator
-
-    Comm(CommHandle world_comm, CommType type, int world_rank);
+    int min_rank_; // min (world) rank of communicator
     Comm(CommHandle world_comm, int min_rank, int max_rank);
     ~Comm();
 
     CommHandle handle() { return handle_; }
     int size() { return size_; }
     int rank() { return rank_; }
-    void put(void* addr, int num, int dest, Datatype dtype);
-    void get(Data& data);
+    int world_rank(int rank) { return(rank + min_rank_); } // world rank of any rank in this comm
+    int world_rank() { return(rank_ + min_rank_); } // my world rank
+    void put(Data* data, int dest);
+    void get(Data* data);
 
   };
 

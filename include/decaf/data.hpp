@@ -30,17 +30,22 @@ namespace decaf
     Datatype complete_datatype_;
     Datatype chunk_datatype_;
     enum Decomposition decomp_type_;
-    std::vector <unsigned char> items_; // all items in contiguous order
-    void* dp_; // data pointer when items is not used
+    void* put_items_; // data pointer to items being put
+    int put_nitems_; // number of items being put
+    std::vector <unsigned char> get_items_; // all items being gotten
+    bool put_self_; // last put was to self
     int err_; // last error
 
-    Data(Datatype dtype) : complete_datatype_(dtype), dp_(NULL) {}
+    Data(Datatype dtype) : complete_datatype_(dtype), put_items_(NULL), put_self_(false) {}
     ~Data() {}
 
-    void* data_ptr() { return(items_.size() ? &items_[0] : dp_); }
-    int nitems() { return items_.size() / DatatypeSize(complete_datatype_); }
+    void put_self(bool self) { put_self_ = self; }
+    bool put_self() { return put_self_; }
+    void put_nitems(int nitems) { put_nitems_ = nitems; }
+    int put_nitems() { return put_nitems_; }
+    void* data_ptr() { return(get_items_.size() ? &get_items_[0] : put_items_); }
+    int get_nitems() { return(get_items_.size() / DatatypeSize(complete_datatype_)); }
     void err() { ::all_err(err_); }
-
   };
 
 } // namespace

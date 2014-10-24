@@ -23,11 +23,12 @@ enum Decomposition
   DECAF_NUM_DECOMPS,
 };
 
+// communicator types
 typedef unsigned char CommType;
-#define DECAF_OTHER_COMM    0x0
-#define DECAF_PRODUCER_COMM 0x1
-#define DECAF_DATAFLOW_COMM 0x2
-#define DECAF_CONSUMER_COMM 0x4
+#define DECAF_OTHER_COMM    0x00
+#define DECAF_PRODUCER_COMM 0x01
+#define DECAF_DATAFLOW_COMM 0x02
+#define DECAF_CONSUMER_COMM 0x04
 
 enum Error
 {

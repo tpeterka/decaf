@@ -19,27 +19,15 @@ using namespace decaf;
 
 // user-defined selector code
 // runs in the producer
-// selects from decaf->data() the subset going to dataflow desination rank dflow_dest
+// selects from decaf->data() the subset going to dataflow
 // sets that selection in decaf->data()
 // returns number of items selected
 // items must be in terms of the elementary datatype defined in decaf->data()
-int prod_selector(Decaf* decaf, int dflow_dest)
+int selector(Decaf* decaf)
 {
   // this example is simply passing through the original single integer
   // decaf->data()->data_ptr remains unchanged, and the number of datatypes remains 1
   return 1;
-}
-// user-defined selector code
-// runs in the dataflow
-// selects from decaf->data() the subset going to dataflow desination rank con_dest
-// sets that selection in decaf->data()
-// returns number of items selected
-// items must be in terms of the elementary datatype defined in decaf->data()
-int dflow_selector(Decaf* decaf, int con_dest)
-{
-  // this example is taking all the original producer ranks and sending to all dataflow ranks
-  // decaf->data()->data_ptr remains unchanged, but the number of items is prod_size
-  return decaf->sizes()->prod_size;
 }
 // user-defined pipeliner code
 void pipeliner(Decaf* decaf)
@@ -89,51 +77,49 @@ int main(int argc, char** argv)
   // before MPI_Finalize is called at the end
   Decaf* decaf = new Decaf(MPI_COMM_WORLD,
                            decaf_sizes,
-                           &prod_selector,
-                           &dflow_selector,
+                           &selector,
                            &pipeliner,
                            &checker,
                            &data);
   decaf->err();
 
-  // producer
-  if (decaf->is_prod())
+  int **d = new int*[tot_time_steps]; // data pointers for all time steps
+  for (int t = 0; t < tot_time_steps; t++)
   {
-    int* d = new int[1];
-    for (int t = 0; t < tot_time_steps; t++)
+    // producer
+    if (decaf->is_prod())
     {
+      d[t] = new int[1];
       // any custom producer (eg. simulation code) goes here or gets called from here
       // as long as put() gets called at that desired frequency
-      *d = t;
-      fprintf(stderr, "+ producing time step %d, val %d\n", t, *d);
+      *d[t] = t;
+      fprintf(stderr, "+ producing time step %d, val %d\n", t, *d[t]);
       // assumes the consumer has the previous value, ok to overwrite
       if (!(t % con_interval))
-        decaf->put(d);
+        decaf->put(d[t]);
+      else
+        delete[] d[t]; // data for time steps not being consumed can be safely deleted
+      // delete any completed data given to decaf
+//       for (int i = 0; i < decaf->num_complete(); i++)
+//         delete[] d[decaf->complete(i)];
+      // assumes the consumer has the previous value, ok to delete
+//       delete[] d;
     }
-    // assumes the consumer has the previous value, ok to delete
-    delete[] d;
-  }
 
-  // consumer
-  if (decaf->is_con())
-  {
-    for (int t = 0; t < tot_time_steps; t+= con_interval)
+    // consumer
+    if (decaf->is_con() && !(t % con_interval))
     {
       // any custom consumer (eg. data analysis code) goes here or gets called from here
       // as long as get() gets called at that desired frequency and
-      // data that decaf allocate are deleted
+      // data that decaf allocated are deleted
       int* d = (int*)decaf->get();
       // for example, add all the items arrived at this rank
       int sum = 0;
-      for (int i = 0; i < decaf->data()->nitems(); i++)
-      {
-        fprintf(stderr, "t = %d d[%d] = %d\n", t, i, d[i]);
+      for (int i = 0; i < decaf->data()->get_nitems(); i++)
         sum += d[i];
-      }
       fprintf(stderr, "- consuming time step %d, sum = %d\n", t, sum);
-      decaf->del();
+//       decaf->del();
     }
-
   }
 
   // cleanup

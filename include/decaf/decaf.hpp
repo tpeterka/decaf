@@ -34,16 +34,14 @@ namespace decaf
     Comm* dflow_con_comm_; // communicator covering dataflow and consumer
     Data* data_;
     DecafSizes sizes_;
-    int (*prod_selector_)(Decaf*, int); // user-defined producer selector code
-    int (*dflow_selector_)(Decaf*, int); // user-defined dataflow selector code
+    int (*selector_)(Decaf*); // user-defined selector code
     void (*pipeliner_)(Decaf*); // user-defined pipeliner code
     void (*checker_)(Decaf*); // user-defined resilience code
     int err_; // last error
 
     Decaf(CommHandle world_comm,
           DecafSizes& decaf_sizes,
-          int (*prod_selector)(Decaf*, int),
-          int (*dflow_selector)(Decaf*, int),
+          int (*selector)(Decaf*),
           void (*pipeliner)(Decaf*),
           void (*checker)(Decaf*),
           Data* data);
@@ -54,7 +52,7 @@ namespace decaf
     void* get();
     Data* data() { return data_; }
     DecafSizes* sizes() { return &sizes_; }
-    void del() { data_->items_.clear(); }
+    void del() { data_->get_items_.clear(); }
     void err() { ::all_err(err_); }
     // whether this rank is producer, dataflow, or consumer (may have multiple roles)
     bool is_prod()  { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
@@ -64,6 +62,7 @@ namespace decaf
   private:
     CommType type_; // whether this instance is producer, consumer, dataflow, or other
     void dataflow();
+    void forward();
   };
 
 } // namespace
@@ -71,16 +70,14 @@ namespace decaf
 decaf::
 Decaf::Decaf(CommHandle world_comm,
              DecafSizes& decaf_sizes,
-             int (*prod_selector)(Decaf*, int),
-             int (*dflow_selector)(Decaf*, int),
+             int (*selector)(Decaf*),
              void (*pipeliner)(Decaf*),
              void (*checker)(Decaf*),
              Data* data) :
   world_comm_(world_comm),
   prod_dflow_comm_(NULL),
   dflow_con_comm_(NULL),
-  prod_selector_(prod_selector),
-  dflow_selector_(dflow_selector),
+  selector_(selector),
   pipeliner_(pipeliner),
   checker_(checker),
   data_(data),
@@ -94,8 +91,8 @@ Decaf::Decaf(CommHandle world_comm,
   };
   sizes_ = sizes;
 
-  int world_rank, world_size; // place in the world
-  WorldOrder(world_comm, world_rank, world_size);
+  int world_rank = CommRank(world_comm); // my place in the world
+  int world_size = CommSize(world_comm);
 
   // ensure sizes and starts fit in the world
   if (sizes_.prod_start + sizes_.prod_size > world_size   ||
@@ -128,24 +125,24 @@ Decaf::Decaf(CommHandle world_comm,
   if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
     dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end);
 
-  if (is_dflow())
+  // debug
+//   if (is_prod())
+//     fprintf(stderr, "I am a producer process\n");
+//   if (is_dflow())
+//     fprintf(stderr, "I am a dataflow process\n");
+//   if (is_con())
+//     fprintf(stderr, "I am a consumer process\n");
+//   if (prod_dflow_comm_)
+//     fprintf(stderr, "I am rank %d of size %d in the prod_dflow communicator\n",
+//             prod_dflow_comm_->rank(), prod_dflow_comm_->size());
+//   if (dflow_con_comm_)
+//     fprintf(stderr, "I am rank %d of size %d in the dflow_con communicator\n",
+//             dflow_con_comm_->rank(), dflow_con_comm_->size());
+
+  // dataflow ranks that overlap producer ranks run the dataflow inside of put
+  // those dataflow ranks that are disjoint run the dataflow below
+  if (is_dflow() && !is_prod())
     dataflow();
-
-  // debug
-  if (is_prod())
-    fprintf(stderr, "I am a producer process\n");
-  if (is_dflow())
-    fprintf(stderr, "I am a dataflow process\n");
-  if (is_con())
-    fprintf(stderr, "I am a consumer process\n");
-
-  // debug
-  if (prod_dflow_comm_)
-    fprintf(stderr, "I am rank %d of size %d in the prod_dflow communicator\n",
-            prod_dflow_comm_->rank(), prod_dflow_comm_->size());
-  if (dflow_con_comm_)
-    fprintf(stderr, "I am rank %d of size %d in the dflow_con communicator\n",
-            dflow_con_comm_->rank(), dflow_con_comm_->size());
 
   err_ = DECAF_OK;
 }
@@ -163,7 +160,7 @@ void
 decaf::
 Decaf::put(void* d)
 {
-  data_->dp_ = d;
+  data_->put_items_ = d;
 
   // TODO: for now executing only user-supplied custom code, need to develop primitives
   // for automatic decaf code
@@ -171,64 +168,69 @@ Decaf::put(void* d)
   for (int i = 0; i < sizes_.dflow_size; i++)
   {
     // selection always needs to always be user-defined and is mandatory
-    int nitems = prod_selector_(this, i);
+    // TODO: write automatic redistributor, for now not changing the number of items selected
+    data_->put_nitems(selector_(this));
 
     // pipelining should be automatic if the user defines the pipeline chunk unit
     if (pipeliner_)
       pipeliner_(this);
 
     // TODO: not looping over pipeliner chunks yet
-    if (nitems)
-    {
-      fprintf(stderr, "1: dest = %d\n", sizes_.dflow_start + i);
-      prod_dflow_comm_->put(data_->data_ptr(), nitems, sizes_.dflow_start - sizes_.prod_start + i,
-                            data_->complete_datatype_);
-    }
+    if (data_->put_nitems())
+      prod_dflow_comm_->put(data_, sizes_.dflow_start - sizes_.prod_start + i);
   }
+
+  // this rank may also serve as dataflow in case producer and dataflow overlap
+  if (is_dflow())
+    forward();
 }
 
 void*
 decaf::
 Decaf::get()
 {
-  dflow_con_comm_->get(*data_);
+  dflow_con_comm_->get(data_);
   return data_->data_ptr();
 }
 
+// run the dataflow
 void
 decaf::
 Decaf::dataflow()
 {
-  // forward the data, aggregating by virtue of doing a second selection
-
   // TODO: when pipelining, would not store all items in dataflow before forwarding to consumer
   // as is done below
   for (int i = 0; i < sizes_.nsteps; i++)
   {
+    forward();
+
+    // TODO: deal with how to free memory
+//     data_->items_.clear();
+  }
+}
+
+// forward the data through the dataflow
+void
+decaf::
+Decaf::forward()
+{
     // get from all producer ranks
     for (int j = 0; j < sizes_.prod_size; j++)
-      prod_dflow_comm_->get(*data_);
+      prod_dflow_comm_->get(data_);
 
     // put to all consumer ranks
     for (int k = 0; k < sizes_.con_size; k++)
     {
-      // selection always needs to always be user-defined and is mandatory
-      int nitems = dflow_selector_(this, k);
+      // TODO: write automatic redistributor, for now not changing the number of items from get
+      data_->put_nitems(data_->get_nitems());
 
       // pipelining should be automatic if the user defines the pipeline chunk unit
       if (pipeliner_)
         pipeliner_(this);
 
       // TODO: not looping over pipeliner chunks yet
-      if (nitems)
-      {
-        fprintf(stderr, "2: dest = %d\n", sizes_.con_start + k);
-        dflow_con_comm_->put(data_->data_ptr(), nitems, sizes_.con_start - sizes_.dflow_start + k,
-                             data_->complete_datatype_);
-      }
+      if (data_->put_nitems())
+        dflow_con_comm_->put(data_, sizes_.con_start - sizes_.dflow_start + k);
     }
-
-    data_->items_.clear();
-  }
 }
 #endif
