@@ -37,7 +37,6 @@ void pipeliner(Decaf* decaf)
 void checker(Decaf* decaf)
 {
 }
-
 //
 // gets command line args
 //
@@ -83,43 +82,44 @@ int main(int argc, char** argv)
                            &data);
   decaf->err();
 
-  int **d = new int*[tot_time_steps]; // data pointers for all time steps
+  // producer and consumer data
+  // keep these in separate pointers in ase producer and consumer overlap
+  int *pd, *cd;
+
   for (int t = 0; t < tot_time_steps; t++)
   {
     // producer
     if (decaf->is_prod())
     {
-      d[t] = new int[1];
+      pd = new int[1];
       // any custom producer (eg. simulation code) goes here or gets called from here
       // as long as put() gets called at that desired frequency
-      *d[t] = t;
-      fprintf(stderr, "+ producing time step %d, val %d\n", t, *d[t]);
+      *pd = t;
+      fprintf(stderr, "+ producing time step %d, val %d\n", t, *pd);
       // assumes the consumer has the previous value, ok to overwrite
       if (!(t % con_interval))
-        decaf->put(d[t]);
-      else
-        delete[] d[t]; // data for time steps not being consumed can be safely deleted
-      // delete any completed data given to decaf
-//       for (int i = 0; i < decaf->num_complete(); i++)
-//         delete[] d[decaf->complete(i)];
-      // assumes the consumer has the previous value, ok to delete
-//       delete[] d;
+        decaf->put(pd);
     }
 
     // consumer
     if (decaf->is_con() && !(t % con_interval))
     {
       // any custom consumer (eg. data analysis code) goes here or gets called from here
-      // as long as get() gets called at that desired frequency and
-      // data that decaf allocated are deleted
-      int* d = (int*)decaf->get();
+      // as long as get() gets called at that desired frequency
+      cd = (int*)decaf->get();
       // for example, add all the items arrived at this rank
       int sum = 0;
+      fprintf(stderr, "consumer get_nitems = %d\n", decaf->data()->get_nitems());
       for (int i = 0; i < decaf->data()->get_nitems(); i++)
-        sum += d[i];
+        sum += cd[i];
       fprintf(stderr, "- consuming time step %d, sum = %d\n", t, sum);
-//       decaf->del();
     }
+
+    decaf->flush(); // both producer and consumer need to clean up after each time step
+    // now safe to cleanup producer data, after decaf->flush() is called
+    // don't wory about deleting the data pointed to by cd; decaf did that in fluwh()
+    if (decaf->is_prod())
+      delete[] pd;
   }
 
   // cleanup

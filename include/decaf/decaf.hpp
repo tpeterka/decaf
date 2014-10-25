@@ -52,7 +52,7 @@ namespace decaf
     void* get();
     Data* data() { return data_; }
     DecafSizes* sizes() { return &sizes_; }
-    void del() { data_->get_items_.clear(); }
+    void flush();
     void err() { ::all_err(err_); }
     // whether this rank is producer, dataflow, or consumer (may have multiple roles)
     bool is_prod()  { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
@@ -168,7 +168,7 @@ Decaf::put(void* d)
   for (int i = 0; i < sizes_.dflow_size; i++)
   {
     // selection always needs to always be user-defined and is mandatory
-    // TODO: write automatic redistributor, for now not changing the number of items selected
+    // TODO: write automatic aggregator, for now not changing the number of items selected
     data_->put_nitems(selector_(this));
 
     // pipelining should be automatic if the user defines the pipeline chunk unit
@@ -177,7 +177,7 @@ Decaf::put(void* d)
 
     // TODO: not looping over pipeliner chunks yet
     if (data_->put_nitems())
-      prod_dflow_comm_->put(data_, sizes_.dflow_start - sizes_.prod_start + i);
+      prod_dflow_comm_->put(data_, sizes_.dflow_start - sizes_.prod_start + i, false);
   }
 
   // this rank may also serve as dataflow in case producer and dataflow overlap
@@ -190,7 +190,7 @@ decaf::
 Decaf::get()
 {
   dflow_con_comm_->get(data_);
-  return data_->data_ptr();
+  return data_->get_items();
 }
 
 // run the dataflow
@@ -201,12 +201,7 @@ Decaf::dataflow()
   // TODO: when pipelining, would not store all items in dataflow before forwarding to consumer
   // as is done below
   for (int i = 0; i < sizes_.nsteps; i++)
-  {
     forward();
-
-    // TODO: deal with how to free memory
-//     data_->items_.clear();
-  }
 }
 
 // forward the data through the dataflow
@@ -214,23 +209,38 @@ void
 decaf::
 Decaf::forward()
 {
-    // get from all producer ranks
-    for (int j = 0; j < sizes_.prod_size; j++)
-      prod_dflow_comm_->get(data_);
+  // get from all producer ranks
 
-    // put to all consumer ranks
-    for (int k = 0; k < sizes_.con_size; k++)
-    {
-      // TODO: write automatic redistributor, for now not changing the number of items from get
-      data_->put_nitems(data_->get_nitems());
+  for (int j = 0; j < sizes_.prod_size; j++)
+    prod_dflow_comm_->get(data_);
 
-      // pipelining should be automatic if the user defines the pipeline chunk unit
-      if (pipeliner_)
-        pipeliner_(this);
+  // put to all consumer ranks
+  for (int k = 0; k < sizes_.con_size; k++)
+  {
+    // TODO: write automatic aggregator, for now not changing the number of items from get
+    data_->put_nitems(data_->get_nitems());
 
-      // TODO: not looping over pipeliner chunks yet
-      if (data_->put_nitems())
-        dflow_con_comm_->put(data_, sizes_.con_start - sizes_.dflow_start + k);
-    }
+    // pipelining should be automatic if the user defines the pipeline chunk unit
+    if (pipeliner_)
+      pipeliner_(this);
+
+    // TODO: not looping over pipeliner chunks yet
+    if (data_->put_nitems())
+      dflow_con_comm_->put(data_, sizes_.con_start - sizes_.dflow_start + k, true);
+  }
 }
+
+// cleanup after each time step
+void
+decaf::
+Decaf::flush()
+{
+  if (is_prod())
+    prod_dflow_comm_->flush();
+  if (is_dflow())
+    dflow_con_comm_->flush();
+  if (is_dflow() || is_con())
+    data_->get_items_.clear();
+}
+
 #endif

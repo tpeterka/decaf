@@ -17,8 +17,8 @@
 #include <mpi.h>
 #include <stdio.h>
 
-// communicator constructor forming a communicator from contiguous world ranks
-// NB: only collective over the ranks in the range [min_rank, max_rank]
+// forms a communicator from contiguous world ranks
+// only collective over the ranks in the range [min_rank, max_rank]
 decaf::
 Comm::Comm(CommHandle world_comm, int min_rank, int max_rank) : min_rank_(min_rank)
 {
@@ -41,24 +41,43 @@ Comm::~Comm()
   MPI_Comm_free(&handle_);
 }
 
+// puts data to a destination
+// it forwarding, sends data->get_items()
+// else, sends data->put_items()
 void
 decaf::
-Comm::put(Data *data, int dest)
+Comm::put(Data *data, int dest, bool forward)
 {
   // TODO: prepend typemap?
 
   // short-circuit put to self
   if (world_rank(dest) == world_rank(rank()))
+  {
     data->put_self(true);
-  else
+    if (!forward) // forwarding would only copy get_items to get_items; no need
+    {
+      MPI_Aint extent; // datatype size in bytes
+      MPI_Type_extent(data->complete_datatype_, &extent);
+      int old_size = data->get_items_.size(); // bytes
+      data->get_items_.resize(data->get_items_.size() + data->put_nitems() * extent);
+      // TODO: figure out a way to avoid the deep copy, if possible
+      memcpy(&(data->get_items_[old_size]), data->put_items(), extent);
+    }
+  }
+  if (world_rank(dest) != world_rank(rank()))
   {
     MPI_Request req;
-    MPI_Isend(data->data_ptr(), data->put_nitems(), data->complete_datatype_, dest, 0, handle_,
-              &req);
+    if (forward)
+      MPI_Isend(data->get_items(), data->get_nitems(), data->complete_datatype_, dest, 0,
+                handle_, &req);
+    else
+      MPI_Isend(data->put_items(), data->put_nitems(), data->complete_datatype_, dest, 0,
+                handle_, &req);
+    reqs.push_back(req);
   }
-  // TODO: wait or test at the very end to complete any remaining requests
 }
 
+// gets dsta from any source
 void
 decaf::
 Comm::get(Data* data)
@@ -74,11 +93,24 @@ Comm::get(Data* data)
     MPI_Get_count(&status, data->complete_datatype_, &nitems);
     MPI_Aint extent; // datatype size in bytes
     MPI_Type_extent(data->complete_datatype_, &extent);
-    int old_size = data->get_items_.size();
+    int old_size = data->get_items_.size(); // bytes
     data->get_items_.resize(data->get_items_.size() + nitems * extent);
-    MPI_Recv(&data->get_items_[0] + old_size, nitems, data->complete_datatype_, status.MPI_SOURCE,
+    MPI_Recv(&(data->get_items_[old_size]), nitems, data->complete_datatype_, status.MPI_SOURCE,
              0, handle_, &status);
   }
+}
+
+// completes nonblocking sends
+void
+decaf::
+Comm::flush()
+{
+  if (reqs.size())
+  {
+    std::vector<MPI_Status> stats(reqs.size());
+    MPI_Waitall(reqs.size(), &reqs[0], &stats[0]);
+  }
+  reqs.clear();
 }
 
 #endif

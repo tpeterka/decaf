@@ -43,8 +43,10 @@ namespace decaf
     bool put_self() { return put_self_; }
     void put_nitems(int nitems) { put_nitems_ = nitems; }
     int put_nitems() { return put_nitems_; }
-    void* data_ptr() { return(get_items_.size() ? &get_items_[0] : put_items_); }
+    void* put_items() { return put_items_; }
+    void put_items(void* d) { put_items_ = d; }
     int get_nitems() { return(get_items_.size() / DatatypeSize(complete_datatype_)); }
+    void* get_items() { return(get_items_.size() ? &get_items_[0] : NULL); }
     void err() { ::all_err(err_); }
   };
 
