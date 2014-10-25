@@ -27,27 +27,16 @@ namespace decaf
 
   // communication mechanism (eg MPI communicator) for producer, consumer, dataflow
   // world is partitioned into {producer, dataflow, consumer, other} in increasing rank
-  struct Decaf
+  class Decaf
   {
-    CommHandle world_comm_; // handle to original world communicator
-    Comm* prod_dflow_comm_; // communicator covering producer and dataflow
-    Comm* dflow_con_comm_; // communicator covering dataflow and consumer
-    Data* data_;
-    DecafSizes sizes_;
-    int (*selector_)(Decaf*); // user-defined selector code
-    void (*pipeliner_)(Decaf*); // user-defined pipeliner code
-    void (*checker_)(Decaf*); // user-defined resilience code
-    int err_; // last error
-
+  public:
     Decaf(CommHandle world_comm,
           DecafSizes& decaf_sizes,
           int (*selector)(Decaf*),
           void (*pipeliner)(Decaf*),
           void (*checker)(Decaf*),
           Data* data);
-
     ~Decaf();
-
     void put(void* d);
     void* get();
     Data* data() { return data_; }
@@ -60,6 +49,15 @@ namespace decaf
     bool is_con()   { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
 
   private:
+    CommHandle world_comm_; // handle to original world communicator
+    Comm* prod_dflow_comm_; // communicator covering producer and dataflow
+    Comm* dflow_con_comm_; // communicator covering dataflow and consumer
+    Data* data_;
+    DecafSizes sizes_;
+    int (*selector_)(Decaf*); // user-defined selector code
+    void (*pipeliner_)(Decaf*); // user-defined pipeliner code
+    void (*checker_)(Decaf*); // user-defined resilience code
+    int err_; // last error
     CommType type_; // whether this instance is producer, consumer, dataflow, or other
     void dataflow();
     void forward();
@@ -160,7 +158,7 @@ void
 decaf::
 Decaf::put(void* d)
 {
-  data_->put_items_ = d;
+  data_->put_items(d);
 
   // TODO: for now executing only user-supplied custom code, need to develop primitives
   // for automatic decaf code
@@ -240,7 +238,7 @@ Decaf::flush()
   if (is_dflow())
     dflow_con_comm_->flush();
   if (is_dflow() || is_con())
-    data_->get_items_.clear();
+    data_->flush();
 }
 
 #endif

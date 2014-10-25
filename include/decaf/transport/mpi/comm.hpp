@@ -58,10 +58,8 @@ Comm::put(Data *data, int dest, bool forward)
     {
       MPI_Aint extent; // datatype size in bytes
       MPI_Type_extent(data->complete_datatype_, &extent);
-      int old_size = data->get_items_.size(); // bytes
-      data->get_items_.resize(data->get_items_.size() + data->put_nitems() * extent);
-      // TODO: figure out a way to avoid the deep copy, if possible
-      memcpy(&(data->get_items_[old_size]), data->put_items(), extent);
+      // TODO: I don't think there is a good way to avoid the following deep copy
+      memcpy(data->resize_get_items(data->put_nitems() * extent), data->put_items(), extent);
     }
   }
   if (world_rank(dest) != world_rank(rank()))
@@ -93,10 +91,8 @@ Comm::get(Data* data)
     MPI_Get_count(&status, data->complete_datatype_, &nitems);
     MPI_Aint extent; // datatype size in bytes
     MPI_Type_extent(data->complete_datatype_, &extent);
-    int old_size = data->get_items_.size(); // bytes
-    data->get_items_.resize(data->get_items_.size() + nitems * extent);
-    MPI_Recv(&(data->get_items_[old_size]), nitems, data->complete_datatype_, status.MPI_SOURCE,
-             0, handle_, &status);
+    MPI_Recv(data->resize_get_items(nitems * extent), nitems, data->complete_datatype_,
+             status.MPI_SOURCE, 0, handle_, &status);
   }
 }
 
