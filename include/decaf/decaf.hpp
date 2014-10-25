@@ -24,8 +24,6 @@
 
 namespace decaf
 {
-
-  // communication mechanism (eg MPI communicator) for producer, consumer, dataflow
   // world is partitioned into {producer, dataflow, consumer, other} in increasing rank
   class Decaf
   {

@@ -30,6 +30,8 @@ Comm::Comm(CommHandle world_comm, int min_rank, int max_rank) : min_rank_(min_ra
   MPI_Comm_group(world_comm, &group);
   MPI_Group_range_incl(group, 1, &range, &newgroup);
   MPI_Comm_create_group(world_comm, newgroup, 0, &handle_);
+  MPI_Group_free(&group);
+  MPI_Group_free(&newgroup);
 
   MPI_Comm_rank(handle_, &rank_);
   MPI_Comm_size(handle_, &size_);
