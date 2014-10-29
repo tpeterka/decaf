@@ -1,14 +1,19 @@
 # Selection and Aggregation
 
-Selection and aggregation is performed with two user-defined selector
-functions, prod_selector() and dflow_selector(). The former runs in
-the producer, and the latter runs in the dataflow. Each selector
-function (in each process of the respective communicators) has the
-opportunity to filter each incoming datatype object before passing it
-on to each process of the the subsequent communicator. In this 2-step
-selection process, both selection and aggregation can be
-accomplished. See Figure
+Selection, distribution, and aggregation is performed as shown in the Figure below.
 
 ![Selectors](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/figs/selectors.png)
 
-See Decaf::put() for each producer node calling prod_selector() prior to sending to each dataflow node. See Decaf::dataflow() for each dataflow node receiving data from each producer node and calling dflow_selector() prior to sending to each consumer node.
+From left to right, the data movement proceeds as follows.
+
+- In the
+producer, the user defines a custom selector function that does any
+local filtering of the data.
+
+- Decaf then automatically distributes the data between _i_ producer nodes and _j_ dataflow nodes (see data.md for details).
+
+- Once in the dataflow, the user programs one or more rounds of aggregation using patterns similar to DIY's merge reduction, swap reduction, and neighbor communication.
+
+- At the end of the dataflow, decaf again automatically redistributes the data between _j_ dataflow nodes and _k_ consumer nodes.
+
+This scheme provides for a complete reverse steering dataflow if desired (symmetrical capability) with the addition of an optional selector on the consumer and reversed positions of the two distributor stages.

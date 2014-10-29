@@ -17,6 +17,8 @@ No library is needed; all functions are contained in header files only.
 
 ## [Selection and aggregation](select.md)
 
+## [Data model](data.md)
+
 ## [Error Handling](errors.md)
 
 ## [Examples](examples.md)
