@@ -16,8 +16,9 @@
 #include<mpi.h>
 
 typedef MPI_Comm CommHandle;
-typedef MPI_Datatype Datatype;
+typedef MPI_Datatype CommDatatype;
 typedef MPI_Request CommRequest;
+typedef MPI_Aint Address;
 
 // standalone utilities, not part of a class
 
@@ -35,7 +36,7 @@ int CommSize(CommHandle comm)
   return size;
 }
 
-size_t DatatypeSize(Datatype dtype)
+size_t DatatypeSize(CommDatatype dtype)
 {
   MPI_Aint extent;
   MPI_Type_extent(dtype, &extent);

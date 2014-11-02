@@ -13,14 +13,15 @@
 #ifndef DECAF_HPP
 #define DECAF_HPP
 
-#include "types.hpp"
-#include "data.hpp"
-
 // transport layer specific types
 #ifdef TRANSPORT_MPI
 #include "transport/mpi/types.hpp"
 #include "transport/mpi/comm.hpp"
+#include "transport/mpi/data.hpp"
 #endif
+
+#include "types.hpp"
+#include "data.hpp"
 
 namespace decaf
 {

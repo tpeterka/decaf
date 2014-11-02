@@ -15,6 +15,21 @@
 
 #include <stdio.h>
 
+// data element for creating typemaps for datatypes
+enum DispType
+{
+  DECAF_OFST,
+  DECAF_ADDR,
+  DECAF_NUM_DISP_TYPES,
+};
+struct DataElement {
+  CommDatatype base_type; // existing datatype used to create this one
+  DispType disp_type;     // diplacement is relative OFST or absolute ADDR
+  int count;              // count of each element
+  Address disp;           // starting displacement of each element in bytes
+                          // OFSTs are from the start of the type and ADDRs are from 0x0
+};
+
 enum Decomposition
 {
   DECAF_ROUND_ROBIN_DECOMP,

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// decaf mpi transport layer
+// decaf communicator implementation in mpi transport layer
 //
 // Tom Peterka
 // Argonne National Laboratory

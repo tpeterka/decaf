@@ -21,19 +21,43 @@
 #include "transport/mpi/types.hpp"
 #endif
 
+using namespace std;
+
 namespace decaf
 {
+  // datatypes
+  class Datatype
+  {
+  public:
+    ~Datatype();     // TODO: virtual?
+    CommDatatype* comm_datatype() { return &datatype_; }
+  protected:
+    CommDatatype datatype_;
+    bool absolute_address; // whether the addressing in the datatype is absolute or relative
+  };
+  struct VectorDatatype: Datatype
+  {
+    VectorDatatype(int num_elems, int stride, CommDatatype base_type);
+  };
+  struct SliceDatatype: Datatype
+  {
+    SliceDatatype(int dim, int* full_size, int* sub_size, int* start_pos, CommDatatype base_type);
+  };
+  struct StructDatatype: Datatype
+  {
+    StructDatatype(Address base_addr, int num_elems, DataElement* map);
+  };
 
-  // intrinsic data description
+  // data description
   class Data
   {
   public:
-    const Datatype complete_datatype_;
+    const CommDatatype complete_datatype_;
     // TODO: uncomment the following once we start to use them
-//     const Datatype chunk_datatype_;
+//     const CommDatatype chunk_datatype_;
 //     const enum Decomposition decomp_type_;
 
-    Data(Datatype dtype) : complete_datatype_(dtype), put_items_(NULL), put_self_(false) {}
+    Data(CommDatatype dtype) : complete_datatype_(dtype), put_items_(NULL), put_self_(false) {}
     ~Data() {}
     void put_self(bool self) { put_self_ = self; }
     bool put_self() { return put_self_; }
