@@ -98,7 +98,7 @@ int main(int argc, char** argv)
       fprintf(stderr, "+ producing time step %d, val %d\n", t, *pd);
       // assumes the consumer has the previous value, ok to overwrite
       if (!(t % con_interval))
-        decaf->put(pd);
+        decaf->put(pd, 0); // TODO: dataflow not handling different tags yet
     }
 
     // consumer
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
     {
       // any custom consumer (eg. data analysis code) goes here or gets called from here
       // as long as get() gets called at that desired frequency
-      cd = (int*)decaf->get();
+      cd = (int*)decaf->get(0); // TODO: dataflow not handling different tags yet
       // for example, add all the items arrived at this rank
       int sum = 0;
       fprintf(stderr, "consumer get_nitems = %d\n", decaf->data()->get_nitems());

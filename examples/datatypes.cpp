@@ -86,7 +86,7 @@ void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes, int& tot_time_steps
 
 int main(int argc, char** argv)
 {
-
+#if 0
   MPI_Init(&argc, &argv);
 
   // decaf size info
@@ -129,10 +129,11 @@ int main(int argc, char** argv)
     { MPI_FLOAT, DECAF_OFST, 3,                   offsetof(struct dblock_t, maxs)               },
     { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_orig_particles) },
     { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_particles)      },
-    { MPI_FLOAT, DECAF_ADDR, d.num_particles * 3, (Address)d.particles                          },
-    { *dtype,    DECAF_ADDR, d.num_tets,          (Address)d.tets                               },
-    { MPI_INT,   DECAF_ADDR, num_rem_particles,   (Address)d.rem_gids                           },
-    { MPI_INT,   DECAF_ADDR, d.num_particles,     (Address)d.vert_to_tet                        },
+    { MPI_FLOAT, DECAF_ADDR, d.num_particles * 3, (CommAddr)d.particles                          },
+    { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_tets)           },
+    { *dtype,    DECAF_ADDR, d.num_tets,          (CommAddr)d.tets                               },
+    { MPI_INT,   DECAF_ADDR, num_rem_particles,   (CommAddr)d.rem_gids                           },
+    { MPI_INT,   DECAF_ADDR, d.num_particles,     (CommAddr)d.vert_to_tet                        },
   };
   StructDatatype* del_type = new StructDatatype(0, sizeof(del_map) / sizeof(del_map[0]), del_map);
 
@@ -201,4 +202,7 @@ int main(int argc, char** argv)
   // cleanup
   delete decaf;
   MPI_Finalize();
+
+#endif
+
 }

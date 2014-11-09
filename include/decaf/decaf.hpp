@@ -36,8 +36,8 @@ namespace decaf
           void (*checker)(Decaf*),
           Data* data);
     ~Decaf();
-    void put(void* d);
-    void* get();
+    void put(void* d, unsigned tag);
+    void* get(unsigned tag);
     Data* data() { return data_; }
     DecafSizes* sizes() { return &sizes_; }
     void flush();
@@ -118,9 +118,15 @@ Decaf::Decaf(CommHandle world_comm,
     type_ |= DECAF_CONSUMER_COMM;
 
   if (world_rank >= prod_dflow_start && world_rank <= prod_dflow_end)
-    prod_dflow_comm_ = new Comm(world_comm, prod_dflow_start, prod_dflow_end);
+    prod_dflow_comm_ = new Comm(world_comm, prod_dflow_start, prod_dflow_end, sizes_.prod_size,
+                                sizes_.dflow_size);
   if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
-    dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end);
+    dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end, sizes_.dflow_size,
+                               sizes_.con_size);
+
+  // debug
+//   if (!world_rank)
+//     prod_dflow_comm_->test1();
 
   // debug
 //   if (is_prod())
@@ -155,14 +161,14 @@ Decaf::~Decaf()
 
 void
 decaf::
-Decaf::put(void* d)
+Decaf::put(void* d, unsigned tag)
 {
   data_->put_items(d);
 
   // TODO: for now executing only user-supplied custom code, need to develop primitives
   // for automatic decaf code
 
-  for (int i = 0; i < sizes_.dflow_size; i++)
+  for (int i = 0; i < prod_dflow_comm_->num_outputs(); i++)
   {
     // selection always needs to always be user-defined and is mandatory
     // TODO: write automatic aggregator, for now not changing the number of items selected
@@ -174,7 +180,12 @@ Decaf::put(void* d)
 
     // TODO: not looping over pipeliner chunks yet
     if (data_->put_nitems())
-      prod_dflow_comm_->put(data_, sizes_.dflow_start - sizes_.prod_start + i, false);
+    {
+      // debug
+      fprintf(stderr, "putting to prod_dflow rank %d\n", prod_dflow_comm_->start_output() + i);
+
+      prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, tag, false);
+    }
   }
 
   // this rank may also serve as dataflow in case producer and dataflow overlap
@@ -184,9 +195,9 @@ Decaf::put(void* d)
 
 void*
 decaf::
-Decaf::get()
+Decaf::get(unsigned tag)
 {
-  dflow_con_comm_->get(data_);
+  dflow_con_comm_->get(data_, tag);
   return data_->get_items();
 }
 
@@ -197,6 +208,8 @@ Decaf::dataflow()
 {
   // TODO: when pipelining, would not store all items in dataflow before forwarding to consumer
   // as is done below
+
+  // TODO: don't know yet how to forward tags
   for (int i = 0; i < sizes_.nsteps; i++)
     forward();
 }
@@ -206,13 +219,13 @@ void
 decaf::
 Decaf::forward()
 {
-  // get from all producer ranks
+  // TODO: don't yet know how to forward tags
 
-  for (int j = 0; j < sizes_.prod_size; j++)
-    prod_dflow_comm_->get(data_);
+  // get from producer
+  prod_dflow_comm_->get(data_);
 
   // put to all consumer ranks
-  for (int k = 0; k < sizes_.con_size; k++)
+  for (int k = 0; k < dflow_con_comm_->num_outputs(); k++)
   {
     // TODO: write automatic aggregator, for now not changing the number of items from get
     data_->put_nitems(data_->get_nitems());
@@ -223,7 +236,7 @@ Decaf::forward()
 
     // TODO: not looping over pipeliner chunks yet
     if (data_->put_nitems())
-      dflow_con_comm_->put(data_, sizes_.con_start - sizes_.dflow_start + k, true);
+      dflow_con_comm_->put(data_, dflow_con_comm_->start_output() + k, true);
   }
 }
 
