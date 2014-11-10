@@ -16,6 +16,7 @@
 #include "../../comm.hpp"
 #include <mpi.h>
 #include <stdio.h>
+#include <assert.h>
 
 // forms a communicator from contiguous world ranks
 // only collective over the ranks in the range [min_rank, max_rank]
@@ -51,6 +52,9 @@ void
 decaf::
 Comm::put(Data *data, int dest, bool forward, int tag)
 {
+  // debug
+  tag = 0;
+
   if (tag < 0) // set unused tag to 0
     tag = 0;
 
@@ -83,33 +87,45 @@ Comm::put(Data *data, int dest, bool forward, int tag)
 }
 
 // gets data from any source
-void
+// returns tag of received data (ensures all pieces have same tag)
+int
 decaf::
 Comm::get(Data* data, int tag)
 {
+  // debug
+  tag = 0;
+
   // set unused tag to any tag
   if (tag < 0)
     tag = MPI_ANY_TAG;
 
   if (data->put_self())
-    data->put_self(false);
-  else
   {
-    for (int i = 0; i < num_inputs(); i++)
-    {
-      // debug
-//       fprintf(stderr, "1: num_inputs = %d\n", num_inputs());
-      // TODO: read type from typemap instead of argument?
-      MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE, tag, handle_, &status);
-      int nitems; // number of items (of type dtype) in the message
-      MPI_Get_count(&status, data->complete_datatype_, &nitems);
-      MPI_Aint extent; // datatype size in bytes
-      MPI_Type_extent(data->complete_datatype_, &extent);
-      MPI_Recv(data->resize_get_items(nitems * extent), nitems, data->complete_datatype_,
-               status.MPI_SOURCE, 0, handle_, &status);
-    }
+    data->put_self(false);
+    return tag;
   }
+
+  int recv_tag;
+  for (int i = start_input(); i < start_input() + num_inputs(); i++)
+  {
+    // TODO: read type from typemap instead of argument?
+    MPI_Status status;
+    MPI_Probe(i, tag, handle_, &status);
+    // debug
+    fprintf(stderr, "received i = %d of %d inputs with tag = %d\n",
+            i - start_input(), num_inputs(), status.MPI_TAG);
+    if (i == start_input())
+      recv_tag = status.MPI_TAG;
+    else
+      assert(recv_tag == status.MPI_TAG);
+    int nitems; // number of items (of type dtype) in the message
+    MPI_Get_count(&status, data->complete_datatype_, &nitems);
+    MPI_Aint extent; // datatype size in bytes
+    MPI_Type_extent(data->complete_datatype_, &extent);
+    MPI_Recv(data->resize_get_items(nitems * extent), nitems, data->complete_datatype_,
+             status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
+  }
+  return recv_tag;
 }
 
 // completes nonblocking sends

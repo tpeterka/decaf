@@ -184,7 +184,7 @@ Decaf::put(void* d, unsigned tag)
       // debug
       fprintf(stderr, "putting to prod_dflow rank %d\n", prod_dflow_comm_->start_output() + i);
 
-      prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, tag, false);
+      prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, false, tag);
     }
   }
 
@@ -222,7 +222,7 @@ Decaf::forward()
   // TODO: don't yet know how to forward tags
 
   // get from producer
-  prod_dflow_comm_->get(data_);
+  int tag = prod_dflow_comm_->get(data_);
 
   // put to all consumer ranks
   for (int k = 0; k < dflow_con_comm_->num_outputs(); k++)
@@ -236,7 +236,7 @@ Decaf::forward()
 
     // TODO: not looping over pipeliner chunks yet
     if (data_->put_nitems())
-      dflow_con_comm_->put(data_, dflow_con_comm_->start_output() + k, true);
+      dflow_con_comm_->put(data_, dflow_con_comm_->start_output() + k, true, tag);
   }
 }
 

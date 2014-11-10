@@ -34,9 +34,10 @@ namespace decaf
     int world_rank(int rank) { return(rank + min_rank); } // world rank of any rank in this comm
     int world_rank() { return(rank_ + min_rank); } // my world rank
     void put(Data* data, int dest, bool forward, int tag = -1);
-    void get(Data* data, int tag = -1);
+    int get(Data* data, int tag = -1);
     void flush();
     int num_inputs();
+    int start_input();
     int num_outputs();
     int start_output();
 
@@ -64,6 +65,16 @@ Comm::num_inputs()
   int dest_rank = rank_ - num_srcs; // rank starting at the destinations, which start after sources
   float step = (float)num_srcs / (float)num_dests;
   return(ceilf((dest_rank + 1) * step) - floorf(dest_rank * step));
+}
+
+// returns the rank of the staring input (sources) expected for a sequence of gets
+int
+decaf::
+Comm::start_input()
+{
+  int dest_rank = rank_ - num_srcs; // rank starting at the destinations, which start after sources
+  float step = (float)num_srcs / (float)num_dests;
+  return(dest_rank * step);
 }
 
 // returns the number of outputs (destinations) expected for a sequence of puts
@@ -103,8 +114,8 @@ Comm::test1()
         fprintf(stderr, "num_srcs %d num_dests %d src_rank %d num_outputs %d start_output %d\n",
                 num_srcs, num_dests, rank_, num_outputs(), start_output() - num_srcs);
       for (rank_ = num_srcs; rank_ < num_srcs + num_dests; rank_++)
-        fprintf(stderr, "num_srcs %d num_dests %d dest_rank %d num_inputs %d\n",
-                num_srcs, num_dests, rank_ - num_srcs, num_inputs());
+        fprintf(stderr, "num_srcs %d num_dests %d dest_rank %d num_inputs %d start_input %d\n",
+                num_srcs, num_dests, rank_ - num_srcs, num_inputs(), start_input());
       fprintf(stderr, "\n");
     }
   }
