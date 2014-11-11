@@ -57,10 +57,8 @@ namespace decaf
 //     const CommDatatype chunk_datatype_;
 //     const enum Decomposition decomp_type_;
 
-    Data(CommDatatype dtype) : complete_datatype_(dtype), put_items_(NULL), put_self_(false) {}
+    Data(CommDatatype dtype) : complete_datatype_(dtype), put_items_(NULL) {}
     ~Data() {}
-    void put_self(bool self) { put_self_ = self; }
-    bool put_self() { return put_self_; }
     void put_nitems(int nitems) { put_nitems_ = nitems; }
     int put_nitems() { return put_nitems_; }
     void* put_items() { return put_items_; }
@@ -74,7 +72,8 @@ namespace decaf
     std::vector <unsigned char> get_items_; // all items being gotten
     void* put_items_; // data pointer to items being put
     int put_nitems_; // number of items being put
-    bool put_self_; // last put was to self
+    // DEPRECATED
+//     bool put_self_; // last put was to self
     int err_; // last error
   };
 

@@ -36,8 +36,8 @@ namespace decaf
           void (*checker)(Decaf*),
           Data* data);
     ~Decaf();
-    void put(void* d, unsigned tag);
-    void* get(unsigned tag);
+    void put(void* d);
+    void* get();
     Data* data() { return data_; }
     DecafSizes* sizes() { return &sizes_; }
     void flush();
@@ -119,10 +119,10 @@ Decaf::Decaf(CommHandle world_comm,
 
   if (world_rank >= prod_dflow_start && world_rank <= prod_dflow_end)
     prod_dflow_comm_ = new Comm(world_comm, prod_dflow_start, prod_dflow_end, sizes_.prod_size,
-                                sizes_.dflow_size);
+                                sizes_.dflow_size, sizes_.dflow_start - sizes_.prod_start);
   if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
     dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end, sizes_.dflow_size,
-                               sizes_.con_size);
+                               sizes_.con_size, sizes_.con_start - sizes_.dflow_start);
 
   // debug
 //   if (!world_rank)
@@ -136,11 +136,13 @@ Decaf::Decaf(CommHandle world_comm,
 //   if (is_con())
 //     fprintf(stderr, "I am a consumer process\n");
 //   if (prod_dflow_comm_)
-//     fprintf(stderr, "I am rank %d of size %d in the prod_dflow communicator\n",
-//             prod_dflow_comm_->rank(), prod_dflow_comm_->size());
+//     fprintf(stderr, "I am rank %d of size %d start_dest %d in the prod_dflow communicator\n",
+//             prod_dflow_comm_->rank(), prod_dflow_comm_->size(),
+//             sizes_.dflow_start - sizes_.prod_start);
 //   if (dflow_con_comm_)
-//     fprintf(stderr, "I am rank %d of size %d in the dflow_con communicator\n",
-//             dflow_con_comm_->rank(), dflow_con_comm_->size());
+//     fprintf(stderr, "I am rank %d of size %d start_dest %d in the dflow_con communicator\n",
+//             dflow_con_comm_->rank(), dflow_con_comm_->size(),
+//             sizes_.con_start - sizes_.dflow_start);
 
   // dataflow ranks that overlap producer ranks run the dataflow inside of put
   // those dataflow ranks that are disjoint run the dataflow below
@@ -161,7 +163,7 @@ Decaf::~Decaf()
 
 void
 decaf::
-Decaf::put(void* d, unsigned tag)
+Decaf::put(void* d)
 {
   data_->put_items(d);
 
@@ -183,8 +185,7 @@ Decaf::put(void* d, unsigned tag)
     {
       // debug
       fprintf(stderr, "putting to prod_dflow rank %d\n", prod_dflow_comm_->start_output() + i);
-
-      prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, false, tag);
+      prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, false);
     }
   }
 
@@ -195,9 +196,9 @@ Decaf::put(void* d, unsigned tag)
 
 void*
 decaf::
-Decaf::get(unsigned tag)
+Decaf::get()
 {
-  dflow_con_comm_->get(data_, tag);
+  dflow_con_comm_->get(data_);
   return data_->get_items();
 }
 
@@ -208,8 +209,6 @@ Decaf::dataflow()
 {
   // TODO: when pipelining, would not store all items in dataflow before forwarding to consumer
   // as is done below
-
-  // TODO: don't know yet how to forward tags
   for (int i = 0; i < sizes_.nsteps; i++)
     forward();
 }
@@ -219,10 +218,8 @@ void
 decaf::
 Decaf::forward()
 {
-  // TODO: don't yet know how to forward tags
-
   // get from producer
-  int tag = prod_dflow_comm_->get(data_);
+  prod_dflow_comm_->get(data_);
 
   // put to all consumer ranks
   for (int k = 0; k < dflow_con_comm_->num_outputs(); k++)
@@ -236,7 +233,7 @@ Decaf::forward()
 
     // TODO: not looping over pipeliner chunks yet
     if (data_->put_nitems())
-      dflow_con_comm_->put(data_, dflow_con_comm_->start_output() + k, true, tag);
+      dflow_con_comm_->put(data_, dflow_con_comm_->start_output() + k, true);
   }
 }
 

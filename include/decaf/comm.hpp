@@ -26,15 +26,16 @@ namespace decaf
   class Comm
   {
   public:
-    Comm(CommHandle world_comm, int min_rank, int max_rank, int num_srcs, int num_dests);
+    Comm(CommHandle world_comm, int min_rank, int max_rank, int num_srcs, int num_dests,
+         int start_dest);
     ~Comm();
     CommHandle handle() { return handle_; }
     int size() { return size_; }
     int rank() { return rank_; }
     int world_rank(int rank) { return(rank + min_rank); } // world rank of any rank in this comm
     int world_rank() { return(rank_ + min_rank); } // my world rank
-    void put(Data* data, int dest, bool forward, int tag = -1);
-    int get(Data* data, int tag = -1);
+    void put(Data* data, int dest, bool forward);
+    void get(Data* data);
     void flush();
     int num_inputs();
     int start_input();
@@ -51,8 +52,9 @@ namespace decaf
     int min_rank; // min (world) rank of communicator
     std::vector<CommRequest> reqs; // pending communication requests
     int num_srcs; // number of sources (producers) within the communicator
-    int num_dests; // numbers of destinations (consumers) withing the communicator
-
+    int num_dests; // numbers of destinations (consumers) within the communicator
+    int start_dest; // first destination rank within the communicator (0 to size_ - 1)
+    bool forward_; // last put from this rank was a forward
   };
 
 } // namespace
@@ -72,7 +74,7 @@ int
 decaf::
 Comm::start_input()
 {
-  int dest_rank = rank_ - num_srcs; // rank starting at the destinations, which start after sources
+  int dest_rank = rank_ - start_dest; // rank wrt start of the destinations
   float step = (float)num_srcs / (float)num_dests;
   return(dest_rank * step);
 }
@@ -94,7 +96,7 @@ Comm::start_output()
 {
   int src_rank = rank_; // rank starting at the sources, which are at the start of the comm
   float step = (float)num_dests / (float)num_srcs;
-  return(src_rank * step + num_srcs); // num_srcs offsets the start to be wrt start of communicator
+  return(src_rank * step + start_dest); // wrt start of communicator
 }
 
 // debug
