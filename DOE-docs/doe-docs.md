@@ -4,4 +4,3 @@
 
 ## [2-page handout](peterka-decaf-handout.pdf)
 
-## [Response to reviewers' comments](peterka-decaf-review-response.pdf)

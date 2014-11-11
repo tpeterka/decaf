@@ -27,4 +27,4 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### Franck (TBD)
 
-## [DOE program management Documents](DOE-docs/doe-docs.md)
+## [DOE program management documents](DOE-docs/doe-docs.md)
