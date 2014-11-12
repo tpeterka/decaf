@@ -73,7 +73,7 @@ Comm::put(Data *data, int dest, bool forward)
 // gets data from one or more sources
 void
 decaf::
-Comm::get(Data* data)
+Comm::get(Data* data, bool aux)
 {
   for (int i = start_input(); i < start_input() + num_inputs(); i++)
   {
@@ -84,7 +84,7 @@ Comm::get(Data* data)
         MPI_Aint extent; // datatype size in bytes
         MPI_Type_extent(data->complete_datatype_, &extent);
         // TODO: I don't think there is a good way to avoid the following deep copy
-        memcpy(data->resize_get_items(data->put_nitems() * extent), data->put_items(), extent);
+        memcpy(data->resize_get_items(data->put_nitems() * extent, aux), data->put_items(), extent);
       }
     }
     else // receive from other
@@ -96,7 +96,7 @@ Comm::get(Data* data)
       MPI_Get_count(&status, data->complete_datatype_, &nitems);
       MPI_Aint extent; // datatype size in bytes
       MPI_Type_extent(data->complete_datatype_, &extent);
-      MPI_Recv(data->resize_get_items(nitems * extent), nitems, data->complete_datatype_,
+      MPI_Recv(data->resize_get_items(nitems * extent, aux), nitems, data->complete_datatype_,
                status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
     }
   }

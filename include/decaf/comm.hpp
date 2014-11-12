@@ -35,7 +35,7 @@ namespace decaf
     int world_rank(int rank) { return(rank + min_rank); } // world rank of any rank in this comm
     int world_rank() { return(rank_ + min_rank); } // my world rank
     void put(Data* data, int dest, bool forward);
-    void get(Data* data);
+    void get(Data* data, bool aux=false);
     void flush();
     int num_inputs();
     int start_input();
@@ -69,7 +69,7 @@ Comm::num_inputs()
   return(ceilf((dest_rank + 1) * step) - floorf(dest_rank * step));
 }
 
-// returns the rank of the staring input (sources) expected for a sequence of gets
+// returns the rank of the starting input (sources) expected for a sequence of gets
 int
 decaf::
 Comm::start_input()

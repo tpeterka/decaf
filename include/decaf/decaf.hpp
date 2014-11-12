@@ -198,8 +198,17 @@ void*
 decaf::
 Decaf::get()
 {
-  dflow_con_comm_->get(data_);
-  return data_->get_items();
+  // TODO: develop how to determine when it is necessary to get from the aux queue
+  if (0)
+  {
+    dflow_con_comm_->get(data_, true);
+    return data_->get_items(true);
+  }
+  else
+  {
+    dflow_con_comm_->get(data_);
+    return data_->get_items();
+  }
 }
 
 // run the dataflow
