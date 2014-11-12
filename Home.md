@@ -25,6 +25,4 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [Jay](individual-docs/jay/jay.md)
 
-### Franck (TBD)
-
 ## [DOE program management documents](DOE-docs/doe-docs.md)
