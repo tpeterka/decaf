@@ -29,6 +29,6 @@ figure.
 
 The figure below shows three examples of completely disjoint, partially overlapping, and completely overlapping producer, dataflow, and consumer ranks. Many other combinations are possible with the ability to control at which world rank the dataflow and consumer begin. Also, note that in some cases a the source and destination are the same. In these cases the data are simply copied and not actually sent in a message. Also note that the same rank may need part of its data from a remote source and part from the same source.
 
-![Decaf communicators](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/figs/overlap.png)
+![Examples of overlap](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/figs/overlap.png)
 
 See [decaf/comm.hpp](../include/decaf/comm.hpp).

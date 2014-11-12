@@ -1,6 +1,6 @@
 # M:N Distribution
 
-Currently (re)distribution from M_ sources to N_ destinations is done in contiguous fashion. See
+Currently (re)distribution from _M_ sources to _N_ destinations is done in contiguous fashion. See the figure below.
 
 ![Distribution](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/figs/distribute-sources-dests.png)
 
