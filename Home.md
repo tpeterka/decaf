@@ -27,4 +27,4 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [Patrick](individual-docs/patrick/patrick.md)
 
-## [DOE program management documents](DOE-docs/doe-docs.md)
+## [Public program documents](public-docs/public-docs.md)
