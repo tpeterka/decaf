@@ -12,26 +12,22 @@ For Hadrien:
 
 - Nan will send SPH code in about a week or so, follow up
     - Is more expensive than I thought, takes around 3 minutes for 1e5 particles
-- Updated to new HACC
-    - pull new version from https://svn.alcf.anl.gov/repos/DarkUniverse/hacc/trunk/nbody/
-    - understand new config file
-    - TODO: get new API from HACC to to get alive particles; Hadrien is sorting them himself (should not be necessary)
+- Will get a movie of the HACC -> tess -> dense -> plots workflow for January PI meeting
 
 For Lokman, Florin:
 
-- copied DIY datatype code into decaf
-- generated example datatypes for particles, delaunay, regular grid
-- ask Florin about the need to use MPI_Get_address for typemaps
-- discuss how to distribute m to n using the datatype
+- Install HACC instructions into decaf wiki
+- Lokman or Florin to implement data distribution
 - discuss semantic higher-level information (is it necessary, or is layout all we want to specifiy; sematics for fault tolerance are needed, however (data criticality))
-- Ask Florin about remaining allocated requests; Comm:flush() should have cleared them all
 - will need a separate decaf communicator for intradataflow communication (DIY in the dataflow)
 - will need decaf to be a separate executable (a main) when producer, dataflow, consumer are separate programs
 
 Lokman:
 
-- Will work on high-level API for defining typemaps
-- Working on high-level API for launching decaf (configurations for executables, spawining processes
+- Implement data distribution using (offset,length) list
+- Work on high-level API for defining typemaps
+- Work on high-level API for launching decaf (configurations for executables, spawining processes
+- Implement CM-1 + ITL + libsimVisit in Decaf
 
 With Florin:
 
@@ -99,6 +95,14 @@ Objective:
 
 ### Hadrien
 
-- will change NGP to CIC in small tess cells
-- will downsample CIC grid
+- Change NGP to CIC in small tess cells; did I get this patch and install it?
+- Working on adaptive CIC (TSC); will get patch and install; compare accuracy in the dense paper
+- Fiexed bug in tese-dense example, Tom to get it and patch into dense.
 
+--------------------------------
+
+11/25/14
+
+## Data distribution
+
+- Will need to think about custom redistribution functions in addition to the automatic datatype distribution. Use case: graph or unstructured mesh (tess) will require adding additional neighbors so that local consistency is preserved.
