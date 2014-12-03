@@ -67,34 +67,25 @@ void checker(Decaf* decaf)
 //
 // gets command line args
 //
-void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes, int& tot_time_steps,
-             int& con_interval)
+void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes)
 {
   assert(argc >= 9);
 
-  decaf_sizes.prod_size   = atoi(argv[1]);
-  decaf_sizes.dflow_size  = atoi(argv[2]);
-  decaf_sizes.con_size    = atoi(argv[3]);
+  decaf_sizes.prod_size    = atoi(argv[1]);
+  decaf_sizes.dflow_size   = atoi(argv[2]);
+  decaf_sizes.con_size     = atoi(argv[3]);
 
-  decaf_sizes.prod_start  = atoi(argv[4]);
-  decaf_sizes.dflow_start = atoi(argv[5]);
-  decaf_sizes.con_start   = atoi(argv[6]);
+  decaf_sizes.prod_start   = atoi(argv[4]);
+  decaf_sizes.dflow_start  = atoi(argv[5]);
+  decaf_sizes.con_start    = atoi(argv[6]);
 
-  tot_time_steps          = atoi(argv[7]);
-  con_interval            = atoi(argv[8]);
+  decaf_sizes.prod_nsteps  = atoi(argv[7]);
+  decaf_sizes.con_interval = atoi(argv[8]);
 }
 
-int main(int argc, char** argv)
+void run(DecafSizes& decaf_sizes)
 {
-#if 0
-  MPI_Init(&argc, &argv);
-
-  // decaf size info
-  DecafSizes decaf_sizes;
-  int tot_time_steps; // total number of producer time steps
-  int con_interval; // consumer is called every so many time steps
-  GetArgs(argc, argv, decaf_sizes, tot_time_steps, con_interval);
-  decaf_sizes.nsteps = ceil((double)tot_time_steps / con_interval); // consumer time steps
+  MPI_Init(NULL, NULL);
 
   // create some data types
 
@@ -119,7 +110,6 @@ int main(int argc, char** argv)
   dblock_t d; // delaunay block (TODO: needs to be initialized)
 
   // datatype for delaunay block
-  // TODO: does the address need to be an MPI_Aint gotten from MPI_Get_address (a la DIY_Addr())?
   int num_rem_particles = d.num_particles - d.num_orig_particles;
   MPI_Datatype* dtype = tet_type->comm_datatype();
   DataElement del_map[] =
@@ -129,11 +119,11 @@ int main(int argc, char** argv)
     { MPI_FLOAT, DECAF_OFST, 3,                   offsetof(struct dblock_t, maxs)               },
     { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_orig_particles) },
     { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_particles)      },
-    { MPI_FLOAT, DECAF_ADDR, d.num_particles * 3, (CommAddr)d.particles                          },
+    { MPI_FLOAT, DECAF_ADDR, d.num_particles * 3, addressof(d.particles)                        },
     { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_tets)           },
-    { *dtype,    DECAF_ADDR, d.num_tets,          (CommAddr)d.tets                               },
-    { MPI_INT,   DECAF_ADDR, num_rem_particles,   (CommAddr)d.rem_gids                           },
-    { MPI_INT,   DECAF_ADDR, d.num_particles,     (CommAddr)d.vert_to_tet                        },
+    { *dtype,    DECAF_ADDR, d.num_tets,          addressof(d.tets)                             },
+    { MPI_INT,   DECAF_ADDR, num_rem_particles,   addressof(d.rem_gids)                         },
+    { MPI_INT,   DECAF_ADDR, d.num_particles,     addressof(d.vert_to_tet)                      },
   };
   StructDatatype* del_type = new StructDatatype(0, sizeof(del_map) / sizeof(del_map[0]), del_map);
 
@@ -163,7 +153,7 @@ int main(int argc, char** argv)
   // keep these in separate pointers in ase producer and consumer overlap
   int *pd, *cd;
 
-  for (int t = 0; t < tot_time_steps; t++)
+  for (int t = 0; t < decaf_sizes.prod_nsteps; t++)
   {
     // producer
     if (decaf->is_prod())
@@ -174,12 +164,12 @@ int main(int argc, char** argv)
       *pd = t;
       fprintf(stderr, "+ producing time step %d, val %d\n", t, *pd);
       // assumes the consumer has the previous value, ok to overwrite
-      if (!(t % con_interval))
+      if (!(t % decaf_sizes.con_interval))
         decaf->put(pd);
     }
 
     // consumer
-    if (decaf->is_con() && !(t % con_interval))
+    if (decaf->is_con() && !(t % decaf_sizes.con_interval))
     {
       // any custom consumer (eg. data analysis code) goes here or gets called from here
       // as long as get() gets called at that desired frequency
@@ -202,7 +192,16 @@ int main(int argc, char** argv)
   // cleanup
   delete decaf;
   MPI_Finalize();
+}
 
-#endif
+int main(int argc, char** argv)
+{
+  // parse command line args
+  DecafSizes decaf_sizes;
+  GetArgs(argc, argv, decaf_sizes);
 
+  // run decaf
+  run(decaf_sizes);
+
+  return 0;
 }

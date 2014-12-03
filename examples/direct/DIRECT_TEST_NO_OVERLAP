@@ -30,7 +30,7 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executable
-exe=../install/examples/direct
+exe=../install/examples/direct/direct
 
 # communicator sizes and starting ranks
 # disjoint example with 8 processes

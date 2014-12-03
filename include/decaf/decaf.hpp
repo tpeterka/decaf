@@ -84,7 +84,7 @@ Decaf::Decaf(CommHandle world_comm,
   const static DecafSizes sizes = {
     decaf_sizes.prod_size,  decaf_sizes.dflow_size,  decaf_sizes.con_size,
     decaf_sizes.prod_start, decaf_sizes.dflow_start, decaf_sizes.con_start,
-    decaf_sizes.nsteps
+    decaf_sizes.prod_nsteps, decaf_sizes.con_interval
   };
   sizes_ = sizes;
 
@@ -218,7 +218,8 @@ Decaf::dataflow()
 {
   // TODO: when pipelining, would not store all items in dataflow before forwarding to consumer
   // as is done below
-  for (int i = 0; i < sizes_.nsteps; i++)
+  int nsteps = ceil((double)sizes_.prod_nsteps / sizes_.con_interval); // consumer time steps
+  for (int i = 0; i < nsteps; i++)
     forward();
 }
 

@@ -54,13 +54,14 @@ enum Error
 
 struct DecafSizes
 {
-  int prod_size; // size of producer communicator
-  int dflow_size; // size of dataflow communicator
-  int con_size; // size of consumer communicator
-  int prod_start; // size of producer communicator
-  int dflow_start; // size of dataflow communicator
-  int con_start; // size of consumer communicator
-  int nsteps; // number of dataflow (consumer) time steps to execute (<= producer time steps)
+  int prod_size;    // size of producer communicator
+  int dflow_size;   // size of dataflow communicator
+  int con_size;     // size of consumer communicator
+  int prod_start;   // size of producer communicator
+  int dflow_start;  // size of dataflow communicator
+  int con_start;    // size of consumer communicator
+  int prod_nsteps;  // number of producer timesteps
+  int con_interval; // run consumer every so often
 };
 
 void
