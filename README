@@ -2,11 +2,11 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 
 # Building decaf:
 
-Decaf is built using CMake. Assuming that you created an install directory one level below the decaf home directory, then:
-
-cd install
-
-Here is a sample cmake command line. We recommend saving this into a script and running the script:
+Decaf is built using CMake. Assuming that you created a build directory one level below the decaf home directory, then:
+```
+cd build
+```
+Configure the build using cmake with this sample command line. We recommend saving this into a script and running the script:
 
 ```
 cmake .. \
@@ -21,18 +21,35 @@ debug              "Build Decaf with debugging on"                OFF/ON, defaul
 optimize           "Build Decaf with optimization"                OFF/ON, default OFF
 transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
 
+Then, make and optionally make install:
+``
+make
+make install
+```
+
 # Building your project with decaf:
 
-Simply,
+To use decaf in C++ source code, Simply,
 
 ```
 #include <decaf/decaf.hpp>
 ```
+All functions are contained in header files; there is no need to link with a library.
 
-# Using decaf:
+# Wrapping your project in python (preferred execution mode)
 
-See the documentation in the doc directory. Start [here](../src/doc/home.md).
+A short python script (eg. driver.py) is written by the user or modified from existing. This script sets workflow execution parameters, imports the precompiled module for the project, and runs it. An example script is [examples/direct/python/driver.py](examples/direct/python/driver.py). [More information on the steps to generate a python interface for a project](doc/python.md)
 
-# Learning about decaf:
+# Executing the python-wrapped project
+
+```
+mpiexec -n <num_procs> python driver.py
+```
+
+# Documentation
+
+See the documentation in the [doc directory](https://bitbucket.org/tpeterka1/decaf/doc/home.md).
+
+# Learning more about decaf:
 
 See the documents [here](https://bitbucket.org/tpeterka1/decaf/wiki/public-docs/public-docs.md).

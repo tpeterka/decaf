@@ -8,4 +8,4 @@ To use the (preferred) python interface, eg. to wrap an example such as direct.c
 
 - The file py_driver.cxx is compiled and linked into a shared object libpy_driver.so. Shared objects can be imported into python as python modules.
 
-- A short python script driver.py is written by the user (or modified from existing). This script sets workflow execution parameters, imports the libpy_driver.so module, and runs it. An example script is [examples/direct/python/driver.py](../examples/direct/python/driver.py].
+- A short python script driver.py is written by the user (or modified from existing). This script sets workflow execution parameters, imports the libpy_driver.so module, and runs it. An example script is [examples/direct/python/driver.py](../examples/direct/python/driver.py).
