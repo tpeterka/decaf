@@ -22,7 +22,7 @@ optimize           "Build Decaf with optimization"                OFF/ON, defaul
 transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
 
 Then, make and optionally make install:
-``
+```
 make
 make install
 ```
@@ -38,7 +38,7 @@ All functions are contained in header files; there is no need to link with a lib
 
 # Wrapping your project in python (preferred execution mode)
 
-A short python script (eg. driver.py) is written by the user or modified from existing. This script sets workflow execution parameters, imports the precompiled module for the project, and runs it. An example script is [examples/direct/python/driver.py](examples/direct/python/driver.py). [More information on the steps to generate a python interface for a project](doc/python.md)
+A short python script (eg. driver.py) is written by the user or modified from existing. This script sets workflow execution parameters, imports the precompiled module for the project, and runs it. An example script is [examples/direct/python/driver.py](examples/direct/python/driver.py). [More information on the steps to generate a python interface for a project](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/home.md)
 
 # Executing the python-wrapped project
 
@@ -48,7 +48,7 @@ mpiexec -n <num_procs> python driver.py
 
 # Documentation
 
-See the documentation in the [doc directory](https://bitbucket.org/tpeterka1/decaf/doc/home.md).
+See the documentation in the [doc directory](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/home.md).
 
 # Learning more about decaf:
 
