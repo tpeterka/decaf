@@ -17,11 +17,12 @@ cmake .. \
 ```
 
 Currently, the available options are:
-debug              "Build Decaf with debugging on"                OFF/ON, default OFF
-optimize           "Build Decaf with optimization"                OFF/ON, default OFF
-transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
 
-Then, make and optionally make install:
+- debug              "Build Decaf with debugging on"                OFF/ON, default OFF
+- optimize           "Build Decaf with optimization"                OFF/ON, default OFF
+- transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
+
+Then, make and optionally install:
 ```
 make
 make install
@@ -36,9 +37,11 @@ To use decaf in C++ source code, Simply,
 ```
 All functions are contained in header files; there is no need to link with a library.
 
-# Wrapping your project in python (preferred execution mode)
+# Wrapping your project in python
 
-A short python script (eg. driver.py) is written by the user or modified from existing. This script sets workflow execution parameters, imports the precompiled module for the project, and runs it. An example script is [examples/direct/python/driver.py](examples/direct/python/driver.py). [More information on the steps to generate a python interface for a project](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/home.md)
+There are numerous ways to configure and run your project, but this is our favorite. A short python script (eg. driver.py) is written by the user or modified from existing. This script sets workflow execution parameters, imports the precompiled module for the project, and runs it. An example script is [examples/direct/python/driver.py](https://bitbucket.org/tpeterka1/decaf/raw/master/examples/direct/python/driver.py).
+
+[More information on the steps to generate a python interface for a project](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/home.md)
 
 # Executing the python-wrapped project
 
