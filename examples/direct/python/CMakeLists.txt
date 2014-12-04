@@ -1,3 +1,3 @@
 include (../../../UseCython.cmake)
 
-cython_add_module( driver driver.pyx )
+cython_add_module( py_direct driver.pyx )

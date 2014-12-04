@@ -2,7 +2,7 @@
 # --- set your options here ---
 
 # path to .so module
-path = './libpy_direct.so'
+path = './libpy_datatypes.so'
 
 # communicator sizes and time steps
 class DecafSizes:
