@@ -1,5 +1,10 @@
-# set your options here
 
+# --- set your options here ---
+
+# path to libdriver.so module
+path = './libdriver.so'
+
+# communicator sizes and time steps
 class DecafSizes:
     prod_size    = 4      # size of producer communicator
     dflow_size   = 2      # size of dataflow communicator
@@ -10,7 +15,8 @@ class DecafSizes:
     prod_nsteps  = 2      # total number of time steps
     con_interval = 1      # run consumer every so often
 
-# do not edit below this point
+# --- do not edit below this point --
 
-import driver
+import imp
+driver = imp.load_dynamic('driver', path)
 driver.pyrun(DecafSizes)

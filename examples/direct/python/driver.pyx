@@ -1,7 +1,7 @@
-cdef extern from "../../../include/decaf/decaf.hpp":
+cdef extern from "decaf/decaf.hpp":
     pass
 
-cdef extern from "../../../include/decaf/types.hpp":
+cdef extern from "decaf/types.hpp":
     struct DecafSizes:
         int prod_size
         int dflow_size
@@ -12,7 +12,7 @@ cdef extern from "../../../include/decaf/types.hpp":
         int prod_nsteps
         int con_interval
 
-cdef extern from "../direct.cpp":
+cdef extern from "../examples/direct/direct.cpp":
     void run(DecafSizes& decaf_sizes)
 
 def pyrun(pyDecafSizes):
