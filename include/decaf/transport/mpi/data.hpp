@@ -82,12 +82,14 @@ StructDatatype(Address base_addr, int num_elems, DataElement* map)
      if (my_rank == 0)
        fprintf(stdout, "[%d] Processing DataElement %d: (%p, %p, %d, %p)\n", my_rank,
                i, map[i].base_type, map[i].disp_type, map[i].count, map[i].disp);
-    if (map[i].disp_type == DECAF_OFST)
+    if (map[i].disp_type == DECAF_OFST){
       //addrs[nelems] = addrs[i] + map[i].disp;
       addrs.push_back(base_addr+map[i].disp);
-    else
+      map[i].disp += base_addr;
+    }else{
       //addrs[nelems] = map[i].disp;
       addrs.push_back(map[i].disp);
+    }
     //counts[nelems] = map[i].count;
     counts.push_back(map[i].count);
     //base_types[nelems] = map[i].base_type;
