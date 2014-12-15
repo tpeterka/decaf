@@ -46,6 +46,10 @@ namespace decaf
   struct StructDatatype: Datatype
   {
     StructDatatype(Address base_addr, int num_elems, DataElement* map);
+    std::vector<std::vector<DataElement*> > split(int n);
+  private: 
+    DataElement* map_;
+    size_t map_num_elems_;
   };
 
   // data description
@@ -58,6 +62,7 @@ namespace decaf
 //     const enum Decomposition decomp_type_;
 
     Data(CommDatatype dtype) : complete_datatype_(dtype), put_items_(NULL) {}
+    //Data(){}
     ~Data() {}
     void put_nitems(int nitems) { put_nitems_ = nitems; }
     int put_nitems() { return put_nitems_; }
@@ -76,6 +81,26 @@ namespace decaf
     void* put_items_; // data pointer to items being put
     int put_nitems_; // number of items being put
     int err_; // last error
+  };
+
+  template <class T>
+  class DataBis
+  {
+  public:
+    DataBis(void (*create_datatype)(const T*, int*, DataElement*, MPI_Datatype*)) : create_datatype(create_datatype) {}
+    vector<T> getData() { return data;}
+    T** getPointerData() { return data.empty() ? NULL : &data[0];}
+    int getNumberElements() { return data.size();} 
+    void addDataElement(const T* data_elem) { data.push_back(data_elem);}
+    void deleteElement(int index) { data.erase(data.begin()+index);}
+    void deleteElements(int from, int to) { data.erase(data.begin()+from, data.begin()+to);}
+    int generateMPIDatatype(const T* data_elem, MPI_Datatype* mpi_map) { create_datatype(data_elem, NULL, NULL, mpi_map); } 
+    int generateMap(const T* data_elem, int* map_count, DataElement* map) { create_datatype(data_elem, map_count, map, NULL);}
+    static void getMPIDatatypeFromMap(int map_count, const DataElement* map, MPI_Datatype* mpi_map);
+    //vector<pair<DataElement, i> > split(int count)
+  private:
+    vector<T> data;
+    void (*create_datatype)(const T* , int*, DataElement*, MPI_Datatype*);
   };
 
 } // namespace
