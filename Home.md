@@ -29,4 +29,6 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [Patrick](individual-docs/patrick/patrick.md)
 
+### [Lokman](individual-docs/lokman/lokman.md)
+
 ## [Public program documents](public-docs/public-docs.md)
