@@ -8,6 +8,8 @@ The ICDCS 2006 submission covers the automatic data conversion services Jay work
 
 The XMIT paper is the automatic type generation system. This is an HPDC paper from 2001.
 
+Source code related to all of these tools are available. Much of it is still reasonably current and will work with the current EVPath without too much trouble.
+
 [ECho paper](ECho-paper.pdf)
 
 [IO paper](IO.PDF)
