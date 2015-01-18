@@ -1,0 +1,34 @@
+\begin{thebibliography}{}
+
+\bibitem[Birdsall and Fuss, 1969]{Birdsall_Fuss_1969}
+Birdsall, C.~K. and Fuss, D. (1969).
+\newblock {\em {Cloud-in-Cell Computer Experiments in Two and Three
+  Dimensions}}.
+
+\bibitem[Heidenreich et~al., 2013]{Heidenreich2013}
+Heidenreich, N.~B., Schindler, A., and Sperlich, S. (2013).
+\newblock {Bandwidth selection for kernel density estimation: A review of fully
+  automatic selectors}.
+\newblock {\em AStA Advances in Statistical Analysis}, 97:403--433.
+
+\bibitem[Kahan, 1996]{Kahan1996}
+Kahan, W. (1996).
+\newblock {IEEE standard 754 for binary floating-point arithmetic}.
+\newblock {\em Lecture Notes on the Status of IEEE}, (May 1995):1--23.
+
+\bibitem[Navarro et~al., 1996]{navarro96}
+Navarro, J.~F., Frenk, C.~S., and White, S.~D.~M. (1996).
+\newblock {The Structure of Cold Dark Matter Halos}.
+\newblock {\em Astrophysical Journal}, 462:563.
+
+\bibitem[Parzen, 1962]{Parzen1962}
+Parzen, E. (1962).
+\newblock {On Estimation of a Probability Density Function and Mode}.
+\newblock {\em The Annals of Mathematical Statistics}, 33:1065--1076.
+
+\bibitem[Rosenblatt, 1956]{Rosenblatt}
+Rosenblatt, M. (1956).
+\newblock {Remarks on Some Nonparametric Estimates of a Density Function}.
+\newblock {\em The Annals of Mathematical Statistics}, 27.
+
+\end{thebibliography}

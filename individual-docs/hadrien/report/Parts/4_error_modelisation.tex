@@ -1,0 +1,89 @@
+\documentclass[10pt,a4paper,twoside,twocolumn]{article}
+\input{../Annexes/ReportPackages.tex}
+
+\newcommand*{\rootPath}{../}
+\standalonetrue
+
+\begin{document}
+\section{Error modelisation}
+
+Memory corruption related error can happen in different ways. Cosmic rays and
+radiation have, for a long time, been suspected of creating random data
+\todo{ref}. More rescently we realised that thoses error can also happen because
+of hardware issues\todo{ref}.
+
+Beyound the question of those corruptions causes, we are here focussing on the
+impact such event have on our pipeline.
+
+\subsection{Error classification}
+
+Depending on a large number of factor, memory corruption can have very different
+concequences. Such factor include many things from hardware components (ECC
+memory one of the most well know mecanism against memory correption) to software
+certification and computation redondancy.
+
+As for the consequences, they can be divided into two different categories :
+\begin{description}
+	\item[Hard errors:] Memory corruption affect the system of the program flow
+		will most likely cause dramatic errors such as the program stopping
+		abruptly or the whole system failling. In such cases we do not get any
+		results back, redering irrelevant the question of the result's validity.
+		Some memory corruptions affecting critical data such as table indices also
+		falls into this category.
+
+	\item[Silent errors:] Memory corruption in some application's data may not
+		cause any crash of the application while affecting the results if not
+		corrected by the hardware. This is particularly the case of large array's
+		contents like particles positions in our pipeline.
+\end{description}
+
+In this section we will try to caracterise silent errors' impact on our
+pipeline's results.
+
+\subsection{Error injection}
+
+Simulating random memory corruption can be done by voluntarly modifying our
+applications data by randomly flipping bits. While this isn't hard to do,
+studying silent errors means we have to enshure that those random bit flips will
+not cause hard errors.
+
+Differents software quality implies different level of tolerence. For exemple
+some code can handle particles positions being outside of our considered domain
+while other might crash\todo{harderror ratio for tess ?}. Form here on we will
+mostly focus on our AKDE implementation as it very resistant to such errors and
+therefore more suitable to create and analyse silent errors.
+
+In our model, simulating memory corruption is achieved by randomly modifying our
+input data set. In real application this dataset would be provided by another
+program and would have therefor been send through the network of saved on disk,
+increasing the probability of memory corruption. This injection model will be
+controlled by two parameters, on the one hand the number of bit flips and one
+the second hand the weight of the potentially affected bits.
+
+While the first parameter is used to simulate different degre of corruption, the
+second one is used to study the impact of differents bit flip position. The
+construction of IEEE floating point arithmetics\cite{Kahan1996} (IEEE 754) is such
+different bit modification produce different arithmetic modification.
+
+Studies have shown that in some HPC pipelines, some bits' position are critical,
+the modification of those bits resulting in hard errors while some other bits' 
+modifications are un noticeable as the resulting modification are bellow the
+accuracy of floating computation\todo{ref}.
+
+\subsubsection{Single error injection}
+
+\todo{to write}... %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO
+
+\subsubsection{Multiple error injection}
+
+\todo{to write}... %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO
+
+%=====================================================================
+%=====================================================================
+\ifstandalone
+	\bibliographystyle{apalike}
+	\bibliography{\rootPath Annexes/biblio}
+\fi
+%=====================================================================
+%=====================================================================
+\end{document}

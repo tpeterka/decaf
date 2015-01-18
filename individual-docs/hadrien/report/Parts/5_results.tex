@@ -1,0 +1,57 @@
+\documentclass[10pt,a4paper,twoside,twocolumn]{article}
+\input{../Annexes/ReportPackages.tex}
+
+\newcommand*{\rootPath}{../}
+\standalonetrue
+
+\begin{document}
+
+\section{Results}
+
+\begin{figure*}[!ht]
+	\centering
+	\includegraphics[width=0.9\textwidth]
+		{\rootPath Figures/randomized-multiplot.pdf}
+	\caption{AKDE density fields after error injection}
+	\label{fig:bitflip-fields}
+\end{figure*}
+
+
+\begin{figure*}[!ht]
+	\centering
+	\includegraphics[width=0.32\textwidth]
+		{\rootPath Figures/cnfw_particles_2e5_akde_err1_clamped.pdf}
+	\includegraphics[width=0.32\textwidth]
+		{\rootPath Figures/cnfw_particles_2e5_akde_err1000_clamped.pdf}
+	\includegraphics[width=0.32\textwidth]
+		{\rootPath Figures/cnfw_particles_2e5_akde_err10000_clamped.pdf}
+	\includegraphics[width=0.32\textwidth]
+		{\rootPath Figures/cnfw_particles_2e5_akde_err100000_clamped.pdf}
+	\includegraphics[width=0.32\textwidth]
+		{\rootPath Figures/cnfw_particles_2e5_akde_err200000_clamped.pdf}
+	\includegraphics[width=0.32\textwidth]
+		{\rootPath Figures/cnfw_particles_2e5_akde_err500000_clamped.pdf}
+	\caption{Bitflip influence on AKDE power spectrum range}
+	\label{fig:bitflip-spectral}
+\end{figure*}
+
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.45\textwidth]
+		{\rootPath Figures/pk-integral.pdf}
+	\caption{Power spectrum displacement}
+	\label{fig:bitflip-integral}
+\end{figure}
+
+\todo{to write}... %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO
+
+%=====================================================================
+%=====================================================================
+\ifstandalone
+	\bibliographystyle{apalike}
+	\bibliography{\rootPath Annexes/biblio}
+\fi
+%=====================================================================
+%=====================================================================
+\end{document}
