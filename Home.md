@@ -31,4 +31,6 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [Lokman](individual-docs/lokman/lokman.md)
 
+### [Hadrien](individual-docs/hadrien/hadrien.md)
+
 ## [Public program documents](public-docs/public-docs.md)
