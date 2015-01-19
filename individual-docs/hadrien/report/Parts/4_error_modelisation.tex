@@ -62,8 +62,8 @@ the second hand the weight of the potentially affected bits.
 
 While the first parameter is used to simulate different degre of corruption, the
 second one is used to study the impact of differents bit flip position. The
-construction of IEEE floating point arithmetics\cite{Kahan1996} (IEEE 754) is such
-different bit modification produce different arithmetic modification.
+construction of IEEE floating point arithmetics\cite{Kahan1996} (IEEE 754) is
+such different bit modification produce different arithmetic modification.
 
 Studies have shown that in some HPC pipelines, some bits' position are critical,
 the modification of those bits resulting in hard errors while some other bits' 
@@ -72,7 +72,14 @@ accuracy of floating computation\todo{ref}.
 
 \subsubsection{Single error injection}
 
-\todo{to write}... %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO
+As a first step in our analysis of memory corruption's impact on density
+estimator we will study the impact of single bitflip positions.
+
+We are therefore going to modify, for various simplings of our density function,
+the value of one randomly selected floating value by flipping it's $n$-th bit.
+Once this mofication has been done, the corrupted sampling is processed by the
+pipeline and compared to uncorrupted results.
+
 
 \subsubsection{Multiple error injection}
 

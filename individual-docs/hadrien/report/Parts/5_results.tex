@@ -8,6 +8,33 @@
 
 \section{Results}
 
+\subsection{Single error injection}
+
+Our single bit flip experiment had expected yet interresting results.
+
+Injecting a single bit flip moves on particle by modifiying one of its floating
+coordinates. While some bit's position only have a small impact, other can have
+an impact on the pipeline. Modification of the exponent bits can make the
+affected particule exit the donsidered domain, which some code cannot handle.
+As a consequensed, some bit flips cause Tess-Dense to crash. Other code, like
+our AKDE implementation can handle particle exiting the domain and, for such
+corruption in fact produce silent errors.
+
+The first conclusion that some specific memory corruption produce hard errors
+due to bad coding practices. Those same memory corruption can in fact be
+detected inside the process by checking that the data verify some specific
+criterion.
+
+Once the corrupted sampling processed using AKDE, the resulting density could
+not be distinguish for expected results ass they where whitin the range of
+expected results. This was to be expected has a single memory corruption could
+be seen as a verry slight modification of one of many particles in the
+intrinsically random sampling and therefore be statically indiscernible.
+
+
+
+\subsection{Multiple error injection}
+
 \begin{figure*}[!ht]
 	\centering
 	\includegraphics[width=0.9\textwidth]

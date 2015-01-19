@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014/Arch Linux) (preloaded format=pdflatex 2014.12.21)  17 JAN 2015 18:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014/Arch Linux) (preloaded format=pdflatex 2014.12.21)  19 JAN 2015 11:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1676,10 +1676,10 @@ LaTeX Font Info:    Try loading font information for T1+cmtt on input line 13.
 
 (/usr/share/texmf-dist/tex/latex/base/t1cmtt.fd
 File: t1cmtt.fd 1999/05/25 v2.5h Standard LaTeX font definitions
-)
+) (./Parts/1_introduction.tex
 Package hyperref Info: bookmark level for unknown todo defaults to 0 on input l
-ine 16.
- (./Parts/1_introduction.tex)
+ine 10.
+)
 (./Parts/2_pipeline_description.tex
 Package epstopdf Info: Source file: <Figures/model-pipeline.eps>
 (epstopdf)                    date: 2015-01-13 09:09:12
@@ -1693,7 +1693,7 @@ f>
 (epstopdf)             \includegraphics on input line 17.
 Package epstopdf Info: Output file is already uptodate.
 
-<Figures/model-pipeline-eps-converted-to.pdf, id=87, 401.5pt x 150.5625pt>
+<Figures/model-pipeline-eps-converted-to.pdf, id=95, 401.5pt x 150.5625pt>
 File: Figures/model-pipeline-eps-converted-to.pdf Graphic file (type pdf)
 
 <use Figures/model-pipeline-eps-converted-to.pdf>
@@ -1701,14 +1701,12 @@ Package pdftex.def Info: Figures/model-pipeline-eps-converted-to.pdf used on in
 put line 17.
 (pdftex.def)             Requested size: 204.85672pt x 76.8226pt.
 )
-(./Parts/3_density_estimation_methods.tex
-Underfull \vbox (badness 1107) has occurred while \output is active []
-
- [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
+(./Parts/3_density_estimation_methods.tex [1{/var/lib/texmf/fonts/map/pdftex/up
+dmap/pdftex.map}
 
 
  <./Figures/model-pipeline-eps-converted-to.pdf>]
-<Figures/cnfw_particles_2e5_cic_clamped.pdf, id=134, 226.8475pt x 170.6375pt>
+<Figures/cnfw_particles_2e5_cic_clamped.pdf, id=143, 226.8475pt x 170.6375pt>
 File: Figures/cnfw_particles_2e5_cic_clamped.pdf Graphic file (type pdf)
 
 <use Figures/cnfw_particles_2e5_cic_clamped.pdf>
@@ -1716,7 +1714,7 @@ Package pdftex.def Info: Figures/cnfw_particles_2e5_cic_clamped.pdf used on inp
 ut line 82.
 (pdftex.def)             Requested size: 122.91872pt x 92.46051pt.
 
-<Figures/cnfw_particles_2e5_akde_clamped.pdf, id=135, 226.8475pt x 170.6375pt>
+<Figures/cnfw_particles_2e5_akde_clamped.pdf, id=144, 226.8475pt x 170.6375pt>
 File: Figures/cnfw_particles_2e5_akde_clamped.pdf Graphic file (type pdf)
 
 <use Figures/cnfw_particles_2e5_akde_clamped.pdf>
@@ -1724,7 +1722,7 @@ Package pdftex.def Info: Figures/cnfw_particles_2e5_akde_clamped.pdf used on in
 put line 84.
 (pdftex.def)             Requested size: 122.91872pt x 92.46051pt.
 
-<Figures/cnfw_particles_2e5_sph_clamped.pdf, id=136, 226.8475pt x 170.6375pt>
+<Figures/cnfw_particles_2e5_sph_clamped.pdf, id=145, 226.8475pt x 170.6375pt>
 File: Figures/cnfw_particles_2e5_sph_clamped.pdf Graphic file (type pdf)
 
 <use Figures/cnfw_particles_2e5_sph_clamped.pdf>
@@ -1732,7 +1730,7 @@ Package pdftex.def Info: Figures/cnfw_particles_2e5_sph_clamped.pdf used on inp
 ut line 86.
 (pdftex.def)             Requested size: 122.91872pt x 92.46051pt.
 
-<Figures/cnfw_particles_2e5_tesscic_clamped.pdf, id=137, 226.8475pt x 170.6375p
+<Figures/cnfw_particles_2e5_tesscic_clamped.pdf, id=146, 226.8475pt x 170.6375p
 t>
 File: Figures/cnfw_particles_2e5_tesscic_clamped.pdf Graphic file (type pdf)
  <use Figures/cnfw_particles_2e5_tesscic_clamped.pdf>
@@ -1740,7 +1738,7 @@ Package pdftex.def Info: Figures/cnfw_particles_2e5_tesscic_clamped.pdf used on
  input line 88.
 (pdftex.def)             Requested size: 122.91872pt x 92.46051pt.
 
-<Figures/cnfw_particles_2e5_full.pdf, id=138, 341.275pt x 255.95625pt>
+<Figures/cnfw_particles_2e5_full.pdf, id=147, 341.275pt x 255.95625pt>
 File: Figures/cnfw_particles_2e5_full.pdf Graphic file (type pdf)
 
 <use Figures/cnfw_particles_2e5_full.pdf>
@@ -1786,79 +1784,76 @@ Overfull \hbox (1.09938pt too wide) in paragraph at lines 52--52
  []
 
 ) (./Parts/5_results.tex
-<Figures/randomized-multiplot.pdf, id=190, 1189.1226pt x 729.78795pt>
+<Figures/randomized-multiplot.pdf, id=199, 1189.1226pt x 729.78795pt>
 File: Figures/randomized-multiplot.pdf Graphic file (type pdf)
 
 <use Figures/randomized-multiplot.pdf>
-Package pdftex.def Info: Figures/randomized-multiplot.pdf used on input line 14
+Package pdftex.def Info: Figures/randomized-multiplot.pdf used on input line 41
 .
 (pdftex.def)             Requested size: 460.93153pt x 282.87898pt.
 
-<Figures/cnfw_particles_2e5_akde_err1_clamped.pdf, id=191, 341.275pt x 255.9562
+<Figures/cnfw_particles_2e5_akde_err1_clamped.pdf, id=200, 341.275pt x 255.9562
 5pt>
 File: Figures/cnfw_particles_2e5_akde_err1_clamped.pdf Graphic file (type pdf)
  <use Figures/cnfw_particles_2e5_akde_err1_clamped.pdf>
 Package pdftex.def Info: Figures/cnfw_particles_2e5_akde_err1_clamped.pdf used 
-on input line 23.
+on input line 50.
 (pdftex.def)             Requested size: 163.89162pt x 122.92007pt.
 
-<Figures/cnfw_particles_2e5_akde_err1000_clamped.pdf, id=192, 341.275pt x 255.9
+<Figures/cnfw_particles_2e5_akde_err1000_clamped.pdf, id=201, 341.275pt x 255.9
 5625pt>
 File: Figures/cnfw_particles_2e5_akde_err1000_clamped.pdf Graphic file (type pd
 f)
  <use Figures/cnfw_particles_2e5_akde_err1000_clamped.pdf>
 Package pdftex.def Info: Figures/cnfw_particles_2e5_akde_err1000_clamped.pdf us
-ed on input line 25.
+ed on input line 52.
 (pdftex.def)             Requested size: 163.89162pt x 122.92007pt.
 
-<Figures/cnfw_particles_2e5_akde_err10000_clamped.pdf, id=193, 341.275pt x 255.
+<Figures/cnfw_particles_2e5_akde_err10000_clamped.pdf, id=202, 341.275pt x 255.
 95625pt>
 File: Figures/cnfw_particles_2e5_akde_err10000_clamped.pdf Graphic file (type p
 df)
  <use Figures/cnfw_particles_2e5_akde_err10000_clamped.pdf>
 Package pdftex.def Info: Figures/cnfw_particles_2e5_akde_err10000_clamped.pdf u
-sed on input line 27.
+sed on input line 54.
 (pdftex.def)             Requested size: 163.89162pt x 122.92007pt.
 
-<Figures/cnfw_particles_2e5_akde_err100000_clamped.pdf, id=194, 341.275pt x 255
+<Figures/cnfw_particles_2e5_akde_err100000_clamped.pdf, id=203, 341.275pt x 255
 .95625pt>
 File: Figures/cnfw_particles_2e5_akde_err100000_clamped.pdf Graphic file (type 
 pdf)
  <use Figures/cnfw_particles_2e5_akde_err100000_clamped.pdf>
 Package pdftex.def Info: Figures/cnfw_particles_2e5_akde_err100000_clamped.pdf 
-used on input line 29.
+used on input line 56.
 (pdftex.def)             Requested size: 163.89162pt x 122.92007pt.
 
-<Figures/cnfw_particles_2e5_akde_err200000_clamped.pdf, id=195, 341.275pt x 255
+<Figures/cnfw_particles_2e5_akde_err200000_clamped.pdf, id=204, 341.275pt x 255
 .95625pt>
 File: Figures/cnfw_particles_2e5_akde_err200000_clamped.pdf Graphic file (type 
 pdf)
  <use Figures/cnfw_particles_2e5_akde_err200000_clamped.pdf>
 Package pdftex.def Info: Figures/cnfw_particles_2e5_akde_err200000_clamped.pdf 
-used on input line 31.
+used on input line 58.
 (pdftex.def)             Requested size: 163.89162pt x 122.92007pt.
 
-<Figures/cnfw_particles_2e5_akde_err500000_clamped.pdf, id=196, 341.275pt x 255
+<Figures/cnfw_particles_2e5_akde_err500000_clamped.pdf, id=205, 341.275pt x 255
 .95625pt>
 File: Figures/cnfw_particles_2e5_akde_err500000_clamped.pdf Graphic file (type 
 pdf)
  <use Figures/cnfw_particles_2e5_akde_err500000_clamped.pdf>
 Package pdftex.def Info: Figures/cnfw_particles_2e5_akde_err500000_clamped.pdf 
-used on input line 33.
+used on input line 60.
 (pdftex.def)             Requested size: 163.89162pt x 122.92007pt.
 
-<Figures/pk-integral.pdf, id=197, 454.69875pt x 341.275pt>
+<Figures/pk-integral.pdf, id=206, 454.69875pt x 341.275pt>
 File: Figures/pk-integral.pdf Graphic file (type pdf)
 
 <use Figures/pk-integral.pdf>
-Package pdftex.def Info: Figures/pk-integral.pdf used on input line 42.
+Package pdftex.def Info: Figures/pk-integral.pdf used on input line 69.
 (pdftex.def)             Requested size: 230.46576pt x 172.9752pt.
-) (./Parts/6_conclusion.tex) (./draft.bbl [3 <./Figures/pk-integral.pdf>])
-\tf@thm=\write6
-\openout6 = `draft.thm'.
-
- [4 <./Figures/randomized-multiplot.pdf> <./Figures/cnfw_particles_2e5_akde_err
-1_clamped.pdf
+) (./Parts/6_conclusion.tex [3 <./Figures/pk-integral.pdf>]) (./draft.bbl [4 <.
+/Figures/randomized-multiplot.pdf> <./Figures/cnfw_particles_2e5_akde_err1_clam
+ped.pdf
 
 pdfTeX warning: pdflatex (file ./Figures/cnfw_particles_2e5_akde_err1_clamped.p
 df): PDF inclusion: multiple pdfs with page group included in a single page
@@ -1886,24 +1881,30 @@ e
 pdfTeX warning: pdflatex (file ./Figures/cnfw_particles_2e5_akde_err500000_clam
 ped.pdf): PDF inclusion: multiple pdfs with page group included in a single pag
 e
->]
+>])
+\tf@thm=\write6
+\openout6 = `draft.thm'.
+
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 30.
+ [5
+
+]
 Package atveryend Info: Empty hook `AfterLastShipout' on input line 30.
  (./draft.aux)
 Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 30.
 Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 30.
 Package rerunfilecheck Info: File `draft.out' has not changed.
-(rerunfilecheck)             Checksum: BEA563BA57AE9F5EC54D1CBEAE16056E;1256.
+(rerunfilecheck)             Checksum: D39A6BE5B6F86078F6E7156B14F73F3D;1402.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 30.
  ) 
 Here is how much of TeX's memory you used:
- 26837 strings out of 493108
- 456306 string characters out of 6140724
- 670703 words of memory out of 5000000
- 29587 multiletter control sequences out of 15000+600000
+ 26830 strings out of 493108
+ 456070 string characters out of 6140724
+ 666532 words of memory out of 5000000
+ 29579 multiletter control sequences out of 15000+600000
  30434 words of font info for 93 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,9n,79p,453b,973s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 57i,9n,79p,453b,959s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr/share/t
 exmf-dist/fonts/enc/dvips/mnsymbol/MnSymbolC.enc}{/usr/share/texmf-dist/fonts/e
 nc/dvips/mnsymbol/MnSymbolE.enc}{/usr/share/texmf-dist/fonts/enc/dvips/mnsymbol
@@ -1924,10 +1925,10 @@ sfrm1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb></
 usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/share/texmf
 -dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/share/texmf-dist/fonts/typ
 e1/public/cm-super/sftt0800.pfb>
-Output written on draft.pdf (4 pages, 1862598 bytes).
+Output written on draft.pdf (5 pages, 1863904 bytes).
 PDF statistics:
- 649 PDF objects out of 1000 (max. 8388607)
- 300 compressed objects within 3 object streams
- 51 named destinations out of 1000 (max. 500000)
- 243 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 660 PDF objects out of 1000 (max. 8388607)
+ 309 compressed objects within 4 object streams
+ 52 named destinations out of 1000 (max. 500000)
+ 259 words of extra memory for PDF output out of 10000 (max. 10000000)
 
