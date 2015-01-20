@@ -31,9 +31,10 @@ expected results. This was to be expected has a single memory corruption could
 be seen as a verry slight modification of one of many particles in the
 intrinsically random sampling and therefore be statically indiscernible.
 
-
-
 \subsection{Multiple error injection}
+
+Figure~\ref{fig:bitflip-fields} shows the density field computed by AKDE after
+injection of random bit flips.
 
 \begin{figure*}[!ht]
 	\centering
@@ -43,24 +44,33 @@ intrinsically random sampling and therefore be statically indiscernible.
 	\label{fig:bitflip-fields}
 \end{figure*}
 
+Beyound the small noise on the side, made visible by the density log scale, an
+cross is visible at the center of the domain. This cross is caused by bit flips
+in exponent part of floating point values, making them converge toward $0$. We
+therefore have a high density around plane $\mathcal P_{x=0}$,
+$\mathcal  P_{y=0}$ and $\mathcal P_{z=0}$.
+
+Figure~\ref{fig:bitflip-spectral} shows the power spectrum of those density
+fields.
 
 \begin{figure*}[!ht]
 	\centering
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_akde_err1_clamped.pdf}
+		{\rootPath Figures/cnfw_err/cnfw_particles_2e5_akde_err0_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_akde_err1000_clamped.pdf}
+		{\rootPath Figures/cnfw_err/cnfw_particles_2e5_akde_err1000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_akde_err10000_clamped.pdf}
+		{\rootPath Figures/cnfw_err/cnfw_particles_2e5_akde_err10000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_akde_err100000_clamped.pdf}
+		{\rootPath Figures/cnfw_err/cnfw_particles_2e5_akde_err100000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_akde_err200000_clamped.pdf}
+		{\rootPath Figures/cnfw_err/cnfw_particles_2e5_akde_err200000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_akde_err500000_clamped.pdf}
+		{\rootPath Figures/cnfw_err/cnfw_particles_2e5_akde_err500000_clamped.pdf}
 	\caption{Bitflip influence on AKDE power spectrum range}
 	\label{fig:bitflip-spectral}
 \end{figure*}
+
 
 
 \begin{figure}[!ht]
@@ -70,8 +80,6 @@ intrinsically random sampling and therefore be statically indiscernible.
 	\caption{Power spectrum displacement}
 	\label{fig:bitflip-integral}
 \end{figure}
-
-\todo{to write}... %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO
 
 %=====================================================================
 %=====================================================================

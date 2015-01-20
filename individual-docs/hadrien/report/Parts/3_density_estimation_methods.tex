@@ -51,15 +51,14 @@ then CIC (cf~\ref{ssect:method-results}).
 
 Unlike all previous algorithm, Tess-Dense doesn't use fixed shape windows.
 Indeed, Tess-Dense uses a voronoï tesselation to determine each sample influence
-domaine\todo{ref}. This precomputation is independant of the result grid's
-resolution therefore reducing the memory footprint on high resolution
-reconstruction. This cost is however paid even for small resolutions.
+domaine\todo{ref - Self-Adaptive Density Estimation of Particle Data}. This
+precomputation is independant of the result grid's resolution therefore reducing
+the memory footprint on high resolution reconstruction. This cost is however
+paid even for small resolutions.
 
-The cost of this method is $\mathcal O(n^2 + g^3)$, with results suffering from
-some noise. This noise comes from the NGP\todo{ref} (Nearest Grid Point)
-approche when voronoï cells are to small to include any grid point (high local
-density) which can be reduced by using CIC in such cases and by geometric
-instability of voronoï cells in sparse areas.
+The cost of this method is $\mathcal O(n^2 + g^3)$. While produced results are
+good, they suffer from some noise caused by voronoï cells' instability in sparse
+areas.
 
 \subsection{Methods results} \label{ssect:method-results}
 
@@ -79,15 +78,15 @@ all prevously described methods.
 \begin{figure}[!ht]
 	\centering
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_cic_clamped.pdf}
+		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_cic_clamped.pdf}
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_akde_clamped.pdf}
+		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_akde_clamped.pdf}
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_sph_clamped.pdf}
+		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_sph_clamped.pdf}
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_tesscic_clamped.pdf}
+		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_tesscic_clamped.pdf}
 	\includegraphics[width=0.48\textwidth]
-		{\rootPath Figures/cnfw_particles_2e5_full.pdf}
+		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_full.pdf}
 	\caption{Spectral analysis of density estimation methods}
 	\label{fig:spectral}
 \end{figure}

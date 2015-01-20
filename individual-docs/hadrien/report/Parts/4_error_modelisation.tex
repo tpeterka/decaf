@@ -68,22 +68,39 @@ such different bit modification produce different arithmetic modification.
 Studies have shown that in some HPC pipelines, some bits' position are critical,
 the modification of those bits resulting in hard errors while some other bits' 
 modifications are un noticeable as the resulting modification are bellow the
-accuracy of floating computation\todo{ref}.
+accuracy of floating computation\todo{ref - Leonardo's tech report}.
 
 \subsubsection{Single error injection}
 
 As a first step in our analysis of memory corruption's impact on density
 estimator we will study the impact of single bitflip positions.
 
-We are therefore going to modify, for various simplings of our density function,
+We are therefore going to modify, for various samplings of our density function,
 the value of one randomly selected floating value by flipping it's $n$-th bit.
-Once this mofication has been done, the corrupted sampling is processed by the
-pipeline and compared to uncorrupted results.
-
+For single precision floating values this $n$ value varies between $0$ and $255$
+as simple precision floating value are $32$ byte long. Once this mofication has
+been done, the corrupted sampling is processed by the pipeline and compared to
+uncorrupted results.
 
 \subsubsection{Multiple error injection}
 
-\todo{to write}... %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO
+The second approch we are developping is to study the impact of memory
+corruption rate on result's quality.
+
+Our input data are sampling containing :
+\begin{table}[h]
+	\centering
+	\begin{tabular}{rlcrl}
+		$2\times10^5$	& particles	&=	& $6\times10^5$			& floats	\\
+									&						&= 	& $1,92\times10^7$	& bytes		\\
+									&						&= 	& $1,536\times10^8$	& bits
+	\end{tabular}
+\end{table}
+
+For this part we are once again going to inject bit flip into various sampling
+of our density function. Each time we are going to inject various number of bit
+flips (up to $10^6$ independant bit flips) and then evaluate the difference to
+the expected range.
 
 %=====================================================================
 %=====================================================================

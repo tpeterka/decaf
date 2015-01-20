@@ -29,7 +29,7 @@ ground truth.
 
 This analytical distribution is a density profil produced by a sum of
 Navarro-Frenk-White functions\cite{navarro96}. This density profile is further
-caracterized in \todo{ref}.
+caracterized in \todo{ref - Self-Adaptive Density Estimation of Particle Data}.
 $$\mathcal D(p) = \sum_{\{k_i, c_i\}} \frac{k_i}{\|p-c_i\|(\|p-c_i\|+1)^2}$$
 
 We will also use values produced by real application in order to confirm the
@@ -41,7 +41,8 @@ Density estimation aims at reconstructing the density function from a set of
 samples. This is achieved by adding the contribution of all sample, each sample
 representing a local density profile. The distribution of this local density
 profile is caracteristed by a weighting function and by a domain, which
-caracteristics have been extensivelly studied\todo{ref}.
+caracteristics have been extensivelly studied
+\todo{ref - Self-Adaptive Density Estimation of Particle Data}.
 
 However, more accurate methods also tends to be more computationnaly expensive
 and not so qualitative methods tends to be prefered in cases where intermediate
@@ -58,8 +59,13 @@ density fields. This metric should differentiate values according to the
 relevant elements in regard to their futher analysis in real application.
 
 For this step, the use a power spectrum analysis which makes visible variation
-responses for different caractèristic length, hence detecting bias such as high
-frequency noise or over smoothness.
+responses for different caracteristic length, hence detecting bias such as high
+frequency noise or over smoothness. In order to compare distances between those
+spectral responces we use the following integral based metric :
+$$d(ps_1, ps_2) = \int_{\Delta f}\frac{\|ps_1(f)-ps_2(f)\|^2}{f}\, \mathrm df$$
+By dividing by the frequency we ensured a constant contribution from all orders
+of magnitudes. This notably helps discriminate variation at low frequencies and
+therefore check total weight of the density field.
 
 %=====================================================================
 %=====================================================================
