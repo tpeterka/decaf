@@ -44,7 +44,7 @@ injection of random bit flips.
 	\label{fig:bitflip-fields}
 \end{figure*}
 
-Beyound the small noise on the side, made visible by the density log scale, an
+Beyound the small noise on the sides, made visible by the density log scale, an
 cross is visible at the center of the domain. This cross is caused by bit flips
 in exponent part of floating point values, making them converge toward $0$. We
 therefore have a high density around plane $\mathcal P_{x=0}$,
@@ -70,6 +70,10 @@ fields.
 	\caption{Bitflip influence on AKDE power spectrum range}
 	\label{fig:bitflip-spectral}
 \end{figure*}
+
+Those results both show a discrepancy between corrupted pipeline and expected 
+results for error numbers between $10^4$ and $10^5$. Considering the size of our
+input, that represent a corruption probability of $10^{-4}$.
 
 
 
