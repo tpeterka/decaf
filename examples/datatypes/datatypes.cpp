@@ -17,6 +17,9 @@
 #include <stdint.h>
 #include <mpi.h>
 
+#include <mpi_debug.c>
+#define MPI_DEBUG 0
+
 // one tetrahedron
 // copied from https://bitbucket.org/diatomic/tess/include/tess/tet.h
 struct tet_t
@@ -220,18 +223,22 @@ void run(DecafSizes& decaf_sizes)
 	MPI_Datatype chunk_mpi_map;
 	if(rank == 0 || rank == 1){
 	  vector<vector<DataElement*> > maps;
-		maps = delaunayData.split(map_count, map, 4);	
-	  vector<DataElement*> chunk_vector = maps[1];
-		int chunk_map_count = chunk_vector.size();
-		DataElement chunk_map[chunk_map_count];
-		for(int i=0; i<chunk_map_count; i++){
-		  if(rank == 0) 
-			  fprintf(stdout, "[%d] '''Processing Element %d: (%p, %p, %d, %p)\n", rank, i, 
-				        chunk_vector[i]->base_type, chunk_vector[i]->disp_type, chunk_vector[i]->count,
-								chunk_vector[i]->disp);
-		  memcpy(&chunk_map[i], &chunk_vector[i], sizeof(DataElement));	
-		}
-		delaunayData.getMPIDatatypeFromMap(chunk_map_count, chunk_map, &chunk_mpi_map);
+	  maps = delaunayData.split(map_count, map, 4);	
+	  //if (MPI_DEBUG) MPI_Debug_pause(rank, 10);
+	  vector<DataElement*> chunk_vector = maps[3];
+	  int chunk_map_count = chunk_vector.size();
+	  DataElement chunk_map[chunk_map_count];
+	  for(int i=0; i<chunk_map_count; i++){
+	    if(rank == 0) 
+	      fprintf(stdout, "[%d] '''Processing Element %d: (%p, %p, %d, %p)\n", rank, i, 
+	              chunk_vector[i]->base_type, chunk_vector[i]->disp_type, chunk_vector[i]->count,
+	 	      chunk_vector[i]->disp);
+	    memcpy(&chunk_map[i], chunk_vector[i], sizeof(DataElement));	
+	  }
+	  if (MPI_DEBUG) MPI_Debug_pause(rank, 10);
+	  delaunayData.getMPIDatatypeFromMap(chunk_map_count, chunk_map, &chunk_mpi_map);
+	} else {
+	  if (MPI_DEBUG) MPI_Debug_pause(rank, 100);
 	}
 	//create_delaunay_datatype(&d, NULL, NULL, &del_mpi_map);
 	//MPI_Datatype del_map_mpi;
@@ -287,9 +294,14 @@ void run(DecafSizes& decaf_sizes)
 		MPI_Send(MPI_BOTTOM, 1, del_mpi_map_bis, 0, 0, MPI_COMM_WORLD);
 
 		// test sending chunks maps after splitting Dblock map 
-		d.gid = 103;
+		d.gid = 104;
 		d.particles[26] = 999;
-		d.particles[28] = 999;
+		d.particles[27] = 999;
+		d.particles[62] = 999;
+		d.particles[63] = 999;
+		d.rem_gids[0] = 999;
+		d.rem_gids[4] = 999;
+		d.vert_to_tet[10] = 999;
 		MPI_Send(MPI_BOTTOM, 1, chunk_mpi_map, 0, 0, MPI_COMM_WORLD);
 		//MPI_Send(MPI_BOTTOM, 1, del_mpi_map_bis, 0, 0, MPI_COMM_WORLD);
 		//MPI_Send(MPI_BOTTOM, 1, *(del_type->comm_datatype()), 0, 0, MPI_COMM_WORLD);
@@ -309,7 +321,9 @@ void run(DecafSizes& decaf_sizes)
 	 
 	 // third receive
 	 MPI_Recv(MPI_BOTTOM, 1, chunk_mpi_map, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-	 fprintf(stdout, "DBlock received with id %d - and particles[26]=%f particles[27]=%f\n", d.gid, d.particles[26], d.particles[27]);
+	 fprintf(stdout, "DBlock received with id %d - and particles[26]=%f particles[27]=%f particles[62]=%f particles[63]=%f "
+	                 "rem_gids[0]=%d, rem_gids[4]=%d vert_to_tet[10]=%d\n", d.gid, d.particles[26], d.particles[27], 
+			 d.particles[62], d.particles[63], d.rem_gids[0], d.rem_gids[4], d.vert_to_tet[10]);
 
 	 //struct dblock_t* d_new = new dblock_t();
 	 //struct tet_t* t_new = new tet_t();

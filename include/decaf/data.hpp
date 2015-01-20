@@ -118,6 +118,7 @@ namespace decaf
       DataElement* type_element = new DataElement();
       //*type_element = {map_[0].base_type, map_[0].disp_type, map_[0].count, map_[0].disp};
       //memcpy(type_element, &map[0], sizeof(DataElement));// do not keep this 
+      MPI_Aint size;
       int counter = 0;
       type_chunk = new vector<DataElement*>(); // allocate the first datatype chunk
       fprintf(stdout, "Type chunk %p created.\n", type_chunk);
@@ -130,7 +131,9 @@ namespace decaf
           //*type_element = {map_[i].base_type, map_[i].disp_type, map_[i].count, map_[i].disp};
           memcpy(type_element, &map[i], sizeof(DataElement));// do not keep this 
           type_element->count = chunk_size - counter; // set the right count
-          type_element->disp += map[i].count - element_count;// set the right disp (addr)
+          MPI_Type_extent(map[i].base_type, &size);
+	  //type_element->disp += (map[i].count - element_count)*size;// set the right disp (addr)
+	  type_element->disp += (map[i].count - element_count)*size;// set the right disp (addr)
 	  // we finished  a type chunk
           fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count); 
           fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n", 
@@ -148,7 +151,9 @@ namespace decaf
           //*type_element = {map_[i].base_type, map_[i].disp_type, map_[i].count, map_[i].disp};
           memcpy(type_element, &map[i], sizeof(DataElement));// do not keep this 
           type_element->count = element_count;
-          type_element->disp += map[i].count - element_count;
+          MPI_Type_extent(map[i].base_type, &size);
+	  //type_element->disp += (map[i].count - element_count)*size;
+          type_element->disp += (map[i].count - element_count)*size;
           fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
           fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n", 
                   type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
@@ -166,10 +171,12 @@ namespace decaf
         counter += map[i].count;
         type_chunk->push_back(type_element);
    
-        if(counter >= chunk_size){
+        if(counter >= chunk_size || i == map_count-1){
           type_chunks_all.push_back(*type_chunk);
-          type_chunk = new std::vector<DataElement*>();
-          fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+          if ( i != map_count-1){
+	    type_chunk = new std::vector<DataElement*>();
+            fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+	  }
           counter = 0;
         }
         //if (counter == 0) 
