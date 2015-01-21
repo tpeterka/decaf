@@ -2,7 +2,7 @@
 
 ## HACC Compilation
 
-HACC is not an open source code, you need to have access to ANL internal network to get it. Tom is keeping an up-to-date version of HACC on his home directory at /homes/tpeterka/hacc/. Otherwise, I made  a packaged version excluding  svn-related directories that you can get from /homes/lrahmani/hacc-new.tar.gz. 
+HACC is not under an open source licence, please contact Tom to get it. Else, if you have access to ANL internet, Tom is keeping an up-to-date version of HACC on his home directory at /homes/tpeterka/hacc/. Otherwise, I made  a packaged version excluding  svn-related directories that you can get from /homes/lrahmani/hacc-new.tar.gz. 
 Get the hacc-new.tar.gz package from ANL internal network, extract it:
 
 
@@ -17,7 +17,7 @@ export HACC_RT=$(pwd)
 
 ```
 
-Hacc is structured into different modules in addition to the nbody simulation one. We need to build those modules separately:
+Hacc is structured into different modules in addition to the nbody solver one. We need to build those modules separately:
 
 - genericio
 
