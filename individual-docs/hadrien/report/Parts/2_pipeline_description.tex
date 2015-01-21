@@ -74,13 +74,13 @@ frequency noise or over smoothness. In order to compare distances between those
 spectral responces we use the following integral based metric :
 
 \begin{equation}
-	d(ps_1, ps_2) = \int_{\Delta f}\frac{\|ps_1(f)-ps_2(f)\|^2}{f}\, \mathrm df
+	d(ps_1, ps_2) = \int_{\Delta f}\frac{\|\log(ps_1(f))-\log(ps_2(f))\|}{f^2}\, \mathrm df
 	\label{eq:psd_metric}
 \end{equation}
 
-By dividing by the frequency we ensured a constant contribution from all orders
-of magnitudes. This notably helps discriminate variation at low frequencies and
-therefore check total weight of the density field.
+% By dividing by the frequency we ensured a constant contribution from all orders
+% of magnitudes. This notably helps discriminate variation at low frequencies and
+% therefore check total weight of the density field.
 
 %=====================================================================
 %=====================================================================
