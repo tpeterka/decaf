@@ -60,7 +60,7 @@ SliceDatatype(int dim, int* full_size, int* sub_size, int* start_pos, CommDataty
 //
 decaf::
 StructDatatype::
-StructDatatype(Address base_addr, int num_elems, DataElement* map)
+StructDatatype(Address base_addr, int num_elems, DataMap* map)
 {
   // form the vectors needed to create the struct datatype
   //vector <MPI_Aint> addrs(num_elems, base_addr);
@@ -80,7 +80,7 @@ StructDatatype(Address base_addr, int num_elems, DataElement* map)
      int my_rank = -1;
      MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
      if (my_rank == 0)
-       fprintf(stdout, "[%d] Processing DataElement %d: (%p, %p, %d, %p)\n", my_rank,
+       fprintf(stdout, "[%d] Processing DataMap %d: (%p, %p, %d, %p)\n", my_rank,
                i, map[i].base_type, map[i].disp_type, map[i].count, map[i].disp);
     if (map[i].disp_type == DECAF_OFST){
       //addrs[nelems] = addrs[i] + map[i].disp;
@@ -115,12 +115,12 @@ StructDatatype(Address base_addr, int num_elems, DataElement* map)
 
   // save the map for later datatype processing
   map_num_elems_ = num_elems;
-  map_ = (DataElement*) malloc(sizeof(DataElement)*num_elems); // too bad, don't use malloc
-  memcpy(map_, map, sizeof(DataElement)*num_elems);
+  map_ = (DataMap*) malloc(sizeof(DataMap)*num_elems); // too bad, don't use malloc
+  memcpy(map_, map, sizeof(DataMap)*num_elems);
 }
 
 // split an StructDatatype
-std::vector <std::vector<DataElement*> >
+std::vector <std::vector<DataMap*> >
 decaf::
 StructDatatype::
 split(int n)
@@ -135,22 +135,22 @@ split(int n)
  int chunk_size = ceil((float)total_size/(float)n); // test if total size is actually > than n
  fprintf(stdout, "Chunk size is %d\n", chunk_size);
 
- std::vector<std::vector<DataElement*> > type_chunks_all;
- std::vector<DataElement*>* type_chunk;
- DataElement* type_element = new DataElement();
+ std::vector<std::vector<DataMap*> > type_chunks_all;
+ std::vector<DataMap*>* type_chunk;
+ DataMap* type_element = new DataMap();
  //*type_element = {map_[0].base_type, map_[0].disp_type, map_[0].count, map_[0].disp};
- memcpy(type_element, &map_[0], sizeof(DataElement));// do not keep this 
+ memcpy(type_element, &map_[0], sizeof(DataMap));// do not keep this 
  int counter = 0;
- type_chunk = new std::vector<DataElement*>(); // allocate the first datatype chunk
+ type_chunk = new std::vector<DataMap*>(); // allocate the first datatype chunk
  fprintf(stdout, "Type chunk %p created.\n", type_chunk);
- // loop over the OriginalDataElement to create new one
+ // loop over the OriginalDataMap to create new one
  for( int i=0; i<map_num_elems_; i++) {
    int element_count = map_[i].count;
    // decide if this type elemenet wil be splitted
    while(counter + element_count > chunk_size){
-     type_element = new DataElement();
+     type_element = new DataMap();
      //*type_element = {map_[i].base_type, map_[i].disp_type, map_[i].count, map_[i].disp};
-     memcpy(type_element, &map_[i], sizeof(DataElement));// do not keep this 
+     memcpy(type_element, &map_[i], sizeof(DataMap));// do not keep this 
      type_element->count = chunk_size - counter; // set the right count
      // we finished  a type chunk
      fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count); 
@@ -158,16 +158,16 @@ split(int n)
              type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
      type_chunk->push_back(type_element);
      type_chunks_all.push_back(*type_chunk);
-     type_chunk = new std::vector<DataElement*>();
+     type_chunk = new std::vector<DataMap*>();
      fprintf(stdout, "Type chunk %p created.\n", type_chunk); 
      counter = 0;
      element_count -= type_element->count;
    }
 
    if (element_count != 0 && element_count != map_[i].count){
-     type_element = new DataElement();
+     type_element = new DataMap();
      //*type_element = {map_[i].base_type, map_[i].disp_type, map_[i].count, map_[i].disp};
-     memcpy(type_element, &map_[i], sizeof(DataElement));// do not keep this 
+     memcpy(type_element, &map_[i], sizeof(DataMap));// do not keep this 
      type_element->count = element_count;
      fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
      fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n", 
@@ -177,9 +177,9 @@ split(int n)
      continue;
    }
 
-   type_element = new DataElement();
+   type_element = new DataMap();
    //*type_element = {map_[i].base_type, map_[i].disp_type, map_[i].count, map_[i].disp};
-   memcpy(type_element, &map_[i], sizeof(DataElement));// do not keep this 
+   memcpy(type_element, &map_[i], sizeof(DataMap));// do not keep this 
    fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
    fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n", 
              type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
@@ -188,7 +188,7 @@ split(int n)
    
    if(counter >= chunk_size){
      type_chunks_all.push_back(*type_chunk);
-     type_chunk = new std::vector<DataElement*>();
+     type_chunk = new std::vector<DataMap*>();
      fprintf(stdout, "Type chunk %p created.\n", type_chunk);
      counter = 0;
    }

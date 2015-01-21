@@ -22,7 +22,7 @@ enum DispType
   DECAF_ADDR,
   DECAF_NUM_DISP_TYPES,
 };
-struct DataElement {
+struct DataMap {
   CommDatatype base_type; // existing datatype used to create this one
   DispType disp_type;     // diplacement is relative OFST or absolute ADDR
   int count;              // count of each element
