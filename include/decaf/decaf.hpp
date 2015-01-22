@@ -37,8 +37,9 @@ namespace decaf
           Data* data);
     ~Decaf();
     void put(void* d);
-    void* get();
-    int get_nitems() { return data_->get_nitems(DECAF_CON); }
+    void* get(bool no_copy = false);
+    int get_nitems(bool no_copy = false)
+      { return(no_copy? data_->put_nitems() : data_->get_nitems(DECAF_CON)); }
     Data* data() { return data_; }
     DecafSizes* sizes() { return &sizes_; }
     void flush();
@@ -166,7 +167,8 @@ Decaf::put(void* d)
     // TODO: not looping over pipeliner chunks yet
     if (data_->put_nitems())
     {
-//       fprintf(stderr, "putting to prod_dflow rank %d\n", prod_dflow_comm_->start_output() + i);
+//       fprintf(stderr, "putting to prod_dflow rank %d put_nitems = %d\n",
+//               prod_dflow_comm_->start_output() + i, data_->put_nitems());
       prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, DECAF_PROD);
     }
   }
@@ -178,10 +180,15 @@ Decaf::put(void* d)
 
 void*
 decaf::
-Decaf::get()
+Decaf::get(bool no_copy)
 {
-  dflow_con_comm_->get(data_, DECAF_CON);
-  return data_->get_items(DECAF_CON);
+  if (no_copy)
+    return data_->put_items();
+  else
+  {
+    dflow_con_comm_->get(data_, DECAF_CON);
+    return data_->get_items(DECAF_CON);
+  }
 }
 
 // run the dataflow
@@ -215,7 +222,11 @@ Decaf::forward()
 
     // TODO: not looping over pipeliner chunks yet
     if (data_->put_nitems())
+    {
+//       fprintf(stderr, "putting to dflow_con rank %d put_nitems = %d\n",
+//               dflow_con_comm_->start_output() + k, data_->put_nitems());
       dflow_con_comm_->put(data_, dflow_con_comm_->start_output() + k, DECAF_DFLOW);
+    }
   }
 }
 

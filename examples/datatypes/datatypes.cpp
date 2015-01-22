@@ -186,7 +186,7 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
 
     decaf->flush(); // both producer and consumer need to clean up after each time step
     // now safe to cleanup producer data, after decaf->flush() is called
-    // don't wory about deleting the data pointed to by cd; decaf did that in fluwh()
+    // don't wory about deleting the data pointed to by cd; decaf did that in flush()
     if (decaf->is_prod())
       delete[] pd;
   }

@@ -104,7 +104,7 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
       cd = (int*)decaf->get(); // TODO: dataflow not handling different tags yet
       // for example, add all the items arrived at this rank
       int sum = 0;
-//       fprintf(stderr, "consumer get_nitems = %d\n", decaf->get_nitems());
+//       fprintf(stderr, "consumer get_nitems = %d\n", decaf->get_nitems(true));
       for (int i = 0; i < decaf->get_nitems(); i++)
         sum += cd[i];
       fprintf(stderr, "- consuming time step %d, sum = %d\n", t, sum);
@@ -112,7 +112,7 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
 
     decaf->flush(); // both producer and consumer need to clean up after each time step
     // now safe to cleanup producer data, after decaf->flush() is called
-    // don't wory about deleting the data pointed to by cd; decaf did that in fluwh()
+    // don't wory about deleting the data pointed to by cd; decaf did that in flush()
     if (decaf->is_prod())
       delete[] pd;
   }

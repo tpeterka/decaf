@@ -54,18 +54,9 @@ Comm::put(Data *data, int dest, TaskType task_type)
 {
   // TODO: prepend typemap?
 
-  if (world_rank(dest) == world_rank(rank())) // put to self
-  {
-    MPI_Aint extent; // datatype size in bytes
-    MPI_Type_extent(data->complete_datatype_, &extent);
-    if (task_type == DECAF_PROD)
-      memcpy(data->resize_get_items(data->put_nitems() * extent, DECAF_DFLOW), data->put_items(),
-             data->put_nitems() * extent);
-    else
-      memcpy(data->resize_get_items(data->put_nitems() * extent, DECAF_CON), data->put_items(),
-             data->put_nitems() * extent);
-  }
-  else // put to other
+  // NB: putting to self is handled during the get
+
+  if (world_rank(dest) != world_rank(rank())) // put to other (not self)
   {
     MPI_Request req;
     reqs.push_back(req);
@@ -89,7 +80,9 @@ Comm::get(Data* data, TaskType task_type)
     {
       MPI_Aint extent; // datatype size in bytes
       MPI_Type_extent(data->complete_datatype_, &extent);
-      // TODO: I don't think there is a good way to avoid the following deep copy
+      // NB: no way to avoid the following deep copy; some of the get items may have come remotely,
+      // others from self, and we want them all in one place.
+      // There is a separate no_copy option in decaf::get() that simply returns the put items
       memcpy(data->resize_get_items(data->put_nitems() * extent, task_type),
              data->put_items(), extent);
     }
