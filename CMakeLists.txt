@@ -1,7 +1,7 @@
 project                     (Decaf)
 cmake_minimum_required      (VERSION 2.8)
 
-option                      (debug              "Build Decaf with debugging on"                OFF)
+option                      (debug              "Build Decaf with debugging on"                ON)
 option                      (optimize           "Build Decaf with optimization"                OFF)
 option                      (transport_mpi      "Build Decaf with MPI transport layer"          ON)
 

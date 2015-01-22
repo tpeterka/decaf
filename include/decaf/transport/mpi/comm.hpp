@@ -17,6 +17,8 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 // forms a communicator from contiguous world ranks
 // only collective over the ranks in the range [min_rank, max_rank]

@@ -14,6 +14,8 @@
 #define DECAF_DATA_HPP
 
 #include "types.hpp"
+#include <math.h>
+#include <string.h>
 #include <vector>
 
 // transport layer implementations
@@ -45,7 +47,11 @@ namespace decaf
   };
   struct StructDatatype: Datatype
   {
-    StructDatatype(Address base_addr, int num_elems, DataElement* map);
+    StructDatatype(Address base_addr, int num_elems, DataMap* map);
+    std::vector<std::vector<DataMap*> > split(int n);
+  private:
+    DataMap* map_;
+    size_t map_num_elems_;
   };
 
   // data description
@@ -54,8 +60,8 @@ namespace decaf
   public:
     const CommDatatype complete_datatype_;
     // TODO: uncomment the following once we start to use them
-//     const CommDatatype chunk_datatype_;
-//     const enum Decomposition decomp_type_;
+    //     const CommDatatype chunk_datatype_;
+    //     const enum Decomposition decomp_type_;
 
     Data(CommDatatype dtype) : complete_datatype_(dtype), put_items_(NULL) {}
     ~Data() {}
@@ -74,6 +80,101 @@ namespace decaf
     void* put_items_; // data pointer to items being put
     int put_nitems_; // number of items being put
     int err_; // last error
+  };
+
+  template <class T>
+  class DataBis
+  {
+  public:
+    DataBis(void (*create_datatype)(const T*, int*, DataMap**, CommDatatype*)) : create_datatype(create_datatype) {}
+    vector<T> getData() { return data;}
+    T* getPointerData() { return data.empty() ? NULL : &data[0];}
+    int getNumberElements() { return data.size();}
+    void addDataMap(const T* data_elem) { data.push_back(data_elem);}
+    void deleteElement(int index) { data.erase(data.begin()+index);}
+    void deleteElements(int from, int to) { data.erase(data.begin()+from, data.begin()+to);}
+    int generateCommDatatype(const T* data_elem, CommDatatype* comm_datatype) { create_datatype(data_elem, NULL, NULL, comm_datatype); }
+    int generateMap(const T* data_elem, int* map_count, DataMap** map) { create_datatype(data_elem, map_count, map, NULL);}
+    void getCommDatatypeFromMap(int map_count, DataMap* map, CommDatatype* comm_datatype){
+      StructDatatype* s_type = new StructDatatype((size_t) 0, map_count, map);
+      *comm_datatype = *(s_type->comm_datatype());
+    }
+    vector<vector<DataMap*> > split(int map_count, DataMap* map, int count){
+      // get the total size of the Struct
+      int total_size_b = 0;
+      for( int i=0; i<map_count ; i++)
+        total_size_b += map[i].count*DatatypeSize(map[i].base_type);
+      fprintf(stdout, "Total Struct typemap is %d\n", total_size_b);
+
+      // chunk size
+      int chunk_size_b = ceil((float)total_size_b/(float)count); // test if total size is actually > than n
+      fprintf(stdout, "Chunk size is %d\n", chunk_size_b);
+
+      vector<vector<DataMap*> > type_chunks_all;
+      vector<DataMap*>* type_chunk;
+      DataMap* type_element = new DataMap();
+      size_t size;
+      int counter_b = 0;
+      type_chunk = new vector<DataMap*>(); // allocate the first datatype chunk
+      fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+      // loop over the OriginalDataMap to create new one
+      for( int i=0; i<map_count; i++) {
+        int element_count_b = map[i].count*DatatypeSize(map[i].base_type);
+        int remaining_elt = map[i].count;
+        size = DatatypeSize(map[i].base_type);
+        // decide if this type element wil be splitted
+        while(counter_b + remaining_elt*size > chunk_size_b){
+          type_element = new DataMap();
+          memcpy(type_element, &map[i], sizeof(DataMap));// do not keep this
+          type_element->count = ceil( (chunk_size_b-counter_b) / size); // set the right count
+          type_element->disp += (map[i].count - remaining_elt)*size;// set the right disp (addr)
+          // we finished  a type chunk
+          fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
+          fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n",
+                  type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
+          type_chunk->push_back(type_element);
+          type_chunks_all.push_back(*type_chunk);
+          type_chunk = new std::vector<DataMap*>();
+          fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+          counter_b = 0;
+          remaining_elt -= type_element->count;
+        }
+
+        if (remaining_elt != 0 && remaining_elt != map[i].count){
+          type_element = new DataMap();
+          memcpy(type_element, &map[i], sizeof(DataMap));// do not keep this
+          type_element->count = remaining_elt;
+          type_element->disp += (map[i].count - remaining_elt)*size;
+          fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
+          fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n",
+                  type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
+          counter_b += remaining_elt*size;
+          type_chunk->push_back(type_element);
+          continue;
+        }
+
+        type_element = new DataMap();
+        memcpy(type_element, &map[i], sizeof(DataMap));// do not keep this
+        fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
+        fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n",
+                type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
+        counter_b += element_count_b;
+        type_chunk->push_back(type_element);
+
+        if(counter_b >= chunk_size_b || i == map_count-1){
+          type_chunks_all.push_back(*type_chunk);
+          if ( i != map_count-1){
+            type_chunk = new std::vector<DataMap*>();
+            fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+          }
+          counter_b = 0;
+        }
+      }
+      return type_chunks_all;
+    }
+  private:
+    vector<T> data;
+    void (*create_datatype)(const T* , int*, DataMap**, CommDatatype*);
   };
 
 } // namespace

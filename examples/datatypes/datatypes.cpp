@@ -14,7 +14,11 @@
 #include <assert.h>
 #include <math.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <mpi.h>
+
+#include <mpi_debug.c>
+#define MPI_DEBUG 0
 
 // one tetrahedron
 // copied from https://bitbucket.org/diatomic/tess/include/tess/tet.h
@@ -22,7 +26,7 @@ struct tet_t
 {
   int verts[4];		// indices of the vertices
   int tets[4];		// indices of the neighbors
-			// tets[i] lies opposite verts[i]
+  // tets[i] lies opposite verts[i]
 };
 // delaunay tessellation for one block
 // copied from https://bitbucket.org/diatomic/tess/include/tess/delaunay.h
@@ -43,6 +47,48 @@ struct dblock_t
 };
 
 using namespace decaf;
+
+// user-defined
+// delaunay block datatype function generator
+void create_delaunay_datatype(const struct dblock_t* d, int* map_count, DataMap** map, CommDatatype* comm_datatype){
+
+  // tet data map
+  DataMap tet_map[] =
+    {
+      { MPI_INT, DECAF_OFST, 4, offsetof(struct tet_t, verts) },
+      { MPI_INT, DECAF_OFST, 4, offsetof(struct tet_t, tets)  },
+    };
+
+  StructDatatype* tet_type = new StructDatatype(0, sizeof(tet_map) / sizeof(tet_map[0]), tet_map);
+  MPI_Datatype* ttype = tet_type->comm_datatype();
+  DataMap del_map[] =
+    {
+      { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, gid)                },
+      { MPI_FLOAT, DECAF_OFST, 3,                   offsetof(struct dblock_t, mins)               },
+      { MPI_FLOAT, DECAF_OFST, 3,                   offsetof(struct dblock_t, maxs)               },
+      { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_orig_particles) },
+      { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_particles)      },
+      { MPI_FLOAT, DECAF_ADDR, d->num_particles * 3, addressof(d->particles)                      },
+      { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_tets)           },
+      { *ttype,    DECAF_ADDR, d->num_tets,          addressof(d->tets)                           },
+      { MPI_INT,   DECAF_ADDR, d->num_particles-d->num_orig_particles, addressof(d->rem_gids)      },
+      { MPI_INT,   DECAF_ADDR, d->num_particles,   addressof(d->vert_to_tet)                      },
+    };
+
+  // generate MPI datatype if needed
+  if(comm_datatype){
+    StructDatatype* del_type = new StructDatatype((MPI_Aint) d, sizeof(del_map) / sizeof(del_map[0]), del_map);
+    *comm_datatype = *(del_type->comm_datatype());
+  }
+
+  // save the map if needed
+  if(map_count){
+    *map_count = sizeof(del_map)/sizeof(del_map[0]);
+    *map = new DataMap[*map_count]();
+    memcpy(*map, del_map, sizeof(del_map));
+  }
+
+}
 
 // user-defined selector code
 // runs in the producer
@@ -89,52 +135,114 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
 
   // create some data types
 
-  // 100 3d points
-  VectorDatatype* vec_type = new VectorDatatype(128 * 3, 1, MPI_FLOAT);
+  float* particles= new float[90];
+  struct tet_t* tets = new struct tet_t[7];
+  tets[0].verts[2] = 5;
+  int* rem_gids = new int[5];
+  int* vert_to_tet = new int[30];
+  dblock_t d =
+    { 100, {0,0,0}, {10,10,10}, 25, 30, particles, 7, tets,
+      rem_gids, vert_to_tet,
+    };
 
-  // 30 x 100 density values
-  float density[30][100];
-  int full_size[] = {100, 30}; // always [x][y]... order (not C order!)
-  int sub_size[]  = {2, 30};   // always [x][y]... order
-  int start_pos[] = {0, 0};    // always [x][y]... order
-  SliceDatatype* slice_type = new SliceDatatype(2, full_size, sub_size, start_pos, MPI_FLOAT);
+  // Data declaration
+  DataBis<dblock_t> delaunayData(create_delaunay_datatype);
 
-  // datatype for tet
-  DataElement tet_map[] =
-  {
-    { MPI_INT, DECAF_OFST, 4, offsetof(struct tet_t, verts) },
-    { MPI_INT, DECAF_OFST, 4, offsetof(struct tet_t, tets)  },
-  };
-  StructDatatype* tet_type = new StructDatatype(0, sizeof(tet_map) / sizeof(tet_map[0]), tet_map);
 
-  dblock_t d; // delaunay block (TODO: needs to be initialized)
+  // Create a data & MPI Map for var d
+  MPI_Datatype del_mpi_map;
+  int map_count = 0;
+  DataMap* map;
+  create_delaunay_datatype(&d, &map_count, &map, &del_mpi_map);
 
-  // datatype for delaunay block
-  int num_rem_particles = d.num_particles - d.num_orig_particles;
-  MPI_Datatype* dtype = tet_type->comm_datatype();
-  DataElement del_map[] =
-  {
-    { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, gid)                },
-    { MPI_FLOAT, DECAF_OFST, 3,                   offsetof(struct dblock_t, mins)               },
-    { MPI_FLOAT, DECAF_OFST, 3,                   offsetof(struct dblock_t, maxs)               },
-    { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_orig_particles) },
-    { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_particles)      },
-    { MPI_FLOAT, DECAF_ADDR, d.num_particles * 3, addressof(d.particles)                        },
-    { MPI_INT,   DECAF_OFST, 1,                   offsetof(struct dblock_t, num_tets)           },
-    { *dtype,    DECAF_ADDR, d.num_tets,          addressof(d.tets)                             },
-    { MPI_INT,   DECAF_ADDR, num_rem_particles,   addressof(d.rem_gids)                         },
-    { MPI_INT,   DECAF_ADDR, d.num_particles,     addressof(d.vert_to_tet)                      },
-  };
-  StructDatatype* del_type = new StructDatatype(0, sizeof(del_map) / sizeof(del_map[0]), del_map);
+  // Check if the map is correctly set
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  for (int i=0; i<map_count; i++ )
+    if (rank == 0)
+      fprintf(stdout, "[%d] ***Processing DataMap %d: (%p, %p, %d, %p)\n", rank,
+              i, map[i].base_type, map[i].disp_type, map[i].count, map[i].disp);
 
+  // get an MPI Map from a data Map
+  MPI_Datatype del_mpi_map_bis;
+  //const DataMap* map_const = map;
+  delaunayData.getCommDatatypeFromMap(map_count, map, &del_mpi_map_bis);
+
+  // split test
+  MPI_Datatype chunk_mpi_map;
+  if(rank == 0 || rank == 1){
+    vector<vector<DataMap*> > maps;
+    maps = delaunayData.split(map_count, map, 4);
+    //if (MPI_DEBUG) MPI_Debug_pause(rank, 10);
+    vector<DataMap*> chunk_vector = maps[3];
+    int chunk_map_count = chunk_vector.size();
+    DataMap chunk_map[chunk_map_count];
+    for(int i=0; i<chunk_map_count; i++){
+      if(rank == 0)
+        fprintf(stdout, "[%d] '''Processing Element %d: (%p, %p, %d, %p)\n", rank, i,
+                chunk_vector[i]->base_type, chunk_vector[i]->disp_type, chunk_vector[i]->count,
+                chunk_vector[i]->disp);
+      memcpy(&chunk_map[i], chunk_vector[i], sizeof(DataMap));
+    }
+    if (MPI_DEBUG) MPI_Debug_pause(rank, 10);
+    delaunayData.getCommDatatypeFromMap(chunk_map_count, chunk_map, &chunk_mpi_map);
+  } else {
+    if (MPI_DEBUG) MPI_Debug_pause(rank, 100);
+  }
+
+  if (rank == 1){
+    //MPI_Send(&rank, 1, MPI_INT, 0, 0 , MPI_COMM_WORLD);
+
+    // test the MPI Map created using the create_delaunay_datatype function
+    d.gid = 102;
+    MPI_Send(MPI_BOTTOM, 1, del_mpi_map, 0, 0, MPI_COMM_WORLD);
+
+    // test the MPI Map created using getMPIDatatypeFromMap on the Map created by
+    // create_delaunay_datatype when first creating the MPI Map
+    d.gid = 103;
+    MPI_Send(MPI_BOTTOM, 1, del_mpi_map_bis, 0, 0, MPI_COMM_WORLD);
+
+    // test sending chunks maps after splitting Dblock map
+    d.gid = 104;
+    d.particles[26] = 999;
+    d.particles[27] = 999;
+    d.particles[62] = 999;
+    d.particles[63] = 999;
+    d.rem_gids[0] = 999;
+    d.rem_gids[4] = 999;
+    d.vert_to_tet[10] = 999;
+    MPI_Send(MPI_BOTTOM, 1, chunk_mpi_map, 0, 0, MPI_COMM_WORLD);
+    //MPI_Send(MPI_BOTTOM, 1, del_mpi_map_bis, 0, 0, MPI_COMM_WORLD);
+    //MPI_Send(MPI_BOTTOM, 1, *(del_type->comm_datatype()), 0, 0, MPI_COMM_WORLD);
+    //MPI_Send(tets, 1, *(tet_type->comm_datatype()), 0, 0, MPI_COMM_WORLD);
+  }
+
+  if (rank == 0){
+    MPI_Status status;
+
+    // first receive
+    MPI_Recv(MPI_BOTTOM, 1, del_mpi_map, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    fprintf(stdout, "DBlock received with id %d\n", d.gid);
+
+    // second receive
+    MPI_Recv(MPI_BOTTOM, 1, del_mpi_map_bis, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    fprintf(stdout, "DBlock received with id %d\n", d.gid);
+
+    // third receive
+    MPI_Recv(MPI_BOTTOM, 1, chunk_mpi_map, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    fprintf(stdout, "DBlock received with id %d - and particles[26]=%f particles[27]=%f particles[62]=%f particles[63]=%f "
+            "rem_gids[0]=%d, rem_gids[4]=%d vert_to_tet[10]=%d\n", d.gid, d.particles[26], d.particles[27],
+            d.particles[62], d.particles[63], d.rem_gids[0], d.rem_gids[4], d.vert_to_tet[10]);
+
+  }
   // cleanup the datatypes created above
-  delete vec_type;
-  delete slice_type;
-  delete tet_type;
-  delete del_type;
 
   // the rest of this example is the same as direct.cpp
   // TODO: use the datatypes created above in the dataflow
+
+  // define the data type
+  //DataBis<dblock_t> delaunayData(create_delaunay_datatype);
+  //fprintf(stdout, "a delaunay data is created %d\n", delaunayData.getNumberElements());
 
   // define the data type
   Data data(MPI_INT);
