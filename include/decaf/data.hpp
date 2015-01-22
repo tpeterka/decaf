@@ -63,16 +63,14 @@ namespace decaf
     int put_nitems() { return put_nitems_; }
     void* put_items() { return put_items_; }
     void put_items(void* d) { put_items_ = d; }
-    int get_nitems() { return(get_items_.size() / DatatypeSize(complete_datatype_)); }
-    void* get_items(bool aux = false);
+    int get_nitems(TaskType task_type);
+    void* get_items(TaskType task_type);
     void err() { ::all_err(err_); }
-    void flush() { get_items_.clear(); }
-    unsigned char* resize_get_items(int extra_bytes, bool aux = false);
+    void flush() { dflow_get_items_.clear(); con_get_items_.clear();}
+    unsigned char* resize_get_items(int extra_bytes, TaskType task_type);
   private:
-    std::vector <unsigned char> get_items_; // all items being gotten
-    // 2nd vector of all items being gotten is needed when same node is a receiver for both
-    // dataflow and consumer with different message paths
-    std::vector <unsigned char> aux_get_items_;
+    std::vector <unsigned char> dflow_get_items_; // incoming items for a dataflow process
+    std::vector <unsigned char> con_get_items_; // incoming items for a consumer process
     void* put_items_; // data pointer to items being put
     int put_nitems_; // number of items being put
     int err_; // last error
@@ -80,34 +78,43 @@ namespace decaf
 
 } // namespace
 
-// returns pointer to start of get_items
+int
+decaf::
+Data::get_nitems(TaskType task_type)
+{
+  if (task_type == DECAF_DFLOW)
+    return(dflow_get_items_.size() / DatatypeSize(complete_datatype_));
+  else
+    return(con_get_items_.size() / DatatypeSize(complete_datatype_));
+}
+
 void*
 decaf::
-Data::get_items(bool aux)
+Data::get_items(TaskType task_type)
 {
-  if (aux)
-    return(aux_get_items_.size() ? &aux_get_items_[0] : NULL);
+  if (task_type == DECAF_DFLOW)
+    return(dflow_get_items_.size() ? &dflow_get_items_[0] : NULL);
   else
-    return(get_items_.size() ? &get_items_[0] : NULL);
+    return(con_get_items_.size() ? &con_get_items_[0] : NULL);
 }
 
 // resizes (grows and changes size) get_items by extra_bytes
 // returns pointer to start of extra space
 unsigned char*
 decaf::
-Data::resize_get_items(int extra_bytes, bool aux)
+Data::resize_get_items(int extra_bytes, TaskType task_type)
 {
-  if (aux)
+  if (task_type == DECAF_DFLOW)
   {
-    int old_size = aux_get_items_.size(); // bytes
-    aux_get_items_.resize(old_size + extra_bytes);
-    return &aux_get_items_[old_size];
+    int old_size = dflow_get_items_.size(); // bytes
+    dflow_get_items_.resize(old_size + extra_bytes);
+    return &dflow_get_items_[old_size];
   }
   else
   {
-    int old_size = get_items_.size(); // bytes
-    get_items_.resize(old_size + extra_bytes);
-    return &get_items_[old_size];
+    int old_size = con_get_items_.size(); // bytes
+    con_get_items_.resize(old_size + extra_bytes);
+    return &con_get_items_[old_size];
   }
 }
 

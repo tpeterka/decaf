@@ -43,13 +43,13 @@ con_start=0
 
 # time steps
 tot_time=2
-con_interval=1
+con_time=2
 
 #------
 #
 # program arguments
 #
-args="$prod_size, $dflow_size, $con_size, $prod_start, $dflow_start, $con_start, $tot_time, $con_interval"
+args="$prod_size, $dflow_size, $con_size, $prod_start, $dflow_start, $con_start, $tot_time, $con_time"
 
 #------
 #

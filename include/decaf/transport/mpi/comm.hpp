@@ -22,8 +22,9 @@
 // only collective over the ranks in the range [min_rank, max_rank]
 decaf::
 Comm::Comm(CommHandle world_comm, int min_rank, int max_rank, int num_srcs,
-           int num_dests, int start_dest):
-  min_rank(min_rank), num_srcs(num_srcs), num_dests(num_dests), start_dest(start_dest)
+           int num_dests, int start_dest, CommType comm_type):
+  min_rank(min_rank), num_srcs(num_srcs), num_dests(num_dests), start_dest(start_dest),
+  type_(comm_type)
 {
   MPI_Group group, newgroup;
   int range[3];
@@ -47,23 +48,30 @@ Comm::~Comm()
 }
 
 // puts data to a destination
-// it forwarding, sends data->get_items()
-// else, sends data->put_items()
 void
 decaf::
-Comm::put(Data *data, int dest, bool forward)
+Comm::put(Data *data, int dest, TaskType task_type)
 {
-  forward_ = forward;
-
   // TODO: prepend typemap?
 
-  if (world_rank(dest) != world_rank(rank()))
+  if (world_rank(dest) == world_rank(rank())) // put to self
+  {
+    MPI_Aint extent; // datatype size in bytes
+    MPI_Type_extent(data->complete_datatype_, &extent);
+    if (task_type == DECAF_PROD)
+      memcpy(data->resize_get_items(data->put_nitems() * extent, DECAF_DFLOW), data->put_items(),
+             data->put_nitems() * extent);
+    else
+      memcpy(data->resize_get_items(data->put_nitems() * extent, DECAF_CON), data->put_items(),
+             data->put_nitems() * extent);
+  }
+  else // put to other
   {
     MPI_Request req;
     reqs.push_back(req);
-    if (forward)
-      MPI_Isend(data->get_items(), data->get_nitems(), data->complete_datatype_, dest, 0,
-                handle_, &reqs.back());
+    if (task_type == DECAF_DFLOW) // forwarding through the dataflow
+      MPI_Isend(data->get_items(DECAF_DFLOW), data->get_nitems(DECAF_DFLOW),
+                data->complete_datatype_, dest, 0, handle_, &reqs.back());
     else
       MPI_Isend(data->put_items(), data->put_nitems(), data->complete_datatype_, dest, 0,
                 handle_, &reqs.back());
@@ -73,19 +81,17 @@ Comm::put(Data *data, int dest, bool forward)
 // gets data from one or more sources
 void
 decaf::
-Comm::get(Data* data, bool aux)
+Comm::get(Data* data, TaskType task_type)
 {
   for (int i = start_input(); i < start_input() + num_inputs(); i++)
   {
     if (world_rank(i) == world_rank(rank())) // receive from self
     {
-      if (!forward_) // forwarding would only copy get_items to get_items; no need
-      {
-        MPI_Aint extent; // datatype size in bytes
-        MPI_Type_extent(data->complete_datatype_, &extent);
-        // TODO: I don't think there is a good way to avoid the following deep copy
-        memcpy(data->resize_get_items(data->put_nitems() * extent, aux), data->put_items(), extent);
-      }
+      MPI_Aint extent; // datatype size in bytes
+      MPI_Type_extent(data->complete_datatype_, &extent);
+      // TODO: I don't think there is a good way to avoid the following deep copy
+      memcpy(data->resize_get_items(data->put_nitems() * extent, task_type),
+             data->put_items(), extent);
     }
     else // receive from other
     {
@@ -96,8 +102,8 @@ Comm::get(Data* data, bool aux)
       MPI_Get_count(&status, data->complete_datatype_, &nitems);
       MPI_Aint extent; // datatype size in bytes
       MPI_Type_extent(data->complete_datatype_, &extent);
-      MPI_Recv(data->resize_get_items(nitems * extent, aux), nitems, data->complete_datatype_,
-               status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
+      MPI_Recv(data->resize_get_items(nitems * extent, task_type), nitems,
+               data->complete_datatype_, status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
     }
   }
 }

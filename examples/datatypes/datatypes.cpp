@@ -67,7 +67,7 @@ void checker(Decaf* decaf)
 //
 // gets command line args
 //
-void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes)
+void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes, int& prod_nsteps)
 {
   assert(argc >= 9);
 
@@ -79,11 +79,11 @@ void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes)
   decaf_sizes.dflow_start  = atoi(argv[5]);
   decaf_sizes.con_start    = atoi(argv[6]);
 
-  decaf_sizes.prod_nsteps  = atoi(argv[7]);
-  decaf_sizes.con_interval = atoi(argv[8]);
+  prod_nsteps              = atoi(argv[7]); // user's, not decaf's variable
+  decaf_sizes.con_nsteps   = atoi(argv[8]);
 }
 
-void run(DecafSizes& decaf_sizes)
+void run(DecafSizes& decaf_sizes, int prod_nsteps)
 {
   MPI_Init(NULL, NULL);
 
@@ -149,11 +149,11 @@ void run(DecafSizes& decaf_sizes)
                            &data);
   decaf->err();
 
-  // producer and consumer data
-  // keep these in separate pointers in ase producer and consumer overlap
+  // producer and consumer data in separate pointers in case producer and consumer overlap
   int *pd, *cd;
+  int con_interval = prod_nsteps / decaf_sizes.con_nsteps; // consume every so often
 
-  for (int t = 0; t < decaf_sizes.prod_nsteps; t++)
+  for (int t = 0; t < prod_nsteps; t++)
   {
     // producer
     if (decaf->is_prod())
@@ -164,20 +164,22 @@ void run(DecafSizes& decaf_sizes)
       *pd = t;
       fprintf(stderr, "+ producing time step %d, val %d\n", t, *pd);
       // assumes the consumer has the previous value, ok to overwrite
-      if (!(t % decaf_sizes.con_interval))
+      // check your modulo arithmetic to ensure you put exactly decaf->con_nsteps times
+      if (!((t + 1) % con_interval))
         decaf->put(pd);
     }
 
     // consumer
-    if (decaf->is_con() && !(t % decaf_sizes.con_interval))
+    // check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
+    if (decaf->is_con() && !((t + 1) % con_interval))
     {
       // any custom consumer (eg. data analysis code) goes here or gets called from here
       // as long as get() gets called at that desired frequency
       cd = (int*)decaf->get();
       // for example, add all the items arrived at this rank
       int sum = 0;
-      fprintf(stderr, "consumer get_nitems = %d\n", decaf->data()->get_nitems());
-      for (int i = 0; i < decaf->data()->get_nitems(); i++)
+      fprintf(stderr, "consumer get_nitems = %d\n", decaf->get_nitems());
+      for (int i = 0; i < decaf->get_nitems(); i++)
         sum += cd[i];
       fprintf(stderr, "- consuming time step %d, sum = %d\n", t, sum);
     }
@@ -198,10 +200,11 @@ int main(int argc, char** argv)
 {
   // parse command line args
   DecafSizes decaf_sizes;
-  GetArgs(argc, argv, decaf_sizes);
+  int prod_nsteps;
+  GetArgs(argc, argv, decaf_sizes, prod_nsteps);
 
   // run decaf
-  run(decaf_sizes);
+  run(decaf_sizes, prod_nsteps);
 
   return 0;
 }

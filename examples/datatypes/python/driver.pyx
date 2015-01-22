@@ -9,13 +9,12 @@ cdef extern from "decaf/types.hpp":
         int prod_start
         int dflow_start
         int con_start
-        int prod_nsteps
-        int con_interval
+        int con_nsteps
 
 cdef extern from "../examples/direct/direct.cpp":
-    void run(DecafSizes& decaf_sizes)
+    void run(DecafSizes& decaf_sizes, int prod_nsteps)
 
-def pyrun(pyDecafSizes):
+def pyrun(pyDecafSizes, prod_nsteps):
     cdef DecafSizes sizes
     sizes.prod_size    = pyDecafSizes.prod_size
     sizes.dflow_size   = pyDecafSizes.dflow_size
@@ -23,6 +22,5 @@ def pyrun(pyDecafSizes):
     sizes.prod_start   = pyDecafSizes.prod_start
     sizes.dflow_start  = pyDecafSizes.dflow_start
     sizes.con_start    = pyDecafSizes.con_start
-    sizes.prod_nsteps  = pyDecafSizes.prod_nsteps
-    sizes.con_interval = pyDecafSizes.con_interval
-    run(sizes)
+    sizes.con_nsteps   = pyDecafSizes.con_nsteps
+    run(sizes, prod_nsteps)

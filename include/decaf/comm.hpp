@@ -27,16 +27,17 @@ namespace decaf
   {
   public:
     Comm(CommHandle world_comm, int min_rank, int max_rank, int num_srcs, int num_dests,
-         int start_dest);
+         int start_dest, CommType comm_type);
     ~Comm();
     CommHandle handle() { return handle_; }
     int size() { return size_; }
     int rank() { return rank_; }
     int world_rank(int rank) { return(rank + min_rank); } // world rank of any rank in this comm
     int world_rank() { return(rank_ + min_rank); } // my world rank
-    void put(Data* data, int dest, bool forward);
-    void get(Data* data, bool aux=false);
+    void put(Data* data, int dest, TaskType task_type);
+    void get(Data* data, TaskType task_type);
     void flush();
+    CommType type() { return type_; }
     int num_inputs();
     int start_input();
     int num_outputs();
@@ -54,7 +55,7 @@ namespace decaf
     int num_srcs; // number of sources (producers) within the communicator
     int num_dests; // numbers of destinations (consumers) within the communicator
     int start_dest; // first destination rank within the communicator (0 to size_ - 1)
-    bool forward_; // last put from this rank was a forward
+    CommType type_; // communicator type (prod, dflow, con, prod_dflow, or dflow_con)
   };
 
 } // namespace

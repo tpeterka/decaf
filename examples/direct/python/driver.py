@@ -12,11 +12,13 @@ class DecafSizes:
     prod_start   = 0      # starting rank of producer communicator in the world
     dflow_start  = 4      # starting rank of dataflow communicator in the world
     con_start    = 6      # starting rank of consumer communicator in the world
-    prod_nsteps  = 2      # total number of time steps
-    con_interval = 1      # run consumer every so often
+    con_nsteps   = 1      # number of consumer (decaf) time steps
+
+# total number of time steps; this is the user's variable, not part of decaf
+prod_nsteps  = 2
 
 # --- do not edit below this point --
 
 import imp
 driver = imp.load_dynamic('driver', path)
-driver.pyrun(DecafSizes)
+driver.pyrun(DecafSizes, prod_nsteps)

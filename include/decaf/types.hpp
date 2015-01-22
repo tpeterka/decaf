@@ -38,12 +38,20 @@ enum Decomposition
   DECAF_NUM_DECOMPS,
 };
 
+// task types
+typedef unsigned char TaskType;
+#define DECAF_PROD      0x00
+#define DECAF_DFLOW     0x01
+#define DECAF_CON       0x02
+
 // communicator types
 typedef unsigned char CommType;
-#define DECAF_OTHER_COMM    0x00
-#define DECAF_PRODUCER_COMM 0x01
-#define DECAF_DATAFLOW_COMM 0x02
-#define DECAF_CONSUMER_COMM 0x04
+#define DECAF_OTHER_COMM      0x00
+#define DECAF_PRODUCER_COMM   0x01
+#define DECAF_DATAFLOW_COMM   0x02
+#define DECAF_CONSUMER_COMM   0x04
+#define DECAF_PROD_DFLOW_COMM 0x08
+#define DECAF_DFLOW_CON_COMM  0x10
 
 enum Error
 {
@@ -60,8 +68,7 @@ struct DecafSizes
   int prod_start;   // size of producer communicator
   int dflow_start;  // size of dataflow communicator
   int con_start;    // size of consumer communicator
-  int prod_nsteps;  // number of producer timesteps
-  int con_interval; // run consumer every so often
+  int con_nsteps;   // number of consumer timesteps
 };
 
 void
