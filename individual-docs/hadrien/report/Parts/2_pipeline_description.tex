@@ -74,7 +74,8 @@ frequency noise or over smoothness. In order to compare distances between those
 spectral responces we use the following integral based metric :
 
 \begin{equation}
-	d(ps_1, ps_2) = \int_{\Delta f}\frac{\|\log(ps_1(f))-\log(ps_2(f))\|}{f^2}\, \mathrm df
+	d(ps_1, ps_2) = \int_{\Delta f}\frac{\left\|\log\left(\frac{ps_1(f)}{ps_2(f)}
+										\right)\right\|}{f^2}\, \mathrm df
 	\label{eq:psd_metric}
 \end{equation}
 
