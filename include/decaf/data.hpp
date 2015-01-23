@@ -86,29 +86,42 @@ namespace decaf
   class DataBis
   {
   public:
-    DataBis(void (*create_datatype)(const T*, int*, DataMap**, CommDatatype*)) : create_datatype(create_datatype) {}
+    DataBis(void (*create_datatype)(const T*, int*, DataMap**, CommDatatype*)) 
+		    : create_datatype(create_datatype) {}
     vector<T> getData() { return data;}
     T* getPointerData() { return data.empty() ? NULL : &data[0];}
     int getNumberElements() { return data.size();}
     void addDataMap(const T* data_elem) { data.push_back(data_elem);}
     void deleteElement(int index) { data.erase(data.begin()+index);}
-    void deleteElements(int from, int to) { data.erase(data.begin()+from, data.begin()+to);}
-    int generateCommDatatype(const T* data_elem, CommDatatype* comm_datatype) { create_datatype(data_elem, NULL, NULL, comm_datatype); }
-    int generateMap(const T* data_elem, int* map_count, DataMap** map) { create_datatype(data_elem, map_count, map, NULL);}
-    void getCommDatatypeFromMap(int map_count, DataMap* map, CommDatatype* comm_datatype){
+    void deleteElements(int from, int to) { 
+		  data.erase(data.begin()+from, data.begin()+to);
+    }
+    int generateCommDatatype(const T* data_elem, CommDatatype* comm_datatype) { 
+      create_datatype(data_elem, NULL, NULL, comm_datatype); 
+    }
+    int generateMap(const T* data_elem, int* map_count, DataMap** map) { 
+      create_datatype(data_elem, map_count, map, NULL);
+    }
+    void getCommDatatypeFromMap(int map_count, DataMap* map, 
+                                CommDatatype* comm_datatype) {
       StructDatatype* s_type = new StructDatatype((size_t) 0, map_count, map);
       *comm_datatype = *(s_type->comm_datatype());
     }
     vector<vector<DataMap*> > split(int map_count, DataMap* map, int count){
-      // get the total size of the Struct
+      // debug string
+			char debug[DECAF_DEBUG_MAX];			
+			// get the total size of the Struct
       int total_size_b = 0;
       for( int i=0; i<map_count ; i++)
         total_size_b += map[i].count*DatatypeSize(map[i].base_type);
-      fprintf(stdout, "Total Struct typemap is %d\n", total_size_b);
+      sprintf(debug, "Total Struct typemap is %d\n", total_size_b);
+			all_dbg(stderr, debug);
 
       // chunk size
-      int chunk_size_b = ceil((float)total_size_b/(float)count); // test if total size is actually > than n
-      fprintf(stdout, "Chunk size is %d\n", chunk_size_b);
+      // TODO test if total size is actually > than n 
+      int chunk_size_b = ceil((float)total_size_b/(float)count);
+      sprintf(debug, "Chunk size is %d\n", chunk_size_b);
+			all_dbg(stderr, debug);
 
       vector<vector<DataMap*> > type_chunks_all;
       vector<DataMap*>* type_chunk;
@@ -116,7 +129,8 @@ namespace decaf
       size_t size;
       int counter_b = 0;
       type_chunk = new vector<DataMap*>(); // allocate the first datatype chunk
-      fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+      sprintf(debug, "Type chunk %p created.\n", type_chunk);
+			all_dbg(stderr, debug);
       // loop over the OriginalDataMap to create new one
       for( int i=0; i<map_count; i++) {
         int element_count_b = map[i].count*DatatypeSize(map[i].base_type);
@@ -126,16 +140,24 @@ namespace decaf
         while(counter_b + remaining_elt*size > chunk_size_b){
           type_element = new DataMap();
           memcpy(type_element, &map[i], sizeof(DataMap));// do not keep this
-          type_element->count = ceil( (chunk_size_b-counter_b) / size); // set the right count
-          type_element->disp += (map[i].count - remaining_elt)*size;// set the right disp (addr)
+          // set the right count
+          type_element->count = ceil( (chunk_size_b-counter_b) / size); 
+          // set the right displacement/address
+          type_element->disp += (map[i].count - remaining_elt)*size;
           // we finished  a type chunk
-          fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
-          fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n",
-                  type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
+          sprintf(debug, "New type element %p created with count %d\n", 
+                         type_element, type_element->count);
+					all_dbg(stderr, debug);
+					sprintf(debug, "New type element %p {0x%X, 0x%X, %d, 0x%lX}\n",
+                         type_element, type_element->base_type, 
+                         type_element->disp_type, type_element->count, 
+                         type_element->disp);
+					all_dbg(stderr, debug);
           type_chunk->push_back(type_element);
           type_chunks_all.push_back(*type_chunk);
           type_chunk = new std::vector<DataMap*>();
-          fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+          sprintf(debug, "Type chunk %p created.\n", type_chunk);
+					all_dbg(stderr, debug);
           counter_b = 0;
           remaining_elt -= type_element->count;
         }
@@ -145,9 +167,14 @@ namespace decaf
           memcpy(type_element, &map[i], sizeof(DataMap));// do not keep this
           type_element->count = remaining_elt;
           type_element->disp += (map[i].count - remaining_elt)*size;
-          fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
-          fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n",
-                  type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
+          sprintf(debug, "New type element %p created with count %d\n", 
+                         type_element, type_element->count);
+					all_dbg(stderr, debug);
+          sprintf(debug, "New type element %p {0x%X, 0x%X, %d, 0x%lX}\n",
+                         type_element, type_element->base_type, 
+                         type_element->disp_type, type_element->count, 
+                         type_element->disp);
+					all_dbg(stderr, debug);
           counter_b += remaining_elt*size;
           type_chunk->push_back(type_element);
           continue;
@@ -155,9 +182,14 @@ namespace decaf
 
         type_element = new DataMap();
         memcpy(type_element, &map[i], sizeof(DataMap));// do not keep this
-        fprintf(stdout, "New type element %p created with count %d\n", type_element, type_element->count);
-        fprintf(stdout, "New type element %p {%p, %p, %ld, %p}\n",
-                type_element, type_element->base_type, type_element->disp_type, type_element->count, type_element->disp);
+        sprintf(debug, "New type element %p created with count %d\n", 
+                       type_element, type_element->count);
+				all_dbg(stderr, debug);
+        sprintf(debug, "New type element %p {0x%X, 0x%X, %d, 0x%lX}\n",
+                       type_element, type_element->base_type, 
+                       type_element->disp_type, type_element->count, 
+                       type_element->disp);
+				all_dbg(stderr, debug);
         counter_b += element_count_b;
         type_chunk->push_back(type_element);
 
@@ -165,7 +197,8 @@ namespace decaf
           type_chunks_all.push_back(*type_chunk);
           if ( i != map_count-1){
             type_chunk = new std::vector<DataMap*>();
-            fprintf(stdout, "Type chunk %p created.\n", type_chunk);
+            sprintf(debug, "Type chunk %p created.\n", type_chunk);
+						all_dbg(stderr, debug);
           }
           counter_b = 0;
         }

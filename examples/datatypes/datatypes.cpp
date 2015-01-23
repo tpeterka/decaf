@@ -9,6 +9,8 @@
 // tpeterka@mcs.anl.gov
 //
 //--------------------------------------------------------------------------
+
+//#define DECAF_DEBUG_ON
 #include <decaf/decaf.hpp>
 
 #include <assert.h>
@@ -17,8 +19,8 @@
 #include <stdint.h>
 #include <mpi.h>
 
-#include <mpi_debug.c>
-#define MPI_DEBUG 0
+//#include <mpi_debug.c>
+//#define MPI_DEBUG 0
 
 // one tetrahedron
 // copied from https://bitbucket.org/diatomic/tess/include/tess/tet.h
@@ -150,6 +152,7 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
 
 
   // Create a data & MPI Map for var d
+  char debug[DECAF_DEBUG_MAX];
   MPI_Datatype del_mpi_map;
   int map_count = 0;
   DataMap* map;
@@ -158,11 +161,14 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
   // Check if the map is correctly set
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  for (int i=0; i<map_count; i++ )
-    if (rank == 0)
-      fprintf(stdout, "[%d] ***Processing DataMap %d: (%p, %p, %d, %p)\n", rank,
-              i, map[i].base_type, map[i].disp_type, map[i].count, map[i].disp);
-
+  for (int i=0; i<map_count; i++ ){
+    if (rank == 0) {
+      sprintf(debug, "[%d] ***Processing DataMap %d: (0x%X, 0x%X, %d, 0x%lX)\n", 
+                     rank, i, map[i].base_type, map[i].disp_type, map[i].count, 
+                     map[i].disp);
+      all_dbg(stderr, debug);
+    }
+  }
   // get an MPI Map from a data Map
   MPI_Datatype del_mpi_map_bis;
   //const DataMap* map_const = map;
@@ -178,16 +184,20 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
     int chunk_map_count = chunk_vector.size();
     DataMap chunk_map[chunk_map_count];
     for(int i=0; i<chunk_map_count; i++){
-      if(rank == 0)
-        fprintf(stdout, "[%d] '''Processing Element %d: (%p, %p, %d, %p)\n", rank, i,
-                chunk_vector[i]->base_type, chunk_vector[i]->disp_type, chunk_vector[i]->count,
-                chunk_vector[i]->disp);
+      if(rank == 0) {
+        sprintf(debug, "[%d] '''Processing Element %d: (0x%X, 0x%X, %d, 0x%lX)\n",
+                       rank, i, chunk_vector[i]->base_type, 
+                       chunk_vector[i]->disp_type, chunk_vector[i]->count,
+                       chunk_vector[i]->disp);
+        all_dbg(stderr, debug);
+      }
       memcpy(&chunk_map[i], chunk_vector[i], sizeof(DataMap));
     }
-    if (MPI_DEBUG) MPI_Debug_pause(rank, 10);
-    delaunayData.getCommDatatypeFromMap(chunk_map_count, chunk_map, &chunk_mpi_map);
+    //if (MPI_DEBUG) MPI_Debug_pause(rank, 10);
+    delaunayData.getCommDatatypeFromMap(chunk_map_count, chunk_map, 
+                                        &chunk_mpi_map);
   } else {
-    if (MPI_DEBUG) MPI_Debug_pause(rank, 100);
+    //if (MPI_DEBUG) MPI_Debug_pause(rank, 100);
   }
 
   if (rank == 1){
@@ -221,18 +231,26 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
     MPI_Status status;
 
     // first receive
-    MPI_Recv(MPI_BOTTOM, 1, del_mpi_map, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    fprintf(stdout, "DBlock received with id %d\n", d.gid);
+    MPI_Recv(MPI_BOTTOM, 1, del_mpi_map, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+             MPI_COMM_WORLD, &status);
+    sprintf(debug, "DBlock received with id %d\n", d.gid);
+    all_dbg(stderr, debug);
 
     // second receive
-    MPI_Recv(MPI_BOTTOM, 1, del_mpi_map_bis, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    fprintf(stdout, "DBlock received with id %d\n", d.gid);
+    MPI_Recv(MPI_BOTTOM, 1, del_mpi_map_bis, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+             MPI_COMM_WORLD, &status);
+    sprintf(debug, "DBlock received with id %d\n", d.gid);
+    all_dbg(stderr, debug);
 
     // third receive
-    MPI_Recv(MPI_BOTTOM, 1, chunk_mpi_map, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    fprintf(stdout, "DBlock received with id %d - and particles[26]=%f particles[27]=%f particles[62]=%f particles[63]=%f "
-            "rem_gids[0]=%d, rem_gids[4]=%d vert_to_tet[10]=%d\n", d.gid, d.particles[26], d.particles[27],
-            d.particles[62], d.particles[63], d.rem_gids[0], d.rem_gids[4], d.vert_to_tet[10]);
+    MPI_Recv(MPI_BOTTOM, 1, chunk_mpi_map, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+             MPI_COMM_WORLD, &status);
+    sprintf(debug, "DBlock received with id %d - and particles[26]=%f particles[27]=%f particles[62]=%f particles[63]=%f "
+                   "rem_gids[0]=%d, rem_gids[4]=%d vert_to_tet[10]=%d\n", d.gid, 
+                   d.particles[26], d.particles[27], d.particles[62], 
+                   d.particles[63], d.rem_gids[0], d.rem_gids[4], 
+                   d.vert_to_tet[10]);
+    all_dbg(stderr, debug);
 
   }
   // cleanup the datatypes created above
