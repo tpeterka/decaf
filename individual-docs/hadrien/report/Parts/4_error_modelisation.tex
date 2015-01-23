@@ -120,15 +120,15 @@ data. Our input data are sampling containing :
 We are here going to inject various number of bit flips (up to $10^6$
 independant bit flips) and then evaluate the difference to the expected range.
 
-Figure~\ref{fig:bitflip-fields} shows the density field computed by AKDE after
+Figure~\ref{fig:synthetic:bitflip-fields} shows the density field computed by AKDE after
 injection of random bit flips.
 
 \begin{figure*}[!ht]
 	\centering
 	\includegraphics[width=0.9\textwidth]
-		{\rootPath Figures/syntetic/randomized-multiplot.pdf}
+		{\rootPath Figures/synthetic/randomized-multiplot.pdf}
 	\caption{AKDE density fields after error injection}
-	\label{fig:bitflip-fields}
+	\label{fig:synthetic:bitflip-fields}
 \end{figure*}
 
 Beyound the small noise on the sides, made visible by the density log scale, an
@@ -137,25 +137,25 @@ in exponent part of floating point values, making them converge toward $0$. We
 therefore have a high density around plane $\mathcal P_{x=0}$,
 $\mathcal  P_{y=0}$ and $\mathcal P_{z=0}$.
 
-Figure~\ref{fig:bitflip-spectral} shows the power spectrum of those density
+Figure~\ref{fig:synthetic:bitflip-spectral} shows the power spectrum of those density
 fields.
 
 \begin{figure*}[!ht]
 	\centering
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/syntetic/psd-errors/cnfw_particles_2e5_akde_err0_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-errors/cnfw_particles_2e5_akde_err0_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/syntetic/psd-errors/cnfw_particles_2e5_akde_err1000_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-errors/cnfw_particles_2e5_akde_err1000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/syntetic/psd-errors/cnfw_particles_2e5_akde_err10000_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-errors/cnfw_particles_2e5_akde_err10000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/syntetic/psd-errors/cnfw_particles_2e5_akde_err100000_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-errors/cnfw_particles_2e5_akde_err100000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/syntetic/psd-errors/cnfw_particles_2e5_akde_err200000_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-errors/cnfw_particles_2e5_akde_err200000_clamped.pdf}
 	\includegraphics[width=0.32\textwidth]
-		{\rootPath Figures/syntetic/psd-errors/cnfw_particles_2e5_akde_err500000_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-errors/cnfw_particles_2e5_akde_err500000_clamped.pdf}
 	\caption{Bitflip influence on AKDE power spectrum range}
-	\label{fig:bitflip-spectral}
+	\label{fig:synthetic:bitflip-spectral}
 \end{figure*}
 
 Those results both show a discrepancy between corrupted pipeline and expected 
@@ -164,7 +164,7 @@ results for error numbers between $10^4$ and $10^5$.
 Using the power spectrum comparaison metrics (see equation~\ref{eq:psd_metric})
 we can see the variation of the distance between analytical and corrupted
 results as a function of the corruption rate. Those results are visible in
-figure~\ref{fig:bitflip-integral}. This figure also shows, for information, an
+figure~\ref{fig:synthetic:bitflip-integral}. This figure also shows, for information, an
 horizontal line showing the distance between Tess-Dense and AKDE mean results.
 This line therefore represent the threshold of variability between methods.
 Curve points bellow this threshold represent input set for which the effect of
@@ -174,9 +174,9 @@ methods.
 \begin{figure}[!ht]
 	\centering
 	\includegraphics[width=0.45\textwidth]
-		{\rootPath Figures/syntetic/pk-integral.pdf}
+		{\rootPath Figures/synthetic/pk-integral.pdf}
 	\caption{Power spectrum displacement}
-	\label{fig:bitflip-integral}
+	\label{fig:synthetic:bitflip-integral}
 \end{figure}
 
 That shows use that corruption could only be detected using redondent
@@ -184,6 +184,18 @@ computation with a different method if about $2.5\times10^4$ particles (or more)
 are affected, as we this distance has to be twice the inter-method threshold to
 be clearly noticeable. Compared to our $1.92\times10^7$ bits input data size,
 this gives us a detectable corruption rate thresold of about $0.13\%$
+
+
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.45\textwidth]
+		{\rootPath Figures/hacc/pk-integral.pdf}
+	\caption{Power spectrum displacement}
+	\label{fig:synthetic:bitflip-integral}
+\end{figure}
+
+
 
 %=====================================================================
 %=====================================================================
