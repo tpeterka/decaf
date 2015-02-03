@@ -2,7 +2,7 @@
 
 ## HACC Compilation
 
-HACC is not under an open source licence, please contact Tom to get it. Else, if you have access to ANL internet, Tom is keeping an up-to-date version of HACC on his home directory at /homes/tpeterka/hacc/. Otherwise, I made  a packaged version excluding  svn-related directories that you can get from /homes/lrahmani/hacc-new.tar.gz. 
+HACC is not under an open source licence, please contact Tom to get it. In case you have access to ANL intranet, Tom is keeping an up-to-date version of HACC on his home directory at /homes/tpeterka/hacc/. Otherwise, I made  a packaged version excluding  svn-related directories that you can get from /homes/lrahmani/hacc-new.tar.gz. 
 Get the hacc-new.tar.gz package from ANL internal network, extract it:
 
 
