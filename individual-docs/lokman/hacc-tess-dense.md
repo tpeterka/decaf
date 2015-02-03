@@ -167,7 +167,7 @@ FIXME: add some details
 
 ## Running HACC
 
-HACC needs two input files for hacc to run: "ic.hcosmo.x86.0" and "../smalvol/indat.txt". Use the script provided here (based on Tom's MPI_TEST) to run correctly HACC:
+HACC needs two input files to run: "ic.hcosmo.x86.0" and "../smalvol/indat.txt". Use the script provided here (based on Tom's MPI_TEST) to run HACC correctly:
 
 ```
 #!bash
