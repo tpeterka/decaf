@@ -4,7 +4,7 @@
 
 ### HACC - tess - dense
 
-- ![workflow diagram](https://bitbucket.org/tpeterka1/decaf/wiki/common-docs/workflows/hacc-workflow.pdf)
+- [workflow diagram](https://bitbucket.org/tpeterka1/decaf/wiki/common-docs/workflows/hacc-workflow.pdf)
 
 ## Molecular Dynamics
 
