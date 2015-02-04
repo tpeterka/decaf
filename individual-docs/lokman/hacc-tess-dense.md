@@ -2,7 +2,7 @@
 
 ## HACC Compilation
 
-HACC is not under an open source licence, please contact Tom to get it. Else, if you have access to ANL internet, Tom is keeping an up-to-date version of HACC on his home directory at /homes/tpeterka/hacc/. Otherwise, I made  a packaged version excluding  svn-related directories that you can get from /homes/lrahmani/hacc-new.tar.gz. 
+HACC is not under an open source licence, please contact Tom to get it. In case you have access to ANL intranet, Tom is keeping an up-to-date version of HACC on his home directory at /homes/tpeterka/hacc/. Otherwise, I made  a packaged version excluding  svn-related directories that you can get from /homes/lrahmani/hacc-new.tar.gz. 
 Get the hacc-new.tar.gz package from ANL internal network, extract it:
 
 
@@ -167,7 +167,7 @@ FIXME: add some details
 
 ## Running HACC
 
-HACC needs two input files for hacc to run: "ic.hcosmo.x86.0" and "../smalvol/indat.txt". Use the script provided here (based on Tom's MPI_TEST) to run correctly HACC:
+HACC needs two input files to run: "ic.hcosmo.x86.0" and "../smalvol/indat.txt". Use the script provided here (based on Tom's MPI_TEST) to run HACC correctly:
 
 ```
 #!bash

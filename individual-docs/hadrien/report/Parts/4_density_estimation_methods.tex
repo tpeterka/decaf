@@ -72,23 +72,25 @@ In order to take this randomness into account we computed several samplings of
 our density function model and then display both the median of the frequencial
 results overs thoses samplings as well as extreme values. That way we can not
 only describe the expected quality of those methods but also the natural
-variability we can expect. Figure~\ref{fig:spectral} present thoses results for
-all prevously described methods.
+variability we can expect. Figure~\ref{fig:synthetic:spectral} present thoses
+results for all prevously described methods processing synthetic samplings
+produced by our analitical model.
 
 \begin{figure}[!ht]
 	\centering
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_cic_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-methods/cnfw_particles_2e5_cic_clamped.pdf}
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_akde_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-methods/cnfw_particles_2e5_akde_clamped.pdf}
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_sph_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-methods/cnfw_particles_2e5_sph_clamped.pdf}
 	\includegraphics[width=0.24\textwidth]
-		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_tesscic_clamped.pdf}
+		{\rootPath Figures/synthetic/psd-methods/cnfw_particles_2e5_tesscic_clamped.pdf}
 	\includegraphics[width=0.48\textwidth]
-		{\rootPath Figures/cnfw_compare/cnfw_particles_2e5_full.pdf}
-	\caption{Spectral analysis of density estimation methods}
-	\label{fig:spectral}
+		{\rootPath Figures/synthetic/psd-methods/cnfw_particles_2e5_full.pdf}
+	\caption{Spectral analysis of density estimation methods processing synthetic
+		samplings from or analytical model}
+	\label{fig:synthetic:spectral}
 \end{figure}
 
 Thoses results clearly shows the noisiness of CIC. As for the other methods,
@@ -104,21 +106,56 @@ On the AKDE/SPH side, we mostly notice a high intrinsic variability. That may be
 caused by the sampling's random variation affecting the window size computation
 in such a way that we could locally encounter noisyness or oversmoothness.
 
-\begin{table*}
+\begin{table*}[!ht]
 	\centering
 	\begin{tabular}{|l|c|c|c|c|c|}
 		\hline
 								& Analytical	& CIC				& AKDE			& SPH				& Tess-Dense\\
 		\hline
 		Analytical	& --					& $0.00314$	& $0.00049$	& $0.00214$	& $0.00194$	\\
-		CIC					&							& --				& $0.00338$	& $0.00513$	& $0.00435$	\\
-		AKDE				&							&						& --				& $0.00179$	& $0.00151$	\\
-		SPH					&							&						& 					& --				& $0.00099$	\\
-		Tess-Dense	&							&						& 					& 					& --				\\
+		CIC					&	$0.00314$		& --				& $0.00338$	& $0.00513$	& $0.00435$	\\
+		AKDE				&	$0.00049$		&	$0.00338$	& --				& $0.00179$	& $0.00151$	\\
+		SPH					&	$0.00214$		&	$0.00513$	& $0.00179$	& --				& $0.00099$	\\
+		Tess-Dense	&	$0.00194$		&	$0.00435$	& $0.00151$	& $0.00099$	& --				\\
 		\hline
 	\end{tabular}
-	\caption{Distance between methods mean results}
+	\caption{Distance between density estimation methods processing synthetic
+		samplings from or analytical model}
+	\label{table:syntetic:distance}
 \end{table*}
+
+Running those methods on Hacc's results show similar results as figure~
+\ref{fig:hacc:spectral} shows. Note that, as Hacc is producing a single sample
+for each time step, we don't have multiple samples to compare as we do with our
+synthetic particles generator. That is why figure~\ref{fig:hacc:spectral} does
+not show variability range for thoses results.
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.48\textwidth]
+		{\rootPath Figures/hacc/psd-methods/trace_255_full.pdf}
+	\caption{Spectral analysis of density estimation methods processing an
+		experimental samplig produced by Hacc}
+	\label{fig:hacc:spectral}
+\end{figure}
+
+\begin{table*}[!ht]
+	\centering
+	\begin{tabular}{|l|c|c|c|c|c|}
+		\hline
+								& CIC				& AKDE			& SPH				& Tess-Dense\\
+		\hline
+		CIC					& --				& $0.02313$	& $0.07020$	& $0.02190$	\\
+		AKDE				&	$0.02313$	& --				& $0.04709$	& $0.00563$	\\
+		SPH					&	$0.07020$	& $0.04709$	& --				& $0.04851$	\\
+		Tess-Dense	&	$0.02190$	& $0.00563$	& $0.04851$	& --				\\
+		\hline
+	\end{tabular}
+	\caption{Distance between density estimation methods processing an
+		experimental samplig produced by Hacc}
+	\label{table:hacc:distance}
+\end{table*}
+
 
 %=====================================================================
 %=====================================================================
