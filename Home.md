@@ -21,7 +21,7 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [common](common-docs/common.md)
 
-### [workflow examples](common-docs/worflows.md)
+### [workflow examples](common-docs/workflows.md)
 
 ## Individual Documents
 
