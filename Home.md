@@ -21,6 +21,8 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [common](common-docs/common.md)
 
+### [lammps instructions](common-docs/lammps/lammps.md)
+
 ### [workflow examples](common-docs/workflows/workflows.md)
 
 ## Individual Documents
