@@ -26,8 +26,8 @@ namespace decaf
   class Comm
   {
   public:
-    Comm(CommHandle world_comm, int min_rank, int max_rank, int num_srcs, int num_dests,
-         int start_dest, CommType comm_type);
+    Comm(CommHandle world_comm, int min_rank, int max_rank, int num_srcs = 0, int num_dests = 0,
+         int start_dest = 0, CommType comm_type = 0);
     ~Comm();
     CommHandle handle() { return handle_; }
     int size() { return size_; }

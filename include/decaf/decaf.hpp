@@ -40,26 +40,30 @@ namespace decaf
     void* get(bool no_copy = false);
     int get_nitems(bool no_copy = false)
       { return(no_copy? data_->put_nitems() : data_->get_nitems(DECAF_CON)); }
-    Data* data() { return data_; }
-    DecafSizes* sizes() { return &sizes_; }
+    Data* data()           { return data_; }
+    DecafSizes* sizes()    { return &sizes_; }
     void flush();
-    void err() { ::all_err(err_); }
+    void err()             { ::all_err(err_); }
     // whether this rank is producer, dataflow, or consumer (may have multiple roles)
-    bool is_prod()  { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
-    bool is_dflow() { return((type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM); }
-    bool is_con()   { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
+    bool is_prod()         { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
+    bool is_dflow()        { return((type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM); }
+    bool is_con()          { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
+    CommHandle prod_comm() { return prod_comm_->handle(); }
+    CommHandle con_comm()  { return con_comm_->handle();  }
 
   private:
-    CommHandle world_comm_; // handle to original world communicator
-    Comm* prod_dflow_comm_; // communicator covering producer and dataflow
-    Comm* dflow_con_comm_; // communicator covering dataflow and consumer
-    Data* data_;
-    DecafSizes sizes_;
-    int (*selector_)(Decaf*); // user-defined selector code
+    CommHandle world_comm_;     // handle to original world communicator
+    Comm* prod_comm_;           // producer communicator
+    Comm* con_comm_;            // consumer communicator
+    Comm* prod_dflow_comm_;     // communicator covering producer and dataflow
+    Comm* dflow_con_comm_;      // communicator covering dataflow and consumer
+    Data* data_;                // data model
+    DecafSizes sizes_;          // sizes of communicators, time steps
+    int  (*selector_)(Decaf*);  // user-defined selector code
     void (*pipeliner_)(Decaf*); // user-defined pipeliner code
-    void (*checker_)(Decaf*); // user-defined resilience code
-    int err_; // last error
-    CommType type_; // whether this instance is producer, consumer, dataflow, or other
+    void (*checker_)(Decaf*);   // user-defined resilience code
+    int err_;                   // last error
+    CommType type_;             // whether this instance is producer, consumer, dataflow, or other
     void dataflow();
     void forward();
   };
@@ -109,15 +113,21 @@ Decaf::Decaf(CommHandle world_comm,
   int dflow_con_start  = std::min(sizes_.dflow_start, sizes_.con_start);
   int dflow_con_end    = sizes_.con_start + sizes_.con_size - 1;
 
-  if (world_rank >= sizes_.prod_start &&
-      world_rank < sizes_.prod_start + sizes_.prod_size) // producer
+  if (world_rank >= sizes_.prod_start &&                   // producer
+      world_rank < sizes_.prod_start + sizes_.prod_size)
+  {
     type_ |= DECAF_PRODUCER_COMM;
-  if (world_rank >= sizes_.dflow_start &&
-           world_rank < sizes_.dflow_start + sizes_.dflow_size) // dataflow
+    prod_comm_ = new Comm(world_comm, sizes_.prod_start, sizes_.prod_start + sizes_.prod_size - 1);
+  }
+  if (world_rank >= sizes_.dflow_start &&                  // dataflow
+      world_rank < sizes_.dflow_start + sizes_.dflow_size)
     type_ |= DECAF_DATAFLOW_COMM;
-  if (world_rank >= sizes_.con_start &&
-           world_rank < sizes_.con_start + sizes_.con_size) // consumer
+  if (world_rank >= sizes_.con_start &&                    // consumer
+      world_rank < sizes_.con_start + sizes_.con_size)
+  {
     type_ |= DECAF_CONSUMER_COMM;
+    con_comm_ = new Comm(world_comm, sizes_.con_start, sizes_.con_start + sizes_.con_size - 1);
+  }
 
   if (world_rank >= prod_dflow_start && world_rank <= prod_dflow_end)
     prod_dflow_comm_ = new Comm(world_comm, prod_dflow_start, prod_dflow_end, sizes_.prod_size,
@@ -143,6 +153,10 @@ Decaf::~Decaf()
     delete prod_dflow_comm_;
   if (dflow_con_comm_)
     delete dflow_con_comm_;
+  if (is_prod())
+    delete prod_comm_;
+  if (is_con())
+    delete con_comm_;
 }
 
 void

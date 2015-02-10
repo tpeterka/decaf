@@ -53,7 +53,7 @@ typedef unsigned char CommType;
 #define DECAF_PROD_DFLOW_COMM 0x08
 #define DECAF_DFLOW_CON_COMM  0x10
 
-enum Error
+enum DecafError
 {
   DECAF_OK,
   DECAF_COMM_SIZES_ERR,
