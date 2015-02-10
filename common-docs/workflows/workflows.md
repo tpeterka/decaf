@@ -16,4 +16,5 @@
 
 ### TDGL - vortex detection - supercurrent streamlines
 
-TBD
+- [workflow diagram](https://bitbucket.org/tpeterka1/decaf/wiki/common-docs/workflows/oscon-workflow.pdf)
+
