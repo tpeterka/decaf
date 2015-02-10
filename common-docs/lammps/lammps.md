@@ -30,12 +30,31 @@ JPG_INC =       -I/opt/local/include
 JPG_PATH = 	-L/opt/local/lib
 JPG_LIB =	-ljpeg
 ```
-## Make
+
+## Make (for a given architecture, mine is mac_mpi)
+### executable (called lmp_mac_mpi)
 
 ```
 cd lammps/src
 make mac_mpi
 ```
+
+### static library (called liblammps_mac_mpi.a)
+
+```
+cd lammps/src
+make makelib
+make -f Makefile.lib mac_mpi
+```
+
+### shared library (called liblammps_mac_mpi.so)
+
+```
+cd lammps/src
+make makeshlib
+make -f Makefile.shlib mac_mpi
+```
+
 ## Running an example
 
 ```
@@ -53,7 +72,7 @@ edit [in.melt](in.melt)
 
 ```
 cp lammps/src/lmp_mac_mpi lammps/examples/melt
-cd lammps/exmaples/melt
+cd lammps/examples/melt
 ./lmp_mac_mpi < in.melt
 ```
 ## Read into VMD or ParaView (VMD preferred)
