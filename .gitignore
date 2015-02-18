@@ -1,0 +1,9 @@
+individual-docs/hadrien/**/*.aux
+individual-docs/hadrien/**/*.bbl
+individual-docs/hadrien/**/*.blg
+individual-docs/hadrien/**/*.fdb_latexmk
+individual-docs/hadrien/**/*.log
+individual-docs/hadrien/**/*.out
+individual-docs/hadrien/**/*.synctex.gz
+individual-docs/hadrien/**/*.thm
+individual-docs/hadrien/**/*.toc

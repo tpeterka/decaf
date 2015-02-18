@@ -15,9 +15,15 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [2014](meeting-notes/2014/2014.md)
 
+### [2015](meeting-notes/2015/2015.md)
+
 ## Common Documents
 
 ### [common](common-docs/common.md)
+
+### [lammps instructions](common-docs/lammps/lammps.md)
+
+### [workflow examples](common-docs/workflows/workflows.md)
 
 ## Individual Documents
 
@@ -25,9 +31,10 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ### [Jay](individual-docs/jay/jay.md)
 
-### Franck (TBD)
-
 ### [Patrick](individual-docs/patrick/patrick.md)
 
+### [Lokman](individual-docs/lokman/lokman.md)
 
-## [DOE program management documents](DOE-docs/doe-docs.md)
+### [Hadrien](individual-docs/hadrien/hadrien.md)
+
+## [Public program documents](public-docs/public-docs.md)
