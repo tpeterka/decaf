@@ -19,6 +19,8 @@ $ git clone https://tpeterka1@bitbucket.org/tpeterka1/decaf.git/wiki
 
 ## Common Documents
 
+### [related work](common-docs/related.md)
+
 ### [common](common-docs/common.md)
 
 ### [lammps instructions](common-docs/lammps/lammps.md)
