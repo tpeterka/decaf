@@ -7,6 +7,8 @@ EVdfg example sources
 
 JSON DFG description example
 
+This example of the master program uses the jsoncpp parser (available on github).  Current version of jsoncpp requires a C++-11 compiler.
+
 * [DFG master](json-master.md)
 * [JSON DFG spec](dfg-json.md)
 
