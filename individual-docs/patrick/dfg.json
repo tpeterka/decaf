@@ -1,5 +1,3 @@
-...
-
 {
     "nodes" : [
 	{ "name" : "A", "master" : true, "source" : true },
@@ -11,6 +9,3 @@
 	{ "source": 2, "target": 3 }
     ]
 }
-
-...
-
