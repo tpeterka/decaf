@@ -1,7 +1,6 @@
 
-...
-
-#!c
+```
+#!c++
 
 #include <fstream>
 #include <exception>
@@ -153,11 +152,5 @@ int main (int argc, char *argv[])
 
   return EVclient_wait_for_shutdown( test_client );
 }
-...  
 
-
-
-
-
-
-
+```
