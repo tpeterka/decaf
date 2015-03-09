@@ -30,5 +30,8 @@ dump            1 all custom 50 melt.dump id type x y z vx vy vz
 #		axes yes 0.8 0.02 view 60 -30
 #dump_modify	3 pad 3
 
-thermo		50
-run		250
+#thermo		50
+#run		250
+
+#thermo          1
+#run             10

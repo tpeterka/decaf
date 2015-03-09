@@ -31,12 +31,11 @@ namespace decaf
   public:
     Decaf(CommHandle world_comm,
           DecafSizes& decaf_sizes,
-          int (*selector)(Decaf*),
           void (*pipeliner)(Decaf*),
           void (*checker)(Decaf*),
           Data* data);
     ~Decaf();
-    void put(void* d);
+    void put(void* d, int count = 1);
     void* get(bool no_copy = false);
     int get_nitems(bool no_copy = false)
       { return(no_copy? data_->put_nitems() : data_->get_nitems(DECAF_CON)); }
@@ -48,8 +47,10 @@ namespace decaf
     bool is_prod()         { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
     bool is_dflow()        { return((type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM); }
     bool is_con()          { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
-    CommHandle prod_comm() { return prod_comm_->handle(); }
-    CommHandle con_comm()  { return con_comm_->handle();  }
+    CommHandle prod_comm_handle() { return prod_comm_->handle(); }
+    CommHandle con_comm_handle()  { return con_comm_->handle();  }
+    Comm* prod_comm()             { return prod_comm_; }
+    Comm* con_comm()              { return con_comm_;  }
 
   private:
     CommHandle world_comm_;     // handle to original world communicator
@@ -59,7 +60,6 @@ namespace decaf
     Comm* dflow_con_comm_;      // communicator covering dataflow and consumer
     Data* data_;                // data model
     DecafSizes sizes_;          // sizes of communicators, time steps
-    int  (*selector_)(Decaf*);  // user-defined selector code
     void (*pipeliner_)(Decaf*); // user-defined pipeliner code
     void (*checker_)(Decaf*);   // user-defined resilience code
     int err_;                   // last error
@@ -73,14 +73,12 @@ namespace decaf
 decaf::
 Decaf::Decaf(CommHandle world_comm,
              DecafSizes& decaf_sizes,
-             int (*selector)(Decaf*),
              void (*pipeliner)(Decaf*),
              void (*checker)(Decaf*),
              Data* data):
   world_comm_(world_comm),
   prod_dflow_comm_(NULL),
   dflow_con_comm_(NULL),
-  selector_(selector),
   pipeliner_(pipeliner),
   checker_(checker),
   data_(data),
@@ -161,30 +159,33 @@ Decaf::~Decaf()
 
 void
 decaf::
-Decaf::put(void* d)
+Decaf::put(void* d,                   // source data
+           int count)                 // number of datatype instances, default = 1
 {
-  data_->put_items(d);
-
-  // TODO: for now executing only user-supplied custom code, need to develop primitives
-  // for automatic decaf code
-
-  for (int i = 0; i < prod_dflow_comm_->num_outputs(); i++)
+  if (d && count)                     // normal, non-null put
   {
-    // selection always needs to always be user-defined and is mandatory
-    // TODO: write automatic aggregator, for now not changing the number of items selected
-    data_->put_nitems(selector_(this));
+    data_->put_items(d);
+    data_->put_nitems(count);
 
-    // pipelining should be automatic if the user defines the pipeline chunk unit
-    if (pipeliner_)
-      pipeliner_(this);
-
-    // TODO: not looping over pipeliner chunks yet
-    if (data_->put_nitems())
+    for (int i = 0; i < prod_dflow_comm_->num_outputs(); i++)
     {
-//       fprintf(stderr, "putting to prod_dflow rank %d put_nitems = %d\n",
-//               prod_dflow_comm_->start_output() + i, data_->put_nitems());
-      prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, DECAF_PROD);
+      // pipelining should be automatic if the user defines the pipeline chunk unit
+      if (pipeliner_)
+        pipeliner_(this);
+
+      // TODO: not looping over pipeliner chunks yet
+      if (data_->put_nitems())
+      {
+        //       fprintf(stderr, "putting to prod_dflow rank %d put_nitems = %d\n",
+        //               prod_dflow_comm_->start_output() + i, data_->put_nitems());
+        prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, DECAF_PROD);
+      }
     }
+  }
+  else                                 // null put
+  {
+    for (int i = 0; i < prod_dflow_comm_->num_outputs(); i++)
+      prod_dflow_comm_->put(NULL, prod_dflow_comm_->start_output() + i, DECAF_PROD);
   }
 
   // this rank may also serve as dataflow in case producer and dataflow overlap

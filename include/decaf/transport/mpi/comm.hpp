@@ -52,8 +52,11 @@ Comm::~Comm()
 // puts data to a destination
 void
 decaf::
-Comm::put(Data *data, int dest, TaskType task_type)
+Comm::put(Data *data,             // data or NULL for empty put
+          int dest,               // destination rank
+          TaskType task_type)     // type of task
 {
+  char null_byte = 0;             // payload for an empty put
   // TODO: prepend typemap?
 
   // NB: putting to self is handled during the get
@@ -63,18 +66,45 @@ Comm::put(Data *data, int dest, TaskType task_type)
     MPI_Request req;
     reqs.push_back(req);
     if (task_type == DECAF_DFLOW) // forwarding through the dataflow
-      MPI_Isend(data->get_items(DECAF_DFLOW), data->get_nitems(DECAF_DFLOW),
-                data->complete_datatype_, dest, 0, handle_, &reqs.back());
+    {
+      if (data)
+      {
+        // debug
+//         fprintf(stderr, "putting %d items\n", data->put_nitems());
+        MPI_Isend(data->get_items(DECAF_DFLOW), data->get_nitems(DECAF_DFLOW),
+                  data->complete_datatype_, dest, 0, handle_, &reqs.back());
+      }
+      else                        // tag = 1 indicates an empty put
+      {
+        // debug
+//         fprintf(stderr, "putting null byte\n");
+        MPI_Isend(&null_byte, 1, MPI_BYTE, dest, 1, handle_, &reqs.back());
+      }
+    }
     else
-      MPI_Isend(data->put_items(), data->put_nitems(), data->complete_datatype_, dest, 0,
-                handle_, &reqs.back());
+    {
+      if (data)
+      {
+        // debug
+//         fprintf(stderr, "putting %d items\n", data->put_nitems());
+        MPI_Isend(data->put_items(), data->put_nitems(), data->complete_datatype_, dest, 0,
+                  handle_, &reqs.back());
+      }
+      else                        // tag = 1 indicates an empty put
+      {
+        // debug
+//         fprintf(stderr, "putting null byte\n");
+        MPI_Isend(&null_byte, 1, MPI_BYTE, dest, 1, handle_, &reqs.back());
+      }
+    }
   }
 }
 
 // gets data from one or more sources
 void
 decaf::
-Comm::get(Data* data, TaskType task_type)
+Comm::get(Data* data,
+          TaskType task_type)
 {
   for (int i = start_input(); i < start_input() + num_inputs(); i++)
   {
@@ -92,13 +122,23 @@ Comm::get(Data* data, TaskType task_type)
     {
       // TODO: read type from typemap instead of argument?
       MPI_Status status;
-      MPI_Probe(i, 0, handle_, &status);
-      int nitems; // number of items (of type dtype) in the message
-      MPI_Get_count(&status, data->complete_datatype_, &nitems);
-      MPI_Aint extent; // datatype size in bytes
-      MPI_Type_extent(data->complete_datatype_, &extent);
-      MPI_Recv(data->resize_get_items(nitems * extent, task_type), nitems,
-               data->complete_datatype_, status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
+      MPI_Probe(i, MPI_ANY_TAG, handle_, &status);
+      if (status.MPI_TAG == 0)  // normal, non-null get
+      {
+        int nitems; // number of items (of type dtype) in the message
+        MPI_Get_count(&status, data->complete_datatype_, &nitems);
+        MPI_Aint extent; // datatype size in bytes
+        MPI_Type_extent(data->complete_datatype_, &extent);
+        // debug
+//         fprintf(stderr, "getting %d items\n", nitems);
+        MPI_Recv(data->resize_get_items(nitems * extent, task_type), nitems,
+                 data->complete_datatype_, status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
+      }
+      else                      // null get, keep the stream flowing but don't save the result
+      {
+        char null_byte;
+        MPI_Recv(&null_byte, 1, MPI_BYTE, status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
+      }
     }
   }
 }

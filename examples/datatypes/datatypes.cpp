@@ -52,8 +52,11 @@ using namespace decaf;
 
 // user-defined
 // delaunay block datatype function generator
-void create_delaunay_datatype(const struct dblock_t* d, int* map_count, DataMap** map, CommDatatype* comm_datatype){
-
+void create_delaunay_datatype(const struct dblock_t* d,
+                              int* map_count,
+                              DataMap** map,
+                              CommDatatype* comm_datatype)
+{
   // tet data map
   DataMap tet_map[] =
     {
@@ -78,44 +81,37 @@ void create_delaunay_datatype(const struct dblock_t* d, int* map_count, DataMap*
     };
 
   // generate MPI datatype if needed
-  if(comm_datatype){
-    StructDatatype* del_type = new StructDatatype((MPI_Aint) d, sizeof(del_map) / sizeof(del_map[0]), del_map);
+  if(comm_datatype)
+  {
+    StructDatatype* del_type = new StructDatatype((MPI_Aint) d,
+                                                  sizeof(del_map) / sizeof(del_map[0]), del_map);
     *comm_datatype = *(del_type->comm_datatype());
   }
 
   // save the map if needed
-  if(map_count){
+  if(map_count)
+  {
     *map_count = sizeof(del_map)/sizeof(del_map[0]);
     *map = new DataMap[*map_count]();
     memcpy(*map, del_map, sizeof(del_map));
   }
-
 }
 
-// user-defined selector code
-// runs in the producer
-// selects from decaf->data() the subset going to dataflow
-// sets that selection in decaf->data()
-// returns number of items selected
-// items must be in terms of the elementary datatype defined in decaf->data()
-int selector(Decaf* decaf)
-{
-  // this example is simply passing through the original single integer
-  // decaf->data()->data_ptr remains unchanged, and the number of datatypes remains 1
-  return 1;
-}
 // user-defined pipeliner code
 void pipeliner(Decaf* decaf)
 {
 }
+
 // user-defined resilience code
 void checker(Decaf* decaf)
 {
 }
-//
+
 // gets command line args
-//
-void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes, int& prod_nsteps)
+void GetArgs(int argc,
+             char **argv,
+             DecafSizes& decaf_sizes,
+             int& prod_nsteps)
 {
   assert(argc >= 9);
 
@@ -131,7 +127,8 @@ void GetArgs(int argc, char **argv, DecafSizes& decaf_sizes, int& prod_nsteps)
   decaf_sizes.con_nsteps   = atoi(argv[8]);
 }
 
-void run(DecafSizes& decaf_sizes, int prod_nsteps)
+void run(DecafSizes& decaf_sizes,
+         int prod_nsteps)
 {
   MPI_Init(NULL, NULL);
 
@@ -269,7 +266,6 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
   // before MPI_Finalize is called at the end
   Decaf* decaf = new Decaf(MPI_COMM_WORLD,
                            decaf_sizes,
-                           &selector,
                            &pipeliner,
                            &checker,
                            &data);
@@ -322,7 +318,8 @@ void run(DecafSizes& decaf_sizes, int prod_nsteps)
   MPI_Finalize();
 }
 
-int main(int argc, char** argv)
+int main(int argc,
+         char** argv)
 {
   // parse command line args
   DecafSizes decaf_sizes;
