@@ -25,6 +25,12 @@
 using namespace decaf;
 using namespace LAMMPS_NS;
 
+struct args_t                                // custom args for prod, con, dflow
+{
+  LAMMPS* lammps;
+  char infile[256];
+};
+
 // user-defined pipeliner code
 void pipeliner(Decaf* decaf)
 {
@@ -57,13 +63,81 @@ void GetArgs(int argc,
   strcpy(infile, argv[9]);
 }
 
+// producer runs lammps and puts the atom positions to the dataflow at the consumer intervals
+void prod(int t_current,
+          int t_interval,
+          int t_nsteps,
+          Decaf* decaf,
+          void* args)
+{
+  struct args_t* a = (args_t*)args;          // custom args
+  double* x;                                 // atom positions
+
+  if (t_current == 0)                        // first time step
+  {
+    a->lammps = new LAMMPS(0, NULL, decaf->prod_comm_handle());
+    a->lammps->input->file((char*)a->infile);
+  }
+
+  a->lammps->input->one("run 1");
+  int natoms = static_cast<int>(a->lammps->atom->natoms);
+  x = new double[3 * natoms];
+  lammps_gather_atoms(a->lammps, (char*)"x", 1, 3, x);
+
+  if (!((t_current + 1) % t_interval))
+  {
+    if (decaf->prod_comm()->rank() == 0)     // lammps gathered all positions to rank 0
+    {
+      fprintf(stderr, "+ producing time step %d\n", t_current);
+      // debug
+      //           fprintf(stderr, "num atoms = %d\n", natoms);
+      //           for (int i = 0; i < natoms; i++)
+      //             fprintf(stderr, "%.3lf %.3lf %.3lf\n", x[3 * i], x[3 * i + 1], x[3 * i + 2]);
+      decaf->put(x, 3 * natoms);
+    }
+    else
+      decaf->put(NULL);                      // put is collective; all producer ranks must call it
+  }
+  decaf->flush();                            // need to clean up after each time step
+  delete[] x;
+
+  if (t_current == t_nsteps - 1)             // last time step
+    delete a->lammps;
+}
+
+// consumer gets the atom positions and prints them
+// check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
+void con(int t_current,
+         int t_interval,
+         int,
+         Decaf* decaf,
+         void*)
+{
+  if (!((t_current + 1) % t_interval))
+  {
+    double* pos = (double*)decaf->get();
+    // debug
+    //       fprintf(stderr, "num atoms = %d\n", decaf->get_nitems() / 3);
+    //       for (int i = 0; i < decaf->get_nitems() / 3; i++)
+    //         fprintf(stderr, "%.3lf %.3lf %.3lf\n", pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
+    decaf->flush(); // need to clean up after each time step
+  }
+}
+
+void dflow(int,
+           int,
+           int,
+           Decaf* decaf,
+           void*)
+{
+  decaf->flush();                             // need to clean up after each time step
+}
+
 void run(DecafSizes& decaf_sizes,
          int prod_nsteps,
          char* infile)
 {
-  LAMMPS *lammps;
   MPI_Init(NULL, NULL);
-  double* x;                                             // atom positions, used in producer only
 
   // define the data type
   Data data(MPI_DOUBLE);
@@ -83,64 +157,26 @@ void run(DecafSizes& decaf_sizes,
   else
     con_interval = -1;                                   // don't consume
 
-  // init producer
-  if (decaf->is_prod())
-  {
-    lammps = new LAMMPS(0, NULL, decaf->prod_comm_handle());
-    lammps->input->file(infile);
-  }
+  args_t args;                                           // custom args for prod, con, dflow
+  strcpy(args.infile, infile);
 
   // run the main loop
   for (int t = 0; t < prod_nsteps; t++)
   {
     // producer
-    // runs lammps and puts the atom positions to the dataflow at the consumer intervals
     if (decaf->is_prod())
-    {
-      lammps->input->one("run 1");
-      int natoms = static_cast<int>(lammps->atom->natoms);
-      x = new double[3 * natoms];
-      lammps_gather_atoms(lammps, (char*)"x", 1, 3, x);
-
-      if (!((t + 1) % con_interval))
-      {
-        if (decaf->prod_comm()->rank() == 0) // lammps gathered all positions to rank 0
-        {
-          fprintf(stderr, "+ producing time step %d\n", t);
-          // debug
-//           fprintf(stderr, "num atoms = %d\n", natoms);
-//           for (int i = 0; i < natoms; i++)
-//             fprintf(stderr, "%.3lf %.3lf %.3lf\n", x[3 * i], x[3 * i + 1], x[3 * i + 2]);
-          decaf->put(x, 3 * natoms);
-        }
-        else
-          decaf->put(NULL);                 // put is collective; all producer ranks must call it
-      }
-    }
+      prod(t, con_interval, prod_nsteps, decaf, &args);
 
     // consumer
-    // gets the atom positions and prints them
-    // check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
-    if (decaf->is_con() && !((t + 1) % con_interval))
-    {
-      double* pos = (double*)decaf->get();
-      // debug
-//       fprintf(stderr, "num atoms = %d\n", decaf->get_nitems() / 3);
-//       for (int i = 0; i < decaf->get_nitems() / 3; i++)
-//         fprintf(stderr, "%.3lf %.3lf %.3lf\n", pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
-    }
+    if (decaf->is_con())
+      con(t, con_interval, prod_nsteps, decaf, &args);
 
-    // cleanup at the end of the time step
-    decaf->flush(); // both producer and consumer need to clean up after each time step
-    // now safe to cleanup producer data, after decaf->flush() is called
-    // don't wory about deleting the data pointed to by cd; decaf did that in flush()
-    if (decaf->is_prod())
-      delete[] x;
+    // dataflow
+    if (decaf->is_dflow())
+      dflow(t, con_interval, prod_nsteps, decaf, &args);
   }
 
   // cleanup
-  if (decaf->is_prod())
-    delete lammps;
   delete decaf;
   MPI_Finalize();
 }
