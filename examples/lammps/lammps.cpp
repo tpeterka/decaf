@@ -64,11 +64,11 @@ void GetArgs(int argc,
 }
 
 // producer runs lammps and puts the atom positions to the dataflow at the consumer intervals
-void prod(int t_current,
-          int t_interval,
-          int t_nsteps,
-          Decaf* decaf,
-          void* args)
+void prod(int t_current,                    // current time step
+          int t_interval,                   // consumer time interval
+          int t_nsteps,                     // total number of time steps
+          Decaf* decaf,                     // decaf object
+          void* args)                       // custom args
 {
   struct args_t* a = (args_t*)args;          // custom args
   double* x;                                 // atom positions
@@ -107,11 +107,11 @@ void prod(int t_current,
 
 // consumer gets the atom positions and prints them
 // check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
-void con(int t_current,
-         int t_interval,
-         int,
-         Decaf* decaf,
-         void*)
+void con(int t_current,                      // current time step
+         int t_interval,                     // consumer time interval
+         int,                                // total number of time steps (unused)
+         Decaf* decaf,                       // decaf object
+         void*)                              // custom args (unused)
 {
   if (!((t_current + 1) % t_interval))
   {
@@ -124,11 +124,12 @@ void con(int t_current,
   }
 }
 
-void dflow(int,
-           int,
-           int,
-           Decaf* decaf,
-           void*)
+// dataflow just needs to flush on every time step
+void dflow(int,                               // current time step (unused)
+           int,                               // consumer time interval (unused)
+           int,                               // total number of time steps (unused)
+           Decaf* decaf,                      // decaf object
+           void*)                             // custom args (unused)
 {
   decaf->flush();                             // need to clean up after each time step
 }
