@@ -271,4 +271,28 @@ Decaf::flush()
     data_->flush();
 }
 
+void
+BuildDecafs(Workflow& workflow,
+            vector<decaf::Decaf*>& decafs,
+            CommHandle world_comm,
+            void (*pipeliner)(decaf::Decaf*),
+            void (*checker)(decaf::Decaf*),
+            decaf::Data* data)
+{
+  DecafSizes decaf_sizes;
+  for (size_t i = 0; i < workflow.links.size(); i++)
+  {
+    int prod  = workflow.links[i].prod;    // index into workflow nodes
+    int dflow = i;                         // index into workflow links
+    int con   = workflow.links[i].con;     // index into workflow nodes
+    decaf_sizes.prod_size   = workflow.nodes[prod].nprocs;
+    decaf_sizes.dflow_size  = workflow.links[dflow].nprocs;
+    decaf_sizes.con_size    = workflow.nodes[con].nprocs;
+    decaf_sizes.prod_start  = workflow.nodes[prod].start_proc;
+    decaf_sizes.dflow_start = workflow.links[dflow].start_proc;
+    decaf_sizes.con_start   = workflow.nodes[con].start_proc;
+    decafs.push_back(new decaf::Decaf(world_comm, decaf_sizes, pipeliner, checker, data));
+  }
+}
+
 #endif

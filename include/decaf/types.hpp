@@ -14,6 +14,9 @@
 #define DECAF_TYPES_HPP
 
 #include <stdio.h>
+#include <vector>
+
+using namespace std;
 
 // data element for creating typemaps for datatypes
 enum DispType
@@ -62,13 +65,35 @@ enum DecafError
 
 struct DecafSizes
 {
-  int prod_size;    // size of producer communicator
-  int dflow_size;   // size of dataflow communicator
-  int con_size;     // size of consumer communicator
-  int prod_start;   // size of producer communicator
-  int dflow_start;  // size of dataflow communicator
-  int con_start;    // size of consumer communicator
+  int prod_size;    // size (number of processes) of producer communicator
+  int dflow_size;   // size (number of processes) of dataflow communicator
+  int con_size;     // size (number of processes) of consumer communicator
+  int prod_start;   // starting world process rank of producer communicator
+  int dflow_start;  // starting world process rank of dataflow communicator
+  int con_start;    // starting world process rank of consumer communicator
   int con_nsteps;   // number of consumer timesteps
+};
+
+struct WorkflowNode // a producer or consumer
+{
+  vector<int> outs; // indices in vector of all workflow nodes of outgoing nodes
+  vector<int> ins;  // indices in vector of all workflow nodes of incoming nodes
+  int start_proc;   // starting process rank in world communicator for this producer or consumer
+  int nprocs;       // number of processes for this producer or consumer
+};
+
+struct WorkflowLink  // a dataflow
+{
+  int prod;          // index in vector of all workflow nodes of producer
+  int con;           // index in vector of all workflow nodes of consumer
+  int start_proc;    // starting process rank in world communicator for the dataflow
+  int nprocs;
+};
+
+struct Workflow      // an entire workflow
+{
+  vector<WorkflowNode> nodes; // all the workflow nodes
+  vector<WorkflowLink> links; // all the workflow links
 };
 
 void
