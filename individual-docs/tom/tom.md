@@ -120,9 +120,8 @@ Objective:
 
 ## Matthieu next steps
 
-- multinode DAG interface in python
-    - provide sizes once per node and link
-    - convert to decaf sizes for each dataflow
+- DAG interface in python wrt C++ implementation of the workflow
+- Datatype transformations in decaf
 - Integrate with swift in addition to python
 - Finish datatype splitting / merging
 - Relax synchronization
