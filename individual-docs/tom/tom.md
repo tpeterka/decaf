@@ -106,3 +106,27 @@ Objective:
 ## Data distribution
 
 - Will need to think about custom redistribution functions in addition to the automatic datatype distribution. Use case: graph or unstructured mesh (tess) will require adding additional neighbors so that local consistency is preserved.
+
+--------------------------------
+
+3/12/15
+
+## General todos / next steps
+
+- Update my HACC example per Lokman's instructions
+- Add dfg in networkx to my python script and generate decaf for two links of dfg
+- Test lammps-workflow with overlapping communicators
+- Add buffering (Florin)
+
+## Matthieu next steps
+
+- multinode DAG interface in python
+    - provide sizes once per node and link
+    - convert to decaf sizes for each dataflow
+- Integrate with swift in addition to python
+- Finish datatype splitting / merging
+- Relax synchronization
+- Multicore
+- C++11? eg., initialization of decaf sizes in decaf constructor
+- namespace conflict with openMPI?
+- JLESC?
