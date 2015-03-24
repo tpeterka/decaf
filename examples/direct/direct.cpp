@@ -63,6 +63,7 @@ void run(DecafSizes& decaf_sizes,
                            &checker,
                            &data);
   decaf->err();
+  decaf->run();
 
   // producer and consumer data in separate pointers in case producer and consumer overlap
   int *pd, *cd;

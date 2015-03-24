@@ -151,6 +151,7 @@ void run(DecafSizes& decaf_sizes,
                            &checker,
                            &data);
   decaf->err();
+  decaf->run();
 
   int con_interval;                                      // consumer interval
   if (decaf_sizes.con_nsteps)

@@ -35,6 +35,7 @@ namespace decaf
           void (*checker)(Decaf*),
           Data* data);
     ~Decaf();
+    void run();
     void put(void* d, int count = 1);
     void* get(bool no_copy = false);
     int get_nitems(bool no_copy = false)
@@ -85,12 +86,14 @@ Decaf::Decaf(CommHandle world_comm,
   type_(DECAF_OTHER_COMM)
 {
   // sizes is a POD struct, initialization not allowed in C++03; need to use assignment workaround
-  const static DecafSizes sizes = {
-    decaf_sizes.prod_size,  decaf_sizes.dflow_size,  decaf_sizes.con_size,
-    decaf_sizes.prod_start, decaf_sizes.dflow_start, decaf_sizes.con_start,
-    decaf_sizes.con_nsteps
-  };
-  sizes_ = sizes;
+  // TODO: time for C++11?
+  sizes_.prod_size = decaf_sizes.prod_size;
+  sizes_.dflow_size = decaf_sizes.dflow_size;
+  sizes_.con_size = decaf_sizes.con_size;
+  sizes_.prod_start = decaf_sizes.prod_start;
+  sizes_.dflow_start = decaf_sizes.dflow_start;
+  sizes_.con_start = decaf_sizes.con_start;
+  sizes_.con_nsteps = decaf_sizes.con_nsteps;
 
   int world_rank = CommRank(world_comm); // my place in the world
   int world_size = CommSize(world_comm);
@@ -136,11 +139,6 @@ Decaf::Decaf(CommHandle world_comm,
                                sizes_.con_size, sizes_.con_start - sizes_.dflow_start,
                                DECAF_DFLOW_CON_COMM);
 
-  // dataflow ranks that overlap producer ranks run the dataflow inside of put
-  // those dataflow ranks that are disjoint run the dataflow below
-  if (is_dflow() && !is_prod())
-    dataflow();
-
   err_ = DECAF_OK;
 }
 
@@ -155,6 +153,21 @@ Decaf::~Decaf()
     delete prod_comm_;
   if (is_con())
     delete con_comm_;
+}
+
+void
+decaf::
+Decaf::run()
+{
+  // runs the dataflow, only for those dataflow ranks that are disjoint from producer
+  // dataflow ranks that overlap producer ranks run the dataflow as part of the put function
+  if (is_dflow() && !is_prod())
+  {
+    // TODO: when pipelining, would not store all items in dataflow before forwarding to consumer
+    // as is done below
+    for (int i = 0; i < sizes_.con_nsteps; i++)
+      forward();
+  }
 }
 
 void
