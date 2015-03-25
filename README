@@ -1,0 +1,58 @@
+This document uses the [Markdown](http://daringfireball.net/projects/markdown/) syntax.
+
+# Building decaf:
+
+Decaf is built using CMake. Assuming that you created a build directory one level below the decaf home directory, then:
+```
+cd build
+```
+Configure the build using cmake with this sample command line. We recommend saving this into a script and running the script:
+
+```
+cmake .. \
+-DCMAKE_CXX_COMPILER=mpicxx \
+-Ddebug=on \
+-Doptimize=off \
+-Dtransport_mpi=on \
+```
+
+Currently, the available options are:
+
+- debug              "Build Decaf with debugging on"                OFF/ON, default OFF
+- optimize           "Build Decaf with optimization"                OFF/ON, default OFF
+- transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
+
+Then, make and optionally install:
+```
+make
+make install
+```
+
+# Building your project with decaf:
+
+To use decaf in C++ source code, Simply,
+
+```
+#include <decaf/decaf.hpp>
+```
+All functions are contained in header files; there is no need to link with a library.
+
+# Wrapping your project in python
+
+There are numerous ways to configure and run your project, but this is our favorite. A short python script (eg. driver.py) is written by the user or modified from existing. This script sets workflow execution parameters, imports the precompiled module for the project, and runs it. An example script is [examples/direct/python/driver.py](https://bitbucket.org/tpeterka1/decaf/raw/master/examples/direct/python/driver.py).
+
+[More information on the steps to generate a python interface for a project](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/python.md)
+
+# Executing the python-wrapped project
+
+```
+mpiexec -n <num_procs> python driver.py
+```
+
+# Documentation
+
+See the documentation in the [doc directory](https://bitbucket.org/tpeterka1/decaf/raw/master/doc).
+
+# Learning more about decaf:
+
+See the documents [here](https://bitbucket.org/tpeterka1/decaf/wiki/public-docs/public-docs.md).
