@@ -1,2 +1,0 @@
-#Gopi's Notes
-
