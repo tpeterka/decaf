@@ -5,6 +5,8 @@ option                      (debug              "Build Decaf with debugging on" 
 option                      (optimize           "Build Decaf with optimization"                OFF)
 option                      (transport_mpi      "Build Decaf with MPI transport layer"         ON)
 
+set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+
 if                          (transport_mpi)
   find_package              (MPI REQUIRED)
   set                       (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
