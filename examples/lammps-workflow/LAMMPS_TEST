@@ -18,7 +18,7 @@ ARCH=MAC_OSX
 #ARCH=CRAY
 
 # number of procs
-num_procs=9
+num_procs=10
 
 # procs per node
 ppn=1 # adjustable for BG/Q, allowed 1, 2, 4, 8, 16, 32, 64
@@ -30,30 +30,7 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executable
-exe=../install/examples/lammps-workflow/lammps-workflow
-
-# communicator sizes
-prod_size=4
-dflow_size=1
-con_size=2
-
-# communicator starting ranks
-prod_start=0
-dflow_start=4
-con_start=5
-
-# time steps
-tot_time=0 # lammps input file is controlling the time steps for now, set to 0 to not run dataflow
-con_time=0 # otherwise the dataflow will block waiting for data
-
-# lammps input file
-infile="/Users/tpeterka/software/decaf/examples/lammps/in.melt"
-
-#------
-#
-# program arguments
-#
-args="$prod_size $dflow_size $con_size $prod_start $dflow_start $con_start $tot_time $con_time $infile"
+exe=../../install/examples/lammps-workflow/lammps-workflow
 
 #------
 #
@@ -62,36 +39,36 @@ args="$prod_size $dflow_size $con_size $prod_start $dflow_start $con_start $tot_
 
 if [ "$ARCH" = "MAC_OSX" ]; then
 
-mpiexec -l -n $num_procs $exe $args
+mpiexec -l -n $num_procs $exe
 
-#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
+#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e gdb -x gdb.run --args $exe
 
-#dsymutil $exe ; mpiexec -n $num_procs valgrind -q $exe $args
+#dsymutil $exe ; mpiexec -n $num_procs valgrind -q $exe
 
-#dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe $args
+#dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
 
 fi
 
 if [ "$ARCH" = "LINUX" ]; then
 
-mpiexec -n $num_procs $exe $args
+mpiexec -n $num_procs $exe
 
-#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
+#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe
 
-#mpiexec -n $num_procs valgrind -q $exe $args
+#mpiexec -n $num_procs valgrind -q $exe
 
-#mpiexec -n $num_procs valgrind -q --leak-check=yes $exe $args
+#mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
 
 fi
 
 if [ "$ARCH" = "BGQ" ]; then
 
-qsub -n $num_nodes --mode c$ppn -A SDAV -t 60 $exe $args
+qsub -n $num_nodes --mode c$ppn -A SDAV -t 60 $exe
 
 fi
 
 if [ "$ARCH" = "CRAY" ]; then
 
-aprun -n $num_procs $exe $args
+aprun -n $num_procs $exe
 
 fi

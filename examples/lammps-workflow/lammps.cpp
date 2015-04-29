@@ -15,6 +15,8 @@
 #include <math.h>
 #include <mpi.h>
 #include <string.h>
+#include <utility>
+#include <map>
 
 // lammps includes
 #include "lammps.h"
@@ -24,6 +26,7 @@
 
 using namespace decaf;
 using namespace LAMMPS_NS;
+using namespace std;
 
 struct lammps_args_t                             // custom args for running lammps
 {
@@ -45,28 +48,6 @@ void pipeliner(Decaf* decaf)
 // user-defined resilience code
 void checker(Decaf* decaf)
 {
-}
-
-// gets command line args
-void GetArgs(int argc,
-             char **argv,
-             DecafSizes& decaf_sizes,
-             int& prod_nsteps,
-             char* infile)
-{
-  assert(argc >= 9);
-
-  decaf_sizes.prod_size    = atoi(argv[1]);
-  decaf_sizes.dflow_size   = atoi(argv[2]);
-  decaf_sizes.con_size     = atoi(argv[3]);
-
-  decaf_sizes.prod_start   = atoi(argv[4]);
-  decaf_sizes.dflow_start  = atoi(argv[5]);
-  decaf_sizes.con_start    = atoi(argv[6]);
-
-  prod_nsteps              = atoi(argv[7]);   // user's, not decaf's variable
-  decaf_sizes.con_nsteps   = atoi(argv[8]);
-  strcpy(infile, argv[9]);
 }
 
 // this producer runs lammps and puts the atom positions to the dataflow at the consumer intervals
@@ -186,69 +167,114 @@ void dflow(int,                               // current time step (unused)
     decaf[i]->flush();                        // need to clean up after each time step
 }
 
-void run(DecafSizes& decaf_sizes,
+void node_callback(WorkflowNode& node,
+                   int t_current,
+                   int t_interval,
+                   int t_nsteps,
+                   vector<Decaf*> decafs)
+{
+  fprintf(stderr, "node: start_proc = %d nprocs = %d\n", node.start_proc, node.nprocs);
+}
+
+void link_callback(WorkflowLink& link,
+                   int t_current,
+                   int t_interval,
+                   int t_nsteps,
+                   Decaf* decaf)
+{
+  fprintf(stderr, "link: prod = %d con = %d start_proc = %d nprocs = %d\n",
+          link.prod, link.con, link.start_proc, link.nprocs);
+}
+
+// node and link callback functions
+void lammps()
+{
+  fprintf(stderr, "lammps\n");
+}
+
+void print1()
+{
+  fprintf(stderr, "print1\n");
+}
+
+void print2_prod()
+{
+  fprintf(stderr, "print2_prod\n");
+}
+
+void print2_con()
+{
+  fprintf(stderr, "print2_con\n");
+}
+
+void print3()
+{
+  fprintf(stderr, "print3\n");
+}
+
+void lammps_print1()
+{
+  fprintf(stderr, "lammps -> print1\n");
+}
+
+void lammps_print2()
+{
+  fprintf(stderr, "lammps -> print2\n");
+}
+
+void print2_print3()
+{
+  fprintf(stderr, "print2 -> print3\n");
+}
+
+void run(Workflow& workflow,
          int prod_nsteps,
+         int con_nsteps,
          char* infile)
 {
+  // map of callbacks
+  // TODO: move to a separate function
+  // this map needs to be custom made by the user custom for all possible functions to be
+  // used in a workflow or a family of workflows; maybe declared to decaf during intitialization
+  // would be better
+  pair<char*, void(*)()> p;
+  map<char*, void(*)()> callbacks;
+  p = make_pair((char*)"lammps"       , &lammps        ); callbacks.insert(p);
+  p = make_pair((char*)"print1"       , &print1        ); callbacks.insert(p);
+  p = make_pair((char*)"print2_prod"  , &print2_prod   ); callbacks.insert(p);
+  p = make_pair((char*)"print2_con"   , &print2_con    ); callbacks.insert(p);
+  p = make_pair((char*)"print3"       , &print3        ); callbacks.insert(p);
+  p = make_pair((char*)"lammps_print1", &lammps_print1 ); callbacks.insert(p);
+  p = make_pair((char*)"lammps_print2", &lammps_print2 ); callbacks.insert(p);
+  p = make_pair((char*)"print2_print3", &print2_print3 ); callbacks.insert(p);
+
+  DecafSizes decaf_sizes;
+  vector<Decaf*> decafs;
+
   MPI_Init(NULL, NULL);
 
   // define the data type
   Data data(MPI_DOUBLE);
 
-  // hard-coding a little 4-node workflow with 3 decaf instances (one per link)
-  //         print1 (1 proc)
-  //       /
-  //   lammps (4 procs)
-  //       \
-  //         print2 (1 proc) - print3 (1 proc)
-  //
-  // entire workflow takes 10 procs (1 dataflow proc between each producer consumer pair)
-  // dataflow can be overallped, but currently all disjoint procs (simplest case)
-
-  // lammps -  print1
-  decaf_sizes.prod_size   = 4;
-  decaf_sizes.dflow_size  = 1;
-  decaf_sizes.con_size    = 1;
-  decaf_sizes.prod_start  = 0;
-  decaf_sizes.dflow_start = 4;
-  decaf_sizes.con_start   = 5;
-  decaf_sizes.con_nsteps  = 1;
-  Decaf* decaf_lp1 = new Decaf(MPI_COMM_WORLD,
+  // create decaf instances for all links in the workflow
+  for (size_t i = 0; i < workflow.links.size(); i++)
+  {
+    int p = workflow.links[i].prod;
+    int c = workflow.links[i].con;
+    decaf_sizes.prod_size   = workflow.nodes[p].nprocs;
+    decaf_sizes.dflow_size  = workflow.links[i].nprocs;
+    decaf_sizes.con_size    = workflow.nodes[c].nprocs;
+    decaf_sizes.prod_start  = workflow.nodes[p].start_proc;
+    decaf_sizes.dflow_start = workflow.links[i].start_proc;
+    decaf_sizes.con_start   = workflow.nodes[c].start_proc;
+    decaf_sizes.con_nsteps  = con_nsteps;
+    decafs.push_back(new Decaf(MPI_COMM_WORLD,
                                decaf_sizes,
                                &pipeliner,
                                &checker,
-                               &data);
-  decaf_lp1->err();
-
-  // lammps -  print2
-  decaf_sizes.prod_size   = 4;
-  decaf_sizes.dflow_size  = 1;
-  decaf_sizes.con_size    = 1;
-  decaf_sizes.prod_start  = 0;
-  decaf_sizes.dflow_start = 6;
-  decaf_sizes.con_start   = 7;
-  decaf_sizes.con_nsteps  = 1;
-  Decaf* decaf_lp2 = new Decaf(MPI_COMM_WORLD,
-                               decaf_sizes,
-                               &pipeliner,
-                               &checker,
-                               &data);
-  decaf_lp2->err();
-
-  // print2 -  print3
-  decaf_sizes.prod_size   = 1;
-  decaf_sizes.dflow_size  = 1;
-  decaf_sizes.con_size    = 1;
-  decaf_sizes.prod_start  = 7;
-  decaf_sizes.dflow_start = 8;
-  decaf_sizes.con_start   = 9;
-  decaf_sizes.con_nsteps  = 1;
-  Decaf* decaf_p2p3 = new Decaf(MPI_COMM_WORLD,
-                                decaf_sizes,
-                                &pipeliner,
-                                &checker,
-                                &data);
-  decaf_p2p3->err();
+                               &data));
+    decafs[i]->err();
+  }
 
   // TODO: assuming the same consumer interval for the entire workflow
   // this should not be necessary, need to experiment
@@ -263,14 +289,84 @@ void run(DecafSizes& decaf_sizes,
   pos_args_t pos_args;                                   // custom args for atom positions
   pos_args.pos = NULL;
 
+  // find the sources of the workflow
+  vector<int> sources;
+  for (size_t i = 0; i < workflow.nodes.size(); i++)
+  {
+    if (workflow.nodes[i].in_links.size() == 0)
+      sources.push_back(i);
+  }
+
+  // compute a BFS of the graph
+  vector<int> bfs_tree;
+  bfs(workflow, sources, bfs_tree);
+
+  // debug: print the bfs order
+//   for (int i = 0; i < bfs_tree.size(); i++)
+//     fprintf(stderr, "bfs[%d] = %d\n", i, bfs_tree[i]);
+
+  // TODO: start the dataflows once the callbacks are actually moving information
+  // will deadlock until then
+
   // start the dataflows
-  decaf_lp1->run();
-  decaf_lp2->run();
-  decaf_p2p3->run();
+//   for (size_t i = 0; i < workflow.links.size(); i++)
+//     decafs[i]->run();
 
   // run the main loop
   for (int t = 0; t < prod_nsteps; t++)
   {
+
+    // execute the workflow, calling nodes in BFS order
+    for (size_t i = 0; i < bfs_tree.size(); i++)
+    {
+      int u = bfs_tree[i];
+
+      // fill decafs
+      vector<Decaf*> out_decafs;
+      vector<Decaf*> in_decafs;
+      for (size_t j = 0; j < workflow.nodes[u].out_links.size(); j++)
+      {
+//         fprintf(stderr, "out_links[%lu] = %d\n", j, workflow.nodes[u].out_links[j]);
+        out_decafs.push_back(decafs[workflow.nodes[u].out_links[j]]);
+      }
+      for (size_t j = 0; j < workflow.nodes[u].in_links.size(); j++)
+      {
+//         fprintf(stderr, "in_links[%lu] = %d\n", j, workflow.nodes[u].in_links[j]);
+        in_decafs.push_back(decafs[workflow.nodes[u].in_links[j]]);
+      }
+
+//       // producer
+//       if (out_decafs.size() && out_decafs[0]->is_prod())
+// //         task(workflow.nodes[u].prod_func, workflow.nodes[u].prod_args, t,
+// //              con_interval, prod_nsteps, out_decafs);
+//         callbacks[workflow.nodes[u].prod_func]();
+
+//       // consumer
+//       if (in_decafs.size() && in_decafs[0]->is_con())
+// //         task(workflow.nodes[u].con_func, workflow.nodes[u].con_args, t,
+// //              con_interval, prod_nsteps, in_decafs);
+//         callbacks[workflow.nodes[u].con_func]();
+
+      // dataflow
+      for (size_t j = 0; j < out_decafs.size(); j++)
+      {
+        int l = workflow.nodes[u].out_links[j];
+        if (out_decafs[j]->is_dflow())
+        {
+          //           task(workflow.links[l].dflow_func, workflow.links[l].dflow_args, t,
+          //                con_interval, prod_nsteps, out_decafs[j]);
+          for (int i = 0; i < strlen(workflow.links[l].dflow_func) + 1; i++)
+            fprintf(stderr, "%d ", workflow.links[l].dflow_func[i]);
+          fprintf(stderr, "\n");
+          fprintf(stderr, "count[%s] = %d\n", workflow.links[l].dflow_func,
+                  callbacks.count(workflow.links[l].dflow_func));
+          //           callbacks[workflow.links[l].dflow_func]();
+        }
+      }
+    }
+  }
+
+#if 0
     // both lammps - print1 and lammps - print2
     if (decaf_lp1->is_prod())
     {
@@ -305,29 +401,95 @@ void run(DecafSizes& decaf_sizes,
       con(t, con_interval, prod_nsteps, decafs_p2p3, &pos_args);
     if (decaf_p2p3->is_dflow())
       dflow(t, con_interval, prod_nsteps, decafs_p2p3, NULL);
-
     if (pos_args.pos)
       delete[] pos_args.pos;
   }
+#endif
 
   // cleanup
-  delete decaf_lp1;
-  delete decaf_lp2;
-  delete decaf_p2p3;
+  for (size_t i = 0; i < decafs.size(); i++)
+    delete decafs[i];
+
   MPI_Finalize();
 }
 
 int main(int argc,
          char** argv)
 {
-  // parse command line args
-  DecafSizes decaf_sizes;
-  int prod_nsteps;
+  // normal entry point is run(), called by python
+  // main is a test driver for debugging purposes
+
+  Workflow workflow;
+  int prod_nsteps = 1;
+  int con_nsteps = 1;
   char infile[256];
-  GetArgs(argc, argv, decaf_sizes, prod_nsteps, infile);
+  strcpy(infile, "/Users/tpeterka/software/decaf/examples/lammps-workflow/in.melt");
+  vector<void (*)()> node_funcs;
+  vector<void (*)()> link_funcs;
+
+  // fill workflow nodes
+  WorkflowNode node;
+  node.in_links.push_back(1);                    // print1
+  node.start_proc = 5;
+  node.nprocs = 1;
+  node.prod_func = NULL;
+  node.con_func = (char*)"print1";
+  workflow.nodes.push_back(node);
+
+  node.out_links.clear();
+  node.in_links.clear();
+  node.in_links.push_back(0);                    // print3
+  node.start_proc = 9;
+  node.nprocs = 1;
+  node.prod_func = NULL;
+  node.con_func = (char*)"print3";
+  workflow.nodes.push_back(node);
+
+  node.out_links.clear();
+  node.in_links.clear();
+  node.out_links.push_back(0);                   // print2
+  node.in_links.push_back(2);
+  node.start_proc = 7;
+  node.nprocs = 1;
+  node.prod_func = (char*)"print2_prod";
+  node.con_func = (char*)"print2_con";
+  workflow.nodes.push_back(node);
+
+  node.out_links.clear();
+  node.in_links.clear();
+  node.out_links.push_back(1);                   // lammps
+  node.out_links.push_back(2);
+  node.start_proc = 0;
+  node.nprocs = 4;
+  node.prod_func = (char*)"lammps";
+  node.con_func = NULL;
+  workflow.nodes.push_back(node);
+
+  // fill workflow links
+  WorkflowLink link;
+  link.prod = 2;                                 // print2 - print3
+  link.con = 1;
+  link.start_proc = 8;
+  link.nprocs = 1;
+  link.dflow_func = (char*)"print2_print3";
+  workflow.links.push_back(link);
+
+  link.prod = 3;                                 // lammps - print1
+  link.con = 0;
+  link.start_proc = 4;
+  link.nprocs = 1;
+  link.dflow_func = (char*)"lammps_print1";
+  workflow.links.push_back(link);
+
+  link.prod = 3;                                 // lammps - print2
+  link.con = 2;
+  link.start_proc = 6;
+  link.nprocs = 1;
+  link.dflow_func = (char*)"lammps_print2";
+  workflow.links.push_back(link);
 
   // run decaf
-  run(decaf_sizes, prod_nsteps, infile);
+  run(workflow, prod_nsteps, con_nsteps, infile);
 
   return 0;
 }
