@@ -1,5 +1,6 @@
 import networkx as nx
 from libcpp.vector cimport vector
+from libcpp.string cimport string
 
 cdef extern from "decaf/decaf.hpp":
     pass
@@ -10,20 +11,20 @@ cdef extern from "decaf/types.hpp":
         vector[int] in_links
         int start_proc
         int nprocs
-        char* prod_func
-        char* con_func
+        string prod_func
+        string con_func
     struct WorkflowLink:
         int prod
         int con
         int start_proc
         int nprocs
-        char* dflow_func
+        string dflow_func
     struct Workflow:
         vector[WorkflowNode] nodes
         vector[WorkflowLink] links
 
 cdef extern from "../examples/lammps-workflow/lammps.cpp":
-    void run(Workflow& workflow, int prod_nsteps, int con_nsteps, char* infile)
+    void run(Workflow& workflow, int prod_nsteps, int con_nsteps, string infile)
 
 def pyrun(workflow, prod_nsteps, con_nsteps, infile):
     cdef WorkflowNode wnode

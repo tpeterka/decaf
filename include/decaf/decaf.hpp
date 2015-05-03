@@ -13,6 +13,8 @@
 #ifndef DECAF_HPP
 #define DECAF_HPP
 
+#include <map>
+
 // transport layer specific types
 #ifdef TRANSPORT_MPI
 #include "transport/mpi/types.hpp"
@@ -274,6 +276,7 @@ Decaf::flush()
 void
 BuildDecafs(Workflow& workflow,
             vector<decaf::Decaf*>& decafs,
+            int con_nsteps,
             CommHandle world_comm,
             void (*pipeliner)(decaf::Decaf*),
             void (*checker)(decaf::Decaf*),
@@ -291,8 +294,205 @@ BuildDecafs(Workflow& workflow,
     decaf_sizes.prod_start  = workflow.nodes[prod].start_proc;
     decaf_sizes.dflow_start = workflow.links[dflow].start_proc;
     decaf_sizes.con_start   = workflow.nodes[con].start_proc;
+    decaf_sizes.con_nsteps  = con_nsteps;
     decafs.push_back(new decaf::Decaf(world_comm, decaf_sizes, pipeliner, checker, data));
+    decafs[i]->err();
   }
+}
+
+// BFS node
+struct BFSNode
+{
+  int index;                    // index of node in all workflow nodes
+  int dist;                     // distance from start (level in bfs tree)
+};
+
+// computes breadth-first search (BFS) traversal of the workflow nodes
+// returns number of levels in the bfs tree (distance of farthest node from source)
+int
+bfs(Workflow& workflow,         // the workflow
+    vector<int>& sources,       // starting nodes (indices into workflow nodes)
+    vector<BFSNode>& bfs_nodes) // output bfs node order (indices into workflow nodes)
+{
+  vector<bool> visited_nodes;
+  visited_nodes.reserve(workflow.nodes.size());
+  queue<BFSNode> q;
+  BFSNode bfs_node;
+
+  // init
+  bfs_node.index = -1;
+  bfs_node.dist  = 0;
+  for (size_t i = 0; i < workflow.nodes.size(); i++)
+    visited_nodes[i] = false;
+
+  // init source nodes
+  for (size_t i = 0; i < sources.size(); i++)
+  {
+    visited_nodes[sources[i]] = true;
+    bfs_node.index = sources[i];
+    bfs_node.dist = 0;
+    q.push(bfs_node);
+  }
+
+  while (!q.empty())
+  {
+    int u = q.front().index;
+    int d = q.front().dist;
+    q.pop();
+    bfs_node.index = u;
+    bfs_node.dist = d;
+    bfs_nodes.push_back(bfs_node);
+    for (size_t i = 0; i < workflow.nodes[u].out_links.size(); i++)
+    {
+      int v = workflow.links[workflow.nodes[u].out_links[i]].con;
+      if (visited_nodes[v] == false)
+      {
+        visited_nodes[v] = true;
+        bfs_node.index = v;
+        bfs_node.dist = d + 1;
+        q.push(bfs_node);
+      }
+    }
+  }
+  return bfs_node.dist;
+}
+
+void run_workflow(Workflow& workflow,                     // the workflow
+                  int prod_nsteps,                        // number of producer time steps
+                  int con_nsteps,                         // number of consumer time steps
+                  decaf::Data* data,                      // data model
+                  map<string, void(*)(void*,
+                                      int,
+                                      int,
+                                      int,
+                                      vector<decaf::Decaf*>&,
+                                      int)> callbacks,    // map of callback functions
+                  CommHandle world_comm,                  // world communicator
+                  void (*pipeliner)(decaf::Decaf*),       // custom pipeliner code
+                  void (*checker)(decaf::Decaf*))         // custom resilience code
+{
+  vector<decaf::Decaf*> decafs;
+
+  // create decaf instances for all links in the workflow
+  BuildDecafs(workflow, decafs, con_nsteps, world_comm, pipeliner, checker, data);
+
+  // TODO: assuming the same consumer interval for the entire workflow
+  // this should not be necessary, need to experiment
+  int con_interval;                                      // consumer interval
+  if (con_nsteps)
+    con_interval = prod_nsteps / con_nsteps;             // consume every so often
+  else
+    con_interval = -1;                                   // don't consume
+
+  // find the sources of the workflow
+  vector<int> sources;
+  for (size_t i = 0; i < workflow.nodes.size(); i++)
+  {
+    if (workflow.nodes[i].in_links.size() == 0)
+      sources.push_back(i);
+  }
+
+  // compute a BFS of the graph
+  vector<BFSNode> bfs_order;
+  int nlevels = bfs(workflow, sources, bfs_order);
+
+  // debug: print the bfs order
+//   for (int i = 0; i < bfs_order.size(); i++)
+//     fprintf(stderr, "nlevels = %d bfs[%d] = index %d dist %d\n",
+//             nlevels, i, bfs_order[i].index, bfs_order[i].dist);
+
+  // start the dataflows
+  for (size_t i = 0; i < workflow.links.size(); i++)
+    decafs[i]->run();
+
+  // run the main loop
+  for (int t = 0; t < prod_nsteps; t++)
+  {
+
+    // execute the workflow, calling nodes in BFS order
+    int n = 0;
+    for (int level = 0; level <= nlevels; level++)
+    {
+      while (1)
+      {
+        if (n >= bfs_order.size() || bfs_order[n].dist > level)
+          break;
+        int u = bfs_order[n].index;
+        fprintf(stderr, "level = %d n = %d u = %d\n", level, n, u);
+
+        // fill decafs
+        vector<decaf::Decaf*> out_decafs;
+        vector<decaf::Decaf*> in_decafs;
+        for (size_t j = 0; j < workflow.nodes[u].out_links.size(); j++)
+          out_decafs.push_back(decafs[workflow.nodes[u].out_links[j]]);
+        for (size_t j = 0; j < workflow.nodes[u].in_links.size(); j++)
+          in_decafs.push_back(decafs[workflow.nodes[u].in_links[j]]);
+
+        // consumer
+        if (in_decafs.size() && in_decafs[0]->is_con())
+          callbacks[workflow.nodes[u].con_func](workflow.nodes[u].con_args, t,
+                                                con_interval, prod_nsteps, in_decafs, -1);
+        // producer
+        if (out_decafs.size() && out_decafs[0]->is_prod())
+          callbacks[workflow.nodes[u].prod_func](workflow.nodes[u].prod_args, t,
+                                                 con_interval, prod_nsteps, out_decafs, -1);
+
+        // dataflow
+        for (size_t j = 0; j < out_decafs.size(); j++)
+        {
+          int l = workflow.nodes[u].out_links[j];
+          if (out_decafs[j]->is_dflow())
+            callbacks[workflow.links[l].dflow_func](workflow.links[l].dflow_args, t,
+                                                    con_interval, prod_nsteps, out_decafs, j);
+        }
+        n++;
+      }
+    }
+  }
+
+#if 0
+    // both lammps - print1 and lammps - print2
+    if (decaf_lp1->is_prod())
+    {
+      vector<Decaf*> decafs_lp1_lp2;
+      decafs_lp1_lp2.push_back(decaf_lp1);
+      decafs_lp1_lp2.push_back(decaf_lp2);
+      prod_l(t, con_interval, prod_nsteps, decafs_lp1_lp2, &lammps_args);
+    }
+
+    // lammps - print1
+    vector<Decaf*> decafs_lp1;
+    decafs_lp1.push_back(decaf_lp1);
+    if (decaf_lp1->is_con())
+      con(t, con_interval, prod_nsteps, decafs_lp1, &pos_args);
+    if (decaf_lp1->is_dflow())
+      dflow(t, con_interval, prod_nsteps, decafs_lp1, NULL);
+
+    // lammps - print2
+    vector<Decaf*> decafs_lp2;
+    decafs_lp2.push_back(decaf_lp2);
+    if (decaf_lp2->is_con())
+      con_p2(t, con_interval, prod_nsteps, decafs_lp2, &pos_args);
+    if (decaf_lp2->is_dflow())
+      dflow(t, con_interval, prod_nsteps, decafs_lp2, NULL);
+
+    // print2 - print3
+    vector<Decaf*> decafs_p2p3;
+    decafs_p2p3.push_back(decaf_p2p3);
+    if (decaf_p2p3->is_prod())
+      prod_p2(t, con_interval, prod_nsteps, decafs_p2p3, &pos_args);
+    if (decaf_p2p3->is_con())
+      con(t, con_interval, prod_nsteps, decafs_p2p3, &pos_args);
+    if (decaf_p2p3->is_dflow())
+      dflow(t, con_interval, prod_nsteps, decafs_p2p3, NULL);
+    if (pos_args.pos)
+      delete[] pos_args.pos;
+  }
+#endif
+
+  // cleanup
+  for (size_t i = 0; i < decafs.size(); i++)
+    delete decafs[i];
 }
 
 #endif

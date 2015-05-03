@@ -13,9 +13,12 @@
 #ifndef DECAF_TYPES_HPP
 #define DECAF_TYPES_HPP
 
+#include "decaf.hpp"
+
 #include <stdio.h>
 #include <vector>
 #include <queue>
+#include <string>
 
 using namespace std;
 
@@ -81,8 +84,10 @@ struct WorkflowNode      // a producer or consumer
   vector<int> in_links;  // indices of incoming links
   int start_proc;        // starting proc rank in world communicator for this producer or consumer
   int nprocs;            // number of processes for this producer or consumer
-  char *prod_func;       // name of producer callback TODO: add args
-  char *con_func;        // name of consumer callback TODO: add args
+  string prod_func;      // name of producer callback
+  string con_func;       // name of consumer callback
+  void* prod_args;       // producer callback arguments
+  void* con_args;        // consumer callback arguments
 };
 
 struct WorkflowLink      // a dataflow
@@ -91,28 +96,14 @@ struct WorkflowLink      // a dataflow
   int con;               // index in vector of all workflow nodes of consumer
   int start_proc;        // starting process rank in world communicator for the dataflow
   int nprocs;            // number of processes in the dataflow
-  char*dflow_func;       // name of dataflow callback TODO: add args
+  string dflow_func;     // name of dataflow callback
+  void* dflow_args;      // dataflow callback arguments
 };
 
 struct Workflow          // an entire workflow
 {
   vector<WorkflowNode> nodes; // all the workflow nodes
   vector<WorkflowLink> links; // all the workflow links
-};
-
-enum NodeColor           // colors of nodes in BFS search tree of the workflow
-// TODO: switch to simple boolean visited
-{
-  WHITE,
-  GRAY,
-//   BLACK,
-};
-
-struct BFSNode           // one node in a breadth-first search tree of the workflow
-{                        // TODO: switch to simple boolean visited
-  NodeColor color;
-//   int dist;
-//   int parent;
 };
 
 void
@@ -127,54 +118,6 @@ all_err(int err_code)
     break;
   default:
     break;
-  }
-}
-
-// computes breadth-first search (BFS) tree of the graph [CLRS p. 532]
-// TODO: remove distance and parent once I'm sure it is not needed
-// TODO: remove BLACK color once I'm sure not needed
-void
-bfs(Workflow& workflow,
-    vector<int>& sources,
-    vector<int>& bfs_tree)
-{
-  vector<BFSNode> bfs_nodes;
-  bfs_nodes.reserve(workflow.nodes.size());
-  queue<int> q;
-
-  // init all tree nodes
-  for (size_t i = 0; i < workflow.nodes.size(); i++)
-  {
-    bfs_nodes[i].color  = WHITE;
-//     bfs_nodes[i].dist   = -1;
-//     bfs_nodes[i].parent = -1;
-  }
-
-  // init source tree nodes
-  for (size_t i = 0; i < sources.size(); i++)
-  {
-    bfs_nodes[sources[i]].color = GRAY;
-//     bfs_nodes[sources[i]].dist  = 0;
-    q.push(sources[i]);
-  }
-
-  while (!q.empty())
-  {
-    int u = q.front();
-    q.pop();
-    bfs_tree.push_back(u);
-    for (size_t i = 0; i < workflow.nodes[u].out_links.size(); i++)
-    {
-      int v = workflow.links[workflow.nodes[u].out_links[i]].con;
-      if (bfs_nodes[v].color == WHITE)
-      {
-        bfs_nodes[v].color  = GRAY;
-//         bfs_nodes[v].dist   = bfs_nodes[u].dist + 1;
-//         bfs_nodes[v].parent = u;
-        q.push(v);
-      }
-    }
-//     bfs_nodes[u].color = BLACK;
   }
 }
 
