@@ -67,10 +67,11 @@ set( CYTHON_FLAGS "" CACHE STRING
 mark_as_advanced( CYTHON_ANNOTATE CYTHON_NO_DOCSTRINGS CYTHON_FLAGS )
 
 # find cython
-find_program( CYTHON_EXECUTABLE NAMES cython cython.bat )
-include( FindPackageHandleStandardArgs )
-FIND_PACKAGE_HANDLE_STANDARD_ARGS( Cython REQUIRED_VARS CYTHON_EXECUTABLE )
-mark_as_advanced( CYTHON_EXECUTABLE )
+find_package( Cython REQUIRED )
+#find_program( CYTHON_BIN NAMES cython cython.bat)
+#include( FindPackageHandleStandardArgs )
+#FIND_PACKAGE_HANDLE_STANDARD_ARGS( Cython REQUIRED_VARS CYTHON_BIN )
+mark_as_advanced( CYTHON_BIN )
 
 # find python
 find_package( PythonLibs REQUIRED )
@@ -208,7 +209,7 @@ function( compile_pyx _name generated_file )
 
   # Add the command to run the compiler.
   add_custom_command( OUTPUT ${_generated_file}
-    COMMAND ${CYTHON_EXECUTABLE}
+    COMMAND ${CYTHON_BIN}
     ARGS ${cxx_arg} ${include_directory_arg}
     ${annotate_arg} ${no_docstrings_arg} ${cython_debug_arg} ${CYTHON_FLAGS}
     --output-file ${_generated_file} ${pyx_locations}

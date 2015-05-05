@@ -418,7 +418,8 @@ void run_workflow(Workflow& workflow,                     // the workflow
         if (n >= bfs_order.size() || bfs_order[n].dist > level)
           break;
         int u = bfs_order[n].index;
-        fprintf(stderr, "level = %d n = %d u = %d\n", level, n, u);
+        // debug
+//         fprintf(stderr, "level = %d n = %d u = %d\n", level, n, u);
 
         // fill decafs
         vector<decaf::Decaf*> out_decafs;
