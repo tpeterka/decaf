@@ -15,6 +15,8 @@
 #include <math.h>
 #include <mpi.h>
 #include <string.h>
+#include <utility>
+#include <map>
 
 // lammps includes
 #include "lammps.h"
@@ -24,11 +26,12 @@
 
 using namespace decaf;
 using namespace LAMMPS_NS;
+using namespace std;
 
 struct args_t                                // custom args for prod, con, dflow
 {
   LAMMPS* lammps;
-  char infile[256];
+  string infile;
 };
 
 // user-defined pipeliner code

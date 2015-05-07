@@ -6,7 +6,7 @@ import networkx as nx
 path = '/Users/tpeterka/software/decaf/install/examples/lammps-workflow/python/libpy_lammps_workflow.so'
 
 # define workflow graph
-# 4-node workflow with 3 decaf instances (one per link)
+# 4-node workflow
 #
 #          print1 (1 proc)
 #        /
@@ -28,22 +28,6 @@ w.add_node("print3", start_proc=9, nprocs=1, prod_func=''           , con_func='
 w.add_edge("lammps", "print1", start_proc=4, nprocs=1, dflow_func='dflow'                  )
 w.add_edge("lammps", "print2", start_proc=6, nprocs=1, dflow_func='dflow'                  )
 w.add_edge("print2", "print3", start_proc=8, nprocs=1, dflow_func='dflow'                  )
-
-# example of 5 nodes and 3 edges (2 sources)
-# the callback map in lammps.cxx does not match this example, for later development if desired
-# w.add_node("lammps1", start_proc=0, nprocs=2)
-# w.add_node("lammps2", start_proc=2, nprocs=1)
-# w.add_node("print1", start_proc=5, nprocs=1)
-# w.add_node("print2", start_proc=7, nprocs=1)
-# w.add_node("print3", start_proc=9, nprocs=1)
-# w.add_edge("lammps1", "print1", start_proc=3, nprocs=1)
-# w.add_edge("lammps2", "print1", start_proc=4, nprocs=1)
-# w.add_edge("lammps2", "print2", start_proc=6, nprocs=1)
-# w.add_edge("print2", "print3", start_proc=8, nprocs=1)
-
-# debug
-# print w.nodes(data=True)
-# print w.edges(data=True)
 
 # total number of time steps
 prod_nsteps  = 1

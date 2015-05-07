@@ -41,25 +41,25 @@ struct pos_args_t                                // custom args for atom positio
 };
 
 // user-defined pipeliner code
-void pipeliner(Decaf* decaf)
+void pipeliner(Dataflow* dataflow)
 {
 }
 
 // user-defined resilience code
-void checker(Decaf* decaf)
+void checker(Dataflow* dataflow)
 {
 }
 
 // node and link callback functions
 
 // runs lammps and puts the atom positions to the dataflow at the consumer intervals
-// check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
+// check your modulo arithmetic to ensure you get exactly con_nsteps times
 void lammps(void* args,             // arguments to the callback
             int t_current,          // current time step
             int t_interval,         // consumer time interval
             int t_nsteps,           // total number of time steps
-            vector<Decaf*>& decafs, // all decafs for (producer or consumer)
-            int this_decaf = -1)    // index of one decaf in list of all (for dataflow)
+            vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+            int this_dataflow = -1)    // index of one dataflow in list of all
 
 {
   fprintf(stderr, "lammps\n");
@@ -68,8 +68,8 @@ void lammps(void* args,             // arguments to the callback
 
   if (t_current == 0)                         // first time step
   {
-    // only create lammps for first decaf instance
-    a->lammps = new LAMMPS(0, NULL, decafs[0]->prod_comm_handle());
+    // only create lammps for first dataflow instance
+    a->lammps = new LAMMPS(0, NULL, dataflows[0]->prod_comm_handle());
     a->lammps->input->file(a->infile.c_str());
   }
 
@@ -80,19 +80,19 @@ void lammps(void* args,             // arguments to the callback
 
   if (!((t_current + 1) % t_interval))
   {
-    for (size_t i = 0; i < decafs.size(); i++)
+    for (size_t i = 0; i < dataflows.size(); i++)
     {
-      if (decafs[i]->prod_comm()->rank() == 0) // lammps gathered all positions to rank 0
+      if (dataflows[i]->prod_comm()->rank() == 0) // lammps gathered all positions to rank 0
       {
         fprintf(stderr, "+ lammps producing time step %d with %d atoms\n", t_current, natoms);
         // debug
 //         for (int i = 0; i < 10; i++)         // print first few atoms
 //           fprintf(stderr, "%.3lf %.3lf %.3lf\n", x[3 * i], x[3 * i + 1], x[3 * i + 2]);
-        decafs[i]->put(x, 3 * natoms);
+        dataflows[i]->put(x, 3 * natoms);
       }
       else
-        decafs[i]->put(NULL);                  // put is collective; all producer ranks must call it
-      decafs[i]->flush();                      // need to clean up after each time step
+        dataflows[i]->put(NULL);          // put is collective; all producer ranks must call it
+      dataflows[i]->flush();              // need to clean up after each time step
     }
   }
   delete[] x;
@@ -102,34 +102,35 @@ void lammps(void* args,             // arguments to the callback
 }
 
 // gets the atom positions and prints them
-// check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
+// check your modulo arithmetic to ensure you get exactly con_nsteps times
 void print(void* args,             // arguments to the callback
            int t_current,          // current time step
            int t_interval,         // consumer time interval
            int t_nsteps,           // total number of time steps
-           vector<Decaf*>& decafs, // all decafs for (producer or consumer)
-           int this_decaf = -1)    // index of one decaf in list of all (for dataflow)
+           vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+           int this_dataflow = -1)    // index of one dataflow in list of all
 {
   fprintf(stderr, "print\n");
   if (!((t_current + 1) % t_interval))
   {
-    double* pos    = (double*)decafs[0]->get(); // we know decaf.size() = 1 in this example
+    double* pos    = (double*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
     // debug
-    fprintf(stderr, "consumer print1 or print3 printing %d atoms\n", decafs[0]->get_nitems() / 3);
+    fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
+            dataflows[0]->get_nitems() / 3);
 //     for (int i = 0; i < 10; i++)               // print first few atoms
 //       fprintf(stderr, "%.3lf %.3lf %.3lf\n", pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
-    decafs[0]->flush(); // need to clean up after each time step
+    dataflows[0]->flush(); // need to clean up after each time step
   }
 }
 
 // puts the atom positions to the dataflow
-// check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
+// check your modulo arithmetic to ensure you get exactly con_nsteps times
 void print2_prod(void* args,             // arguments to the callback
                  int t_current,          // current time step
                  int t_interval,         // consumer time interval
                  int t_nsteps,           // total number of time steps
-                 vector<Decaf*>& decafs, // all decafs for (producer or consumer)
-                 int this_decaf = -1)    // index of one decaf in list of all (for dataflow)
+                 vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+                 int this_datafow = -1)    // index of one dataflow in list of all
 {
   fprintf(stderr, "print2_prod\n");
   struct pos_args_t* a = (pos_args_t*)args;   // custom args
@@ -137,26 +138,27 @@ void print2_prod(void* args,             // arguments to the callback
   if (!((t_current + 1) % t_interval))
   {
     fprintf(stderr, "+ print2 producing time step %d with %d atoms\n", t_current, a->natoms);
-    decafs[0]->put(a->pos, a->natoms * 3);
-    decafs[0]->flush();                      // need to clean up after each time step
+    dataflows[0]->put(a->pos, a->natoms * 3);
+    dataflows[0]->flush();                      // need to clean up after each time step
+    delete[] a->pos;
   }
 }
 
 // gets the atom positions and copies them
-// check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
+// check your modulo arithmetic to ensure you get exactly con_nsteps times
 void print2_con(void* args,             // arguments to the callback
                 int t_current,          // current time step
                 int t_interval,         // consumer time interval
                 int t_nsteps,           // total number of time steps
-                vector<Decaf*>& decafs, // all decafs for (producer or consumer)
-                int this_decaf = -1)    // index of one decaf in list of all (for dataflow)
+                vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+                int this_dataflow = -1)    // index of one dataflow in list of all
 {
   fprintf(stderr, "print2_con\n");
   struct pos_args_t* a = (pos_args_t*)args;    // custom args
   if (!((t_current + 1) % t_interval))
   {
-    double* pos = (double*)decafs[0]->get();   // we know decaf.size() = 1 in this example
-    a->natoms   = decafs[0]->get_nitems() / 3;
+    double* pos = (double*)dataflows[0]->get();   // we know dataflows.size() = 1 in this example
+    a->natoms   = dataflows[0]->get_nitems() / 3;
     a->pos      = new double[a->natoms * 3];
     fprintf(stderr, "consumer print 2 copying %d atoms\n", a->natoms);
     for (int i = 0; i < a->natoms; i++)
@@ -165,37 +167,31 @@ void print2_con(void* args,             // arguments to the callback
       a->pos[3 * i + 1] = pos[3 * i + 1];
       a->pos[3 * i + 2] = pos[3 * i + 2];
     }
-    decafs[0]->flush(); // need to clean up after each time step
+    dataflows[0]->flush(); // need to clean up after each time step
   }
 }
 
 // dataflow just needs to flush on every time step
-void dflow(void* args,             // arguments to the callback
-           int t_current,          // current time step
-           int t_interval,         // consumer time interval
-           int t_nsteps,           // total number of time steps
-           vector<Decaf*>& decafs, // all decafs for (producer or consumer)
-           int this_decaf = -1)    // index of one decaf in list of all (for dataflow)
+void dflow(void* args,                   // arguments to the callback
+           int t_current,                // current time step
+           int t_interval,               // consumer time interval
+           int t_nsteps,                 // total number of time steps
+           vector<Dataflow*>& dataflows, // all dataflows
+           int this_dataflow = -1)       // index of one dataflow in list of all
 {
   fprintf(stderr, "dflow\n");
-  for (size_t i = 0; i < decafs.size(); i++)
-    decafs[i]->flush();                    // need to clean up after each time step
+  for (size_t i = 0; i < dataflows.size(); i++)
+    dataflows[i]->flush();               // need to clean up after each time step
 }
 
-void run(Workflow& workflow,                     // the workflow
-         int prod_nsteps,                        // number of producer time steps
-         int con_nsteps,                         // number of consumer time steps
-         string infile)                          // lammps input config file
+void run(Workflow& workflow,             // workflow
+         int prod_nsteps,                // number of producer time steps
+         int con_nsteps,                 // number of consumer time steps
+         string infile)                  // lammps input config file
 {
-  MPI_Init(NULL, NULL);
-
-  // define the data type
-  Data data(MPI_DOUBLE);
-
   // map of callback functions used in a workflow or a family of workflows
-  // TODO: maybe declared to decaf during intitialization?
-  pair<string, void(*)(void*, int, int, int, vector<Decaf*>&, int)> p;
-  map<string,  void(*)(void*, int, int, int, vector<Decaf*>&, int)> callbacks;
+  pair<string, void(*)(void*, int, int, int, vector<Dataflow*>&, int)> p;
+  map<string,  void(*)(void*, int, int, int, vector<Dataflow*>&, int)> callbacks;
   p = make_pair("lammps"     , &lammps     ); callbacks.insert(p);
   p = make_pair("print"      , &print      ); callbacks.insert(p);
   p = make_pair("print2_prod", &print2_prod); callbacks.insert(p);
@@ -203,9 +199,9 @@ void run(Workflow& workflow,                     // the workflow
   p = make_pair("dflow"      , &dflow      ); callbacks.insert(p);
 
   // callback args
-  lammps_args_t lammps_args;                      // custom args for lammps
+  lammps_args_t lammps_args;              // custom args for lammps
   lammps_args.infile = infile;
-  pos_args_t pos_args;                            // custom args for atom positions
+  pos_args_t pos_args;                    // custom args for atom positions
   pos_args.pos = NULL;
   for (size_t i = 0; i < workflow.nodes.size(); i++)
   {
@@ -217,10 +213,15 @@ void run(Workflow& workflow,                     // the workflow
       workflow.nodes[i].con_args  = &pos_args;
   }
 
-  // run the workflow
-  run_workflow(workflow, prod_nsteps, con_nsteps, &data, callbacks, MPI_COMM_WORLD,
-               &pipeliner, &checker);
+  MPI_Init(NULL, NULL);
 
+  // create and run decaf
+  Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps, con_nsteps);
+  Data data(MPI_DOUBLE);
+  decaf->run(&data, callbacks, &pipeliner, &checker);
+
+  // cleanup
+  delete decaf;
   MPI_Finalize();
 }
 
