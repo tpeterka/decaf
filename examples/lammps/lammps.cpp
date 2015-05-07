@@ -234,7 +234,7 @@ int main(int argc,
   int prod_nsteps = 1;
   int con_nsteps = 1;
   string infile;
-  infile = "/Users/tpeterka/software/decaf/examples/lammps-workflow/in.melt";
+  infile = "/Users/tpeterka/software/decaf/examples/lammps/in.melt";
 
   // fill workflow nodes
   WorkflowNode node;

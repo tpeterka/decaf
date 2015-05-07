@@ -1,9 +1,11 @@
+# a 4-node workflow example
+
 import networkx as nx
 
 # --- set your options here ---
 
 # path to .so module
-path = '/Users/tpeterka/software/decaf/install/examples/lammps-workflow/python/libpy_lammps_workflow.so'
+path = '/Users/tpeterka/software/decaf/install/examples/lammps/python/libpy_lammps.so'
 
 # define workflow graph
 # 4-node workflow
@@ -34,7 +36,7 @@ prod_nsteps  = 1
 con_nsteps   = 1
 
 # lammps input file
-infile = "/Users/tpeterka/software/decaf/examples/lammps-workflow/in.melt"
+infile = "/Users/tpeterka/software/decaf/examples/lammps/in.melt"
 
 # --- do not edit below this point --
 

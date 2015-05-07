@@ -1,4 +1,4 @@
-add_executable              (lammps-workflow     lammps.cpp)
-target_link_libraries       (lammps-workflow     ${libraries})
+add_executable              (lammps     lammps.cpp)
+target_link_libraries       (lammps     ${libraries})
 
 add_subdirectory            (python)

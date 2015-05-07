@@ -1,3 +1,6 @@
+# a small 2-node example, just a producer and consumer
+
+import networkx as nx
 
 # --- set your options here ---
 

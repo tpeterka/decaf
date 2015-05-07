@@ -30,7 +30,7 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executable
-exe=../../install/examples/lammps-workflow/lammps-workflow
+exe=../../install/examples/lammps/lammps
 
 #------
 #
