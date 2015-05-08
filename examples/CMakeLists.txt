@@ -1,4 +1,4 @@
-# add_subdirectory            (direct)
+add_subdirectory            (direct)
 # add_subdirectory            (datatypes)
 if                          (lammps_example)
   add_subdirectory          (lammps)

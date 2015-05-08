@@ -12,16 +12,12 @@ path = '/Users/tpeterka/software/decaf/install/examples/direct/python/libpy_dire
 #
 #    lammps (4 procs) - print (2 procs)
 #
-#  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
-#  dataflow can be overlapped, but currently all disjoint procs (simplest case)
+#  entire workflow takes 4 procs because of the overlap
 
 w = nx.DiGraph()
-
-# example of 4 nodes and 3 edges (single source)
-# this is the example diagrammed above, and for which driver.pyx is made
 w.add_node("prod", start_proc=0, nprocs=4, prod_func='prod'     , con_func=''        )
-w.add_node("con",  start_proc=6, nprocs=2, prod_func= ''        , con_func='con'     )
-w.add_edge("prod", "con", start_proc=4, nprocs=2, dflow_func='dflow'                 )
+w.add_node("con",  start_proc=2, nprocs=2, prod_func= ''        , con_func='con'     )
+w.add_edge("prod", "con", start_proc=1, nprocs=2, dflow_func='dflow'                 )
 
 # total number of time steps
 prod_nsteps  = 1

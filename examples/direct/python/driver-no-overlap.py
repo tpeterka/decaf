@@ -16,9 +16,6 @@ path = '/Users/tpeterka/software/decaf/install/examples/direct/python/libpy_dire
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
 
 w = nx.DiGraph()
-
-# example of 4 nodes and 3 edges (single source)
-# this is the example diagrammed above, and for which driver.pyx is made
 w.add_node("prod", start_proc=0, nprocs=4, prod_func='prod'     , con_func=''        )
 w.add_node("con",  start_proc=6, nprocs=2, prod_func= ''        , con_func='con'     )
 w.add_edge("prod", "con", start_proc=4, nprocs=2, dflow_func='dflow'                 )
