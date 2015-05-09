@@ -13,6 +13,7 @@
 #ifndef DECAF_HPP
 #define DECAF_HPP
 
+#include <dlfcn.h>
 #include <map>
 #include "dataflow.hpp"
 
@@ -49,12 +50,7 @@ namespace decaf
     ~Decaf()                   {}
     void err()                 { ::all_err(err_); }
     void run(Data* data,
-             map<string, void(*)(void*,
-                                 int,
-                                 int,
-                                 int,
-                                 vector<Dataflow*>&,
-                                 int)> callbacks,
+             string path,
              void (*pipeliner)(Dataflow*),
              void (*checker)(Dataflow*));
 
@@ -131,6 +127,39 @@ namespace decaf
         return bfs_node.dist;
       }
 
+    // loads a module (if it has not been loaded) containing a callback function name
+    // returns a pointer to the function
+    void* load_mod(
+      map<string, void*>& mods,      // (name, handle) of modules dynamically loaded so far
+      string mod_name,               // module name (path) to be loaded
+      string func_name)              // function name to be called
+      {
+        map<string, void*>::iterator it;              // iterator into the modules
+        pair<string, void*> p;                        // (module name, module handle)
+        pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
+        void(*func)(void*, int, int, int, vector<Dataflow*>&, int); // ptr to a callback func
+
+        if ((it = mods.find(mod_name)) == mods.end())
+        {
+          void* f = dlopen(mod_name.c_str(), RTLD_LAZY);
+          if (!f)
+            fprintf(stderr, "Error: module %s could not be loaded\n", mod_name.c_str());
+          p = make_pair(mod_name, f);
+          ret = mods.insert(p);
+          it = ret.first;
+        }
+        return dlsym(it->second, func_name.c_str());
+      }
+
+    // unloads all loaded modules
+    void
+    unload_mods(map<string, void*>& mods) // (name, handle) of modules dynamically loaded so far
+      {
+        map<string, void*>::iterator it;              // iterator into the modules
+        for (it = mods.begin(); it != mods.end(); it++)
+          dlclose(it->second);
+      }
+
     CommHandle world_comm_;     // handle to original world communicator
     Workflow workflow_;         // workflow
     int prod_nsteps_;           // total number of producer time steps
@@ -147,19 +176,16 @@ namespace decaf
 void
 decaf::
 Decaf::run(decaf::Data* data,                      // data model
-           map<string, void(*)(void*,
-                               int,
-                               int,
-                               int,
-                               vector<decaf::Dataflow*>&,
-                               int)> callbacks,    // map of callback functions
+           string path,                            // callback module (path to shared object)
            void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
            void (*checker)(decaf::Dataflow*))      // custom resilience code
 {
-  vector<decaf::Dataflow*> dataflows;
-
-  // create decaf instances for all links in the workflow
+  vector<decaf::Dataflow*> dataflows;              // dataflows for all links in the workflow
   build_dataflows(dataflows, pipeliner, checker, data);
+
+  // dynamically loaded modules (plugins)
+  void(*func)(void*, int, int, int, vector<Dataflow*>&, int); // ptr to a callback func in a module
+  map<string, void*> mods;                                    // modules dynamically loaded so far
 
   // TODO: assuming the same consumer interval for the entire workflow
   // this should not be necessary, need to experiment
@@ -216,20 +242,29 @@ Decaf::run(decaf::Data* data,                      // data model
 
         // consumer
         if (in_dataflows.size() && in_dataflows[0]->is_con())
-          callbacks[workflow_.nodes[u].con_func](workflow_.nodes[u].con_args, t,
-                                                con_interval, prod_nsteps_, in_dataflows, -1);
+        {
+          func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
+            load_mod(mods, path, workflow_.nodes[u].con_func);
+          func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_, in_dataflows, -1);
+        }
+
         // producer
         if (out_dataflows.size() && out_dataflows[0]->is_prod())
-          callbacks[workflow_.nodes[u].prod_func](workflow_.nodes[u].prod_args, t,
-                                                 con_interval, prod_nsteps_, out_dataflows, -1);
-
+        {
+          func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
+            load_mod(mods, path, workflow_.nodes[u].prod_func);
+          func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_, out_dataflows, -1);
+        }
         // dataflow
         for (size_t j = 0; j < out_dataflows.size(); j++)
         {
           int l = workflow_.nodes[u].out_links[j];
           if (out_dataflows[j]->is_dflow())
-            callbacks[workflow_.links[l].dflow_func](workflow_.links[l].dflow_args, t,
-                                                    con_interval, prod_nsteps_, out_dataflows, j);
+          {
+            func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
+              load_mod(mods, path, workflow_.links[l].dflow_func);
+            func(workflow_.links[l].dflow_args, t, con_interval, prod_nsteps_, out_dataflows, -1);
+          }
         }
         n++;
       }
@@ -237,6 +272,7 @@ Decaf::run(decaf::Data* data,                      // data model
   }
 
   // cleanup
+  unload_mods(mods);
   for (size_t i = 0; i < dataflows.size(); i++)
     delete dataflows[i];
 }
