@@ -51,138 +51,140 @@ void checker(Dataflow* dataflow)
 }
 
 // node and link callback functions
-
-// runs lammps and puts the atom positions to the dataflow at the consumer intervals
-// check your modulo arithmetic to ensure you get exactly con_nsteps times
-void lammps(void* args,             // arguments to the callback
-            int t_current,          // current time step
-            int t_interval,         // consumer time interval
-            int t_nsteps,           // total number of time steps
-            vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
-            int this_dataflow = -1)    // index of one dataflow in list of all
-
+extern "C"
 {
-  fprintf(stderr, "lammps\n");
-  struct lammps_args_t* a = (lammps_args_t*)args; // custom args
-  double* x;                                  // atom positions
+  // runs lammps and puts the atom positions to the dataflow at the consumer intervals
+  // check your modulo arithmetic to ensure you get exactly con_nsteps times
+  void lammps(void* args,             // arguments to the callback
+              int t_current,          // current time step
+              int t_interval,         // consumer time interval
+              int t_nsteps,           // total number of time steps
+              vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+              int this_dataflow = -1)    // index of one dataflow in list of all
 
-  if (t_current == 0)                         // first time step
   {
-    // only create lammps for first dataflow instance
-    a->lammps = new LAMMPS(0, NULL, dataflows[0]->prod_comm_handle());
-    a->lammps->input->file(a->infile.c_str());
-  }
+      fprintf(stderr, "lammps\n");
+      struct lammps_args_t* a = (lammps_args_t*)args; // custom args
+      double* x;                                  // atom positions
 
-  a->lammps->input->one("run 1");
-  int natoms = static_cast<int>(a->lammps->atom->natoms);
-  x = new double[3 * natoms];
-  lammps_gather_atoms(a->lammps, (char*)"x", 1, 3, x);
-
-  if (!((t_current + 1) % t_interval))
-  {
-    for (size_t i = 0; i < dataflows.size(); i++)
-    {
-      if (dataflows[i]->prod_comm()->rank() == 0) // lammps gathered all positions to rank 0
+      if (t_current == 0)                         // first time step
       {
-        fprintf(stderr, "+ lammps producing time step %d with %d atoms\n", t_current, natoms);
-        // debug
-//         for (int i = 0; i < 10; i++)         // print first few atoms
-//           fprintf(stderr, "%.3lf %.3lf %.3lf\n", x[3 * i], x[3 * i + 1], x[3 * i + 2]);
-        dataflows[i]->put(x, 3 * natoms);
+        // only create lammps for first dataflow instance
+        a->lammps = new LAMMPS(0, NULL, dataflows[0]->prod_comm_handle());
+        a->lammps->input->file(a->infile.c_str());
       }
-      else
-        dataflows[i]->put(NULL);          // put is collective; all producer ranks must call it
-      dataflows[i]->flush();              // need to clean up after each time step
-    }
+
+      a->lammps->input->one("run 1");
+      int natoms = static_cast<int>(a->lammps->atom->natoms);
+      x = new double[3 * natoms];
+      lammps_gather_atoms(a->lammps, (char*)"x", 1, 3, x);
+
+      if (!((t_current + 1) % t_interval))
+      {
+        for (size_t i = 0; i < dataflows.size(); i++)
+        {
+          if (dataflows[i]->prod_comm()->rank() == 0) // lammps gathered all positions to rank 0
+          {
+            fprintf(stderr, "+ lammps producing time step %d with %d atoms\n", t_current, natoms);
+            // debug
+    //         for (int i = 0; i < 10; i++)         // print first few atoms
+    //           fprintf(stderr, "%.3lf %.3lf %.3lf\n", x[3 * i], x[3 * i + 1], x[3 * i + 2]);
+            dataflows[i]->put(x, 3 * natoms);
+          }
+          else
+            dataflows[i]->put(NULL);          // put is collective; all producer ranks must call it
+          dataflows[i]->flush();              // need to clean up after each time step
+        }
+      }
+      delete[] x;
+
+      if (t_current == t_nsteps - 1)              // last time step
+        delete a->lammps;
   }
-  delete[] x;
 
-  if (t_current == t_nsteps - 1)              // last time step
-    delete a->lammps;
-}
-
-// gets the atom positions and prints them
-// check your modulo arithmetic to ensure you get exactly con_nsteps times
-void print(void* args,             // arguments to the callback
-           int t_current,          // current time step
-           int t_interval,         // consumer time interval
-           int t_nsteps,           // total number of time steps
-           vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
-           int this_dataflow = -1)    // index of one dataflow in list of all
-{
-  fprintf(stderr, "print\n");
-  if (!((t_current + 1) % t_interval))
+  // gets the atom positions and prints them
+  // check your modulo arithmetic to ensure you get exactly con_nsteps times
+  void print(void* args,             // arguments to the callback
+             int t_current,          // current time step
+             int t_interval,         // consumer time interval
+             int t_nsteps,           // total number of time steps
+             vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+             int this_dataflow = -1)    // index of one dataflow in list of all
   {
-    double* pos    = (double*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
-    // debug
-    fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
-            dataflows[0]->get_nitems() / 3);
-//     for (int i = 0; i < 10; i++)               // print first few atoms
-//       fprintf(stderr, "%.3lf %.3lf %.3lf\n", pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
-    dataflows[0]->flush(); // need to clean up after each time step
+    fprintf(stderr, "print\n");
+      if (!((t_current + 1) % t_interval))
+      {
+        double* pos    = (double*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
+        // debug
+        fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
+                dataflows[0]->get_nitems() / 3);
+    //     for (int i = 0; i < 10; i++)               // print first few atoms
+    //       fprintf(stderr, "%.3lf %.3lf %.3lf\n", pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
+        dataflows[0]->flush(); // need to clean up after each time step
+      }
   }
-}
 
-// puts the atom positions to the dataflow
-// check your modulo arithmetic to ensure you get exactly con_nsteps times
-void print2_prod(void* args,             // arguments to the callback
-                 int t_current,          // current time step
-                 int t_interval,         // consumer time interval
-                 int t_nsteps,           // total number of time steps
-                 vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
-                 int this_datafow = -1)    // index of one dataflow in list of all
-{
-  fprintf(stderr, "print2_prod\n");
-  struct pos_args_t* a = (pos_args_t*)args;   // custom args
-
-  if (!((t_current + 1) % t_interval))
+  // puts the atom positions to the dataflow
+  // check your modulo arithmetic to ensure you get exactly con_nsteps times
+  void print2_prod(void* args,             // arguments to the callback
+                   int t_current,          // current time step
+                   int t_interval,         // consumer time interval
+                   int t_nsteps,           // total number of time steps
+                   vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+                   int this_datafow = -1)    // index of one dataflow in list of all
   {
-    fprintf(stderr, "+ print2 producing time step %d with %d atoms\n", t_current, a->natoms);
-    dataflows[0]->put(a->pos, a->natoms * 3);
-    dataflows[0]->flush();                      // need to clean up after each time step
-    delete[] a->pos;
-  }
-}
+    fprintf(stderr, "print2_prod\n");
+    struct pos_args_t* a = (pos_args_t*)args;   // custom args
 
-// gets the atom positions and copies them
-// check your modulo arithmetic to ensure you get exactly con_nsteps times
-void print2_con(void* args,             // arguments to the callback
-                int t_current,          // current time step
-                int t_interval,         // consumer time interval
-                int t_nsteps,           // total number of time steps
-                vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
-                int this_dataflow = -1)    // index of one dataflow in list of all
-{
-  fprintf(stderr, "print2_con\n");
-  struct pos_args_t* a = (pos_args_t*)args;    // custom args
-  if (!((t_current + 1) % t_interval))
-  {
-    double* pos = (double*)dataflows[0]->get();   // we know dataflows.size() = 1 in this example
-    a->natoms   = dataflows[0]->get_nitems() / 3;
-    a->pos      = new double[a->natoms * 3];
-    fprintf(stderr, "consumer print 2 copying %d atoms\n", a->natoms);
-    for (int i = 0; i < a->natoms; i++)
+    if (!((t_current + 1) % t_interval))
     {
-      a->pos[3 * i    ] = pos[3 * i    ];
-      a->pos[3 * i + 1] = pos[3 * i + 1];
-      a->pos[3 * i + 2] = pos[3 * i + 2];
+      fprintf(stderr, "+ print2 producing time step %d with %d atoms\n", t_current, a->natoms);
+      dataflows[0]->put(a->pos, a->natoms * 3);
+      dataflows[0]->flush();                      // need to clean up after each time step
+      delete[] a->pos;
     }
-    dataflows[0]->flush(); // need to clean up after each time step
   }
-}
 
-// dataflow just needs to flush on every time step
-void dflow(void* args,                   // arguments to the callback
-           int t_current,                // current time step
-           int t_interval,               // consumer time interval
-           int t_nsteps,                 // total number of time steps
-           vector<Dataflow*>& dataflows, // all dataflows
-           int this_dataflow = -1)       // index of one dataflow in list of all
-{
-  fprintf(stderr, "dflow\n");
-  for (size_t i = 0; i < dataflows.size(); i++)
-    dataflows[i]->flush();               // need to clean up after each time step
-}
+  // gets the atom positions and copies them
+  // check your modulo arithmetic to ensure you get exactly con_nsteps times
+  void print2_con(void* args,             // arguments to the callback
+                  int t_current,          // current time step
+                  int t_interval,         // consumer time interval
+                  int t_nsteps,           // total number of time steps
+                  vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+                  int this_dataflow = -1)    // index of one dataflow in list of all
+  {
+    fprintf(stderr, "print2_con\n");
+    struct pos_args_t* a = (pos_args_t*)args;    // custom args
+    if (!((t_current + 1) % t_interval))
+    {
+      double* pos = (double*)dataflows[0]->get();   // we know dataflows.size() = 1 in this example
+      a->natoms   = dataflows[0]->get_nitems() / 3;
+      a->pos      = new double[a->natoms * 3];
+      fprintf(stderr, "consumer print 2 copying %d atoms\n", a->natoms);
+      for (int i = 0; i < a->natoms; i++)
+      {
+        a->pos[3 * i    ] = pos[3 * i    ];
+        a->pos[3 * i + 1] = pos[3 * i + 1];
+        a->pos[3 * i + 2] = pos[3 * i + 2];
+      }
+      dataflows[0]->flush(); // need to clean up after each time step
+    }
+  }
+
+  // dataflow just needs to flush on every time step
+  void dflow(void* args,                   // arguments to the callback
+             int t_current,                // current time step
+             int t_interval,               // consumer time interval
+             int t_nsteps,                 // total number of time steps
+             vector<Dataflow*>& dataflows, // all dataflows
+             int this_dataflow = -1)       // index of one dataflow in list of all
+  {
+    fprintf(stderr, "dflow\n");
+    for (size_t i = 0; i < dataflows.size(); i++)
+      dataflows[i]->flush();               // need to clean up after each time step
+  }
+} // extern "C"
 
 void run(Workflow& workflow,             // workflow
          int prod_nsteps,                // number of producer time steps
@@ -224,8 +226,8 @@ int main(int argc,
   Workflow workflow;
   int prod_nsteps = 1;
   int con_nsteps = 1;
-  string infile;
-  infile = "/Users/tpeterka/software/decaf/examples/lammps/in.melt";
+  string infile = "/homes/tpeterka/software/decaf/examples/lammps/in.melt";
+  string path = "/homes/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
 
   // fill workflow nodes
   WorkflowNode node;
@@ -234,7 +236,7 @@ int main(int argc,
   node.nprocs = 1;
   node.prod_func = "";
   node.con_func = "print";
-  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  node.path = path;
   workflow.nodes.push_back(node);
 
   node.out_links.clear();
@@ -244,7 +246,7 @@ int main(int argc,
   node.nprocs = 1;
   node.prod_func = "";
   node.con_func = "print";
-  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  node.path = path;
   workflow.nodes.push_back(node);
 
   node.out_links.clear();
@@ -255,7 +257,7 @@ int main(int argc,
   node.nprocs = 1;
   node.prod_func = "print2_prod";
   node.con_func = "print2_con";
-  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  node.path = path;
   workflow.nodes.push_back(node);
 
   node.out_links.clear();
@@ -266,7 +268,7 @@ int main(int argc,
   node.nprocs = 4;
   node.prod_func = "lammps";
   node.con_func = "";
-  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  node.path = path;
   workflow.nodes.push_back(node);
 
   // fill workflow links
@@ -276,7 +278,7 @@ int main(int argc,
   link.start_proc = 8;
   link.nprocs = 1;
   link.dflow_func = "dflow";
-  link.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  link.path = path;
   workflow.links.push_back(link);
 
   link.prod = 3;                                 // lammps - print1
@@ -284,7 +286,7 @@ int main(int argc,
   link.start_proc = 4;
   link.nprocs = 1;
   link.dflow_func = "dflow";
-  link.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  link.path = path;
   workflow.links.push_back(link);
 
   link.prod = 3;                                 // lammps - print2
@@ -292,7 +294,7 @@ int main(int argc,
   link.start_proc = 6;
   link.nprocs = 1;
   link.dflow_func = "dflow";
-  link.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  link.path = path;
   workflow.links.push_back(link);
 
   // run decaf

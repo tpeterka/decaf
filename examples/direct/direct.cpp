@@ -132,6 +132,7 @@ int main(int argc,
   Workflow workflow;
   int prod_nsteps = 2;
   int con_nsteps = 2;
+  string path = "/homes/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
 
   // fill workflow nodes
   WorkflowNode node;
@@ -142,7 +143,7 @@ int main(int argc,
   node.nprocs = 4;
   node.prod_func = "prod";
   node.con_func = "";
-  node.path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
+  node.path = path;
   workflow.nodes.push_back(node);
 
   node.out_links.clear();                        // consumer
@@ -152,7 +153,7 @@ int main(int argc,
   node.nprocs = 2;
   node.prod_func = "";
   node.con_func = "con";
-  node.path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
+  node.path = path;
   workflow.nodes.push_back(node);
 
   // fill workflow link
@@ -162,7 +163,7 @@ int main(int argc,
   link.start_proc = 4;
   link.nprocs = 2;
   link.dflow_func = "dflow";
-  link.path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
+  link.path = path;
   workflow.links.push_back(link);
 
   // run decaf

@@ -205,9 +205,9 @@ Decaf::run(decaf::Data* data,                      // data model
   int nlevels = bfs(sources, bfs_order);
 
   // debug: print the bfs order
-//   for (int i = 0; i < bfs_order.size(); i++)
-//     fprintf(stderr, "nlevels = %d bfs[%d] = index %d dist %d\n",
-//             nlevels, i, bfs_order[i].index, bfs_order[i].dist);
+  // for (int i = 0; i < bfs_order.size(); i++)
+  //   fprintf(stderr, "nlevels = %d bfs[%d] = index %d dist %d\n",
+  //           nlevels, i, bfs_order[i].index, bfs_order[i].dist);
 
   // start the dataflows
   for (size_t i = 0; i < workflow_.links.size(); i++)
@@ -226,8 +226,6 @@ Decaf::run(decaf::Data* data,                      // data model
         if (n >= bfs_order.size() || bfs_order[n].dist > level)
           break;
         int u = bfs_order[n].index;
-        // debug
-//         fprintf(stderr, "level = %d n = %d u = %d\n", level, n, u);
 
         // fill dataflows
         vector<decaf::Dataflow*> out_dataflows;
@@ -236,6 +234,9 @@ Decaf::run(decaf::Data* data,                      // data model
           out_dataflows.push_back(dataflows[workflow_.nodes[u].out_links[j]]);
         for (size_t j = 0; j < workflow_.nodes[u].in_links.size(); j++)
           in_dataflows.push_back(dataflows[workflow_.nodes[u].in_links[j]]);
+
+        // debug
+        // fprintf(stderr, "level = %d n = %d u = %d\n", level, n, u);
 
         // consumer
         if (in_dataflows.size() && in_dataflows[0]->is_con())
@@ -252,6 +253,7 @@ Decaf::run(decaf::Data* data,                      // data model
             load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
           func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_, out_dataflows, -1);
         }
+
         // dataflow
         for (size_t j = 0; j < out_dataflows.size(); j++)
         {
