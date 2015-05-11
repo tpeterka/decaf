@@ -40,7 +40,7 @@ To use decaf in C++ source code, Simply,
 ```
 #include <decaf/decaf.hpp>
 ```
-All of decaf is contained in header files; there is no need to link with a library. There are numerous examples in the [examples directory]((https://bitbucket.org/tpeterka1/decaf/raw/master/examples) of how to write your source file(s). Briefly, you need to provide the following:
+All of decaf is contained in header files; there is no need to link with a library. There are numerous examples in the [examples directory](https://bitbucket.org/tpeterka1/decaf/raw/master/examples) of how to write your source file(s). Briefly, you need to provide the following:
 
 - Callback functions for all producer and consumer nodes and dataflow links in your workflow. These have the function signature:
 ```
@@ -51,9 +51,7 @@ void func(void* args,                   // arguments to the callback
           vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
           int this_dataflow = -1);      // index of one dataflow in list of all
 ```
-- Two caveats about the callbacks:
-
-    - The definitions of the callbacks must be wrapped in the extern "C" calling signature. Inside of the C calling bindings, the functions can be written in C++. Because of the C calling conventions, names in the same file must be unique.
+ The definitions of the callbacks must be wrapped in the extern "C" calling signature. Inside of the C calling bindings, the functions can be written in C++. Because of the C calling conventions, names in the same file must be unique. The callbacks must be built into a shared object (dynamically loaded library or plugin).
 ```
 extern "C"
 {
@@ -72,9 +70,7 @@ extern "C"
 }
 ```
 
-    - The callbacks must be built into a shared object (dynamically loaded library or plugin).
-
-- A workflow in the following form:
+- A workflow takes the following form:
 ```
 struct Workflow          // an entire workflow
 {
@@ -139,13 +135,11 @@ void run(Workflow& workflow,             // workflow
 }
 ```
 
-- Optionally, a main() function that defines the elements of the workflow struct. For example, in the decaf examples, main is used to hard-code test values into the workflow. A more usable alternative is described below; namely, how to define your workflow in python. If the project is wrapped in python, the run() function described above is the entry point to the C++ code; main() is not called by python.
+- Optionally, a main() function can be used to define the workflow. For example, in the decaf examples, main() is used to hard-code test values into the workflow. A more useful alternative is described below: define your workflow in python. If the project is wrapped in python, the run() function described above is the entry point to the C++ code; main() is not called by python.
 
 # Wrapping your project in python
 
-There are numerous ways to configure and run your project, but this is our favorite. A short python script (eg. driver.py) is written by the user or modified from existing. This script sets workflow execution parameters, imports the precompiled module for the project, and runs it. An example script is [examples/direct/python/driver.py](https://bitbucket.org/tpeterka1/decaf/raw/master/examples/direct/python/driver.py).
-
-An example python driver appears below:
+A short python script (eg. driver.py) can be used to set workflow parameters, import the precompiled module for the project, and run it. An example script [examples/lammps/python/driver-4-nodes.py](https://bitbucket.org/tpeterka1/decaf/raw/master/examples/lammps/python/driver-4nodes.py) appears below:
 ```
 import networkx as nx
 
