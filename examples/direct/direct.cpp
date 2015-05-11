@@ -99,7 +99,6 @@ void run(Workflow& workflow,             // workflow
          int prod_nsteps,                // number of producer time steps
          int con_nsteps)                 // number of consumer time steps
 {
-
   // callback args
   int *pd, *cd;
   pd = new int[1];
@@ -116,8 +115,7 @@ void run(Workflow& workflow,             // workflow
   // create and run decaf
   Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps, con_nsteps);
   Data data(MPI_INT);
-  decaf->run(&data, "/Users/tpeterka/software/decaf/install/examples/direct/libmodules.so",
-             &pipeliner, &checker);
+  decaf->run(&data, &pipeliner, &checker);
 
   // cleanup
   delete[] pd;
@@ -144,6 +142,7 @@ int main(int argc,
   node.nprocs = 4;
   node.prod_func = "prod";
   node.con_func = "";
+  node.path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
   workflow.nodes.push_back(node);
 
   node.out_links.clear();                        // consumer
@@ -153,6 +152,7 @@ int main(int argc,
   node.nprocs = 2;
   node.prod_func = "";
   node.con_func = "con";
+  node.path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
   workflow.nodes.push_back(node);
 
   // fill workflow link
@@ -162,6 +162,7 @@ int main(int argc,
   link.start_proc = 4;
   link.nprocs = 2;
   link.dflow_func = "dflow";
+  link.path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
   workflow.links.push_back(link);
 
   // run decaf

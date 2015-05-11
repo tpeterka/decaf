@@ -13,12 +13,18 @@ cdef extern from "decaf/types.hpp":
         int nprocs
         string prod_func
         string con_func
+        void* prod_args
+        void* con_args
+        string path
     struct WorkflowLink:
         int prod
         int con
         int start_proc
         int nprocs
         string dflow_func
+        string dflow_func
+        void* dflow_args
+        string path
     struct Workflow:
         vector[WorkflowNode] nodes
         vector[WorkflowLink] links
@@ -40,6 +46,7 @@ def pyrun(workflow, prod_nsteps, con_nsteps, infile):
         wnode.nprocs     = node[1]['nprocs']
         wnode.prod_func  = node[1]['prod_func']
         wnode.con_func   = node[1]['con_func']
+        wnode.path       = node[1]['path']
         node[1]['index'] = i                         # add identifier to each node
         i += 1
 
@@ -54,6 +61,7 @@ def pyrun(workflow, prod_nsteps, con_nsteps, infile):
         wlink.start_proc = edge[2]['start_proc']
         wlink.nprocs     = edge[2]['nprocs']
         wlink.dflow_func = edge[2]['dflow_func']
+        wlink.path       = edge[2]['path']
 
         # add edge to corresponding nodes
         wflow.nodes[wlink.prod].out_links.push_back(i)

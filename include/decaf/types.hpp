@@ -88,6 +88,9 @@ struct WorkflowNode      // a producer or consumer
   string con_func;       // name of consumer callback
   void* prod_args;       // producer callback arguments
   void* con_args;        // consumer callback arguments
+  string path;           // path to producer and consumer callback function module
+                         // when a node is both producer and consumer, both callbacks must be
+                         // in the same file; ie, we only store one path (can change if needed)
 };
 
 struct WorkflowLink      // a dataflow
@@ -98,6 +101,7 @@ struct WorkflowLink      // a dataflow
   int nprocs;            // number of processes in the dataflow
   string dflow_func;     // name of dataflow callback
   void* dflow_args;      // dataflow callback arguments
+  string path;           // path to callback function module
 };
 
 struct Workflow          // an entire workflow

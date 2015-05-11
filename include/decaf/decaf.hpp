@@ -50,7 +50,6 @@ namespace decaf
     ~Decaf()                   {}
     void err()                 { ::all_err(err_); }
     void run(Data* data,
-             string path,
              void (*pipeliner)(Dataflow*),
              void (*checker)(Dataflow*));
 
@@ -168,7 +167,6 @@ namespace decaf
   };
 } // namespace
 
-
 // runs the workflow
 //
 // computes a BFS order of the workflow nodes and calls the producer, consumer, and
@@ -176,7 +174,6 @@ namespace decaf
 void
 decaf::
 Decaf::run(decaf::Data* data,                      // data model
-           string path,                            // callback module (path to shared object)
            void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
            void (*checker)(decaf::Dataflow*))      // custom resilience code
 {
@@ -244,7 +241,7 @@ Decaf::run(decaf::Data* data,                      // data model
         if (in_dataflows.size() && in_dataflows[0]->is_con())
         {
           func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
-            load_mod(mods, path, workflow_.nodes[u].con_func);
+            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
           func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_, in_dataflows, -1);
         }
 
@@ -252,7 +249,7 @@ Decaf::run(decaf::Data* data,                      // data model
         if (out_dataflows.size() && out_dataflows[0]->is_prod())
         {
           func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
-            load_mod(mods, path, workflow_.nodes[u].prod_func);
+            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
           func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_, out_dataflows, -1);
         }
         // dataflow
@@ -262,7 +259,7 @@ Decaf::run(decaf::Data* data,                      // data model
           if (out_dataflows[j]->is_dflow())
           {
             func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
-              load_mod(mods, path, workflow_.links[l].dflow_func);
+              load_mod(mods, workflow_.links[l].path, workflow_.links[l].dflow_func);
             func(workflow_.links[l].dflow_args, t, con_interval, prod_nsteps_, out_dataflows, -1);
           }
         }

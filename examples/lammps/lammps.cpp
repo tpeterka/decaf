@@ -189,15 +189,6 @@ void run(Workflow& workflow,             // workflow
          int con_nsteps,                 // number of consumer time steps
          string infile)                  // lammps input config file
 {
-  // map of callback functions used in a workflow or a family of workflows
-  pair<string, void(*)(void*, int, int, int, vector<Dataflow*>&, int)> p;
-  map<string,  void(*)(void*, int, int, int, vector<Dataflow*>&, int)> callbacks;
-  p = make_pair("lammps"     , &lammps     ); callbacks.insert(p);
-  p = make_pair("print"      , &print      ); callbacks.insert(p);
-  p = make_pair("print2_prod", &print2_prod); callbacks.insert(p);
-  p = make_pair("print2_con" , &print2_con ); callbacks.insert(p);
-  p = make_pair("dflow"      , &dflow      ); callbacks.insert(p);
-
   // callback args
   lammps_args_t lammps_args;              // custom args for lammps
   lammps_args.infile = infile;
@@ -218,7 +209,7 @@ void run(Workflow& workflow,             // workflow
   // create and run decaf
   Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps, con_nsteps);
   Data data(MPI_DOUBLE);
-  decaf->run(&data, callbacks, &pipeliner, &checker);
+  decaf->run(&data, &pipeliner, &checker);
 
   // cleanup
   delete decaf;
@@ -243,6 +234,7 @@ int main(int argc,
   node.nprocs = 1;
   node.prod_func = "";
   node.con_func = "print";
+  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
   workflow.nodes.push_back(node);
 
   node.out_links.clear();
@@ -252,6 +244,7 @@ int main(int argc,
   node.nprocs = 1;
   node.prod_func = "";
   node.con_func = "print";
+  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
   workflow.nodes.push_back(node);
 
   node.out_links.clear();
@@ -262,6 +255,7 @@ int main(int argc,
   node.nprocs = 1;
   node.prod_func = "print2_prod";
   node.con_func = "print2_con";
+  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
   workflow.nodes.push_back(node);
 
   node.out_links.clear();
@@ -272,6 +266,7 @@ int main(int argc,
   node.nprocs = 4;
   node.prod_func = "lammps";
   node.con_func = "";
+  node.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
   workflow.nodes.push_back(node);
 
   // fill workflow links
@@ -281,6 +276,7 @@ int main(int argc,
   link.start_proc = 8;
   link.nprocs = 1;
   link.dflow_func = "dflow";
+  link.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
   workflow.links.push_back(link);
 
   link.prod = 3;                                 // lammps - print1
@@ -288,6 +284,7 @@ int main(int argc,
   link.start_proc = 4;
   link.nprocs = 1;
   link.dflow_func = "dflow";
+  link.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
   workflow.links.push_back(link);
 
   link.prod = 3;                                 // lammps - print2
@@ -295,6 +292,7 @@ int main(int argc,
   link.start_proc = 6;
   link.nprocs = 1;
   link.dflow_func = "dflow";
+  link.path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
   workflow.links.push_back(link);
 
   // run decaf
