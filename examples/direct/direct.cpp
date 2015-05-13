@@ -132,7 +132,7 @@ int main(int argc,
   Workflow workflow;
   int prod_nsteps = 2;
   int con_nsteps = 2;
-  string path = "/homes/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
+  string path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
 
   // fill workflow nodes
   WorkflowNode node;

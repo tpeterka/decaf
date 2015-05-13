@@ -2,7 +2,7 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 
 # Decaf dependencies
 
-- MPI (currently MPI is the only supported transport layer)
+- MPI-3 (currently MPI is the only supported transport layer)
 - python and cython (optional, if you want the python version of the examples to be built)
 
 # Building decaf:
