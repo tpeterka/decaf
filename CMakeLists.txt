@@ -4,6 +4,7 @@ cmake_minimum_required      (VERSION 2.8)
 option                      (debug              "Build Decaf with debugging on"                ON)
 option                      (optimize           "Build Decaf with optimization"                OFF)
 option                      (transport_mpi      "Build Decaf with MPI transport layer"         ON)
+option                      (CYTHON_PREFIX      "Path to Cython directory"                       )
 
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -33,17 +34,17 @@ add_definitions             (${cxx_flags})
 # Python
 find_package                (Cython)
 find_package                (PythonLibs)
-if                          (Cython_FOUND AND PythonLibs_FOUND)
+if                          (Cython_FOUND AND PYTHONLIBS_FOUND)
     message                 (STATUS "Found Cython and PythonLibs; building python examples")
     set                     (python_examples             ON)
-else                        (Cython_FOUND AND PythonLibs_FOUND)
+else                        (Cython_FOUND AND PYTHONLIBS_FOUND)
   if                        (Cython_FOUND)
     message                 (STATUS "PythonLibs not found; not building python examples")
   else                      (Cython_FOUND)
     message                 (STATUS "Cython not found; not building python examples")
   endif                     (Cython_FOUND)
     set                     (python_examples             OFF)
-endif                       (Cython_FOUND AND PythonLibs_FOUND)
+endif                       (Cython_FOUND AND PYTHONLIBS_FOUND)
 
 # LAMMPS
 find_path                   (LAMMPS_INCLUDE_DIR		lammps.h)
