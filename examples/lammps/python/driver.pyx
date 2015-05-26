@@ -22,7 +22,6 @@ cdef extern from "decaf/types.hpp":
         int start_proc
         int nprocs
         string dflow_func
-        string dflow_func
         void* dflow_args
         string path
     struct Workflow:
