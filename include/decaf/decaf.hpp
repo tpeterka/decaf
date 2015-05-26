@@ -67,6 +67,7 @@ namespace decaf
     CommType type_;             // whether this instance is producer, consumer, dataflow, or other
     void dataflow();
     void forward();
+    void redistribute();
   };
 
 } // namespace
@@ -189,8 +190,8 @@ Decaf::put(void* d,                   // source data
       // TODO: not looping over pipeliner chunks yet
       if (data_->put_nitems())
       {
-        //       fprintf(stderr, "putting to prod_dflow rank %d put_nitems = %d\n",
-        //               prod_dflow_comm_->start_output() + i, data_->put_nitems());
+//               fprintf(stderr, "putting to prod_dflow rank %d put_nitems = %d, num_outputs = %d\n",
+//                       prod_dflow_comm_->start_output() + i, data_->put_nitems(), prod_dflow_comm_->num_outputs());
         prod_dflow_comm_->put(data_, prod_dflow_comm_->start_output() + i, DECAF_PROD);
       }
     }
@@ -235,6 +236,36 @@ void
 decaf::
 Decaf::forward()
 {
+  // get from producer
+  prod_dflow_comm_->get(data_, DECAF_DFLOW);
+
+  // put to all consumer ranks
+  for (int k = 0; k < dflow_con_comm_->num_outputs(); k++)
+  {
+    // TODO: write automatic aggregator, for now not changing the number of items from get
+    data_->put_nitems(data_->get_nitems(DECAF_DFLOW));
+
+    // pipelining should be automatic if the user defines the pipeline chunk unit
+    if (pipeliner_)
+      pipeliner_(this);
+
+    // TODO: not looping over pipeliner chunks yet
+    if (data_->put_nitems())
+    {
+//       fprintf(stderr, "putting to dflow_con rank %d put_nitems = %d, num_outputs = %d\n",
+//               dflow_con_comm_->start_output() + k, data_->put_nitems(), dflow_con_comm_->num_outputs());
+      dflow_con_comm_->put(data_, dflow_con_comm_->start_output() + k, DECAF_DFLOW);
+    }
+  }
+}
+
+// Redistribute the data accross the consummers
+void
+decaf::
+Decaf::redistribute()
+{
+//  printf("Redistributing the items\n");
+
   // get from producer
   prod_dflow_comm_->get(data_, DECAF_DFLOW);
 

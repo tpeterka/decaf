@@ -25,6 +25,7 @@ enum DispType
   DECAF_ADDR,
   DECAF_NUM_DISP_TYPES,
 };
+
 struct DataMap {
   CommDatatype base_type; // existing datatype used to create this one
   DispType disp_type;     // diplacement is relative OFST or absolute ADDR
@@ -116,7 +117,7 @@ all_err(int err_code)
 void 
 all_dbg( FILE* channel, char* msg)
 {
-#ifdef DECAF_DEBUG_ON 
+#ifdef DECAF_DEBUG_ON
   fprintf(channel, "[DECAF-DEBUG] %s", msg);
 #endif
 }

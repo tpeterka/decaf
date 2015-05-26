@@ -1,5 +1,6 @@
 add_subdirectory            (direct)
-add_subdirectory            (datatypes)
+#add_subdirectory            (datatypes)
+add_subdirectory            (redist)
 if                          (lammps_example)
   add_subdirectory          (lammps)
   add_subdirectory          (lammps-workflow)

@@ -12,6 +12,7 @@
 
 //#define DECAF_DEBUG_ON
 #include <decaf/decaf.hpp>
+//#include <decaf/transport/mpi/types.hpp>
 
 #include <assert.h>
 #include <math.h>
@@ -52,7 +53,7 @@ using namespace decaf;
 
 // user-defined
 // delaunay block datatype function generator
-void create_delaunay_datatype(const struct dblock_t* d,
+void create_delaunay_datatype( const struct dblock_t* d,
                               int* map_count,
                               DataMap** map,
                               CommDatatype* comm_datatype)

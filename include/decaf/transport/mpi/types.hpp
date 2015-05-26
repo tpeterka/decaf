@@ -43,7 +43,7 @@ size_t DatatypeSize(CommDatatype dtype)
   return extent;
 }
 
-Address addressof(void *addr)
+Address addressof(const void *addr)
 {
   MPI_Aint p;
   MPI_Get_address(addr, &p);

@@ -1,10 +1,18 @@
+#=============================================================================
+#
+# The following is copied with permission (per the terms of the MIT license) from
+#
+# https://github.com/sympy/csympy/blob/master/cmake/FindCython.cmake
+#
+#
+#=============================================================================
 #
 # Cython
 #
 
 # This finds the "cython" executable in your PATH, and then in some standard
 # paths:
-FIND_FILE(CYTHON_BIN cython /usr/bin /usr/local/bin)
+FIND_FILE(CYTHON_BIN cython /usr/bin /usr/local/bin ${CYTHON_PREFIX})
 SET(CYTHON_FLAGS --cplus --fast-fail)
 
 SET(Cython_FOUND FALSE)

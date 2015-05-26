@@ -2,7 +2,8 @@
 # --- set your options here ---
 
 # path to .so module
-path = '/Users/tpeterka/software/decaf/install/examples/direct/python/libpy_direct.so'
+#path = '/Users/tpeterka/software/decaf/install/examples/direct/python/libpy_direct.so'
+path = '/home/matthieu/Argonne/Decaf/build/examples/direct/python/libpy_direct.so'
 
 # communicator sizes and time steps
 class DecafSizes:

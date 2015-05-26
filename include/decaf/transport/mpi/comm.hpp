@@ -130,7 +130,7 @@ Comm::get(Data* data,
         MPI_Aint extent; // datatype size in bytes
         MPI_Type_extent(data->complete_datatype_, &extent);
         // debug
-//         fprintf(stderr, "getting %d items\n", nitems);
+//         fprintf(stderr, "getting %d items from input %d\n", nitems, i);
         MPI_Recv(data->resize_get_items(nitems * extent, task_type), nitems,
                  data->complete_datatype_, status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
       }
