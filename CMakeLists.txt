@@ -33,6 +33,21 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-std=c++11)
 endif()
 
+# Python
+find_package                (Cython)
+find_package                (PythonLibs)
+if                          (Cython_FOUND AND PythonLibs_FOUND)
+    message                 (STATUS "Found Cython and PythonLibs; building python examples")
+    set                     (python_examples             ON)
+else                        (Cython_FOUND AND PythonLibs_FOUND)
+  if                        (Cython_FOUND)
+    message                 (STATUS "PythonLibs not found; not building python examples")
+  else                      (Cython_FOUND)
+    message                 (STATUS "Cython not found; not building python examples")
+  endif                     (Cython_FOUND)
+    set                     (python_examples             OFF)
+endif                       (Cython_FOUND AND PythonLibs_FOUND)
+
 # LAMMPS
 find_path                   (LAMMPS_INCLUDE_DIR		lammps.h)
 find_library                (LAMMPS_LIBRARY NAMES	lammps)
@@ -67,6 +82,7 @@ include_directories         (${CMAKE_CURRENT_BINARY_DIR}
 # Set libraries
 set                         (libraries
                              ${libraries}
-                             ${transport_libraries})
+                             ${transport_libraries}
+                             ${CMAKE_DL_LIBS})
 
 add_subdirectory            (examples)

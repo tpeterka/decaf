@@ -13,8 +13,12 @@
 #ifndef DECAF_TYPES_HPP
 #define DECAF_TYPES_HPP
 
+#include "decaf.hpp"
+
 #include <stdio.h>
 #include <vector>
+#include <queue>
+#include <string>
 
 using namespace std;
 
@@ -66,32 +70,42 @@ enum DecafError
 
 struct DecafSizes
 {
-  int prod_size;    // size (number of processes) of producer communicator
-  int dflow_size;   // size (number of processes) of dataflow communicator
-  int con_size;     // size (number of processes) of consumer communicator
-  int prod_start;   // starting world process rank of producer communicator
-  int dflow_start;  // starting world process rank of dataflow communicator
-  int con_start;    // starting world process rank of consumer communicator
-  int con_nsteps;   // number of consumer timesteps
+  int prod_size;         // size (number of processes) of producer communicator
+  int dflow_size;        // size (number of processes) of dataflow communicator
+  int con_size;          // size (number of processes) of consumer communicator
+  int prod_start;        // starting world process rank of producer communicator
+  int dflow_start;       // starting world process rank of dataflow communicator
+  int con_start;         // starting world process rank of consumer communicator
+  int con_nsteps;        // number of consumer timesteps
 };
 
-struct WorkflowNode // a producer or consumer
+struct WorkflowNode      // a producer or consumer
 {
-  vector<int> outs; // indices in vector of all workflow nodes of outgoing nodes
-  vector<int> ins;  // indices in vector of all workflow nodes of incoming nodes
-  int start_proc;   // starting process rank in world communicator for this producer or consumer
-  int nprocs;       // number of processes for this producer or consumer
+  vector<int> out_links; // indices of outgoing links
+  vector<int> in_links;  // indices of incoming links
+  int start_proc;        // starting proc rank in world communicator for this producer or consumer
+  int nprocs;            // number of processes for this producer or consumer
+  string prod_func;      // name of producer callback
+  string con_func;       // name of consumer callback
+  void* prod_args;       // producer callback arguments
+  void* con_args;        // consumer callback arguments
+  string path;           // path to producer and consumer callback function module
+                         // when a node is both producer and consumer, both callbacks must be
+                         // in the same file; ie, we only store one path (can change if needed)
 };
 
-struct WorkflowLink  // a dataflow
+struct WorkflowLink      // a dataflow
 {
-  int prod;          // index in vector of all workflow nodes of producer
-  int con;           // index in vector of all workflow nodes of consumer
-  int start_proc;    // starting process rank in world communicator for the dataflow
-  int nprocs;
+  int prod;              // index in vector of all workflow nodes of producer
+  int con;               // index in vector of all workflow nodes of consumer
+  int start_proc;        // starting process rank in world communicator for the dataflow
+  int nprocs;            // number of processes in the dataflow
+  string dflow_func;     // name of dataflow callback
+  void* dflow_args;      // dataflow callback arguments
+  string path;           // path to callback function module
 };
 
-struct Workflow      // an entire workflow
+struct Workflow          // an entire workflow
 {
   vector<WorkflowNode> nodes; // all the workflow nodes
   vector<WorkflowLink> links; // all the workflow links

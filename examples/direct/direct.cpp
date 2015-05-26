@@ -14,116 +14,160 @@
 #include <assert.h>
 #include <math.h>
 #include <mpi.h>
+#include <map>
 
 using namespace decaf;
+using namespace std;
 
 // user-defined pipeliner code
-void pipeliner(Decaf* decaf)
+void pipeliner(Dataflow* decaf)
 {
 }
 
 // user-defined resilience code
-void checker(Decaf* decaf)
+void checker(Dataflow* decaf)
 {
 }
 
-// gets command line args
-void GetArgs(int argc,
-             char **argv,
-             DecafSizes& decaf_sizes,
-             int& prod_nsteps)
+// node and link callback functions
+extern "C"
 {
-  assert(argc >= 9);
+  // producer
+  // check your modulo arithmetic to ensure you get exactly con_nsteps times
+  void prod(void* args,                   // arguments to the callback
+            int t_current,                // current time step
+            int t_interval,               // consumer time interval
+            int t_nsteps,                 // total number of time steps
+            vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+            int this_dataflow = -1)       // index of one dataflow in list of all
 
-  decaf_sizes.prod_size    = atoi(argv[1]);
-  decaf_sizes.dflow_size   = atoi(argv[2]);
-  decaf_sizes.con_size     = atoi(argv[3]);
-
-  decaf_sizes.prod_start   = atoi(argv[4]);
-  decaf_sizes.dflow_start  = atoi(argv[5]);
-  decaf_sizes.con_start    = atoi(argv[6]);
-
-  prod_nsteps              = atoi(argv[7]);  // user's, not decaf's variable
-  decaf_sizes.con_nsteps   = atoi(argv[8]);
-}
-
-void run(DecafSizes& decaf_sizes,
-         int prod_nsteps)
-{
-  MPI_Init(NULL, NULL);
-
-  // define the data type
-  Data data(MPI_INT);
-
-  // start decaf, allocate on the heap instead of on the stack so that it can be deleted
-  // before MPI_Finalize is called at the end
-  Decaf* decaf = new Decaf(MPI_COMM_WORLD,
-                           decaf_sizes,
-                           &pipeliner,
-                           &checker,
-                           &data);
-  decaf->err();
-  decaf->run();
-
-  // producer and consumer data in separate pointers in case producer and consumer overlap
-  int *pd, *cd;
-  int con_interval = prod_nsteps / decaf_sizes.con_nsteps; // consume every so often
-
-  for (int t = 0; t < prod_nsteps; t++)
   {
-    // producer
-    if (decaf->is_prod())
+    fprintf(stderr, "prod\n");
+
+    int* pd = (int*)args;                 // producer data
+    *pd = t_current;                      // just assign something, current time step for example
+
+    if (!((t_current + 1) % t_interval))
     {
-      pd = new int[1];
-      // any custom producer (eg. simulation code) goes here or gets called from here
-      // as long as put() gets called at that desired frequency
-      *pd = t;
-      // assumes the consumer has the previous value, ok to overwrite
-      // check your modulo arithmetic to ensure you put exactly decaf->con_nsteps times
-      if (!((t + 1) % con_interval))
+      for (size_t i = 0; i < dataflows.size(); i++)
       {
-        fprintf(stderr, "+ producing time step %d, val %d\n", t, *pd);
-        decaf->put(pd); // TODO: dataflow not handling different tags yet
+        fprintf(stderr, "+ producing time step %d\n", t_current);
+        dataflows[i]->put(pd);
+        dataflows[i]->flush();           // need to clean up after each time step
       }
     }
-
-    // consumer
-    // check your modulo arithmetic to ensure you get exactly decaf->con_nsteps times
-    if (decaf->is_con() && !((t + 1) % con_interval))
-    {
-      // any custom consumer (eg. data analysis code) goes here or gets called from here
-      // as long as get() gets called at that desired frequency
-      cd = (int*)decaf->get(); // TODO: dataflow not handling different tags yet
-      // for example, add all the items arrived at this rank
-      int sum = 0;
-//       fprintf(stderr, "consumer get_nitems = %d\n", decaf->get_nitems(true));
-      for (int i = 0; i < decaf->get_nitems(); i++)
-        sum += cd[i];
-      fprintf(stderr, "- consuming time step %d, sum = %d\n", t, sum);
-    }
-
-    decaf->flush(); // both producer and consumer need to clean up after each time step
-    // now safe to cleanup producer data, after decaf->flush() is called
-    // don't wory about deleting the data pointed to by cd; decaf did that in flush()
-    if (decaf->is_prod())
-      delete[] pd;
   }
 
+  // consumer
+  // check your modulo arithmetic to ensure you get exactly con_nsteps times
+  void con(void* args,                     // arguments to the callback
+           int t_current,                  // current time step
+           int t_interval,                 // consumer time interval
+           int t_nsteps,                   // total number of time steps
+           vector<Dataflow*>& dataflows,   // all dataflows (for producer or consumer)
+           int this_dataflow = -1)         // index of one dataflow in list of all
+  {
+    if (!((t_current + 1) % t_interval))
+    {
+      int* cd    = (int*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
+
+      // for example, add all the items arrived at this rank
+      int sum = 0;
+      for (int i = 0; i < dataflows[0]->get_nitems(); i++)
+        sum += cd[i];
+      fprintf(stderr, "- consuming time step %d, sum = %d\n", t_current, sum);
+
+      dataflows[0]->flush();               // need to clean up after each time step
+    }
+  }
+
+  // dataflow just needs to flush on every time step
+  void dflow(void* args,                   // arguments to the callback
+             int t_current,                // current time step
+             int t_interval,               // consumer time interval
+             int t_nsteps,                 // total number of time steps
+             vector<Dataflow*>& dataflows, // all dataflows
+             int this_dataflow = -1)       // index of one dataflow in list of all
+  {
+    fprintf(stderr, "dflow\n");
+    for (size_t i = 0; i < dataflows.size(); i++)
+      dataflows[i]->flush();               // need to clean up after each time step
+  }
+} // extern "C"
+
+void run(Workflow& workflow,             // workflow
+         int prod_nsteps,                // number of producer time steps
+         int con_nsteps)                 // number of consumer time steps
+{
+  // callback args
+  int *pd, *cd;
+  pd = new int[1];
+  for (size_t i = 0; i < workflow.nodes.size(); i++)
+  {
+    if (workflow.nodes[i].prod_func == "prod")
+      workflow.nodes[i].prod_args = pd;
+    if (workflow.nodes[i].prod_func == "con")
+      workflow.nodes[i].prod_args = cd;
+  }
+
+  MPI_Init(NULL, NULL);
+
+  // create and run decaf
+  Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps, con_nsteps);
+  Data data(MPI_INT);
+  decaf->run(&data, &pipeliner, &checker);
+
   // cleanup
+  delete[] pd;
   delete decaf;
   MPI_Finalize();
 }
 
+// test driver for debugging purposes
+// this is hard-coding the no overlap case
+// normal entry point is run(), called by python
 int main(int argc,
          char** argv)
 {
-  // parse command line args
-  DecafSizes decaf_sizes;
-  int prod_nsteps;
-  GetArgs(argc, argv, decaf_sizes, prod_nsteps);
+  Workflow workflow;
+  int prod_nsteps = 2;
+  int con_nsteps = 2;
+  string path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
+
+  // fill workflow nodes
+  WorkflowNode node;
+  node.out_links.clear();                        // producer
+  node.in_links.clear();
+  node.out_links.push_back(0);
+  node.start_proc = 0;
+  node.nprocs = 4;
+  node.prod_func = "prod";
+  node.con_func = "";
+  node.path = path;
+  workflow.nodes.push_back(node);
+
+  node.out_links.clear();                        // consumer
+  node.in_links.clear();
+  node.in_links.push_back(0);
+  node.start_proc = 6;
+  node.nprocs = 2;
+  node.prod_func = "";
+  node.con_func = "con";
+  node.path = path;
+  workflow.nodes.push_back(node);
+
+  // fill workflow link
+  WorkflowLink link;
+  link.prod = 0;                               // dataflow
+  link.con = 1;
+  link.start_proc = 4;
+  link.nprocs = 2;
+  link.dflow_func = "dflow";
+  link.path = path;
+  workflow.links.push_back(link);
 
   // run decaf
-  run(decaf_sizes, prod_nsteps);
+  run(workflow, prod_nsteps, con_nsteps);
 
   return 0;
 }
