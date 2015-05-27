@@ -1,6 +1,5 @@
 add_subdirectory            (direct)
 #add_subdirectory            (datatypes)
 add_subdirectory            (redist)
-if                          (lammps_example)
-  add_subdirectory          (lammps)
-endif                       (lammps_example)
+add_subdirectory          (lammps)
+
