@@ -1,12 +1,17 @@
-find_package(FFS REQUIRED)
+find_package(FFS)
 
-include_directories(${FFS_INCLUDE_DIR})
+if(FFS_FOUND)
+    message("Building FFS based redistribution example")
+    include_directories(${FFS_INCLUDE_DIR})
 
-add_executable              (testffs testFFS.cpp)
-target_link_libraries       (testffs    ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
+    add_executable              (testffs testFFS.cpp)
+    target_link_libraries       (testffs    ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
 
-add_executable              (redist redist.cpp)
-target_link_libraries       (redist     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
+    add_executable              (redist redist.cpp)
+    target_link_libraries       (redist     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
+else(FFS_FOUND)
+    message("FFS not found. Skipping FFS based redistribution example")
+endif(FFS_FOUND)
 
 find_package(Boost COMPONENTS serialization)
 if(Boost_FOUND)
