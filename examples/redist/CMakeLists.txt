@@ -3,10 +3,10 @@ find_package(FFS REQUIRED)
 include_directories(${FFS_INCLUDE_DIR})
 
 add_executable              (testffs testFFS.cpp)
-target_link_libraries       (testffs    ${libraries} ${FFS_LIBRARY})
+target_link_libraries       (testffs    ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
 
 add_executable              (redist redist.cpp)
-target_link_libraries       (redist     ${libraries} ${FFS_LIBRARY})
+target_link_libraries       (redist     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
 
 find_package(Boost COMPONENTS serialization)
 if(Boost_FOUND)

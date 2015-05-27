@@ -31,7 +31,7 @@ cdef extern from "decaf/types.hpp":
 cdef extern from "../examples/direct/direct.cpp":
     void run(Workflow& workflow, int prod_nsteps, int con_nsteps)
 
-def pyrun(workflow, prod_nsteps, con_nsteps):
+def pyrun(workflow, prod_nsteps, con_nsteps, pathfunc):
     cdef WorkflowNode wnode
     cdef WorkflowLink wlink
     cdef Workflow wflow
@@ -45,7 +45,8 @@ def pyrun(workflow, prod_nsteps, con_nsteps):
         wnode.nprocs     = node[1]['nprocs']
         wnode.prod_func  = node[1]['prod_func']
         wnode.con_func   = node[1]['con_func']
-        wnode.path       = node[1]['path']
+#        wnode.path       = node[1]['path']
+        wnode.path       = pathfunc
         node[1]['index'] = i                         # add identifier to each node
         i += 1
 
@@ -60,7 +61,8 @@ def pyrun(workflow, prod_nsteps, con_nsteps):
         wlink.start_proc = edge[2]['start_proc']
         wlink.nprocs     = edge[2]['nprocs']
         wlink.dflow_func = edge[2]['dflow_func']
-        wlink.path       = edge[2]['path']
+#        wlink.path       = edge[2]['path']
+        wlink.path       = pathfunc
 
         # add edge to corresponding nodes
         wflow.nodes[wlink.prod].out_links.push_back(i)

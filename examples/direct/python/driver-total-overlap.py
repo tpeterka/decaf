@@ -1,11 +1,14 @@
 # a small 2-node example, just a producer and consumer
 
 import networkx as nx
-
+import os
 # --- set your options here ---
 
 # path to .so module
-path = '/Users/tpeterka/software/decaf/install/examples/direct/python/libpy_direct.so'
+#path = '/Users/tpeterka/software/decaf/install/examples/direct/python/libpy_direct.so'
+path= os.environ["DECAF_PREFIX"]+"/examples/direct/python/libpy_direct.so"
+pathfunc = os.environ["DECAF_PREFIX"]+"/examples/direct/libmod_direct.so"
+
 
 # define workflow graph
 # 2-node workflow
@@ -27,4 +30,4 @@ con_nsteps   = 1
 
 import imp
 driver = imp.load_dynamic('driver', path)
-driver.pyrun(w, prod_nsteps, con_nsteps)
+driver.pyrun(w, prod_nsteps, con_nsteps, pathfunc)

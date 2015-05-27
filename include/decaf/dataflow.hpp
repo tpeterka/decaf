@@ -19,6 +19,9 @@
 #include "transport/mpi/types.hpp"
 #include "transport/mpi/comm.hpp"
 #include "transport/mpi/data.hpp"
+//New redistribution component
+#include "transport/mpi/redist_count_mpi.hpp"
+#include <memory>
 #endif
 
 #include "types.hpp"
@@ -39,6 +42,8 @@ namespace decaf
     void run();
     void put(void* d, int count = 1);
     void* get(bool no_copy = false);
+    void put(std::shared_ptr<BaseData> data);
+    void get(std::shared_ptr<BaseData> data);
     int get_nitems(bool no_copy = false)
       { return(no_copy? data_->put_nitems() : data_->get_nitems(DECAF_CON)); }
     Data* data()           { return data_; }
@@ -60,6 +65,8 @@ namespace decaf
     Comm* con_comm_;            // consumer communicator
     Comm* prod_dflow_comm_;     // communicator covering producer and dataflow
     Comm* dflow_con_comm_;      // communicator covering dataflow and consumer
+    RedistComp* redist_prod_dflow_;  // Redistribution component between producer and dataflow
+    RedistComp* redist_dflow_con_;   // Redestribution component between a dataflow and consummer
     Data* data_;                // data model
     DecafSizes sizes_;          // sizes of communicators, time steps
     void (*pipeliner_)(Dataflow*); // user-defined pipeliner code
@@ -132,13 +139,24 @@ Dataflow::Dataflow(CommHandle world_comm,
   }
 
   if (world_rank >= prod_dflow_start && world_rank <= prod_dflow_end)
+  {
     prod_dflow_comm_ = new Comm(world_comm, prod_dflow_start, prod_dflow_end, sizes_.prod_size,
                                 sizes_.dflow_size, sizes_.dflow_start - sizes_.prod_start,
                                 DECAF_PROD_DFLOW_COMM);
+    redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start, sizes_.prod_size,
+                                           sizes_.dflow_start, sizes_.dflow_size,
+                                           world_comm);
+  }
   if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
+  {
     dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end, sizes_.dflow_size,
                                sizes_.con_size, sizes_.con_start - sizes_.dflow_start,
                                DECAF_DFLOW_CON_COMM);
+    redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start, sizes_.dflow_size,
+                                          sizes_.con_start, sizes_.con_size,
+                                          world_comm);
+  }
+
 
   err_ = DECAF_OK;
 }
@@ -154,6 +172,10 @@ Dataflow::~Dataflow()
     delete prod_comm_;
   if (is_con())
     delete con_comm_;
+  if (redist_dflow_con_)
+      delete redist_dflow_con_;
+  if (redist_prod_dflow_)
+      delete redist_prod_dflow_;
 }
 
 void
@@ -166,8 +188,10 @@ Dataflow::run()
   {
     // TODO: when pipelining, would not store all items in dataflow before forwarding to consumer
     // as is done below
-    for (int i = 0; i < sizes_.con_nsteps; i++)
+    for (int i = 0; i < sizes_.con_nsteps; i++){
+      std::cout<<"dflow forwarding"<<std::endl;
       forward();
+    }
   }
 }
 
@@ -207,6 +231,16 @@ Dataflow::put(void* d,                // source data
     forward();
 }
 
+void
+decaf::
+Dataflow::put(std::shared_ptr<BaseData> data)
+{
+    if(is_prod())
+        redist_prod_dflow_->process(data);
+    if(is_dflow())
+        redist_dflow_con_->process(data);
+}
+
 void*
 decaf::
 Dataflow::get(bool no_copy)
@@ -218,6 +252,16 @@ Dataflow::get(bool no_copy)
     dflow_con_comm_->get(data_, DECAF_CON);
     return data_->get_items(DECAF_CON);
   }
+}
+
+void
+decaf::
+Dataflow::get(std::shared_ptr<BaseData> data)
+{
+    if(is_dflow())
+        redist_prod_dflow_->process(data);
+    if(is_con())
+        redist_dflow_con_->process(data);
 }
 
 // run the dataflow

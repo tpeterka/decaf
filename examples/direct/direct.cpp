@@ -15,6 +15,7 @@
 #include <math.h>
 #include <mpi.h>
 #include <map>
+#include <cstdlib>
 
 using namespace decaf;
 using namespace std;
@@ -132,7 +133,9 @@ int main(int argc,
   Workflow workflow;
   int prod_nsteps = 2;
   int con_nsteps = 2;
-  string path = "/Users/tpeterka/software/decaf/install/examples/direct/libmod_direct.so";
+  const char * prefix = getenv("DECAF_PREFIX");
+  string path = string(prefix , strlen(prefix));
+  path.append(string("/examples/direct/libmod_direct.so"));
 
   // fill workflow nodes
   WorkflowNode node;
