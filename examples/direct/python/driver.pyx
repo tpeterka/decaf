@@ -45,8 +45,7 @@ def pyrun(workflow, prod_nsteps, con_nsteps, pathfunc):
         wnode.nprocs     = node[1]['nprocs']
         wnode.prod_func  = node[1]['prod_func']
         wnode.con_func   = node[1]['con_func']
-#        wnode.path       = node[1]['path']
-        wnode.path       = pathfunc
+        wnode.path       = node[1]['path']
         node[1]['index'] = i                         # add identifier to each node
         i += 1
 

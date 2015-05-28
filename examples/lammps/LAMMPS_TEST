@@ -32,6 +32,12 @@ fi
 # executable
 exe=../../install/examples/lammps/lammps
 
+# input file
+infile=../../examples/lammps/in.melt
+
+# args
+args=$infile
+
 #------
 #
 # run commands
@@ -39,36 +45,36 @@ exe=../../install/examples/lammps/lammps
 
 if [ "$ARCH" = "MAC_OSX" ]; then
 
-mpiexec -l -n $num_procs $exe
+mpiexec -l -n $num_procs $exe $args
 
-#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e gdb -x gdb.run --args $exe
+#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
 
-#dsymutil $exe ; mpiexec -n $num_procs valgrind -q $exe
+#dsymutil $exe ; mpiexec -n $num_procs valgrind -q $exe $args
 
-#dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
+#dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe $args
 
 fi
 
 if [ "$ARCH" = "LINUX" ]; then
 
-mpiexec -n $num_procs $exe
+mpiexec -n $num_procs $exe $args
 
-#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe
+#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
 
-#mpiexec -n $num_procs valgrind -q $exe
+#mpiexec -n $num_procs valgrind -q $exe $args
 
-#mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
+#mpiexec -n $num_procs valgrind -q --leak-check=yes $exe $args
 
 fi
 
 if [ "$ARCH" = "BGQ" ]; then
 
-qsub -n $num_nodes --mode c$ppn -A SDAV -t 60 $exe
+qsub -n $num_nodes --mode c$ppn -A SDAV -t 60 $exe $args
 
 fi
 
 if [ "$ARCH" = "CRAY" ]; then
 
-aprun -n $num_procs $exe
+aprun -n $num_procs $exe $args
 
 fi

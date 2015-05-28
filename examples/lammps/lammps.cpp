@@ -226,8 +226,11 @@ int main(int argc,
   Workflow workflow;
   int prod_nsteps = 1;
   int con_nsteps = 1;
-  string infile = "/Users/tpeterka/software/decaf/examples/lammps/in.melt";
-  string path = "/Users/tpeterka/software/decaf/install/examples/lammps/libmod_lammps.so";
+  const char * prefix = getenv("DECAF_PREFIX");
+  string path = string(prefix , strlen(prefix));
+  path.append(string("/examples/lammps/libmod_lammps.so"));
+  string infile = argv[1];
+
 
   // fill workflow nodes
   WorkflowNode node;

@@ -52,6 +52,8 @@ def pyrun(workflow, prod_nsteps, con_nsteps, infile):
         # add the node to the vector of workflow nodes
         wflow.nodes.push_back(wnode)
 
+        print node
+
     # iterate over edges
     i = 0
     for edge in workflow.edges_iter(data=True):
