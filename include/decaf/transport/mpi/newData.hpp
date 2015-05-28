@@ -139,9 +139,6 @@ namespace  decaf {
     //std::shared_ptr<char> buffer_;    // Buffer use for the serialization
     //std::vector<char> buffer_;          // Buffer use for the serialization
     //int size_buffer_;
-
-
-
   };
 
   class DataLayout
@@ -196,11 +193,13 @@ namespace  decaf {
           unsigned int count = 0;
           for(unsigned int i = 0; i < datalayout_.size(); i++)
               count += datalayout_.at(i)->getNbItems();
+          return count;
       }
 
       virtual bool insertElement(BaseData* object)
       {
           datalayout_.push_back(object);
+          return true;
       }
 
       virtual BaseData* getElement(unsigned int index)
