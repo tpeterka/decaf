@@ -1,7 +1,7 @@
 include (../../../cmake/UseCython.cmake)
 
 cython_add_module           (py_lammps driver.pyx)
-target_link_libraries       (py_lammps ${libraries})
+target_link_libraries       (py_lammps ${lammps_libraries})
 
 install(TARGETS py_lammps
         DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/python/

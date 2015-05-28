@@ -1,10 +1,14 @@
 # LAMMPS
+
+set(lammps_libraries ${libraries} ${LAMMPS_LIBRARY} ${FFTW_LIBRARY})
+
 find_path                   (LAMMPS_INCLUDE_DIR		lammps.h)
 find_library                (LAMMPS_LIBRARY NAMES	lammps)
 if                          (LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY)
   find_path                 (FFTW_INCLUDE_DIR		fftw.h)
   find_library              (FFTW_LIBRARY NAMES	        fftw)
   if                        (FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
+    set(lammps_libraries ${lammps_libraries} )
     message                 (STATUS "Found LAMMPS; building LAMMPS example")
   else                      (FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
     message                 (STATUS "Need FFTW (not found) for LAMMPS; not building LAMMPS example")
@@ -18,8 +22,8 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
                              ${FFTW_INCLUDE_DIR})
     add_executable              (lammps            lammps.cpp)
     add_library                 (mod_lammps MODULE lammps.cpp)
-    target_link_libraries       (lammps     ${libraries} ${LAMMPS_LIBRARY} ${FFTW_LIBRARY}  )
-    target_link_libraries       (mod_lammps ${libraries} ${LAMMPS_LIBRARY} ${FFTW_LIBRARY}  )
+    target_link_libraries       (lammps     ${lammps_libraries} )
+    target_link_libraries       (mod_lammps ${lammps_libraries} )
 
     install(TARGETS lammps mod_lammps
         DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/

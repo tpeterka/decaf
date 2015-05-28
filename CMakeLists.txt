@@ -29,10 +29,19 @@ else                        (debug)
     set                     (cxx_flags                  ${CMAKE_CXX_FLAGS})
   endif                     (optimize)
 endif                       (debug)
-add_definitions             (${cxx_flags})
-if(CMAKE_COMPILER_IS_GNUCXX)
-    add_definitions(-std=c++11)
+
+#if(CMAKE_COMPILER_IS_GNUCXX)
+#    add_definitions(-std=c++11)
+#endif()
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
+    set(cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(cxx_flags "${cxx_flags} -std=c++11")
 endif()
+add_definitions             (${cxx_flags})
+
 
 # Python
 find_package                (Cython)

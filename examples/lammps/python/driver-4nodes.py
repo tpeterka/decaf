@@ -47,7 +47,7 @@ prod_nsteps  = 1
 con_nsteps   = 1
 
 # lammps input file
-infile = "/Users/tpeterka/software/decaf/examples/lammps/in.melt"
+infile = os.environ['DECAF_PREFIX'] + "/examples/lammps/in.melt"
 
 # --- do not edit below this point --
 
