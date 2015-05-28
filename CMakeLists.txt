@@ -8,6 +8,9 @@ option                      (CYTHON_PREFIX      "Path to Cython directory"      
 
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
+# C++11
+set                         (CMAKE_CXX_STANDARD        11)
+
 if                          (transport_mpi)
   find_package              (MPI REQUIRED)
   set                       (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
@@ -41,6 +44,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(cxx_flags "${cxx_flags} -std=c++11")
 endif()
 add_definitions             (${cxx_flags})
+
 
 
 # Python
