@@ -98,7 +98,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
-    std::cout<<"Rank in the Redist component : "<<rank_<<std::endl;
+    //std::cout<<"Rank in the Redist component : "<<rank_<<std::endl;
 
     //Generation of the group with all the sources
     if(world_rank >= rankSource_ && world_rank < rankSource_ + nbSources_)
@@ -111,7 +111,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
         MPI_Group_free(&groupSource);
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
-        std::cout<<"Source Rank in the Redist component : "<<source_rank<<std::endl;
+        //std::cout<<"Source Rank in the Redist component : "<<source_rank<<std::endl;
     }
 
     //Generation of the group with all the Destinations
@@ -125,7 +125,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
         MPI_Group_free(&groupDest);
         int dest_rank;
         MPI_Comm_rank(commDests_, &dest_rank);
-        std::cout<<"Dest Rank in the Redist component : "<<dest_rank<<std::endl;
+        //std::cout<<"Dest Rank in the Redist component : "<<dest_rank<<std::endl;
 
     }
 

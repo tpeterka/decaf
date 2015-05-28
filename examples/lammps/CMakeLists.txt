@@ -21,6 +21,12 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
     target_link_libraries       (lammps     ${libraries} ${LAMMPS_LIBRARY} ${FFTW_LIBRARY}  )
     target_link_libraries       (mod_lammps ${libraries} ${LAMMPS_LIBRARY} ${FFTW_LIBRARY}  )
 
+    install(TARGETS lammps mod_lammps
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE)
+    install(FILES in.melt LAMMPS_TEST
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/
+            )
     if                          (python_examples)
       add_subdirectory          (python)
     endif                       (python_examples)
