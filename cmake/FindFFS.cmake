@@ -5,7 +5,7 @@ FIND_PATH(FFS_INCLUDE_DIR ffs.h HINTS
   /opt/local/include
   /sw/include
 )
-FIND_LIBRARY(FFS_LIBRARY NAMES ffs fm HINTS
+FIND_LIBRARY(FFS_LIBRARY NAMES ffs HINTS
   ${FFS_PREFIX}/lib
   /usr/lib
   /usr/local/lib

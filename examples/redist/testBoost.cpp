@@ -309,6 +309,13 @@ void testConstructTypeSplitMPI()
         return;
     }
 
+    if(rank >= 4)
+        return;
+
+    std::cout<<"-------------------------------------"<<std::endl;
+    std::cout<<"Complete Test with Redistribution component (1 split, 1 merge)"<<std::endl;
+    std::cout<<"-------------------------------------"<<std::endl;
+
     if(rank == 0)
     {
         std::cout<<"Test of the serialization fonctionnality with ContructType and MPI"<<std::endl;
@@ -439,7 +446,9 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
     //First 2 ranks are producer, third is consumer
     RedistCountMPI component(0, nbSource, nbSource, nbReceptors, MPI_COMM_WORLD);
 
-    std::cout<<"Redistribution component initialized."<<std::endl;
+    std::cout<<"-------------------------------------"<<std::endl;
+    std::cout<<"Test with Redistribution component..."<<std::endl;
+    std::cout<<"-------------------------------------"<<std::endl;
 
     if(rank < nbSource){
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
@@ -475,6 +484,10 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
     }
+
+    std::cout<<"-------------------------------------"<<std::endl;
+    std::cout<<"Test with Redistribution component completed"<<std::endl;
+    std::cout<<"-------------------------------------"<<std::endl;
 }
 
 
@@ -491,12 +504,13 @@ int main(int argc,
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if(rank == 0)
     {
-        //testConstructType();
-        //simpleSerializeTest();
-        //testConstructTypeSplit();
+        simpleSerializeTest();
+        testConstructType();
+        testConstructTypeSplit();
     }
+
     MPI_Barrier(MPI_COMM_WORLD);
-    //testConstructTypeSplitMPI();
+    testConstructTypeSplitMPI();
     MPI_Barrier(MPI_COMM_WORLD);
     runTestParallelRedist(3,2);
     MPI_Barrier(MPI_COMM_WORLD);

@@ -94,7 +94,9 @@ void runTestStruct()
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if (rank == 0){
+        std::cout<<"-----------------------------------"<<std::endl;
         std::cout<<"Running test with simple structure"<<std::endl;
+        std::cout<<"-----------------------------------"<<std::endl;
 
         particules p[2];
 
@@ -126,8 +128,9 @@ void runTestStruct()
         output = FFSencode(buf, rec_format, p, &output_size);
 
         std::cout<<"Successful encode. Buffer size : "<<output_size<<std::endl;
-
+        std::cout<<"-----------------------------------"<<std::endl;
         std::cout<<"Test with simple structure completed"<<std::endl;
+        std::cout<<"-----------------------------------"<<std::endl;
     }
 }
 
@@ -195,7 +198,7 @@ void runTestArrayOfStruct()
         block blockReceiv;
         first_rec_handle = FFSset_fixed_target(fmc_r, &block_format_list[0]);
 
-        FFSdecode(fmc_r, output, (char*)&blockReceiv);
+        FFSdecode(fmc_r, output, (char*)(&blockReceiv));
 
         std::cout<<"Successful decode."<<std::endl;
 
@@ -319,13 +322,13 @@ void run(DecafSizes& decaf_sizes,
 {
   MPI_Init(NULL, NULL);
 
-  runTestStruct();
+  //runTestStruct();
   runTestArrayOfStruct();
-  runMPITestArrayOfStruct();
+  //runMPITestArrayOfStruct();
   int size_world, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &size_world);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  std::cout<<"Rank "<<rank<<" has reached the barrier"<<std::endl;
+  //std::cout<<"Rank "<<rank<<" has reached the barrier"<<std::endl;
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
 }
@@ -336,7 +339,7 @@ int main(int argc,
   // parse command line args
   DecafSizes decaf_sizes;
   int prod_nsteps;
-  GetArgs(argc, argv, decaf_sizes, prod_nsteps);
+  //GetArgs(argc, argv, decaf_sizes, prod_nsteps);
 
   // run decaf
   run(decaf_sizes, prod_nsteps);

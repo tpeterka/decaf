@@ -11,8 +11,8 @@
 # tpeterka@mcs.anl.gov
 #
 #----------------------------------------------------------------------------
-ARCH=MAC_OSX
-#ARCH=LINUX
+#ARCH=MAC_OSX
+ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
 #ARCH=CRAY
@@ -30,10 +30,10 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executable
-exe=../../install/examples/lammps/lammps
+exe=./lammps
 
 # input file
-infile=../../examples/lammps/in.melt
+infile=./in.melt
 
 # args
 args=$infile
@@ -57,9 +57,9 @@ fi
 
 if [ "$ARCH" = "LINUX" ]; then
 
-mpiexec -n $num_procs $exe $args
+#mpiexec -n $num_procs $exe $args
 
-#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
+mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
 
 #mpiexec -n $num_procs valgrind -q $exe $args
 

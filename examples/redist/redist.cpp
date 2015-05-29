@@ -295,6 +295,8 @@ public:
 
             p = (particules*)(data_.get());
 
+            std::cout<<"Number of particules : "<<p->nbParticules<<std::endl;
+
             //nbElements_ = 1;
             nbItems_ = p->nbParticules;
             nbItems_ > 1 ? splitable_ = true: splitable_ = false;
@@ -626,7 +628,7 @@ void run(DecafSizes& decaf_sizes,
   MPI_Comm_size(MPI_COMM_WORLD, &size_world);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  runTestParallelRedist(5,2);
+  runTestParallelRedist(2,1);
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
@@ -638,7 +640,7 @@ int main(int argc,
   // parse command line args
   DecafSizes decaf_sizes;
   int prod_nsteps;
-  GetArgs(argc, argv, decaf_sizes, prod_nsteps);
+  //GetArgs(argc, argv, decaf_sizes, prod_nsteps);
 
   // run decaf
   run(decaf_sizes, prod_nsteps);
