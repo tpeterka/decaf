@@ -29,10 +29,14 @@ namespace decaf
   class RedistCountMPI : public RedistComp
   {
   public:
-      RedistCountMPI(){}
+      RedistCountMPI() :
+          communicator_(MPI_COMM_NULL),
+          commSources_(MPI_COMM_NULL),
+          commDests_(MPI_COMM_NULL) {}
       RedistCountMPI(int rankSource, int nbSources,
                      int rankDest, int nbDests,
-                    CommHandle communicator);
+                     CommHandle communicator);
+      ~RedistCountMPI();
 
       void put(std::shared_ptr<BaseData> data, TaskType task_type);
       void get(std::shared_ptr<BaseData> data, TaskType task_type);
@@ -77,8 +81,11 @@ namespace decaf
 
 decaf::
 RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
-           int rankDest, int nbDests, CommHandle world_comm) :
-    RedistComp(rankSource, nbSources, rankDest, nbDests)
+                               int rankDest, int nbDests, CommHandle world_comm) :
+    RedistComp(rankSource, nbSources, rankDest, nbDests),
+    communicator_(MPI_COMM_NULL),
+    commSources_(MPI_COMM_NULL),
+    commDests_(MPI_COMM_NULL)
 {
 
     MPI_Group group, groupRedist, groupSource, groupDest;
@@ -132,6 +139,17 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     MPI_Group_free(&group);
     MPI_Group_free(&groupRedist);
 
+}
+
+decaf::
+RedistCountMPI::~RedistCountMPI()
+{
+  if (communicator_ != MPI_COMM_NULL)
+    MPI_Comm_free(&communicator_);
+  if (commSources_ != MPI_COMM_NULL)
+    MPI_Comm_free(&commSources_);
+  if (commDests_ != MPI_COMM_NULL)
+    MPI_Comm_free(&commDests_);
 }
 
 void

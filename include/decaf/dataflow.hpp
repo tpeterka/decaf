@@ -88,6 +88,8 @@ Dataflow::Dataflow(CommHandle world_comm,
   world_comm_(world_comm),
   prod_dflow_comm_(NULL),
   dflow_con_comm_(NULL),
+  redist_prod_dflow_(NULL),
+  redist_dflow_con_(NULL),
   pipeliner_(pipeliner),
   checker_(checker),
   data_(data),
@@ -173,9 +175,9 @@ Dataflow::~Dataflow()
   if (is_con())
     delete con_comm_;
   if (redist_dflow_con_)
-      delete redist_dflow_con_;
+    delete redist_dflow_con_;
   if (redist_prod_dflow_)
-      delete redist_prod_dflow_;
+    delete redist_prod_dflow_;
 }
 
 void

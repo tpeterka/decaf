@@ -2,7 +2,10 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 
 # Decaf dependencies
 
+- C++11
 - MPI-3 (currently MPI is the only supported transport layer)
+- Boost
+- FFS (optional, for serialization)
 - python and cython (optional, if you want the python version of the examples to be built)
 
 # Building decaf:
