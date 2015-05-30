@@ -24,30 +24,30 @@ typedef MPI_Aint Address;
 
 int CommRank(CommHandle comm)
 {
-  int rank;
-  MPI_Comm_rank(comm, &rank);
-  return rank;
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+    return rank;
 }
 
 int CommSize(CommHandle comm)
 {
-  int size;
-  MPI_Comm_size(comm, &size);
-  return size;
+    int size;
+    MPI_Comm_size(comm, &size);
+    return size;
 }
 
 size_t DatatypeSize(CommDatatype dtype)
 {
-  MPI_Aint extent;
-  MPI_Type_extent(dtype, &extent);
-  return extent;
+    MPI_Aint extent;
+    MPI_Type_extent(dtype, &extent);
+    return extent;
 }
 
 Address addressof(const void *addr)
 {
-  MPI_Aint p;
-  MPI_Get_address(addr, &p);
-  return p;
+    MPI_Aint p;
+    MPI_Get_address(addr, &p);
+    return p;
 }
 
 #endif
