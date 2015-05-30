@@ -136,7 +136,7 @@ namespace decaf
         map<string, void*>::iterator it;              // iterator into the modules
         pair<string, void*> p;                        // (module name, module handle)
         pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
-        void(*func)(void*, int, int, int, vector<Dataflow*>&, int); // ptr to a callback func
+        void(*func)(void*, int, int, int, vector<Dataflow*>*, int); // ptr to a callback func
 
         if ((it = mods.find(mod_name)) == mods.end())
         {
@@ -181,7 +181,7 @@ Decaf::run(decaf::Data* data,                      // data model
   build_dataflows(dataflows, pipeliner, checker, data);
 
   // dynamically loaded modules (plugins)
-  void(*func)(void*, int, int, int, vector<Dataflow*>&, int); // ptr to a callback func in a module
+  void(*func)(void*, int, int, int, vector<Dataflow*>*, int); // ptr to a callback func in a module
   map<string, void*> mods;                                    // modules dynamically loaded so far
 
   // TODO: assuming the same consumer interval for the entire workflow
@@ -241,17 +241,17 @@ Decaf::run(decaf::Data* data,                      // data model
         // consumer
         if (in_dataflows.size() && in_dataflows[0]->is_con())
         {
-          func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
+          func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
             load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
-          func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_, in_dataflows, -1);
+          func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_, &in_dataflows, -1);
         }
 
         // producer
         if (out_dataflows.size() && out_dataflows[0]->is_prod())
         {
-          func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
+          func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
             load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
-          func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_, out_dataflows, -1);
+          func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_, &out_dataflows, -1);
         }
 
         // dataflow
@@ -260,9 +260,9 @@ Decaf::run(decaf::Data* data,                      // data model
           int l = workflow_.nodes[u].out_links[j];
           if (out_dataflows[j]->is_dflow())
           {
-            func = (void(*)(void*, int, int, int, vector<Dataflow*>&, int))
+            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
               load_mod(mods, workflow_.links[l].path, workflow_.links[l].dflow_func);
-            func(workflow_.links[l].dflow_args, t, con_interval, prod_nsteps_, out_dataflows, -1);
+            func(workflow_.links[l].dflow_args, t, con_interval, prod_nsteps_, &out_dataflows, -1);
           }
         }
         n++;

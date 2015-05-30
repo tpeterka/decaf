@@ -39,7 +39,7 @@ extern "C"
             int t_current,                // current time step
             int t_interval,               // consumer time interval
             int t_nsteps,                 // total number of time steps
-            vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+            vector<Dataflow*>* dataflows, // all dataflows (for producer or consumer)
             int this_dataflow = -1)       // index of one dataflow in list of all
 
   {
@@ -50,11 +50,11 @@ extern "C"
 
     if (!((t_current + 1) % t_interval))
     {
-      for (size_t i = 0; i < dataflows.size(); i++)
+      for (size_t i = 0; i < dataflows->size(); i++)
       {
         fprintf(stderr, "+ producing time step %d\n", t_current);
-        dataflows[i]->put(pd);
-        dataflows[i]->flush();           // need to clean up after each time step
+        (*dataflows)[i]->put(pd);
+        (*dataflows)[i]->flush();           // need to clean up after each time step
       }
     }
   }
@@ -65,20 +65,20 @@ extern "C"
            int t_current,                  // current time step
            int t_interval,                 // consumer time interval
            int t_nsteps,                   // total number of time steps
-           vector<Dataflow*>& dataflows,   // all dataflows (for producer or consumer)
+           vector<Dataflow*>* dataflows,   // all dataflows (for producer or consumer)
            int this_dataflow = -1)         // index of one dataflow in list of all
   {
     if (!((t_current + 1) % t_interval))
     {
-      int* cd    = (int*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
+      int* cd = (int*)(*dataflows)[0]->get(); // we know dataflow.size() = 1 in this example
 
       // for example, add all the items arrived at this rank
       int sum = 0;
-      for (int i = 0; i < dataflows[0]->get_nitems(); i++)
+      for (int i = 0; i < (*dataflows)[0]->get_nitems(); i++)
         sum += cd[i];
       fprintf(stderr, "- consuming time step %d, sum = %d\n", t_current, sum);
 
-      dataflows[0]->flush();               // need to clean up after each time step
+      (*dataflows)[0]->flush();               // need to clean up after each time step
     }
   }
 
@@ -87,12 +87,12 @@ extern "C"
              int t_current,                // current time step
              int t_interval,               // consumer time interval
              int t_nsteps,                 // total number of time steps
-             vector<Dataflow*>& dataflows, // all dataflows
+             vector<Dataflow*>* dataflows, // all dataflows
              int this_dataflow = -1)       // index of one dataflow in list of all
   {
     fprintf(stderr, "dflow\n");
-    for (size_t i = 0; i < dataflows.size(); i++)
-      dataflows[i]->flush();               // need to clean up after each time step
+    for (size_t i = 0; i < dataflows->size(); i++)
+      (*dataflows)[i]->flush();               // need to clean up after each time step
   }
 } // extern "C"
 
