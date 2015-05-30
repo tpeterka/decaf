@@ -7,8 +7,17 @@ if(FFS_FOUND)
     add_executable              (testffs testFFS.cpp)
     target_link_libraries       (testffs    ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
 
-    add_executable              (redist redist.cpp)
-    target_link_libraries       (redist     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
+    add_executable              (redistffs redist.cpp)
+    target_link_libraries       (redistffs     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
+    install(TARGETS testffs redistffs
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
+            )
+    install(FILES TESTFFS REDISTFFS
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
+            )
+
 else(FFS_FOUND)
     message("FFS not found. Skipping FFS based redistribution example")
 endif(FFS_FOUND)
@@ -17,11 +26,22 @@ find_package(Boost COMPONENTS serialization)
 if(Boost_FOUND)
     message("Building boost based redistribution example")
     include_directories(${Boost_INCLUDE_DIRS})
-    add_executable              (redistboost redist_boost.cpp)
-    target_link_libraries       (redistboost     ${libraries} ${Boost_LIBRARIES})
 
     add_executable              (testboost testBoost.cpp)
     target_link_libraries       (testboost     ${libraries} ${Boost_LIBRARIES})
+
+    add_executable              (redistboost redist_boost.cpp)
+    target_link_libraries       (redistboost     ${libraries} ${Boost_LIBRARIES})
+
+    install(TARGETS testboost redistboost
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
+            )
+    install(FILES TESTBOOST REDISTBOOST
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
+            )
+
 else(Boost_FOUND)
     message("Boost or Boost serialization component not found. Skipping boost based redistribution example")
 endif(Boost_FOUND)

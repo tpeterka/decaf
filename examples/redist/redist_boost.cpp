@@ -649,7 +649,7 @@ int main(int argc,
   // parse command line args
   DecafSizes decaf_sizes;
   int prod_nsteps;
-  GetArgs(argc, argv, decaf_sizes, prod_nsteps);
+  //GetArgs(argc, argv, decaf_sizes, prod_nsteps);
 
   // run decaf
   run(decaf_sizes, prod_nsteps);
