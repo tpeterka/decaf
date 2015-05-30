@@ -116,6 +116,52 @@ void run(Workflow& workflow,             // workflow
   //         l->prod, l->con, l->start_proc, l->nprocs, l->dflow_func.c_str(), l->path.c_str());
   // fprintf(stderr, "prod_nsteps %d con_nsteps %d\n", prod_nsteps, con_nsteps);
  
+  // debug: hard code the workflow
+  // workflow.nodes.clear();
+  // workflow.links.clear();
+  // const char * prefix = getenv("DECAF_PREFIX");
+  // string path = string(prefix , strlen(prefix));
+  // path.append(string("/examples/direct/libmod_direct.so"));
+
+  // // fill workflow nodes
+  // WorkflowNode node;
+  // node.out_links.clear();                        // producer
+  // node.in_links.clear();
+  // node.out_links.push_back(0);
+  // node.start_proc = 0;
+  // node.nprocs = 4;
+  // node.prod_func = "prod";
+  // node.con_func = "";
+  // node.path = path;
+  // workflow.nodes.push_back(node);
+
+  // node.out_links.clear();                        // consumer
+  // node.in_links.clear();
+  // node.in_links.push_back(0);
+  // // node.start_proc = 6;          // no overlap
+  // node.start_proc = 2;          // partial overlap
+  // // node.start_proc = 0;          // total overlap
+  // node.nprocs = 2;              // no or partial overlap
+  // // node.nprocs = 4;              // total overlap
+  // node.prod_func = "";
+  // node.con_func = "con";
+  // node.path = path;
+  // workflow.nodes.push_back(node);
+
+  // // fill workflow link
+  // WorkflowLink link;
+  // link.prod = 0;                               // dataflow
+  // link.con = 1;
+  // // link.start_proc = 4;          // no overlap
+  // link.start_proc = 1;          // partial overlap
+  // // link.start_proc = 0;          // total overlap
+  // link.nprocs = 2;              // no or partial overlap
+  // // link.nprocs = 4;              // total overlap
+  // link.dflow_func = "dflow";
+  // link.path = path;
+  // workflow.links.push_back(link);
+
+
   // callback args
   int *pd, *cd;
   pd = new int[1];
