@@ -130,7 +130,9 @@ Comm::get(Data* data,
         MPI_Aint extent; // datatype size in bytes
         MPI_Type_extent(data->complete_datatype_, &extent);
         // debug
-//         fprintf(stderr, "getting %d items from input %d\n", nitems, i);
+        fprintf(stderr, "getting %d items from input i = %d start_input = %d num_inputs = %d"
+                "status.src = %d world_rank of source = %d\n",
+                nitems, i, start_input(), num_inputs(), status.MPI_SOURCE, world_rank(i));
         MPI_Recv(data->resize_get_items(nitems * extent, task_type), nitems,
                  data->complete_datatype_, status.MPI_SOURCE, status.MPI_TAG, handle_, &status);
       }
