@@ -58,6 +58,7 @@ namespace decaf
     CommHandle con_comm_handle()  { return con_comm_->handle();  }
     Comm* prod_comm()             { return prod_comm_; }
     Comm* con_comm()              { return con_comm_;  }
+    void forward();             //NOTE : was private
 
   private:
     CommHandle world_comm_;     // handle to original world communicator
@@ -74,7 +75,7 @@ namespace decaf
     int err_;                   // last error
     CommType type_;             // whether this instance is producer, consumer, dataflow, or other
     void dataflow();
-    void forward();
+
   };
 
 } // namespace
@@ -184,6 +185,8 @@ void
 decaf::
 Dataflow::run()
 {
+  // MOVE TO THE USER DFLOW FUNCTIONS
+  /*
   // runs the dataflow, only for those dataflow ranks that are disjoint from producer
   // dataflow ranks that overlap producer ranks run the dataflow as part of the put function
   if (is_dflow() && !is_prod())
@@ -194,7 +197,7 @@ Dataflow::run()
       std::cout<<"dflow forwarding"<<std::endl;
       forward();
     }
-  }
+  }*/
 }
 
 void

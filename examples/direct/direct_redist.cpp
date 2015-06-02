@@ -63,9 +63,6 @@ extern "C"
       {
         fprintf(stderr, "+ producing time step %d\n", t_current);
         dataflows[i]->put(container);
-
-        //putting data in the normal pipeline to unlock the dataflow
-        dataflows[i]->put(pd);
       }
     }
   }
@@ -89,12 +86,6 @@ extern "C"
 
       // For this example, the policy of the redistribute component is add
       fprintf(stderr, "- consuming time step %d, sum = %d\n", t_current, sum->getData());
-
-      //Getting the data from the classic piepline
-      dataflows[0]->get();
-      dataflows[0]->flush();
-      fprintf(stderr, "- end of time step %d\n", t_current);
-
     }
   }
 
@@ -161,8 +152,8 @@ int main(int argc,
          char** argv)
 {
   Workflow workflow;
-  int prod_nsteps = 2;
-  int con_nsteps = 2;
+  int prod_nsteps = 4;
+  int con_nsteps = 4;
   const char * prefix = getenv("DECAF_PREFIX");
   string path = string(prefix , strlen(prefix));
   path.append(string("/examples/direct/libmod_direct_redist.so"));
