@@ -286,6 +286,7 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data)
             current_rank++;
         }
         std::cout<<"Data will be split in "<<split_ranges.size()<<"chunks"<<std::endl;
+        std::cout<<"Size of Destinaton list :  "<<destList_.size()<<"chunks"<<std::endl;
 
         splitChunks_ =  data->split( split_ranges );
         std::cout<<splitChunks_.size()<<" chunks have been produced"<<std::endl;
@@ -358,6 +359,11 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
                       splitChunks_.at(i)->getSerialBufferSize(),
                       MPI_BYTE, destList_.at(i), 0, communicator_);
         }
+
+        // Cleaning the data here because synchronous send.
+        // TODO :  move to flush when switching to asynchronous send
+        splitChunks_.clear();
+        destList_.clear();
     }
 
     if(isDest())
@@ -387,8 +393,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
 
         }
     }
-
-
+    std::cout<<"End of redistributing with the rank "<<rank_<<std::endl;
 }
 // Merge the chunks from the vector receivedChunks into one single Data.
 std::shared_ptr<decaf::BaseData>
