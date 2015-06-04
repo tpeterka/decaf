@@ -69,6 +69,8 @@ namespace decaf
       CommHandle communicator_; // Communicator for all the processes involve
       CommHandle commSources_;  // Communicator of the sources
       CommHandle commDests_;    // Communicator of the destinations
+      std::vector<CommRequest> reqs;       // pending communication requests
+
       int rank_;                // Rank in the group communicator
       int size_;                // Size of the group communicator
       int local_source_rank_;   // Rank of the first source in communicator_
@@ -372,9 +374,12 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
         std::cout<<"Sending the data from the sources"<<std::endl;
         for(unsigned int i = 0; i <  destList_.size(); i++)
         {
-            MPI_Send( splitChunks_.at(i)->getSerialBuffer(),
+            MPI_Request req;
+            reqs.push_back(req);
+            std::cout<<"Sending message of size : "<<splitChunks_.at(i)->getSerialBufferSize()<<std::endl;
+            MPI_Isend( splitChunks_.at(i)->getSerialBuffer(),
                       splitChunks_.at(i)->getSerialBufferSize(),
-                      MPI_BYTE, destList_.at(i), 0, communicator_);
+                      MPI_BYTE, destList_.at(i), 0, communicator_, &reqs.back());
         }
         std::cout<<"End of sending messages"<<std::endl;
         // Cleaning the data here because synchronous send.
@@ -394,7 +399,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
             {
                 int nitems; // number of items (of type dtype) in the message
                 MPI_Get_count(&status, MPI_BYTE, &nitems);
-
+                std::cout<<"Reception of a message with size "<<nitems<<std::endl;
                 //Allocating the space necessary
                 //std::shared_ptr<char> serialbuffer (new char[nitems], std::default_delete<char[]>());
                 data->allocate_serial_buffer(nitems);

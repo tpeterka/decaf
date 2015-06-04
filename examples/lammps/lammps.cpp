@@ -235,6 +235,12 @@ int main(int argc,
     int prod_nsteps = 1;
     int con_nsteps = 1;
     const char * prefix = getenv("DECAF_PREFIX");
+    if(strlen(prefix) == 0)
+    {
+        std::cout<<"ERROR : environment variable DECAF_PREFIX not defined."
+                <<" Please export DECAF_PREFIX to point to the root of you decaf install directory."<<std::endl;
+        exit(1);
+    }
     string path = string(prefix , strlen(prefix));
     path.append(string("/examples/lammps/libmod_lammps.so"));
     string infile = argv[1];
