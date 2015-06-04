@@ -920,7 +920,6 @@ bool ConstructData::updateMetaData()
         //The field is already in the map, we don't have to test the insert
         nbFields_++;
     }
-    std::cout<<"Number of items after update of the map : "<<nbItems_<<std::endl;
 
     return true;
 }

@@ -78,14 +78,13 @@ namespace decaf
 
 void decaf::RedistComp::process(shared_ptr<BaseData> data)
 {
+    std::cout<<"========== PROCESS ==============="<<std::endl;
     computeGlobal(data);
-    std::cout<<"Global values are computed"<<std::endl;
 
     splitData(data);
-    std::cout<<"Data are splited"<<std::endl;
 
     redistribute(data);
-
+    std::cout<<"========== PROCESS ==============="<<std::endl;
     //merge();
 }
 

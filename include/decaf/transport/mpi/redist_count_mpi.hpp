@@ -60,14 +60,19 @@ namespace decaf
       // Merge the chunks from the vector receivedChunks into one single data->
       //virtual BaseData* Merge();
 
-      bool isSource(){ return rank_ <  nbSources_; }
-      bool isDest(){ return rank_ >= rankDest_ - rankSource_; }
+      //bool isSource(){ return rank_ <  nbSources_; }
+      //bool isDest(){ return rank_ >= rankDest_ - rankSource_; }
+
+      bool isSource(){ return rank_ >= local_source_rank_ && rank_ < local_source_rank_ + nbSources_; }
+      bool isDest(){ return rank_ >= local_dest_rank_ && rank_ < local_dest_rank_ + nbDests_; }
 
       CommHandle communicator_; // Communicator for all the processes involve
       CommHandle commSources_;  // Communicator of the sources
       CommHandle commDests_;    // Communicator of the destinations
       int rank_;                // Rank in the group communicator
       int size_;                // Size of the group communicator
+      int local_source_rank_;   // Rank of the first source in communicator_
+      int local_dest_rank_;     // Rank of the first destination in communicator_
 
       // We keep these values so we can reuse them between 2 iterations
       int global_item_rank_;    // Index of the first item in the global array
@@ -87,14 +92,18 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     commSources_(MPI_COMM_NULL),
     commDests_(MPI_COMM_NULL)
 {
-
+    std::cout<<"Generation of the Redist component with ["<<rankSource<<","
+            <<nbSources<<","<<rankDest<<","<<nbDests<<"]"<<std::endl;
     MPI_Group group, groupRedist, groupSource, groupDest;
     int range[3];
     MPI_Comm_group(world_comm, &group);
-    int world_rank;
+    int world_rank, world_size;
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_rank(world_comm, &world_rank);
+    MPI_Comm_size(world_comm, &world_size);
 
+    local_source_rank_ = 0;
+    local_dest_rank_ = rankDest_ - rankSource_;
 
     //Generation of the group with all the sources and destination
     range[0] = rankSource;
@@ -105,11 +114,13 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
-    //std::cout<<"Rank in the Redist component : "<<rank_<<std::endl;
+    std::cout<<"Rank in the Redist component : "<<rank_<<std::endl;
 
     //Generation of the group with all the sources
-    if(world_rank >= rankSource_ && world_rank < rankSource_ + nbSources_)
+    //if(world_rank >= rankSource_ && world_rank < rankSource_ + nbSources_)
+    if(isSource())
     {
+        std::cout<<"Generating the source communicator"<<std::endl;
         range[0] = rankSource;
         range[1] = rankSource + nbSources - 1;
         range[2] = 1;
@@ -118,12 +129,14 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
         MPI_Group_free(&groupSource);
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
-        //std::cout<<"Source Rank in the Redist component : "<<source_rank<<std::endl;
+        std::cout<<"Source Rank in the Redist component : "<<source_rank<<std::endl;
     }
 
     //Generation of the group with all the Destinations
-    if(world_rank >= rankDest_ && world_rank < rankDest_ + nbDests_)
+    //if(world_rank >= rankDest_ && world_rank < rankDest_ + nbDests_)
+    if(isDest())
     {
+        std::cout<<"Generating the destination communicator"<<std::endl;
         range[0] = rankDest;
         range[1] = rankDest + nbDests - 1;
         range[2] = 1;
@@ -132,7 +145,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
         MPI_Group_free(&groupDest);
         int dest_rank;
         MPI_Comm_rank(commDests_, &dest_rank);
-        //std::cout<<"Dest Rank in the Redist component : "<<dest_rank<<std::endl;
+        std::cout<<"Dest Rank in the Redist component : "<<dest_rank<<std::endl;
 
     }
 
@@ -201,8 +214,7 @@ void
 decaf::
 RedistCountMPI::splitData(shared_ptr<BaseData> data)
 {
-    std::cout<<"Spliting the data"<<std::endl;
-    std::cout<<"Redistributing with the rank "<<rank_<<std::endl;
+    std::cout<<"Spliting with the rank "<<rank_<<std::endl;
     if(isSource()){
         // We have the items global_item_rank to global_item_rank_ + data->getNbItems()
         // We have to split global_nb_items_ into nbDest in total
@@ -285,8 +297,8 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data)
             items_left -= currentNbItems;
             current_rank++;
         }
-        std::cout<<"Data will be split in "<<split_ranges.size()<<"chunks"<<std::endl;
-        std::cout<<"Size of Destinaton list :  "<<destList_.size()<<"chunks"<<std::endl;
+        std::cout<<"Data will be split in "<<split_ranges.size()<<" chunks"<<std::endl;
+        std::cout<<"Size of Destinaton list :  "<<destList_.size()<<" chunks"<<std::endl;
 
         splitChunks_ =  data->split( split_ranges );
         std::cout<<splitChunks_.size()<<" chunks have been produced"<<std::endl;
@@ -300,6 +312,7 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data)
     }
     else
         std::cout<<"Destination, nothing to do in the split"<<std::endl;
+    std::cout<<"End of spliting"<<std::endl;
 
 }
 
@@ -312,29 +325,32 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
     int *sum;
     if(isSource())
     {
-        if(rank_ == 0) sum = new int[ nbDests_];
+        if(rank_ == local_source_rank_) sum = new int[ nbDests_];
         MPI_Reduce( summerizeDest_, sum,  nbDests_, MPI_INT, MPI_SUM,
-                   0, commSources_);
+                   local_source_rank_, commSources_);
     }
+    std::cout<<"Reduce the sum done."<<std::endl;
 
     // Sending to the rank 0 of the destinations
-    if(rank_ == 0)
+    if(rank_ == local_source_rank_)
     {
-        for(int i = 0; i < nbDests_;i++)
-            std::cout<<"Destination "<<i<<" : "<<sum[i]<<std::endl;
-        MPI_Send(sum,  nbDests_, MPI_INT,  rankDest_ -  rankSource_, 0, communicator_);
+        //for(int i = 0; i < nbDests_;i++)
+        //    std::cout<<"Destination "<<i<<" : "<<sum[i]<<std::endl;
+        MPI_Send(sum,  nbDests_, MPI_INT,  local_dest_rank_, 0, communicator_);
+        std::cout<<"Sending the sum to the first destination ("<<rankDest_ -  rankSource_<<")"<<std::endl;
     }
-
 
 
     // Getting the accumulated buffer on the destination side
     int *destBuffer;
-    if(rank_ ==  rankDest_ -  rankSource_) //Root of destination
+    if(rank_ ==  local_dest_rank_) //Root of destination
     {
         destBuffer = new int[ nbDests_];
-        MPI_Recv(destBuffer,  nbDests_, MPI_INT, 0, 0, communicator_, MPI_STATUS_IGNORE);
-        for(int i = 0; i < nbDests_;i++)
-            std::cout<<"Reception : Destination "<<i<<" : "<<destBuffer[i]<<std::endl;
+        MPI_Recv(destBuffer,  nbDests_, MPI_INT, local_source_rank_, 0, communicator_, MPI_STATUS_IGNORE);
+        std::cout<<"Receiving the sum  ("<<rankDest_ -  rankSource_<<")"<<std::endl;
+
+        //for(int i = 0; i < nbDests_;i++)
+        //    std::cout<<"Reception : Destination "<<i<<" : "<<destBuffer[i]<<std::endl;
     }
 
     // Scattering the sum accross all the destinations
@@ -344,7 +360,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
         std::cout<<"Scaterring with the rank "<<rank_<<std::endl;
         MPI_Scatter(destBuffer,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
 
-        if(rank_ ==  rankDest_ -  rankSource_) delete destBuffer;
+        if(rank_ ==  local_dest_rank_) delete destBuffer;
     }
 
     // At this point, each source knows where they have to send data
@@ -353,13 +369,14 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
     //Processing the data exchange
     if(isSource())
     {
+        std::cout<<"Sending the data from the sources"<<std::endl;
         for(unsigned int i = 0; i <  destList_.size(); i++)
         {
             MPI_Send( splitChunks_.at(i)->getSerialBuffer(),
                       splitChunks_.at(i)->getSerialBufferSize(),
                       MPI_BYTE, destList_.at(i), 0, communicator_);
         }
-
+        std::cout<<"End of sending messages"<<std::endl;
         // Cleaning the data here because synchronous send.
         // TODO :  move to flush when switching to asynchronous send
         splitChunks_.clear();
@@ -368,6 +385,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
 
     if(isDest())
     {
+        std::cout<<"Receiving the data."<<std::endl;
         for(int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
@@ -392,6 +410,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data)
             }
 
         }
+        std::cout<<"End of reception."<<std::endl;
     }
     std::cout<<"End of redistributing with the rank "<<rank_<<std::endl;
 }

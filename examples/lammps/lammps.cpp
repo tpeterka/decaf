@@ -183,7 +183,14 @@ extern "C"
     {
         fprintf(stderr, "dflow\n");
         for (size_t i = 0; i < dataflows->size(); i++)
+        {
+            //Copy from the run function of Dataflow
+            if ((*dataflows)[i]->is_dflow() && !(*dataflows)[i]->is_prod())
+            {
+                (*dataflows)[i]->forward();
+            }
             (*dataflows)[i]->flush();        // need to clean up after each time step
+        }
     }
 } // extern "C"
 

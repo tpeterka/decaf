@@ -97,8 +97,8 @@ extern "C"
             if ((*dataflows)[i]->is_dflow() && !(*dataflows)[i]->is_prod())
             {
                 (*dataflows)[i]->forward();
-                (*dataflows)[i]->flush();        // need to clean up after each time step
             }
+            (*dataflows)[i]->flush();        // need to clean up after each time step
         }
     }
 } // extern "C"
@@ -200,8 +200,8 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    int prod_nsteps = 2;
-    int con_nsteps = 2;
+    int prod_nsteps = 4;
+    int con_nsteps = 4;
     const char * prefix = getenv("DECAF_PREFIX");
     string path = string(prefix , strlen(prefix));
     path.append(string("/examples/direct/libmod_direct.so"));
