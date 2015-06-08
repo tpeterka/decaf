@@ -591,8 +591,9 @@ public:
     {
         //serial_buffer_.getline(buffer, size);
         //boost::archive::binary_iarchive ia(serial_buffer_);
-        serial_buffer_ = std::string(buffer, size);
-        boost::iostreams::basic_array_source<char> device(serial_buffer_.data(), serial_buffer_.size());
+        in_serial_buffer_ = std::string(buffer, size);
+        std::cout<<"Serial buffer size : "<<in_serial_buffer_.size()<<std::endl;
+        boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
         boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
         boost::archive::binary_iarchive ia(sout);
 
@@ -678,7 +679,7 @@ public:
 
     virtual bool merge()
     {
-        boost::iostreams::basic_array_source<char> device(serial_buffer_.data(), serial_buffer_.size());
+        boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
         boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
         boost::archive::binary_iarchive ia(sout);
 
@@ -763,11 +764,12 @@ public:
     virtual bool serialize()
     {
         //boost::archive::binary_oarchive oa(serial_buffer_);
-        boost::iostreams::back_insert_device<std::string> inserter(serial_buffer_);
+        boost::iostreams::back_insert_device<std::string> inserter(out_serial_buffer_);
         boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
         boost::archive::binary_oarchive oa(s);
 
         oa << container_;
+        s.flush();
 
         return true;
     }
@@ -780,8 +782,24 @@ public:
     //Prepare enough space in the serial buffer
     virtual void allocate_serial_buffer(int size)
     {
-        serial_buffer_.resize(size);
+        in_serial_buffer_.resize(size);
     }
+
+    virtual char* getOutSerialBuffer(int* size)
+    {
+        *size = out_serial_buffer_.size(); //+1 for the \n caractere
+        return &(out_serial_buffer_[0]); //Dangerous if the string gets reallocated
+    }
+    virtual char* getOutSerialBuffer(){ return &(out_serial_buffer_[0]); }
+    virtual int getOutSerialBufferSize(){ out_serial_buffer_.size();}
+
+    virtual char* getInSerialBuffer(int* size)
+    {
+        *size = in_serial_buffer_.size(); //+1 for the \n caractere
+        return &(in_serial_buffer_[0]); //Dangerous if the string gets reallocated
+    }
+    virtual char* getInSerialBuffer(){ return &(in_serial_buffer_[0]); }
+    virtual int getInSerialBufferSize(){ return in_serial_buffer_.size(); }
 
     /*virtual char* getSerialBuffer(int* size)
     {
@@ -791,13 +809,13 @@ public:
     virtual char* getSerialBuffer(){ return &(serial_buffer_.str()[0]); }
     virtual int getSerialBufferSize(){ return serial_buffer_.str().size(); }*/
 
-    virtual char* getSerialBuffer(int* size)
+    /*virtual char* getSerialBuffer(int* size)
     {
         *size = serial_buffer_.size(); //+1 for the \n caractere
         return &(serial_buffer_[0]); //Dangerous if the string gets reallocated
     }
     virtual char* getSerialBuffer(){ return &(serial_buffer_[0]); }
-    virtual int getSerialBufferSize(){ return serial_buffer_.size(); }
+    virtual int getSerialBufferSize(){ return serial_buffer_.size(); }*/
 
     virtual bool setData(std::shared_ptr<void> data)
     {
@@ -883,7 +901,10 @@ protected:
     bool updateMetaData();
 
    //std::stringstream serial_buffer_;
-    std::string serial_buffer_;
+    std::string out_serial_buffer_;
+    std::string in_serial_buffer_;
+    //std::string serial_buffer_;
+
 
 
 };

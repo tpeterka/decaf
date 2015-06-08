@@ -241,9 +241,9 @@ decaf::
 Dataflow::put(std::shared_ptr<BaseData> data)
 {
     if(is_prod())
-        redist_prod_dflow_->process(data);
+        redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
     if(is_dflow())
-        redist_dflow_con_->process(data);
+        redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
 }
 
 void*
@@ -264,9 +264,9 @@ decaf::
 Dataflow::get(std::shared_ptr<BaseData> data)
 {
     if(is_dflow())
-        redist_prod_dflow_->process(data);
+        redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
     if(is_con())
-        redist_dflow_con_->process(data);
+        redist_dflow_con_->process(data, DECAF_REDIST_DEST);
 }
 
 // run the dataflow

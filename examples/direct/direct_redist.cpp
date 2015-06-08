@@ -10,7 +10,7 @@
 //
 //--------------------------------------------------------------------------
 #include <decaf/decaf.hpp>
-#include "ConstructType.hpp"
+#include "../include/ConstructType.hpp"
 
 #include <assert.h>
 #include <math.h>

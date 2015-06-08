@@ -111,9 +111,17 @@ namespace  decaf {
     //Prepare enough space in the serial buffer
     virtual void allocate_serial_buffer(int size) = 0;
 
-    virtual char* getSerialBuffer(int* size) = 0;
+    /*virtual char* getSerialBuffer(int* size) = 0;
     virtual char* getSerialBuffer() = 0;
-    virtual int getSerialBufferSize() = 0;
+    virtual int getSerialBufferSize() = 0;*/
+
+    virtual char* getOutSerialBuffer(int* size) = 0;
+    virtual char* getOutSerialBuffer() = 0;
+    virtual int getOutSerialBufferSize() = 0;
+
+    virtual char* getInSerialBuffer(int* size) = 0;
+    virtual char* getInSerialBuffer() = 0;
+    virtual int getInSerialBufferSize() = 0;
 
     //std::vector<char>& getSerialBuffer(int* size){ *size = size_buffer_; return buffer_; }
     //std::vector<char>& getSerialBuffer(){ return buffer_; }

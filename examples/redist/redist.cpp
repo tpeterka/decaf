@@ -395,9 +395,29 @@ public:
         return false;
     }
 
-    virtual char* getSerialBuffer(int* size){ *size = size_buffer_; return buffer_.get();}
+    /*virtual char* getSerialBuffer(int* size){ *size = size_buffer_; return buffer_.get();}
     virtual char* getSerialBuffer(){ return buffer_.get(); }
-    virtual int getSerialBufferSize(){ return size_buffer_; }
+    virtual int getSerialBufferSize(){ return size_buffer_; }*/
+
+    virtual char* getOutSerialBuffer(int* size)
+    {
+        *size = size_buffer_; //+1 for the \n caractere
+        return buffer_.get(); //Dangerous if the string gets reallocated
+    }
+    virtual char* getOutSerialBuffer(){ return buffer_.get(); }
+    virtual int getOutSerialBufferSize(){ return size_buffer_;}
+
+    virtual char* getInSerialBuffer(int* size)
+    {
+        *size = size_buffer_; //+1 for the \n caractere
+        return buffer_.get(); //Dangerous if the string gets reallocated
+    }
+    virtual char* getInSerialBuffer(){ return buffer_.get(); }
+    virtual int getInSerialBufferSize(){ return size_buffer_; }
+
+
+
+
     virtual void allocate_serial_buffer(int size)
     {
         buffer_ = std::shared_ptr<char>(new char[size], std::default_delete<char[]>());
@@ -470,7 +490,7 @@ void runTestSimple()
         if(part->serialize())
         {
             int buffer_size;
-            const char* buffer = part->getSerialBuffer(&buffer_size);
+            const char* buffer = part->getOutSerialBuffer(&buffer_size);
             std::cout<<"Size of buffer to send : "<<buffer_size<<std::endl;
             MPI_Send(buffer, buffer_size, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
         }
@@ -540,7 +560,7 @@ void runTestSimpleRedist()
         std::shared_ptr<BaseData> data = std::shared_ptr<ParticuleType>(
                     new ParticuleType(static_pointer_cast<void>(p)));
 
-        component.process(data);
+        component.process(data, decaf::DECAF_REDIST_SOURCE);
 
 
     }
@@ -548,7 +568,7 @@ void runTestSimpleRedist()
     {
         std::shared_ptr<ParticuleType> result = std::shared_ptr<ParticuleType>(
                     new ParticuleType());
-        component.process(result);
+        component.process(result, decaf::DECAF_REDIST_DEST);
 
         particules *p = (particules *)(result->getData().get());
 
@@ -597,7 +617,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
         std::shared_ptr<BaseData> data = std::shared_ptr<ParticuleType>(
                     new ParticuleType(static_pointer_cast<void>(p)));
 
-        component.process(data);
+        component.process(data, decaf::DECAF_REDIST_SOURCE);
 
 
     }
@@ -605,7 +625,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
     {
         std::shared_ptr<ParticuleType> result = std::shared_ptr<ParticuleType>(
                     new ParticuleType());
-        component.process(result);
+        component.process(result, decaf::DECAF_REDIST_DEST);
 
         particules *p = (particules *)(result->getData().get());
 

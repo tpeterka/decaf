@@ -19,7 +19,7 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "ConstructType.hpp"
+#include "../include/ConstructType.hpp"
 
 #include <assert.h>
 #include <math.h>
@@ -282,13 +282,13 @@ public:
 
     virtual bool merge()
     {
-        boost::iostreams::basic_array_source<char> device(serial_str.data(), size_buffer_);
+        boost::iostreams::basic_array_source<char> device(in_serial_str.data(), in_size_buffer_);
         boost::iostreams::stream<boost::iostreams::basic_array_source<char> > s(device);
         boost::archive::binary_iarchive ia(s);
 
         std::cout<<"Merging the data..."<<std::endl;
 
-        std::cout<<"Serial buffer size : "<<size_buffer_<<";;"<<serial_str.size()<<std::endl;
+        std::cout<<"Serial buffer size : "<<in_size_buffer_<<";;"<<in_serial_str.size()<<std::endl;
 
         //We don't already have a data. Filling the structure
         if(!data_)
@@ -381,16 +381,16 @@ public:
     virtual bool serialize()
     {
 
-        boost::iostreams::back_insert_device<std::string> inserter(serial_str);
+        boost::iostreams::back_insert_device<std::string> inserter(out_serial_str);
         boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
         boost::archive::binary_oarchive oa(s);
 
         oa << p;
 
         s.flush();
-        size_buffer_ = serial_str.size();
+        out_size_buffer_ = out_serial_str.size();
 
-        std::cout<<"Serialization successful (size : "<<size_buffer_<<")"<<std::endl;
+        std::cout<<"Serialization successful (size : "<<out_size_buffer_<<")"<<std::endl;
 
         return true;
     }
@@ -402,25 +402,43 @@ public:
 
     virtual void allocate_serial_buffer(int size)
     {
-        if(serial_str.size() < size)
-            serial_str.resize(size);
-        size_buffer_ = size;
+        if(in_serial_str.size() < size)
+            in_serial_str.resize(size);
+        in_size_buffer_ = size;
     }
 
-    virtual char* getSerialBuffer(int* size)
+    /*virtual char* getSerialBuffer(int* size)
     {
         *size = size_buffer_;
         return &serial_str[0]; //Very bad
     }
 
     virtual char* getSerialBuffer(){ return &serial_str[0]; }
-    virtual int getSerialBufferSize(){ return size_buffer_; }
+    virtual int getSerialBufferSize(){ return size_buffer_; }*/
+
+    virtual char* getOutSerialBuffer(int* size)
+    {
+        *size = out_size_buffer_;
+        return &out_serial_str[0]; //Very bad
+    }
+    virtual char* getOutSerialBuffer(){ return &out_serial_str[0]; }
+    virtual int getOutSerialBufferSize(){ return out_size_buffer_; }
+
+    virtual char* getInSerialBuffer(int* size)
+    {
+        *size = in_size_buffer_;
+        return &in_serial_str[0]; //Very bad
+    }
+    virtual char* getInSerialBuffer(){ return &in_serial_str[0]; }
+    virtual int getInSerialBufferSize(){ return in_size_buffer_; }
 
 
 protected:
 
-    std::string serial_str;
-    int size_buffer_;
+    std::string in_serial_str;
+    std::string out_serial_str;
+    int in_size_buffer_;
+    int out_size_buffer_;
     particules *p;
 
 };
@@ -480,7 +498,7 @@ void runTestSimple()
         if(part->serialize())
         {
             int buffer_size;
-            char* buffer = part->getSerialBuffer(&buffer_size);
+            char* buffer = part->getOutSerialBuffer(&buffer_size);
             std::cout<<"Size of buffer to send : "<<buffer_size<<std::endl;
             MPI_Send(buffer, buffer_size, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
         }
@@ -506,7 +524,7 @@ void runTestSimple()
         ParticuleType *part = new ParticuleType();
         part->allocate_serial_buffer(nitems);
 
-        MPI_Recv(part->getSerialBuffer(), nitems,
+        MPI_Recv(part->getInSerialBuffer(), nitems,
                MPI_BYTE, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status);
         std::cout<<"Reception of a message of size "<<nitems<<std::endl;
 
@@ -549,7 +567,7 @@ void runTestSimpleRedist()
         std::shared_ptr<BaseData> data = std::shared_ptr<ParticuleType>(
                     new ParticuleType(static_pointer_cast<void>(p)));
 
-        component.process(data);
+        component.process(data, decaf::DECAF_REDIST_SOURCE);
 
 
     }
@@ -557,7 +575,7 @@ void runTestSimpleRedist()
     {
         std::shared_ptr<ParticuleType> result = std::shared_ptr<ParticuleType>(
                     new ParticuleType());
-        component.process(result);
+        component.process(result, decaf::DECAF_REDIST_DEST);
 
         particules *p = (particules *)(result->getData().get());
 
@@ -605,7 +623,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
         std::shared_ptr<BaseData> data = std::shared_ptr<ParticuleType>(
                     new ParticuleType(static_pointer_cast<void>(p)));
 
-        component.process(data);
+        component.process(data, decaf::DECAF_REDIST_SOURCE);
 
 
     }
@@ -613,7 +631,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
     {
         std::shared_ptr<ParticuleType> result = std::shared_ptr<ParticuleType>(
                     new ParticuleType());
-        component.process(result);
+        component.process(result, decaf::DECAF_REDIST_DEST);
 
         particules *p = (particules *)(result->getData().get());
 

@@ -1,7 +1,7 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "ConstructType.hpp"
+#include "../include/ConstructType.hpp"
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -223,13 +223,13 @@ void testConstructType()
     std::cout<<"The new map has "<<newContainer->size()<<" datafield"<<std::endl;*/
 
     int size_buffer;
-    char *serial_buffer = container.getSerialBuffer(&size_buffer);
+    char *serial_buffer = container.getOutSerialBuffer(&size_buffer);
     std::cout<<"Serialization succeeded. Size of serial buffer : "<<size_buffer<<std::endl;
 
     ConstructData newContainer;
     //newContainer.merge(serial_buffer, size_buffer);
     newContainer.allocate_serial_buffer(size_buffer);
-    memcpy(newContainer.getSerialBuffer(), serial_buffer, size_buffer);
+    memcpy(newContainer.getInSerialBuffer(), serial_buffer, size_buffer);
     newContainer.merge();
 
     std::cout<<"The new map has "<<newContainer.getNbItems()<<" datafield"<<std::endl;
@@ -261,10 +261,10 @@ void testConstructTypeSplit()
 
     ConstructData container;
     container.appendData(std::string("nbParticules"), data,
-                         DECAF_NOFLOAG, DECAF_SHARED,
+                         DECAF_NOFLAG, DECAF_SHARED,
                          DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
     container.appendData(std::string("pos"), array,
-                         DECAF_NOFLOAG, DECAF_PRIVATE,
+                         DECAF_NOFLAG, DECAF_PRIVATE,
                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
     std::vector<int> ranges {1,2,1};
@@ -328,10 +328,10 @@ void testConstructTypeSplitMPI()
 
         ConstructData container;
         container.appendData(std::string("nbParticules"), data,
-                             DECAF_NOFLOAG, DECAF_SHARED,
+                             DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         container.appendData(std::string("pos"), array,
-                             DECAF_NOFLOAG, DECAF_PRIVATE,
+                             DECAF_NOFLAG, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         std::vector<int> ranges {1,2,1};
@@ -354,13 +354,15 @@ void testConstructTypeSplitMPI()
         {
             if(partialContainers.at(i)->serialize())
             {
-                MPI_Send(partialContainers.at(i)->getSerialBuffer(),
-                         partialContainers.at(i)->getSerialBufferSize(),
+                MPI_Send(partialContainers.at(i)->getOutSerialBuffer(),
+                         partialContainers.at(i)->getOutSerialBufferSize(),
                          MPI_BYTE, i+1, 0, MPI_COMM_WORLD);
             }
             else
                 std::cout<<"ERROR : Unable to serialized a data. No data sent to "<<i<<std::endl;
         }
+
+        std::cout<<"Sending of the splitted containers completed."<<std::endl;
 
     }
     else if(rank > 0 && rank < 4)
@@ -378,9 +380,8 @@ void testConstructTypeSplitMPI()
             //Allocating the space necessary
             container.allocate_serial_buffer(nitems);
 
-            MPI_Recv(container.getSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
+            MPI_Recv(container.getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
                      status.MPI_TAG, MPI_COMM_WORLD, &status);
-
             container.merge();
         }
         std::cout<<"==========================="<<std::endl;
@@ -392,8 +393,11 @@ void testConstructTypeSplitMPI()
 
         //Sending back the data for gathering
         //No need to serialize again, we haven't touch the serial buffer
-        MPI_Send(container.getSerialBuffer(), container.getSerialBufferSize(),
+        // NOTE : Normally we use getOutSerialBuffer() to get the serial buffer
+        // But here the container only forward data without deserialize/reserialize the data
+        MPI_Send(container.getInSerialBuffer(), container.getInSerialBufferSize(),
                  MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+        std::cout<<"Sending back the splitted containers completed."<<std::endl;
     }
 
     if(rank == 0)
@@ -412,9 +416,8 @@ void testConstructTypeSplitMPI()
                 //Allocating the space necessary
                 container.allocate_serial_buffer(nitems);
 
-                MPI_Recv(container.getSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
+                MPI_Recv(container.getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
                          status.MPI_TAG, MPI_COMM_WORLD, &status);
-
                 container.merge();
             }
         }
@@ -427,6 +430,8 @@ void testConstructTypeSplitMPI()
 
     }
 }
+
+
 
 void runTestParallelRedist(int nbSource, int nbReceptors)
 {
@@ -463,18 +468,18 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
         std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
         std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
         object->appendData(std::string("nbParticules"), data,
-                             DECAF_NOFLOAG, DECAF_SHARED,
+                             DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         object->appendData(std::string("pos"), array,
-                             DECAF_NOFLOAG, DECAF_PRIVATE,
+                             DECAF_NOFLAG, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-        component.process(container);
+        component.process(container, decaf::DECAF_REDIST_SOURCE);
     }
     else if(rank < nbSource + nbReceptors)
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
-        component.process(result);
+        component.process(result, decaf::DECAF_REDIST_DEST);
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
@@ -490,6 +495,67 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
     std::cout<<"-------------------------------------"<<std::endl;
 }
 
+void runTestParallelRedistOverlap(int nbSource, int nbReceptors)
+{
+    int size_world, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size_world);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if(size_world < nbSource || size_world < nbReceptors)
+    {
+        std::cout<<"ERROR : not enough rank for "<<nbSource<<" sources and "<<nbReceptors<<" receivers"<<std::endl;
+        return;
+    }
+
+    if(rank >= max(nbSource,nbReceptors))
+        return;
+
+    RedistCountMPI component(0, nbSource, 0, nbReceptors, MPI_COMM_WORLD);
+
+    std::cout<<"-------------------------------------"<<std::endl;
+    std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;
+    std::cout<<"-------------------------------------"<<std::endl;
+
+    if(rank < nbSource){
+        std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
+                   "and "<<nbReceptors<<" consummers"<<std::endl;
+
+        std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
+        int nbParticule = pos.size() / 3;
+        std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
+        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+
+
+        std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
+        std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
+        object->appendData(std::string("nbParticules"), data,
+                             DECAF_NOFLAG, DECAF_SHARED,
+                             DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
+        object->appendData(std::string("pos"), array,
+                             DECAF_NOFLAG, DECAF_PRIVATE,
+                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+
+        component.process(container, decaf::DECAF_REDIST_SOURCE);
+    }
+    else if(rank < nbReceptors)
+    {
+        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        component.process(result, decaf::DECAF_REDIST_DEST);
+
+        std::cout<<"==========================="<<std::endl;
+        std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
+        std::cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<std::endl;
+        result->printKeys();
+        printMap(*result);
+        std::cout<<"==========================="<<std::endl;
+        std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
+    }
+
+    std::cout<<"-------------------------------------"<<std::endl;
+    std::cout<<"Test with Redistribution component with overlapping completed"<<std::endl;
+    std::cout<<"-------------------------------------"<<std::endl;
+}
+
 
 
 
@@ -502,7 +568,7 @@ int main(int argc,
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if(rank == 0)
+    /*if(rank == 0)
     {
         simpleSerializeTest();
         testConstructType();
@@ -513,6 +579,8 @@ int main(int argc,
     testConstructTypeSplitMPI();
     MPI_Barrier(MPI_COMM_WORLD);
     runTestParallelRedist(3,2);
+    MPI_Barrier(MPI_COMM_WORLD);*/
+    runTestParallelRedistOverlap(3, 2);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 
