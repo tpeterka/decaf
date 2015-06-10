@@ -88,6 +88,8 @@ namespace decaf
       int global_item_rank_;    // Index of the first item in the global array
       int global_nb_items_;     // Number of items in the global array
 
+      std::shared_ptr<BaseData> transit; // Used then a source and destination are overlapping
+
 
 
   };
@@ -321,6 +323,8 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
         std::cout<<"Serializing the chunks..."<<std::endl;
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
+            // TODO : Check the rank for the destination.
+            // Not necessary to serialize if overlapping
             if(!splitChunks_.at(i)->serialize())
                 std::cout<<"ERROR : unable to serialize one object"<<std::endl;
         }
@@ -405,12 +409,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             //Sending to self, we simply copy the string from the out to in
             if(destList_.at(i) == rank_)
             {
-                data->allocate_serial_buffer(splitChunks_.at(i)->getOutSerialBufferSize());
-                memcpy(data->getInSerialBuffer(),
-                       splitChunks_.at(i)->getOutSerialBuffer(),
-                       splitChunks_.at(i)->getOutSerialBufferSize());
-                nbRecep--;  //We do one less send than expected
-                data->merge();
+                transit = splitChunks_.at(i);
             }
             else
             {
@@ -459,6 +458,16 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                 //receivedChunks_.push_back(newData);
             }
 
+        }
+
+        // Checking if we have something in transit
+        if(transit)
+        {
+            std::cout<<"Getting the transit data"<<std::endl;
+            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+
+            //We don't need it anymore. Cleaning for the next iteration
+            transit.reset();
         }
         std::cout<<"End of reception."<<std::endl;
     }

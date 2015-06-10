@@ -523,7 +523,7 @@ public:
 
         return result;
     }
-
+    //Todo : remove the code redundancy
     virtual bool merge(shared_ptr<BaseData> other)
     {
         std::shared_ptr<ConstructData> otherConstruct = std::dynamic_pointer_cast<ConstructData>(other);
@@ -587,6 +587,7 @@ public:
         return updateMetaData();
     }
 
+    //Todo : remove the code redundancy
     virtual bool merge(char* buffer, int size)
     {
         //serial_buffer_.getline(buffer, size);
