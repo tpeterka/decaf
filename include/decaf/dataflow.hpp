@@ -42,8 +42,8 @@ namespace decaf
     void run();
     void put(void* d, int count = 1);
     void* get(bool no_copy = false);
-    void put(std::shared_ptr<BaseData> data);
-    void get(std::shared_ptr<BaseData> data);
+    void put(std::shared_ptr<BaseData> data, TaskType role);
+    void get(std::shared_ptr<BaseData> data, TaskType role);
     int get_nitems(bool no_copy = false)
       { return(no_copy? data_->put_nitems() : data_->get_nitems(DECAF_CON)); }
     Data* data()           { return data_; }
@@ -238,11 +238,13 @@ Dataflow::put(void* d,                // source data
 
 void
 decaf::
-Dataflow::put(std::shared_ptr<BaseData> data)
+Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
 {
-    if(is_prod())
+    //if(is_prod())
+    if(role == DECAF_PROD)
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
-    if(is_dflow())
+    //if(is_dflow())
+    else if(role == DECAF_DFLOW)
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
 }
 
@@ -261,11 +263,13 @@ Dataflow::get(bool no_copy)
 
 void
 decaf::
-Dataflow::get(std::shared_ptr<BaseData> data)
+Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
 {
-    if(is_dflow())
+    //if(is_dflow())
+    if(role == DECAF_DFLOW)
         redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
-    if(is_con())
+    //if(is_con())
+    else if(role == DECAF_CON)
         redist_dflow_con_->process(data, DECAF_REDIST_DEST);
 }
 

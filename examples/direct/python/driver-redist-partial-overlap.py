@@ -24,8 +24,8 @@ w.add_node("con",  start_proc=2, nprocs=2, prod_func= ''   , con_func='con'    ,
 w.add_edge("prod", "con", start_proc=1, nprocs=2,            dflow_func='dflow', path=mod_path)
 
 # total number of time steps
-prod_nsteps  = 2
-con_nsteps   = 2
+prod_nsteps  = 1
+con_nsteps   = 1
 
 # --- do not edit below this point --
 

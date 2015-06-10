@@ -102,8 +102,8 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     commSources_(MPI_COMM_NULL),
     commDests_(MPI_COMM_NULL)
 {
-    std::cout<<"Generation of the Redist component with ["<<rankSource<<","
-            <<nbSources<<","<<rankDest<<","<<nbDests<<"]"<<std::endl;
+    std::cout<<"Generation of the Redist component with ["<<rankSource_<<","
+            <<nbSources_<<","<<rankDest_<<","<<nbDests_<<"]"<<std::endl;
     MPI_Group group, groupRedist, groupSource, groupDest;
     int range[3];
     MPI_Comm_group(world_comm, &group);
@@ -112,8 +112,9 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     MPI_Comm_rank(world_comm, &world_rank);
     MPI_Comm_size(world_comm, &world_size);
 
-    local_source_rank_ = 0;
-    local_dest_rank_ = rankDest_ - rankSource_;
+    local_source_rank_ = 0;                     //Rank of first source in communicator_
+    local_dest_rank_ = rankDest_ - rankSource_; //Rank of first destination in communucator_
+    std::cout<<"Local destination rank : "<<local_dest_rank_<<std::endl;
 
     //Generation of the group with all the sources and destination
     range[0] = rankSource;
@@ -194,6 +195,7 @@ RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
+        MPI_Barrier(commSources_);
         int nbItems = data->getNbItems();
         std::cout<<"Nombre d'Item local : "<<nbItems<<std::endl;
 
@@ -300,10 +302,13 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
                 currentNbItems = min(items_left, items_per_dest);
 
             split_ranges.push_back(currentNbItems);
-             summerizeDest_[current_rank] = 1;
+
+            //We won't send a message if we send to self
+            if(current_rank + local_dest_rank_ != rank_)
+                summerizeDest_[current_rank] = 1;
             // rankDest_ - rankSource_ is the rank of the first destination in the
             // component communicator (communicator_)
-             destList_.push_back(current_rank + ( rankDest_ -  rankSource_));
+            destList_.push_back(current_rank + local_dest_rank_);
             items_left -= currentNbItems;
             current_rank++;
         }
@@ -319,6 +324,10 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             if(!splitChunks_.at(i)->serialize())
                 std::cout<<"ERROR : unable to serialize one object"<<std::endl;
         }
+
+        // Everything is done, now we can clean the data.
+        // Data might be rewriten is producers and consummers are overlapping
+        data->purgeData();
     }
     else
         std::cout<<"Destination, nothing to do in the split"<<std::endl;
@@ -358,12 +367,14 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     int *destBuffer;
     if(role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) //Root of destination
     {
+        std::cout<<"Waiting for incomming array"<<std::endl;
         MPI_Status status;
         MPI_Probe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &status);
         if (status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
         {
+
             destBuffer = new int[ nbDests_];
-            MPI_Recv(destBuffer,  nbDests_, MPI_INT, local_source_rank_, 0, communicator_, MPI_STATUS_IGNORE);
+            MPI_Recv(destBuffer,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
             std::cout<<"Receiving the sum  ("<<rankDest_ -  rankSource_<<")"<<std::endl;
         }
 
@@ -379,6 +390,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         MPI_Scatter(destBuffer,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
 
         if(rank_ ==  local_dest_rank_) delete destBuffer;
+        std::cout<<"Scattering done."<<std::endl;
     }
 
     // At this point, each source knows where they have to send data
@@ -390,12 +402,26 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         std::cout<<"Sending the data from the sources"<<std::endl;
         for(unsigned int i = 0; i <  destList_.size(); i++)
         {
-            MPI_Request req;
-            reqs.push_back(req);
-            std::cout<<"Sending message of size : "<<splitChunks_.at(i)->getOutSerialBufferSize()<<std::endl;
-            MPI_Isend( splitChunks_.at(i)->getOutSerialBuffer(),
-                      splitChunks_.at(i)->getOutSerialBufferSize(),
-                      MPI_BYTE, destList_.at(i), MPI_DATA_TAG, communicator_, &reqs.back());
+            //Sending to self, we simply copy the string from the out to in
+            if(destList_.at(i) == rank_)
+            {
+                data->allocate_serial_buffer(splitChunks_.at(i)->getOutSerialBufferSize());
+                memcpy(data->getInSerialBuffer(),
+                       splitChunks_.at(i)->getOutSerialBuffer(),
+                       splitChunks_.at(i)->getOutSerialBufferSize());
+                nbRecep--;  //We do one less send than expected
+                data->merge();
+            }
+            else
+            {
+                MPI_Request req;
+                reqs.push_back(req);
+                std::cout<<"Sending message of size : "<<splitChunks_.at(i)->getOutSerialBufferSize()
+                        <<" to destination "<<destList_.at(i)<<std::endl;
+                MPI_Isend( splitChunks_.at(i)->getOutSerialBuffer(),
+                          splitChunks_.at(i)->getOutSerialBufferSize(),
+                          MPI_BYTE, destList_.at(i), MPI_DATA_TAG, communicator_, &reqs.back());
+            }
         }
         std::cout<<"End of sending messages"<<std::endl;
         // Cleaning the data here because synchronous send.
@@ -420,12 +446,12 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                 //Allocating the space necessary
                 data->allocate_serial_buffer(nitems);
                 //std::vector<char> buffer(nitems);
-
+                std::cout<<"Allocation done"<<std::endl;
                 MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
                          status.MPI_TAG, communicator_, &status);
                 //MPI_Recv(&buffer[0], nitems, MPI_BYTE, status.MPI_SOURCE,
                 //                         status.MPI_TAG, communicator_, &status);
-
+                std::cout<<"Message received"<<std::endl;
                 data->merge();
                 //data->merge(&buffer[0], nitems);
                 //A modifier

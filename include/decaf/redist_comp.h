@@ -85,6 +85,8 @@ namespace decaf
 void decaf::RedistComp::process(shared_ptr<BaseData> data, RedistRole role)
 {
     std::cout<<"========== PROCESS ==============="<<std::endl;
+    std::cout<<"Redist component ["<<rankSource_<<","
+            <<nbSources_<<","<<rankDest_<<","<<nbDests_<<"]"<<std::endl;
     computeGlobal(data, role);
 
     splitData(data, role);

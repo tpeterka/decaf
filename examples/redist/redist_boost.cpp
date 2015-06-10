@@ -112,7 +112,15 @@ public:
         }
     }
 
+
     virtual ~ParticuleType(){}
+
+    virtual void purgeData()
+    {
+        nbItems_ = 0;
+        splitable_ = false;
+        data_ = std::shared_ptr<void>();
+    }
 
     // Return true is some field in the data can be used to
     // compute a Z curve (should be a float* field)

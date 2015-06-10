@@ -679,6 +679,7 @@ public:
 
     virtual bool merge()
     {
+        std::cout<<"Size of the received string : "<<in_serial_buffer_.size()<<std::endl;
         boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
         boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
         boost::archive::binary_iarchive ia(sout);
@@ -771,6 +772,16 @@ public:
         oa << container_;
         s.flush();
 
+        std::cout<<"Size of the string after serialization : "<<out_serial_buffer_.size()<<std::endl;
+
+        std::cout<<"Test serialization : "<<std::endl;
+        std::string test_deserialize;
+        test_deserialize.resize(out_serial_buffer_.size());
+        memcpy(&test_deserialize[0], &out_serial_buffer_[0], out_serial_buffer_.size());
+        boost::iostreams::basic_array_source<char> device(test_deserialize.data(), test_deserialize.size());
+        boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
+        boost::archive::binary_iarchive ia(sout);
+        std::cout<<"Serialization test completed."<<std::endl;
         return true;
     }
 
@@ -782,23 +793,36 @@ public:
     //Prepare enough space in the serial buffer
     virtual void allocate_serial_buffer(int size)
     {
+        std::cout<<"Allocating for "<<size<<" bytes"<<std::endl;
         in_serial_buffer_.resize(size);
     }
 
     virtual char* getOutSerialBuffer(int* size)
     {
         *size = out_serial_buffer_.size(); //+1 for the \n caractere
-        return &(out_serial_buffer_[0]); //Dangerous if the string gets reallocated
+        return &out_serial_buffer_[0]; //Dangerous if the string gets reallocated
     }
-    virtual char* getOutSerialBuffer(){ return &(out_serial_buffer_[0]); }
-    virtual int getOutSerialBufferSize(){ out_serial_buffer_.size();}
+    virtual char* getOutSerialBuffer()
+    {
+        std::cout<<"Out serial called"<<std::endl;
+        char* buffer = &out_serial_buffer_[0];
+        std::cout<<"Adress : "<<&buffer<<std::endl;
+        return &out_serial_buffer_[0];
+    }
+    virtual int getOutSerialBufferSize(){ return out_serial_buffer_.size();}
 
     virtual char* getInSerialBuffer(int* size)
     {
         *size = in_serial_buffer_.size(); //+1 for the \n caractere
-        return &(in_serial_buffer_[0]); //Dangerous if the string gets reallocated
+        return &in_serial_buffer_[0]; //Dangerous if the string gets reallocated
     }
-    virtual char* getInSerialBuffer(){ return &(in_serial_buffer_[0]); }
+    virtual char* getInSerialBuffer()
+    {
+        std::cout<<"In serial called"<<std::endl;
+        char* buffer = &in_serial_buffer_[0];
+        std::cout<<"Adress : "<<&buffer<<std::endl;
+        return &in_serial_buffer_[0];
+    }
     virtual int getInSerialBufferSize(){ return in_serial_buffer_.size(); }
 
     /*virtual char* getSerialBuffer(int* size)
@@ -816,6 +840,16 @@ public:
     }
     virtual char* getSerialBuffer(){ return &(serial_buffer_[0]); }
     virtual int getSerialBufferSize(){ return serial_buffer_.size(); }*/
+
+    virtual void purgeData()
+    {
+        //To purge the data we just have to clean the map and reset the metadatas
+        container_->clear();
+        nbFields_ = 0;
+        nbItems_ = 0;
+        zcurve_ = false;
+        splitable_ = false;
+    }
 
     virtual bool setData(std::shared_ptr<void> data)
     {

@@ -62,7 +62,8 @@ extern "C"
       for (size_t i = 0; i < dataflows.size(); i++)
       {
         fprintf(stderr, "+ producing time step %d\n", t_current);
-        dataflows[i]->put(container);
+        dataflows[i]->put(container, DECAF_PROD);
+        std::cout<<"Prod Put done"<<std::endl;
       }
     }
   }
@@ -78,9 +79,11 @@ extern "C"
   {
     if (!((t_current + 1) % t_interval))
     {
+      std::cout<<"Con"<<std::endl;
       //int* cd    = (int*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
       std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-      dataflows[0]->get(container);
+      dataflows[0]->get(container, DECAF_CON);
+      std::cout<<"Get done"<<std::endl;
       std::shared_ptr<SimpleConstructData<int> > sum =
               dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
 
@@ -104,14 +107,16 @@ extern "C"
     {
         //Getting the data from the producer
         std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-        dataflows[i]->get(container);
+        dataflows[i]->get(container, DECAF_DFLOW);
+        std::cout<<"dflow get done"<<std::endl;
         std::shared_ptr<SimpleConstructData<int> > sum =
                 dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
 
         fprintf(stderr, "- dataflowing time step %d, sum = %d\n", t_current, sum->getData());
 
         //Forwarding the data to the consumers
-        dataflows[i]->put(container);
+        dataflows[i]->put(container, DECAF_DFLOW);
+        std::cout<<"dflow put done"<<std::endl;
     }
 
   }

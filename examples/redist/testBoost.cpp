@@ -495,32 +495,32 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
     std::cout<<"-------------------------------------"<<std::endl;
 }
 
-void runTestParallelRedistOverlap(int nbSource, int nbReceptors)
+void runTestParallelRedistOverlap(int startSource, int nbSource, int startReceptors, int nbReceptors)
 {
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if(size_world < nbSource || size_world < nbReceptors)
+    if(size_world < max(startSource + nbSource, startReceptors + nbReceptors))
     {
         std::cout<<"ERROR : not enough rank for "<<nbSource<<" sources and "<<nbReceptors<<" receivers"<<std::endl;
         return;
     }
 
-    if(rank >= max(nbSource,nbReceptors))
+    if(rank >= max(startSource + nbSource, startReceptors + nbReceptors))
         return;
 
-    RedistCountMPI component(0, nbSource, 0, nbReceptors, MPI_COMM_WORLD);
+    RedistCountMPI *component = new RedistCountMPI(startSource, nbSource, startReceptors, nbReceptors, MPI_COMM_WORLD);
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;
     std::cout<<"-------------------------------------"<<std::endl;
 
-    if(rank < nbSource){
+    if(rank >= startSource && rank < startSource + nbSource){
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
-        std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
+        /*std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
         int nbParticule = pos.size() / 3;
         std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
@@ -533,23 +533,33 @@ void runTestParallelRedistOverlap(int nbSource, int nbReceptors)
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         object->appendData(std::string("pos"), array,
                              DECAF_NOFLAG, DECAF_PRIVATE,
-                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);*/
 
-        component.process(container, decaf::DECAF_REDIST_SOURCE);
+        std::shared_ptr<SimpleConstructData<int> > data  =
+                std::make_shared<SimpleConstructData<int> >( 1 );
+
+        std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
+        container->appendData(std::string("t_current"), data,
+                             DECAF_NOFLAG, DECAF_PRIVATE,
+                             DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+
+        component->process(container, decaf::DECAF_REDIST_SOURCE);
     }
-    else if(rank < nbReceptors)
+    if(rank >= startReceptors && rank < startReceptors + nbReceptors)
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
-        component.process(result, decaf::DECAF_REDIST_DEST);
+        component->process(result, decaf::DECAF_REDIST_DEST);
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
         std::cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<std::endl;
         result->printKeys();
-        printMap(*result);
+        //printMap(*result);
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
     }
+
+    delete component;
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component with overlapping completed"<<std::endl;
@@ -580,7 +590,7 @@ int main(int argc,
     MPI_Barrier(MPI_COMM_WORLD);
     runTestParallelRedist(3,2);
     MPI_Barrier(MPI_COMM_WORLD);*/
-    runTestParallelRedistOverlap(3, 2);
+    runTestParallelRedistOverlap(0, 4, 1, 2);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 

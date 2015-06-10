@@ -85,6 +85,9 @@ namespace  decaf {
     // Update the datamap required to generate the datatype
     virtual bool setData(std::shared_ptr<void> data) = 0;
 
+    //Reset the data so the data model is empty
+    virtual void purgeData() = 0;
+
     // Add an element to the data object. If possible it is merged with the current data
     // Otherwise it is pushed back to the segment data
     // WARNING :  this version will make a copy of the data.
