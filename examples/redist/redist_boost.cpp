@@ -132,11 +132,20 @@ public:
 
     // Extract the field containing the positions to compute
     // the ZCurve.
-    virtual const float* getZCurveKey()
+    virtual const float* getZCurveKey(int *nbItems)
     {
         if(p == NULL) return NULL;
 
+        *nbItems = nbItems_;
         return p->x;
+    }
+
+    virtual bool hasZCurveIndex(){ return false; }
+
+    virtual const unsigned int* getZCurveIndex(int *nbItems)
+    {
+        *nbItems = nbItems_;
+        return NULL;
     }
 
     // Return true if the data contains more than 1 item

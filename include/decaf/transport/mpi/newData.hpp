@@ -46,7 +46,15 @@ namespace  decaf {
 
     // Extract the field containing the positions to compute
     // the ZCurve.
-    virtual const float* getZCurveKey() = 0;
+    virtual const float* getZCurveKey(int *nbItems) = 0;
+
+    // Return true is some field in the data can be used to
+    // compute a Z curve (should be a float* field)
+    virtual bool hasZCurveIndex() = 0;
+
+    // Extract the field containing the positions to compute
+    // the ZCurve.
+    virtual const unsigned int* getZCurveIndex(int *nbItems) = 0;
 
     // Return true if the data contains more than 1 item
     virtual bool isSplitable() = 0;

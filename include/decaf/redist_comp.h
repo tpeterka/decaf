@@ -27,6 +27,11 @@ namespace decaf
     DECAF_REDIST_DEST,
   };
 
+  enum mpiTags {
+      MPI_METADATA_TAG = 1,
+      MPI_DATA_TAG,
+  };
+
   // This class defines the common interface for the redistribution component (MxN)
   // This interface is independant from the datatype or the transport
   // implementation. Specialized components will implement the redistribution

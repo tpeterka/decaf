@@ -10,8 +10,8 @@
 //
 //--------------------------------------------------------------------------
 
-#ifndef DECAF_REDIST_COUNT_MPI_HPP
-#define DECAF_REDIST_COUNT_MPI_HPP
+#ifndef DECAF_REDIST_ZCURVE_MPI_HPP
+#define DECAF_REDIST_ZCURVE_MPI_HPP
 
 #include <iostream>
 #include <assert.h>
@@ -22,17 +22,88 @@
 namespace decaf
 {
 
-  class RedistCountMPI : public RedistComp
+unsigned int Morton_3D_Encode_10bit( unsigned int index1, unsigned int index2, unsigned int index3 )
+{ // pack 3 10-bit indices into a 30-bit Morton code
+  index1 &= 0x000003ff;
+  index2 &= 0x000003ff;
+  index3 &= 0x000003ff;
+  index1 |= ( index1 << 16 );
+  index2 |= ( index2 << 16 );
+  index3 |= ( index3 << 16 );
+  index1 &= 0x030000ff;
+  index2 &= 0x030000ff;
+  index3 &= 0x030000ff;
+  index1 |= ( index1 << 8 );
+  index2 |= ( index2 << 8 );
+  index3 |= ( index3 << 8 );
+  index1 &= 0x0300f00f;
+  index2 &= 0x0300f00f;
+  index3 &= 0x0300f00f;
+  index1 |= ( index1 << 4 );
+  index2 |= ( index2 << 4 );
+  index3 |= ( index3 << 4 );
+  index1 &= 0x030c30c3;
+  index2 &= 0x030c30c3;
+  index3 &= 0x030c30c3;
+  index1 |= ( index1 << 2 );
+  index2 |= ( index2 << 2 );
+  index3 |= ( index3 << 2 );
+  index1 &= 0x09249249;
+  index2 &= 0x09249249;
+  index3 &= 0x09249249;
+  return( index1 | ( index2 << 1 ) | ( index3 << 2 ) );
+}
+
+void Morton_3D_Decode_10bit( const unsigned int morton,
+                                 unsigned int& index1, unsigned int& index2, unsigned int& index3 )
+    { // unpack 3 10-bit indices from a 30-bit Morton code
+      unsigned int value1 = morton;
+      unsigned int value2 = ( value1 >> 1 );
+      unsigned int value3 = ( value1 >> 2 );
+      value1 &= 0x09249249;
+      value2 &= 0x09249249;
+      value3 &= 0x09249249;
+      value1 |= ( value1 >> 2 );
+      value2 |= ( value2 >> 2 );
+      value3 |= ( value3 >> 2 );
+      value1 &= 0x030c30c3;
+      value2 &= 0x030c30c3;
+      value3 &= 0x030c30c3;
+      value1 |= ( value1 >> 4 );
+      value2 |= ( value2 >> 4 );
+      value3 |= ( value3 >> 4 );
+      value1 &= 0x0300f00f;
+      value2 &= 0x0300f00f;
+      value3 &= 0x0300f00f;
+      value1 |= ( value1 >> 8 );
+      value2 |= ( value2 >> 8 );
+      value3 |= ( value3 >> 8 );
+      value1 &= 0x030000ff;
+      value2 &= 0x030000ff;
+      value3 &= 0x030000ff;
+      value1 |= ( value1 >> 16 );
+      value2 |= ( value2 >> 16 );
+      value3 |= ( value3 >> 16 );
+      value1 &= 0x000003ff;
+      value2 &= 0x000003ff;
+      value3 &= 0x000003ff;
+      index1 = value1;
+      index2 = value2;
+      index3 = value3;
+    }
+
+
+  class RedistZCurveMPI : public RedistComp
   {
   public:
-      RedistCountMPI() :
+      RedistZCurveMPI() :
           communicator_(MPI_COMM_NULL),
           commSources_(MPI_COMM_NULL),
           commDests_(MPI_COMM_NULL) {}
-      RedistCountMPI(int rankSource, int nbSources,
+      RedistZCurveMPI(int rankSource, int nbSources,
                      int rankDest, int nbDests,
                      CommHandle communicator);
-      ~RedistCountMPI();
+      ~RedistZCurveMPI();
 
   protected:
 
@@ -77,6 +148,11 @@ namespace decaf
 
       std::shared_ptr<BaseData> transit; // Used then a source and destination are overlapping
 
+      bool bBBox_;
+      std::vector<float> bBox_;
+      std::vector<int> slices_;
+      int indexes_per_dest;
+      int rankOffset;
 
 
   };
@@ -84,12 +160,15 @@ namespace decaf
 } // namespace
 
 decaf::
-RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
-                               int rankDest, int nbDests, CommHandle world_comm) :
+RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
+                               int rankDest, int nbDests, CommHandle world_comm,
+                                 bBox = std::vector<float>(), slices = std::vector<int>() ) :
     RedistComp(rankSource, nbSources, rankDest, nbDests),
     communicator_(MPI_COMM_NULL),
     commSources_(MPI_COMM_NULL),
-    commDests_(MPI_COMM_NULL)
+    commDests_(MPI_COMM_NULL),
+    bBBox_(false),
+    bBox_(6)
 {
     std::cout<<"Generation of the Redist component with ["<<rankSource_<<","
             <<nbSources_<<","<<rankDest_<<","<<nbDests_<<"]"<<std::endl;
@@ -152,10 +231,33 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     MPI_Group_free(&group);
     MPI_Group_free(&groupRedist);
 
+    if(slices_.size() != 3)
+    {
+        std::cout<<"No slices given, will use 8,8,8"<<std::endl;
+        slices_ = { 8,8,8 };
+    }
+    else
+    {
+        for(unsigned int i = 0; i < 3; i++)
+        {
+            if(slices_.at(i) < 1)
+            {
+                std::cout<<" ERROR : slices can't be inferior to 1. Switching the value to 1."<<std::endl;
+                slices_.at(i) = 1;
+            }
+        }
+    }
+
+    //Computing the index ranges per destination
+    //We can use -1 because the constructor makes sure that all items of slices_ are > 0
+    int maxIndex = Morton_3D_Encode_10bit(slices_[0]-1, slices_[1]-1, slices_[2]-1);
+    int indexes_per_dest = maxIndex /  nbDests_;
+
+    int rankOffset = maxIndex %  nbDests_;
 }
 
 decaf::
-RedistCountMPI::~RedistCountMPI()
+RedistZCurveMPI::~RedistZCurveMPI()
 {
   if (communicator_ != MPI_COMM_NULL)
     MPI_Comm_free(&communicator_);
@@ -167,7 +269,7 @@ RedistCountMPI::~RedistCountMPI()
 
 /*void
 decaf::
-RedistCountMPI::put(std::shared_ptr<BaseData> data, TaskType task_type)
+RedistZCurveMPI::put(std::shared_ptr<BaseData> data, TaskType task_type)
 {
     computeGlobal(data, DECAF_REDIST_SOURCE);
 
@@ -180,81 +282,70 @@ RedistCountMPI::put(std::shared_ptr<BaseData> data, TaskType task_type)
 
 void
 decaf::
-RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
+RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
-        MPI_Barrier(commSources_);
-        int nbItems = data->getNbItems();
-        std::cout<<"Nombre d'Item local : "<<nbItems<<std::endl;
+        // If we don't have the global bounding box, we compute it once
+        if(!bBBox_)
+        {
+            if(!data->hasZCurveKey())
+            {
+                std::cout<<"ERROR : Trying to redistribute the data with respect to a ZCurve "
+                        <<"but no ZCurveKey (position) is available in the data. Abording."<<std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 0);
+            }
 
-        //Computing the index of the local first item in the global array of data
-        MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_INT,
-                 MPI_SUM, commSources_);
-        global_item_rank_ -= nbItems;   // Process rank 0 has the item 0,
-                                        // rank 1 has the item nbItems(rank 0)
-                                        // and so on
-        std::cout<<"Local index of first item : "<<global_item_rank_<<std::endl;
+            int nbParticules; // The size of the array is 3*nbParticules
+            const float* key = data->getZCurveKey(&nbParticules);
+            float localBBox[6];
 
-        //Compute the number of items in the global array
-        MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
-                      MPI_SUM, commSources_);
+            // Computing the local bounding box
+            if(nbParticules > 0)
+            {
+                for(unsigned int i = 0; i < 6; i++)
+                    localBBox[i] = key[i % 3];
 
-        std::cout<<"Total number of items : "<<global_nb_items_<<std::endl;
+                for(unsigned int i = 1; i < nbParticules; i++)
+                {
+                    for(unsigned int j = 0; j < 3; j++)
+                    {
+                        if(key[i*3+j] < localBBox[j])
+                            localBBox[j] = key[i*3+j];
+                        if(key[i*3+j] > localBBox[3+j])
+                            localBBox[3+j] = key[i*3+j];
+                    }
+                }
+
+                //Aggregating the bounding boxes to get the global one
+                MPI_Allreduce(localBBox, bBox_, 3, MPI_FLOAT, MPI_MIN, commSources_);
+                MPI_Allreduce(localBBox+3, bBox_+3, 3, MPI_FLOAT, MPI_MAX, commSources_);
+
+                std::cout<<"The global bounding box is : ["<<localBBox[0]<<","<<localBBox[1]<<","<<localBBox[2]<<"]"
+                        <<"["<<localBBox[3]<<","<<localBBox[4]<<","<<localBBox[5]<<"]"<<std::endl;
+
+                bBBox_ = true;
+            }
+            else
+            {
+                std::cout<<"ERROR : no particules present on one process. Case not handled. Abording"<<std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 0);
+            }
+        }
     }
-    std::cout<<"Redistributing with the rank "<<rank_<<std::endl;
-    std::cout<<"Rank source : "<<rankSource_<<", Rank Destination : "<<rankDest_<<std::endl;
-    if(role == DECAF_REDIST_SOURCE)
-        std::cout<<"I'm a source in the redistribution"<<std::endl;
-    if(role == DECAF_REDIST_DEST)
-        std::cout<<"I'm a dest in the redistribution"<<std::endl;
-
 }
 
 void
 decaf::
-RedistCountMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
+RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
 {
     std::cout<<"Spliting with the rank "<<rank_<<std::endl;
     if(role == DECAF_REDIST_SOURCE){
-        // We have the items global_item_rank to global_item_rank_ + data->getNbItems()
-        // We have to split global_nb_items_ into nbDest in total
-
-        //Computing the number of elements to split
-        int items_per_dest = global_nb_items_ /  nbDests_;
-
-        int rankOffset = global_nb_items_ %  nbDests_;
-
-        //debug
-        //std::cout<<"Ranks from 0 to "<<rankOffset-1<<" will receive "<< items_per_dest+1 <<
-        //           " items. Ranks from "<<rankOffset<< " to "<<  nbDests_-1<<
-        //           " will reiceive" <<items_per_dest<< " items"<< std::endl;
-
-        //Computing how to split the data
-
-        //Compute the destination rank of the first item
-        int first_rank;
-        if( rankOffset == 0){ //  Case where nbDest divide the total number of item
-            first_rank = global_item_rank_ / items_per_dest;
-        }
-        else
-        {
-            // The first ranks have items_per_dest+1 items
-            first_rank = global_item_rank_ / (items_per_dest+1);
-
-            //If we starts
-            if(first_rank >= rankOffset)
-            {
-                first_rank = rankOffset +
-                        (global_item_rank_ - rankOffset*(items_per_dest+1)) / items_per_dest;
-            }
-        }
-        std::cout<<"First rank to send data : "<<first_rank<<std::endl;
 
         //Compute the split vector and the destination ranks
-        std::vector<int> split_ranges;
-        int items_left = data->getNbItems();
-        int current_rank = first_rank;
+        std::vector<std::vector<int> > split_ranges = std::vector<std::vector<int> >( nbDests_);
+        int nbParticules;
+        const float* pos = data->getZCurveKey(&nbParticules);
 
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
@@ -262,45 +353,46 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
          summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 
-        while(items_left != 0)
+
+        for(int i = 0; i < nbParticules; i++)
         {
-            int currentNbItems;
-            //We may have to complete the rank
-            if(current_rank == first_rank){
-                int global_item_firstrank;
-                if(first_rank < rankOffset)
-                {
-                    global_item_firstrank = first_rank * (items_per_dest + 1);
-                    currentNbItems = min(items_left,
-                                         global_item_firstrank + items_per_dest + 1 - global_item_rank_);
-                }
-                else
-                {
-                    global_item_firstrank = rankOffset * (items_per_dest + 1) +
-                            (first_rank - rankOffset) * items_per_dest ;
-                    currentNbItems = min(items_left,
-                                     global_item_firstrank + items_per_dest - global_item_rank_);
+            //Computing the cell of the particule
+            int x = (pos[3*i] - bBox_[0]) / (bBox_[3] - bBox_[0]);
+            int y = (pos[3*i+1] - bBox_[1]) / (bBox_[4] - bBox_[1]);
+            int z = (pos[3*i+1] - bBox_[2]) / (bBox_[5] - bBox_[2]);
 
-                }
+            //Safety in case of wrong rounding
+            if(x < 0) x = 0;
+            if(y < 0) y = 0;
+            if(z < 0) z = 0;
+            if(x >= slices_[0]) x = slices_[0] - 1;
+            if(y >= slices_[1]) y = slices_[1] - 1;
+            if(z >= slices_[2]) z = slices_[2] - 1;
 
+            unsigned int morton = Morton_3D_Encode_10bit(x,y,z);
 
+            //Computing the destination rank
+            int destination;
+            if(morton < rankOffset * (indexes_per_dest+1))
+            {
+                destination = morton / (indexes_per_dest+1);
             }
-            else if(current_rank < rankOffset)
-                currentNbItems = min(items_left, items_per_dest + 1);
             else
-                currentNbItems = min(items_left, items_per_dest);
+            {
+                morton -= rankOffset * (indexes_per_dest+1);
+                destination = rankOffset + morton / indexes_per_dest;
+            }
 
-            split_ranges.push_back(currentNbItems);
+            split_ranges[destination].push_back(i);
 
             //We won't send a message if we send to self
-            if(current_rank + local_dest_rank_ != rank_)
+            if(destination + local_dest_rank_ != rank_)
                 summerizeDest_[current_rank] = 1;
-            // rankDest_ - rankSource_ is the rank of the first destination in the
-            // component communicator (communicator_)
-            destList_.push_back(current_rank + local_dest_rank_);
-            items_left -= currentNbItems;
-            current_rank++;
+
+            destList_.push_back(destination + local_dest_rank_);
+
         }
+
         std::cout<<"Data will be split in "<<split_ranges.size()<<" chunks"<<std::endl;
         std::cout<<"Size of Destinaton list :  "<<destList_.size()<<" chunks"<<std::endl;
 
@@ -328,7 +420,7 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
 
 void
 decaf::
-RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
+RedistZCurveMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
     std::cout<<"Redistributing with the rank "<<rank_<<std::endl;
     // Sum the number of emission for each destination
@@ -463,7 +555,7 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 // Merge the chunks from the vector receivedChunks into one single Data.
 std::shared_ptr<decaf::BaseData>
 decaf::
-RedistCountMPI::merge(RedistRole role)
+RedistZCurveMPI::merge(RedistRole role)
 {
     return std::shared_ptr<BaseData>();
 }

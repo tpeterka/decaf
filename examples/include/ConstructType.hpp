@@ -31,9 +31,10 @@
 using namespace decaf;
 
 enum ConstructTypeFlag {
-    DECAF_NOFLAG = 0x0,    // No specific information on the data field
+    DECAF_NOFLAG = 0x0,     // No specific information on the data field
     DECAF_NBITEM = 0x1,     // Field represents the number of item in the collection
-    DECAF_ZCURVEKEY = 0x2,  // Field can be used as a key for the ZCurve
+    DECAF_ZCURVEKEY = 0x2,  // Field that can be used as a key for the ZCurve (position)
+    DECAF_ZCURVEINDEX = 0x4 // Field that can be used as the index for the ZCurve (hilbert code)
 };
 
 enum ConstructTypeScope {
@@ -386,7 +387,8 @@ typedef std::tuple<ConstructTypeFlag, ConstructTypeScope,
 class ConstructData  : public BaseData {
 
 public:
-    ConstructData() : BaseData(), nbFields_(0), zcurve_(false), zcurveField_(NULL)
+    ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false), zCurveIndex_(NULL),
+        bZCurveKey_(false), zCurveKey_(NULL)
     {
         container_ = std::make_shared<std::map<std::string, datafield> >();
         data_ = static_pointer_cast<void>(container_);
@@ -400,32 +402,11 @@ public:
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
                     ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT)
     {
-        // Checking that we can insert this data and keep spliting the data after
-        // If we already have fields with several items and we insert a new field
-        // with another number of items, we can't split automatically
-        if(nbItems_ > 1 && data->getNbItems() > 1 && nbItems_ != data->getNbItems())
-        {
-            std::cout<<"ERROR : can add new field with "<<data->getNbItems()<<" items."
-                    <<" The current map has "<<nbItems_<<" items. The number of items "
-                    <<"of the new filed should be 1 or "<<nbItems_<<std::endl;
-            return false;
-        }
-        else if(nbItems_ == 0 || data->getNbItems() > 1)// We still update the number of items
-            nbItems_ = data->getNbItems();
-
-
         std::pair<std::map<std::string, datafield>::iterator,bool> ret;
         datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
         ret = container_->insert(std::pair<std::string, datafield>(name, newEntry));
-        if(ret.second){
-            nbFields_++;
-            if(flags == DECAF_ZCURVEKEY)
-            {
-                zcurve_ = true;
-                zcurveField_ = data;
-            }
-        }
-        return ret.second;
+
+        return ret.second && updateMetaData();
     }
 
     //int getNbItems(){ return nbItems_; }
@@ -445,19 +426,39 @@ public:
 
     }
 
-    virtual bool hasZCurveKey(){ return zcurve_; }
+    virtual bool hasZCurveKey(){ return bZCurveKey_; }
 
-    virtual const float* getZCurveKey()
+    virtual const float* getZCurveKey(int *nbItems)
     {
-        if(!zcurve_ || zcurveField_ == NULL)
+        if(!bZCurveKey_ || zCurveKey_)
             return NULL;
 
-        std::shared_ptr<ArrayConstructData<float> > field = dynamic_pointer_cast<ArrayConstructData<float> >(zcurveField_);
+        std::shared_ptr<ArrayConstructData<float> > field =
+                dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
         if(!field){
             std::cout<<"ERROR : The field with the ZCURVE flag is not of type ArrayConstructData<float>"<<std::endl;
             return NULL;
         }
 
+        *nbItems = field->getNbItems();
+        return &(field->getArray()[0]);
+    }
+
+    virtual bool hasZCurveIndex(){ return bZCurveIndex_; }
+
+    virtual const unsigned int* getZCurveIndex(int *nbItems)
+    {
+        if(!bZCurveIndex_ || zCurveIndex_)
+            return NULL;
+
+        std::shared_ptr<ArrayConstructData<unsigned int> > field =
+                dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
+        if(!field){
+            std::cout<<"ERROR : The field with the ZCURVE flag is not of type ArrayConstructData<float>"<<std::endl;
+            return NULL;
+        }
+
+        *nbItems = field->getNbItems();
         return &(field->getArray()[0]);
     }
 
@@ -541,8 +542,10 @@ public:
             data_ = static_pointer_cast<void>(container_);
             nbItems_ = otherConstruct->nbItems_;
             nbFields_ = otherConstruct->nbFields_;
-            zcurve_ = otherConstruct->zcurve_;
-            zcurveField_ = otherConstruct->zcurveField_;
+            bZCurveKey_ = otherConstruct->bZCurveKey_;
+            zCurveKey_ = otherConstruct->zCurveKey_;
+            bZCurveIndex_ = otherConstruct->bZCurveIndex_;
+            zCurveIndex_ = otherConstruct->zCurveIndex_;
         }
         else
         {
@@ -606,9 +609,10 @@ public:
 
             data_ = std::static_pointer_cast<void>(container_);
 
-            nbFields_ = container_->size();
+            /*nbFields_ = container_->size();
             splitable_ = false;
-            zcurve_ = false;
+            bZCurveKey_ = false;
+            bZCurveIndex_ = false;
 
             //Going through the map to check the meta data
             for(std::map<std::string, datafield>::iterator it = container_->begin();
@@ -626,10 +630,16 @@ public:
 
                 if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
                 {
-                    zcurve_ = true;
-                    zcurveField_ = std::get<3>(it->second);
+                    bZCurveKey_ = true;
+                    zCurveKey_ = std::get<3>(it->second);
                 }
-            }
+
+                if(std::get<0>(it->second) == DECAF_ZCURVEINDEX)
+                {
+                    bZCurveIndex_ = true;
+                    zCurveIndex_ = std::get<3>(it->second);
+                }
+            }*/
         }
         else
         {
@@ -691,9 +701,10 @@ public:
 
             data_ = std::static_pointer_cast<void>(container_);
 
-            nbFields_ = container_->size();
+            /*nbFields_ = container_->size();
             splitable_ = false;
-            zcurve_ = false;
+            bZCurveKey_ = false;
+            bZCurveIndex_ = false;
 
             //Going through the map to check the meta data
             for(std::map<std::string, datafield>::iterator it = container_->begin();
@@ -708,13 +719,7 @@ public:
                 }
                 else if(nbItems_ == 0 || std::get<2>(it->second) > 1)// We still update the number of items
                     nbItems_ = std::get<2>(it->second);
-
-                if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
-                {
-                    zcurve_ = true;
-                    zcurveField_ = std::get<3>(it->second);
-                }
-            }
+            }*/
         }
         else
         {
@@ -848,7 +853,10 @@ public:
         container_->clear();
         nbFields_ = 0;
         nbItems_ = 0;
-        zcurve_ = false;
+        bZCurveKey_ = false;
+        bZCurveIndex_ = false;
+        zCurveKey_.reset();
+        zCurveIndex_.reset();
         splitable_ = false;
     }
 
@@ -864,8 +872,8 @@ public:
 
         //Checking is the map is valid and updating the informations
         int nbItems = 0, nbFields = 0;
-        bool zcurve;
-        std::shared_ptr<BaseConstructData> zcurveField;
+        bool bZCurveKey = false, bZCurveIndex = false;
+        std::shared_ptr<BaseConstructData> zCurveKey, zCurveIndex;
         for(std::map<std::string, datafield>::iterator it = container->begin();
             it != container->end(); it++)
         {
@@ -884,9 +892,16 @@ public:
 
             if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
             {
-                zcurve = true;
-                zcurveField = std::get<3>(it->second);
+                bZCurveKey = true;
+                zCurveKey = std::get<3>(it->second);
             }
+
+            if(std::get<0>(it->second) == DECAF_ZCURVEINDEX)
+            {
+                bZCurveIndex = true;
+                zCurveIndex = std::get<3>(it->second);
+            }
+
             //The field is already in the map, we don't have to test the insert
             nbFields++;
         }
@@ -896,8 +911,10 @@ public:
         container_ = container;
         nbItems_ = nbItems;
         nbFields_ = nbFields;
-        zcurve_ = zcurve;
-        zcurveField_ = zcurveField;
+        bZCurveKey_ = bZCurveKey;
+        bZCurveIndex_ = bZCurveIndex;
+        zCurveKey_ = zCurveKey;
+        zCurveIndex_ = zCurveIndex;
 
         return true;
 
@@ -923,8 +940,11 @@ protected:
     //std::map<std::string, datafield> *container_;
     //int nbItems_;
     int nbFields_;
-    bool zcurve_;
-    std::shared_ptr<BaseConstructData> zcurveField_;
+    bool bZCurveKey_;
+    bool bZCurveIndex_;
+    std::shared_ptr<BaseConstructData> zCurveKey_;
+    std::shared_ptr<BaseConstructData> zCurveIndex_;
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
@@ -950,7 +970,8 @@ bool ConstructData::updateMetaData()
     //Checking is the map is valid and updating the informations
     nbItems_ = 0;
     nbFields_ = 0;
-    zcurve_ = false;
+    bZCurveKey_ = false;
+    bZCurveIndex_ = false;
 
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
@@ -970,8 +991,14 @@ bool ConstructData::updateMetaData()
 
         if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
         {
-            zcurve_ = true;
-            zcurveField_ = std::get<3>(it->second);
+            bZCurveKey_ = true;
+            zCurveKey_ = std::get<3>(it->second);
+        }
+
+        if(std::get<0>(it->second) == DECAF_ZCURVEINDEX)
+        {
+            bZCurveIndex_ = true;
+            zCurveIndex_ = std::get<3>(it->second);
         }
         //The field is already in the map, we don't have to test the insert
         nbFields_++;
