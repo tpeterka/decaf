@@ -33,11 +33,14 @@ if(Boost_FOUND)
     add_executable              (redistboost redist_boost.cpp)
     target_link_libraries       (redistboost     ${libraries} ${Boost_LIBRARIES})
 
-    install(TARGETS testboost redistboost
+    add_executable              (testzcurve testZCurve.cpp)
+    target_link_libraries       (testzcurve     ${libraries} ${Boost_LIBRARIES})
+
+    install(TARGETS testboost redistboost testzcurve
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )
-    install(FILES TESTBOOST REDISTBOOST
+    install(FILES TESTBOOST REDISTBOOST TESTZCURVE
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )

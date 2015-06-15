@@ -102,7 +102,9 @@ void Morton_3D_Decode_10bit( const unsigned int morton,
           commDests_(MPI_COMM_NULL) {}
       RedistZCurveMPI(int rankSource, int nbSources,
                      int rankDest, int nbDests,
-                     CommHandle communicator);
+                     CommHandle communicator,
+                     std::vector<float> bBox = std::vector<float>(),
+                     std::vector<int> slices = std::vector<int>());
       ~RedistZCurveMPI();
 
   protected:
@@ -151,8 +153,9 @@ void Morton_3D_Decode_10bit( const unsigned int morton,
       bool bBBox_;
       std::vector<float> bBox_;
       std::vector<int> slices_;
-      int indexes_per_dest;
-      int rankOffset;
+      std::vector<float> slicesDelta_;
+      int indexes_per_dest_;
+      int rankOffset_;
 
 
   };
@@ -162,13 +165,15 @@ void Morton_3D_Decode_10bit( const unsigned int morton,
 decaf::
 RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
                                int rankDest, int nbDests, CommHandle world_comm,
-                                 bBox = std::vector<float>(), slices = std::vector<int>() ) :
+                                 std::vector<float> bBox,
+                                 std::vector<int> slices ) :
     RedistComp(rankSource, nbSources, rankDest, nbDests),
     communicator_(MPI_COMM_NULL),
     commSources_(MPI_COMM_NULL),
     commDests_(MPI_COMM_NULL),
     bBBox_(false),
-    bBox_(6)
+    bBox_(bBox),
+    slices_(slices)
 {
     std::cout<<"Generation of the Redist component with ["<<rankSource_<<","
             <<nbSources_<<","<<rankDest_<<","<<nbDests_<<"]"<<std::endl;
@@ -251,9 +256,17 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
     //Computing the index ranges per destination
     //We can use -1 because the constructor makes sure that all items of slices_ are > 0
     int maxIndex = Morton_3D_Encode_10bit(slices_[0]-1, slices_[1]-1, slices_[2]-1);
-    int indexes_per_dest = maxIndex /  nbDests_;
+    indexes_per_dest_ = maxIndex /  nbDests_;
+    rankOffset_ = maxIndex %  nbDests_;
 
-    int rankOffset = maxIndex %  nbDests_;
+    // Checking the bounding box and updating the slicesDelta if possible
+    if(bBox_.size() == 6)
+    {
+        slicesDelta_.resize(3);
+        slicesDelta_[0] = (bBox_[3] - bBox_[0]) / (float)(slices_[0]);
+        slicesDelta_[1] = (bBox_[4] - bBox_[1]) / (float)(slices_[1]);
+        slicesDelta_[2] = (bBox_[5] - bBox_[2]) / (float)(slices_[2]);
+    }
 }
 
 decaf::
@@ -318,8 +331,8 @@ RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
                 }
 
                 //Aggregating the bounding boxes to get the global one
-                MPI_Allreduce(localBBox, bBox_, 3, MPI_FLOAT, MPI_MIN, commSources_);
-                MPI_Allreduce(localBBox+3, bBox_+3, 3, MPI_FLOAT, MPI_MAX, commSources_);
+                MPI_Allreduce(&(localBBox[0]), &(bBox_[0]), 3, MPI_FLOAT, MPI_MIN, commSources_);
+                MPI_Allreduce(&(localBBox[0])+3, &(bBox_[0])+3, 3, MPI_FLOAT, MPI_MAX, commSources_);
 
                 std::cout<<"The global bounding box is : ["<<localBBox[0]<<","<<localBBox[1]<<","<<localBBox[2]<<"]"
                         <<"["<<localBBox[3]<<","<<localBBox[4]<<","<<localBBox[5]<<"]"<<std::endl;
@@ -357,9 +370,9 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
         for(int i = 0; i < nbParticules; i++)
         {
             //Computing the cell of the particule
-            int x = (pos[3*i] - bBox_[0]) / (bBox_[3] - bBox_[0]);
-            int y = (pos[3*i+1] - bBox_[1]) / (bBox_[4] - bBox_[1]);
-            int z = (pos[3*i+1] - bBox_[2]) / (bBox_[5] - bBox_[2]);
+            int x = (pos[3*i] - bBox_[0]) / slicesDelta_[0];
+            int y = (pos[3*i+1] - bBox_[1]) / slicesDelta_[1];
+            int z = (pos[3*i+1] - bBox_[2]) / slicesDelta_[2];
 
             //Safety in case of wrong rounding
             if(x < 0) x = 0;
@@ -373,21 +386,21 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
 
             //Computing the destination rank
             int destination;
-            if(morton < rankOffset * (indexes_per_dest+1))
+            if(morton < rankOffset_ * (indexes_per_dest_+1))
             {
-                destination = morton / (indexes_per_dest+1);
+                destination = morton / (indexes_per_dest_+1);
             }
             else
             {
-                morton -= rankOffset * (indexes_per_dest+1);
-                destination = rankOffset + morton / indexes_per_dest;
+                morton -= rankOffset_ * (indexes_per_dest_+1);
+                destination = rankOffset_ + morton / indexes_per_dest_;
             }
 
             split_ranges[destination].push_back(i);
 
             //We won't send a message if we send to self
             if(destination + local_dest_rank_ != rank_)
-                summerizeDest_[current_rank] = 1;
+                summerizeDest_[destination] = 1;
 
             destList_.push_back(destination + local_dest_rank_);
 
