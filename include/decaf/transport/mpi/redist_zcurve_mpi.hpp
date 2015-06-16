@@ -270,6 +270,7 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
     // Checking the bounding box and updating the slicesDelta if possible
     if(bBox_.size() == 6)
     {
+        bBBox_ = true;
         slicesDelta_.resize(3);
         slicesDelta_[0] = (bBox_[3] - bBox_[0]) / (float)(slices_[0]);
         slicesDelta_[1] = (bBox_[4] - bBox_[1]) / (float)(slices_[1]);
@@ -392,7 +393,7 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             //Computing the cell of the particule
             int x = (pos[3*i] - bBox_[0]) / slicesDelta_[0];
             int y = (pos[3*i+1] - bBox_[1]) / slicesDelta_[1];
-            int z = (pos[3*i+1] - bBox_[2]) / slicesDelta_[2];
+            int z = (pos[3*i+2] - bBox_[2]) / slicesDelta_[2];
 
             //Safety in case of wrong rounding
             if(x < 0) x = 0;
