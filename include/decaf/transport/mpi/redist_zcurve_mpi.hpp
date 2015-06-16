@@ -243,6 +243,7 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
     }
     else
     {
+        std::cout<<"Slices : [";
         for(unsigned int i = 0; i < 3; i++)
         {
             if(slices_.at(i) < 1)
@@ -250,14 +251,21 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
                 std::cout<<" ERROR : slices can't be inferior to 1. Switching the value to 1."<<std::endl;
                 slices_.at(i) = 1;
             }
+            std::cout<<slices_.at(i)<<",";
         }
+        std::cout<<"]"<<std::endl;
+
     }
 
     //Computing the index ranges per destination
     //We can use -1 because the constructor makes sure that all items of slices_ are > 0
     int maxIndex = Morton_3D_Encode_10bit(slices_[0]-1, slices_[1]-1, slices_[2]-1);
+
+    std::cout<<"Maximum morton code possible : "<<maxIndex<<std::endl;
     indexes_per_dest_ = maxIndex /  nbDests_;
+    std::cout<<"Number of indexes per destination : "<<indexes_per_dest_<<std::endl;
     rankOffset_ = maxIndex %  nbDests_;
+    std::cout<<"RankOffset : "<<rankOffset_<<std::endl;
 
     // Checking the bounding box and updating the slicesDelta if possible
     if(bBox_.size() == 6)
@@ -302,6 +310,7 @@ RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
         // If we don't have the global bounding box, we compute it once
         if(!bBBox_)
         {
+
             if(!data->hasZCurveKey())
             {
                 std::cout<<"ERROR : Trying to redistribute the data with respect to a ZCurve "
@@ -311,6 +320,10 @@ RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 
             int nbParticules; // The size of the array is 3*nbParticules
             const float* key = data->getZCurveKey(&nbParticules);
+            if(key == NULL)
+                std::cout<<"ERROR : the key pointer is NULL"<<std::endl;
+            else
+                std::cout<<"The key contains "<<nbParticules<<" particules."<<std::endl;
             float localBBox[6];
 
             // Computing the local bounding box
@@ -331,6 +344,7 @@ RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
                 }
 
                 //Aggregating the bounding boxes to get the global one
+                bBox_.resize(6);
                 MPI_Allreduce(&(localBBox[0]), &(bBox_[0]), 3, MPI_FLOAT, MPI_MIN, commSources_);
                 MPI_Allreduce(&(localBBox[0])+3, &(bBox_[0])+3, 3, MPI_FLOAT, MPI_MAX, commSources_);
 
@@ -338,6 +352,12 @@ RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
                         <<"["<<localBBox[3]<<","<<localBBox[4]<<","<<localBBox[5]<<"]"<<std::endl;
 
                 bBBox_ = true;
+
+                //Updating the slices
+                slicesDelta_.resize(3);
+                slicesDelta_[0] = (bBox_[3] - bBox_[0]) / (float)(slices_[0]);
+                slicesDelta_[1] = (bBox_[4] - bBox_[1]) / (float)(slices_[1]);
+                slicesDelta_[2] = (bBox_[5] - bBox_[2]) / (float)(slices_[2]);
             }
             else
             {
@@ -383,6 +403,7 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             if(z >= slices_[2]) z = slices_[2] - 1;
 
             unsigned int morton = Morton_3D_Encode_10bit(x,y,z);
+            std::cout<<"Morton code for ["<<x<<","<<y<<","<<z<<"] : "<<morton<<std::endl;
 
             //Computing the destination rank
             int destination;
@@ -393,18 +414,32 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             else
             {
                 morton -= rankOffset_ * (indexes_per_dest_+1);
+                std::cout<<"New morton code : "<<morton<<std::endl;
+                std::cout<<"Morton/indexes_per_dest : "<<morton/indexes_per_dest_<<std::endl;
                 destination = rankOffset_ + morton / indexes_per_dest_;
             }
 
+            //Use for the case where morton == maxMorton
+            if(destination == nbDests_)
+                destination = nbDests_ - 1;
+
+            std::cout<<"The destination for the particule "<<i<<" is "<<destination<<std::endl;
+
             split_ranges[destination].push_back(i);
 
-            //We won't send a message if we send to self
-            if(destination + local_dest_rank_ != rank_)
-                summerizeDest_[destination] = 1;
-
-            destList_.push_back(destination + local_dest_rank_);
-
         }
+
+        //Updating the informations about messages to send
+        for(unsigned int i = 0; i < split_ranges.size(); i++)
+        {
+            if(split_ranges.at(i).size() > 0)
+                destList_.push_back(i + local_dest_rank_);
+
+            //We won't send a message if we send to self
+            if(i + local_dest_rank_ != rank_)
+                summerizeDest_[i] = 1;
+        }
+
 
         std::cout<<"Data will be split in "<<split_ranges.size()<<" chunks"<<std::endl;
         std::cout<<"Size of Destinaton list :  "<<destList_.size()<<" chunks"<<std::endl;

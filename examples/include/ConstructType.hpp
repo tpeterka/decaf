@@ -109,6 +109,10 @@ public:
             const std::vector<int>& range,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT ) = 0;
 
+    virtual std::vector<std::shared_ptr<BaseConstructData> > split(
+            const std::vector< std::vector<int> >& range,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT ) = 0;
+
     virtual bool merge(std::shared_ptr<BaseConstructData> other,
                        ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT) = 0;
 
@@ -158,6 +162,40 @@ public:
             {
                 for(unsigned int i = 0; i < range.size(); i++)
                     result.push_back(std::make_shared<SimpleConstructData<T> >(range.at(i)));
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for SimpleConstructData"<<std::endl;
+                break;
+            }
+        }
+        return result;
+    }
+
+    virtual std::vector<std::shared_ptr<BaseConstructData> > split(
+            const std::vector< std::vector<int> >& range,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
+        switch(policy)
+        {
+            case DECAF_SPLIT_DEFAULT :
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                    result.push_back(std::make_shared<SimpleConstructData<T> >(value_));
+                break;
+            }
+            case DECAF_SPLIT_KEEP_VALUE:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                    result.push_back(std::make_shared<SimpleConstructData<T> >(value_));
+                break;
+            }
+            case DECAF_SPLIT_MINUS_NBITEM:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                    result.push_back(std::make_shared<SimpleConstructData<T> >(range.at(i).size()));
                 break;
             }
             default:
@@ -314,6 +352,68 @@ public:
         return result;
     }
 
+    virtual std::vector<std::shared_ptr<BaseConstructData> > split(
+            const std::vector< std::vector<int> >& range,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
+        switch( policy )
+        {
+            case DECAF_SPLIT_DEFAULT:
+            {
+                //Sanity check
+                int totalRange = 0;
+                for(unsigned int i = 0; i < range.size(); i++)
+                    totalRange+= range.at(i).size();
+                if(totalRange != getNbItems()){
+                    std::cout<<"ERROR : The number of items in the ranges ("<<totalRange
+                             <<") does not match the number of items of the object ("
+                             <<getNbItems()<<")"<<std::endl;
+                    return result;
+                }
+
+                std::cout<<"Initial vector : [";
+                for(unsigned int i = 0; i < value_.size(); i++)
+                    std::cout<<value_.at(i)<<",";
+                std::cout<<"]"<<std::endl;
+
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::cout<<"Split vector "<<i<<" : [";
+                    for(unsigned int j = 0; j < range.at(i).size(); j++)
+                        std::cout<<range.at(i).at(j)<<",";
+                    std::cout<<"]"<<std::endl;
+                }
+
+                typename std::vector<T>::iterator it = value_.begin();
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::vector<T> temp;
+                    for(unsigned int j = 0; j< range.at(i).size(); j++)
+                        temp.insert( temp.end(),
+                                     it+(range.at(i).at(j)*element_per_items_),
+                                     it+((range.at(i).at(j)+1)*element_per_items_)
+                                     );
+                    std::cout<<"Temp vector "<<i<<": [";
+                    for(unsigned int i = 0; i < temp.size(); i++)
+                        std::cout<<temp.at(i)<<",";
+                    std::cout<<"]"<<std::endl;
+
+                    std::shared_ptr<ArrayConstructData<T> > sub =
+                            std::make_shared<ArrayConstructData<T> >(temp.begin(), temp.end(), element_per_items_);
+                    result.push_back(sub);
+                }
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for ArrayConstructData"<<std::endl;
+                break;
+            }
+        }
+        return result;
+    }
+
     virtual bool merge(std::shared_ptr<BaseConstructData> other,
               ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
@@ -430,8 +530,10 @@ public:
 
     virtual const float* getZCurveKey(int *nbItems)
     {
-        if(!bZCurveKey_ || zCurveKey_)
+        if(!bZCurveKey_ || !zCurveKey_){
+            std::cout<<"ERROR : The ZCurve field is empty."<<std::endl;
             return NULL;
+        }
 
         std::shared_ptr<ArrayConstructData<float> > field =
                 dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
@@ -448,7 +550,7 @@ public:
 
     virtual const unsigned int* getZCurveIndex(int *nbItems)
     {
-        if(!bZCurveIndex_ || zCurveIndex_)
+        if(!bZCurveIndex_ || !zCurveIndex_)
             return NULL;
 
         std::shared_ptr<ArrayConstructData<unsigned int> > field =
@@ -521,6 +623,51 @@ public:
             const std::vector<std::vector<int> >& range)
     {
         std::vector< std::shared_ptr<BaseData> > result;
+        for(unsigned int i = 0; i < range.size(); i++)
+            result.push_back(std::make_shared<ConstructData>());
+
+        //Sanity check
+        int totalItems = 0;
+        for(unsigned int i = 0; i < range.size(); i++)
+            totalItems+= range.at(i).size();
+        if(totalItems != getNbItems()){
+            std::cout<<"ERROR : The number of items in the ranges ("<<totalItems
+                     <<") does not match the number of items of the object ("
+                     <<getNbItems()<<")"<<std::endl;
+            return result;
+        }
+
+        for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
+        {
+            // Splitting the current field
+            std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            splitFields = std::get<3>(it->second)->split(range, std::get<4>(it->second));
+
+            // Inserting the splitted field into the splitted results
+            if(splitFields.size() != result.size())
+            {
+                std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                // Cleaning the result to avoid corrupt data
+                result.clear();
+
+                return result;
+            }
+
+            //Adding the splitted results into the splitted maps
+            for(unsigned int i = 0; i < result.size(); i++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
+                construct->appendData(it->first,
+                                         splitFields.at(i),
+                                         std::get<0>(it->second),
+                                         std::get<1>(it->second),
+                                         std::get<4>(it->second),
+                                         std::get<5>(it->second)
+                                         );
+            }
+        }
 
         return result;
     }
@@ -991,6 +1138,7 @@ bool ConstructData::updateMetaData()
 
         if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
         {
+            std::cout<<"Add a ZCurve key field"<<std::endl;
             bZCurveKey_ = true;
             zCurveKey_ = std::get<3>(it->second);
         }

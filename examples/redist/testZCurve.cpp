@@ -63,7 +63,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
-        std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
+        std::vector<float> pos{4.0,4.0,4.0,5.0,5.0,5.0,4.0,4.0,4.0};
         int nbParticule = pos.size() / 3;
         std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
