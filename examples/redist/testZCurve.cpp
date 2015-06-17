@@ -20,6 +20,8 @@
 #include <sstream>
 #include <fstream>
 
+
+
 using namespace decaf;
 
 
@@ -38,16 +40,56 @@ void printMorton(int nbSlices)
     }
 }
 
-void posToFile(const std::vector<float>& pos, const std::string filename)
+void getHeatMapColor(float value, float *red, float *green, float *blue)
+{
+  const int NUM_COLORS = 4;
+  static float color[NUM_COLORS][3] = { {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0} };
+    // A static array of 4 colors:  (blue,   green,  yellow,  red) using {r,g,b} for each.
+
+  int idx1;        // |-- Our desired color will be between these two indexes in "color".
+  int idx2;        // |
+  float fractBetween = 0;  // Fraction between "idx1" and "idx2" where our value is.
+
+  if(value <= 0)      {  idx1 = idx2 = 0;            }    // accounts for an input <=0
+  else if(value >= 1)  {  idx1 = idx2 = NUM_COLORS-1; }    // accounts for an input >=0
+  else
+  {
+    value = value * (NUM_COLORS-1);        // Will multiply value by 3.
+    idx1  = floor(value);                  // Our desired color will be after this index.
+    idx2  = idx1+1;                        // ... and before this index (inclusive).
+    fractBetween = value - float(idx1);    // Distance between the two indexes (0-1).
+  }
+
+  *red   = (color[idx2][0] - color[idx1][0])*fractBetween + color[idx1][0];
+  *green = (color[idx2][1] - color[idx1][1])*fractBetween + color[idx1][1];
+  *blue  = (color[idx2][2] - color[idx1][2])*fractBetween + color[idx1][2];
+}
+
+template <typename T>
+T clip(const T& n, const T& lower, const T& upper) {
+  return std::max(lower, std::min(n, upper));
+}
+
+void posToFile(const std::vector<float>& pos, const std::string filename, float color)
 {
     std::ofstream file;
     std::cout<<"Filename : "<<filename<<std::endl;
     file.open(filename.c_str());
     int nbParticules = pos.size() / 3;
-    unsigned int r,g,b;
-    r = rand() % 256;
-    g = rand() % 256;
-    b = rand() % 256;
+
+    float r,g,b;
+    getHeatMapColor(color, &r, &g, &b);
+    std::cout<<"Color : "<<r<<","<<g<<","<<b<<std::endl;
+
+    unsigned int ur,ug,ub;
+    ur = (unsigned int)(r * 255.0);
+    ug = (unsigned int)(g * 255.0);
+    ub = (unsigned int)(b * 255.0);
+    ur = clip<unsigned int>(ur, 0, 255);
+    ug = clip<unsigned int>(ug, 0, 255);
+    ub = clip<unsigned int>(ub, 0, 255);
+    std::cout<<"UColor : "<<ur<<","<<ug<<","<<ub<<std::endl;
+
     std::cout<<"Number of particules to save : "<<nbParticules<<std::endl;
     file<<"ply"<<std::endl;
     file<<"format ascii 1.0"<<std::endl;
@@ -61,7 +103,7 @@ void posToFile(const std::vector<float>& pos, const std::string filename)
     file<<"end_header"<<std::endl;
     for(int i = 0; i < nbParticules; i++)
         file<<pos[3*i]<<" "<<pos[3*i+1]<<" "<<pos[3*i+2]
-            <<" "<<r<<" "<<g<<" "<<b<<std::endl;
+            <<" "<<ur<<" "<<ug<<" "<<ub<<std::endl;
     file.close();
 }
 
@@ -155,7 +197,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
         std::cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<std::endl;
         result->printKeys();
-        printMap(*result);
+        //printMap(*result);
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
 
@@ -165,7 +207,8 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         std::shared_ptr<ArrayConstructData<float> > pos =
                 dynamic_pointer_cast<ArrayConstructData<float> >(data);
         filename<<basename<<rank<<".ply";
-        posToFile(pos->getArray(), filename.str());
+        posToFile(pos->getArray(), filename.str(),
+                  (float)(rank-startReceptors) / (float)nbReceptors);
     }
 
     delete component;
@@ -199,6 +242,7 @@ int main(int argc,
     runTestParallelRedistOverlap(0, 4, 2, 4, std::string("PartialOverlap4-4_"));
     runTestParallelRedistOverlap(0, 4, 2, 3, std::string("PartialOverlap4-3_"));
     runTestParallelRedistOverlap(0, 4, 0, 4, std::string("TotalOverlap4-4_"));
+    runTestParallelRedistOverlap(0, 5, 5, 3, std::string("NoOverlap5-3_"));
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 

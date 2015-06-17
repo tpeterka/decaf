@@ -372,19 +372,6 @@ public:
                     return result;
                 }
 
-                std::cout<<"Initial vector : [";
-                for(unsigned int i = 0; i < value_.size(); i++)
-                    std::cout<<value_.at(i)<<",";
-                std::cout<<"]"<<std::endl;
-
-                for(unsigned int i = 0; i < range.size(); i++)
-                {
-                    std::cout<<"Split vector "<<i<<" : [";
-                    for(unsigned int j = 0; j < range.at(i).size(); j++)
-                        std::cout<<range.at(i).at(j)<<",";
-                    std::cout<<"]"<<std::endl;
-                }
-
                 typename std::vector<T>::iterator it = value_.begin();
                 for(unsigned int i = 0; i < range.size(); i++)
                 {
@@ -394,10 +381,6 @@ public:
                                      it+(range.at(i).at(j)*element_per_items_),
                                      it+((range.at(i).at(j)+1)*element_per_items_)
                                      );
-                    std::cout<<"Temp vector "<<i<<": [";
-                    for(unsigned int i = 0; i < temp.size(); i++)
-                        std::cout<<temp.at(i)<<",";
-                    std::cout<<"]"<<std::endl;
 
                     std::shared_ptr<ArrayConstructData<T> > sub =
                             std::make_shared<ArrayConstructData<T> >(temp.begin(), temp.end(), element_per_items_);

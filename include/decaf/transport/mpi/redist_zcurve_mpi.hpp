@@ -404,7 +404,7 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             if(z >= slices_[2]) z = slices_[2] - 1;
 
             unsigned int morton = Morton_3D_Encode_10bit(x,y,z);
-            std::cout<<"Morton code for ["<<x<<","<<y<<","<<z<<"] : "<<morton<<std::endl;
+            //std::cout<<"Morton code for ["<<x<<","<<y<<","<<z<<"] : "<<morton<<std::endl;
 
             //Computing the destination rank
             int destination;
@@ -415,8 +415,8 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             else
             {
                 morton -= rankOffset_ * (indexes_per_dest_+1);
-                std::cout<<"New morton code : "<<morton<<std::endl;
-                std::cout<<"Morton/indexes_per_dest : "<<morton/indexes_per_dest_<<std::endl;
+                //std::cout<<"New morton code : "<<morton<<std::endl;
+                //std::cout<<"Morton/indexes_per_dest : "<<morton/indexes_per_dest_<<std::endl;
                 destination = rankOffset_ + morton / indexes_per_dest_;
             }
 
@@ -424,7 +424,7 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             if(destination == nbDests_)
                 destination = nbDests_ - 1;
 
-            std::cout<<"The destination for the particule "<<i<<" is "<<destination<<std::endl;
+            //std::cout<<"The destination for the particule "<<i<<" is "<<destination<<std::endl;
 
             split_ranges[destination].push_back(i);
 
