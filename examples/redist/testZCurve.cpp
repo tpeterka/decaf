@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <mpi.h>
 #include <sstream>
+#include <fstream>
 
 using namespace decaf;
 
@@ -35,6 +36,33 @@ void printMorton(int nbSlices)
             }
         }
     }
+}
+
+void posToFile(const std::vector<float>& pos, const std::string filename)
+{
+    std::ofstream file;
+    std::cout<<"Filename : "<<filename<<std::endl;
+    file.open(filename.c_str());
+    int nbParticules = pos.size() / 3;
+    unsigned int r,g,b;
+    r = rand() % 256;
+    g = rand() % 256;
+    b = rand() % 256;
+    std::cout<<"Number of particules to save : "<<nbParticules<<std::endl;
+    file<<"ply"<<std::endl;
+    file<<"format ascii 1.0"<<std::endl;
+    file<<"element vertex "<<nbParticules<<std::endl;
+    file<<"property float x"<<std::endl;
+    file<<"property float y"<<std::endl;
+    file<<"property float z"<<std::endl;
+    file<<"property uchar red"<<std::endl;
+    file<<"property uchar green"<<std::endl;
+    file<<"property uchar blue"<<std::endl;
+    file<<"end_header"<<std::endl;
+    for(int i = 0; i < nbParticules; i++)
+        file<<pos[3*i]<<" "<<pos[3*i+1]<<" "<<pos[3*i+2]
+            <<" "<<r<<" "<<g<<" "<<b<<std::endl;
+    file.close();
 }
 
 
@@ -60,7 +88,6 @@ void initPosition(std::vector<float>& pos, int nbParticule, const std::vector<fl
     float dy = bbox[4] - bbox[1];
     float dz = bbox[5] - bbox[2];
 
-    srand(time(NULL));
     for(int i = 0;i < nbParticule; i++)
     {
         pos.push_back(bbox[0] + ((float)rand() / (float)RAND_MAX) * dx);
@@ -69,7 +96,7 @@ void initPosition(std::vector<float>& pos, int nbParticule, const std::vector<fl
     }
 }
 
-void runTestParallelRedistOverlap(int startSource, int nbSource, int startReceptors, int nbReceptors)
+void runTestParallelRedistOverlap(int startSource, int nbSource, int startReceptors, int nbReceptors, std::string basename)
 {
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
@@ -99,7 +126,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
         std::vector<float> pos;
-        int nbParticule = 40;
+        int nbParticule = 1000;
 
 
         initPosition(pos, nbParticule, bbox);
@@ -131,6 +158,14 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         printMap(*result);
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
+
+
+        std::stringstream filename;
+        std::shared_ptr<BaseConstructData> data = result->getData("pos");
+        std::shared_ptr<ArrayConstructData<float> > pos =
+                dynamic_pointer_cast<ArrayConstructData<float> >(data);
+        filename<<basename<<rank<<".ply";
+        posToFile(pos->getArray(), filename.str());
     }
 
     delete component;
@@ -149,12 +184,21 @@ int main(int argc,
 {
     MPI_Init(NULL, NULL);
 
-    int size_world, rank;
+
+    char processorName[MPI_MAX_PROCESSOR_NAME];
+    int size_world, rank, nameLen;
+
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    //if (rank == 0)
-    //    printMorton(4);
-    runTestParallelRedistOverlap(0, 4, 4 , 3);
+    MPI_Get_processor_name(processorName,&nameLen);
+
+    srand(time(NULL) + rank * size_world + nameLen);
+
+    runTestParallelRedistOverlap(0, 4, 4, 4, std::string("NoOverlap4-4_"));
+    runTestParallelRedistOverlap(0, 4, 4, 3, std::string("NoOverlap4-3_"));
+    runTestParallelRedistOverlap(0, 4, 2, 4, std::string("PartialOverlap4-4_"));
+    runTestParallelRedistOverlap(0, 4, 2, 3, std::string("PartialOverlap4-3_"));
+    runTestParallelRedistOverlap(0, 4, 0, 4, std::string("TotalOverlap4-4_"));
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 
