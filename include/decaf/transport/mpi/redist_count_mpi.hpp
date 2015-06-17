@@ -104,6 +104,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     local_source_rank_ = 0;                     //Rank of first source in communicator_
     local_dest_rank_ = rankDest_ - rankSource_; //Rank of first destination in communucator_
     std::cout<<"Local destination rank : "<<local_dest_rank_<<std::endl;
+    std::cout<<"World rank : "<<world_rank<<std::endl;
 
     //Generation of the group with all the sources and destination
     range[0] = rankSource;

@@ -19,6 +19,7 @@
 #include <vector>
 #include <queue>
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -94,15 +95,17 @@ struct WorkflowNode        // a producer or consumer
     // in the same file; ie, we only store one path (can change if needed)
 };
 
-struct WorkflowLink        // a dataflow
+struct WorkflowLink             // a dataflow
 {
-    int prod;              // index in vector of all workflow nodes of producer
-    int con;               // index in vector of all workflow nodes of consumer
-    int start_proc;        // starting process rank in world communicator for the dataflow
-    int nprocs;            // number of processes in the dataflow
-    string dflow_func;     // name of dataflow callback
-    void* dflow_args;      // dataflow callback arguments
-    string path;           // path to callback function module
+    int prod;                   // index in vector of all workflow nodes of producer
+    int con;                    // index in vector of all workflow nodes of consumer
+    int start_proc;             // starting process rank in world communicator for the dataflow
+    int nprocs;                 // number of processes in the dataflow
+    string dflow_func;          // name of dataflow callback
+    void* dflow_args;           // dataflow callback arguments
+    string path;                // path to callback function module
+    string prod_dflow_redist;   // Redistribution component between producer and dflow
+    string dflow_cons_redist;   // Redistribution component between dflow and consumer
 };
 
 struct Workflow            // an entire workflow
@@ -123,6 +126,21 @@ all_err(int err_code)
         break;
     default:
         break;
+    }
+}
+
+Decomposition stringToDecomposition(std::string name)
+{
+    if(name.compare(std::string("round")) == 0)
+        return DECAF_ROUND_ROBIN_DECOMP;
+    else if (name.compare(std::string("count")) == 0)
+        return DECAF_CONTIG_DECOMP;
+    else if (name.compare(std::string("zcurve")) == 0)
+        return DECAF_ZCURVE_DECOMP;
+    else
+    {
+        std::cerr<<"ERROR : unknown Decomposition name : "<<name<<". Using count instead."<<std::endl;
+        return DECAF_CONTIG_DECOMP;
     }
 }
 

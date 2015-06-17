@@ -21,6 +21,8 @@
 #include "transport/mpi/data.hpp"
 //New redistribution component
 #include "transport/mpi/redist_count_mpi.hpp"
+#include "transport/mpi/redist_round_mpi.hpp"
+#include "transport/mpi/redist_zcurve_mpi.hpp"
 #include <memory>
 #endif
 
@@ -37,7 +39,9 @@ namespace decaf
              DecafSizes& decaf_sizes,
              void (*pipeliner)(Dataflow*),
              void (*checker)(Dataflow*),
-             Data* data);
+             Data* data,
+             Decomposition prod_dflow_redist = DECAF_CONTIG_DECOMP,
+             Decomposition dflow_cons_redist = DECAF_CONTIG_DECOMP);
     ~Dataflow();
     void run();
     void put(void* d, int count = 1);
@@ -85,7 +89,9 @@ Dataflow::Dataflow(CommHandle world_comm,
                    DecafSizes& decaf_sizes,
                    void (*pipeliner)(Dataflow*),
                    void (*checker)(Dataflow*),
-                   Data* data):
+                   Data* data,
+                   Decomposition prod_dflow_redist,
+                   Decomposition dflow_cons_redist):
   world_comm_(world_comm),
   prod_dflow_comm_(NULL),
   dflow_con_comm_(NULL),
@@ -146,18 +152,86 @@ Dataflow::Dataflow(CommHandle world_comm,
     prod_dflow_comm_ = new Comm(world_comm, prod_dflow_start, prod_dflow_end, sizes_.prod_size,
                                 sizes_.dflow_size, sizes_.dflow_start - sizes_.prod_start,
                                 DECAF_PROD_DFLOW_COMM);
-    redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start, sizes_.prod_size,
-                                           sizes_.dflow_start, sizes_.dflow_size,
-                                           world_comm);
+    switch(prod_dflow_redist)
+    {
+        case DECAF_ROUND_ROBIN_DECOMP:
+        {
+            std::cout<<"Using Round for prod -> dflow"<<std::endl;
+            redist_prod_dflow_ = new RedistRoundMPI(sizes_.prod_start, sizes_.prod_size,
+                                               sizes_.dflow_start, sizes_.dflow_size,
+                                               world_comm);
+            break;
+        }
+        case DECAF_CONTIG_DECOMP:
+        {
+            std::cout<<"Using Count for prod -> dflow"<<std::endl;
+            redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start, sizes_.prod_size,
+                                               sizes_.dflow_start, sizes_.dflow_size,
+                                               world_comm);
+            break;
+        }
+        case DECAF_ZCURVE_DECOMP:
+        {
+            std::cout<<"Using ZCurve for prod -> dflow"<<std::endl;
+            redist_prod_dflow_ = new RedistZCurveMPI(sizes_.prod_start, sizes_.prod_size,
+                                               sizes_.dflow_start, sizes_.dflow_size,
+                                               world_comm);
+            break;
+        }
+        default:
+        {
+            std::cout<<"ERROR : policy "<<prod_dflow_redist<<" unrecognized to select a redistribution component"
+                     <<" Using the RedistCountMPI instead>"<<std::endl;
+            redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start, sizes_.prod_size,
+                                               sizes_.dflow_start, sizes_.dflow_size,
+                                               world_comm);
+            break;
+        }
+
+    }
   }
   if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
   {
     dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end, sizes_.dflow_size,
                                sizes_.con_size, sizes_.con_start - sizes_.dflow_start,
                                DECAF_DFLOW_CON_COMM);
-    redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start, sizes_.dflow_size,
-                                          sizes_.con_start, sizes_.con_size,
-                                          world_comm);
+    switch(dflow_cons_redist)
+    {
+        case DECAF_ROUND_ROBIN_DECOMP:
+        {
+            std::cout<<"Using Round for dflow -> cons"<<std::endl;
+            redist_dflow_con_ = new RedistRoundMPI(sizes_.dflow_start, sizes_.dflow_size,
+                                               sizes_.con_start, sizes_.con_size,
+                                               world_comm);
+            break;
+        }
+        case DECAF_CONTIG_DECOMP:
+        {
+            std::cout<<"Using Count for dflow -> cons"<<std::endl;
+            redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start, sizes_.dflow_size,
+                                                   sizes_.con_start, sizes_.con_size,
+                                               world_comm);
+            break;
+        }
+        case DECAF_ZCURVE_DECOMP:
+        {
+            std::cout<<"Using ZCurve for dflow -> cons"<<std::endl;
+            redist_dflow_con_ = new RedistZCurveMPI(sizes_.dflow_start, sizes_.dflow_size,
+                                                    sizes_.con_start, sizes_.con_size,
+                                               world_comm);
+            break;
+        }
+        default:
+        {
+            std::cout<<"ERROR : policy "<<prod_dflow_redist<<" unrecognized to select a redistribution component."
+                     <<" Using the RedistCountMPI instead."<<std::endl;
+            redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start, sizes_.dflow_size,
+                                                   sizes_.con_start, sizes_.con_size,
+                                               world_comm);
+            break;
+        }
+
+    }
   }
 
 
