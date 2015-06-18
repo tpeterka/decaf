@@ -24,6 +24,8 @@ cdef extern from "decaf/types.hpp":
         string dflow_func
         void* dflow_args
         string path
+        string prod_dflow_redist
+        string dflow_cons_redist
     struct Workflow:
         vector[WorkflowNode] nodes
         vector[WorkflowLink] links
@@ -63,6 +65,8 @@ def pyrun(workflow, prod_nsteps, con_nsteps, infile):
         wlink.nprocs     = edge[2]['nprocs']
         wlink.dflow_func = edge[2]['dflow_func']
         wlink.path       = edge[2]['path']
+        wlink.prod_dflow_redist = edge[2]['prod_dflow_redist']
+        wlink.dflow_cons_redist = edge[2]['dflow_cons_redist']
 
         # add edge to corresponding nodes
         wflow.nodes[wlink.prod].out_links.push_back(i)

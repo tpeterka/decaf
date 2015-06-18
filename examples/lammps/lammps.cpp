@@ -234,8 +234,8 @@ int main(int argc,
     Workflow workflow;
     int prod_nsteps = 1;
     int con_nsteps = 1;
-    const char * prefix = getenv("DECAF_PREFIX");
-    if(strlen(prefix) == 0)
+    char * prefix = getenv("DECAF_PREFIX");
+    if(prefix == NULL)
     {
         std::cout<<"ERROR : environment variable DECAF_PREFIX not defined."
                 <<" Please export DECAF_PREFIX to point to the root of you decaf install directory."<<std::endl;
