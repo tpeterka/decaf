@@ -322,10 +322,7 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             }
         }
         std::cout<<"End of sending messages"<<std::endl;
-        // Cleaning the data here because synchronous send.
-        // TODO :  move to flush when switching to asynchronous send
-        splitChunks_.clear();
-        destList_.clear();
+
     }
 
     if(role == DECAF_REDIST_DEST)
@@ -387,6 +384,11 @@ RedistRoundMPI::flush()
     if(reqs.size())
         MPI_Waitall(reqs.size(), &reqs[0], MPI_STATUSES_IGNORE);
     reqs.clear();
+
+    // Cleaning the data here because synchronous send.
+    // TODO :  move to flush when switching to asynchronous send
+    splitChunks_.clear();
+    destList_.clear();
 }
 
 
