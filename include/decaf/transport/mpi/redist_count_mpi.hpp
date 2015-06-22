@@ -34,6 +34,8 @@ namespace decaf
                      CommHandle communicator);
       ~RedistCountMPI();
 
+      virtual void flush();
+
   protected:
 
       // Compute the values necessary to determine how the data should be splitted
@@ -185,30 +187,37 @@ RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
-        MPI_Barrier(commSources_);
         int nbItems = data->getNbItems();
-        std::cout<<"Nombre d'Item local : "<<nbItems<<std::endl;
+        std::cerr<<"Nombre d'Item local : "<<nbItems<<std::endl;
 
-        //Computing the index of the local first item in the global array of data
-        MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_INT,
-                 MPI_SUM, commSources_);
-        global_item_rank_ -= nbItems;   // Process rank 0 has the item 0,
-                                        // rank 1 has the item nbItems(rank 0)
-                                        // and so on
-        std::cout<<"Local index of first item : "<<global_item_rank_<<std::endl;
+        if(nbSources_ == 1)
+        {
+            global_item_rank_ = 0;
+            global_nb_items_ = nbItems;
+        }
+        else
+        {
+            //Computing the index of the local first item in the global array of data
+            MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_INT,
+                     MPI_SUM, commSources_);
+            global_item_rank_ -= nbItems;   // Process rank 0 has the item 0,
+                                            // rank 1 has the item nbItems(rank 0)
+                                            // and so on
+            std::cerr<<"Local index of first item : "<<global_item_rank_<<std::endl;
 
-        //Compute the number of items in the global array
-        MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
-                      MPI_SUM, commSources_);
+            //Compute the number of items in the global array
+            MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
+                          MPI_SUM, commSources_);
+        }
 
-        std::cout<<"Total number of items : "<<global_nb_items_<<std::endl;
+        std::cerr<<"Total number of items : "<<global_nb_items_<<std::endl;
     }
-    std::cout<<"Redistributing with the rank "<<rank_<<std::endl;
-    std::cout<<"Rank source : "<<rankSource_<<", Rank Destination : "<<rankDest_<<std::endl;
+    std::cerr<<"Redistributing with the rank "<<rank_<<std::endl;
+    std::cerr<<"Rank source : "<<rankSource_<<", Rank Destination : "<<rankDest_<<std::endl;
     if(role == DECAF_REDIST_SOURCE)
-        std::cout<<"I'm a source in the redistribution"<<std::endl;
+        std::cerr<<"I'm a source in the redistribution"<<std::endl;
     if(role == DECAF_REDIST_DEST)
-        std::cout<<"I'm a dest in the redistribution"<<std::endl;
+        std::cerr<<"I'm a dest in the redistribution"<<std::endl;
 
 }
 
@@ -262,6 +271,12 @@ RedistCountMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
         if( summerizeDest_) delete  summerizeDest_;
          summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
+
+        if(items_left == 0)
+        {
+            std::cout<<"Nothing in the data to be splitted."<<std::endl;
+            return;
+        }
 
         while(items_left != 0)
         {
@@ -411,10 +426,6 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             }
         }
         std::cout<<"End of sending messages"<<std::endl;
-        // Cleaning the data here because synchronous send.
-        // TODO :  move to flush when switching to asynchronous send
-        splitChunks_.clear();
-        destList_.clear();
     }
 
     if(role == DECAF_REDIST_DEST)
@@ -467,6 +478,22 @@ decaf::
 RedistCountMPI::merge(RedistRole role)
 {
     return std::shared_ptr<BaseData>();
+}
+
+void
+decaf::
+RedistCountMPI::flush()
+{
+    std::cout<<"FLUSHING"<<std::endl;
+    if(reqs.size())
+        MPI_Waitall(reqs.size(), &reqs[0], MPI_STATUSES_IGNORE);
+    reqs.clear();
+
+    // Cleaning the data here because synchronous send.
+    // TODO :  move to flush when switching to asynchronous send
+    std:cout<<"Clearing the vectors"<<std::endl;
+    splitChunks_.clear();
+    destList_.clear();
 }
 
 

@@ -190,6 +190,11 @@ Dataflow::Dataflow(CommHandle world_comm,
 
     }
   }
+  else
+  {
+      std::cout<<"No Redistribution between producer and dflow needed."<<std::endl;
+      redist_prod_dflow_ = NULL;
+  }
   if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
   {
     dflow_con_comm_ = new Comm(world_comm, dflow_con_start, dflow_con_end, sizes_.dflow_size,
@@ -232,6 +237,11 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
 
     }
+  }
+  else
+  {
+      std::cout<<"No Redistribution between dflow and cons needed."<<std::endl;
+      redist_dflow_con_ = NULL;
   }
 
 
@@ -316,10 +326,16 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
 {
     //if(is_prod())
     if(role == DECAF_PROD)
+    {
+        if(redist_prod_dflow_ == NULL) std::cerr<<"Trying to access a null communicator."<<std::endl;
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
+    }
     //if(is_dflow())
     else if(role == DECAF_DFLOW)
+    {
+        if(redist_dflow_con_ == NULL) std::cerr<<"Trying to access a null communicator."<<std::endl;
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
+    }
 }
 
 void*
@@ -341,10 +357,16 @@ Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
 {
     //if(is_dflow())
     if(role == DECAF_DFLOW)
+    {
+        if(redist_prod_dflow_ == NULL) std::cerr<<"Trying to access a null communicator."<<std::endl;
         redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+    }
     //if(is_con())
     else if(role == DECAF_CON)
+    {
+        if(redist_dflow_con_ == NULL) std::cerr<<"Trying to access a null communicator."<<std::endl;
         redist_dflow_con_->process(data, DECAF_REDIST_DEST);
+    }
 }
 
 // run the dataflow
@@ -392,9 +414,15 @@ decaf::
 Dataflow::flush()
 {
   if (is_prod())
+  {
     prod_dflow_comm_->flush();
+    redist_prod_dflow_->flush();
+  }
   if (is_dflow())
+  {
     dflow_con_comm_->flush();
+    redist_dflow_con_->flush();
+  }
   if (is_dflow() || is_con())
     data_->flush();
 }

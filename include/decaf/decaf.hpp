@@ -63,6 +63,7 @@ namespace decaf
                 DecafSizes decaf_sizes;
                 for (size_t i = 0; i < workflow_.links.size(); i++)
                 {
+                    std::cout<<"Building Dataflow "<<i<<std::endl;
                     int prod  = workflow_.links[i].prod;    // index into workflow nodes
                     int dflow = i;                          // index into workflow links
                     int con   = workflow_.links[i].con;     // index into workflow nodes

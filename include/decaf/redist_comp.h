@@ -45,7 +45,10 @@ namespace decaf
           rankSource_(rankSource), nbSources_(nbSources),
           rankDest_(rankDest), nbDests_(nbDests), summerizeDest_(NULL){}
 
-      virtual ~RedistComp(){}
+      virtual ~RedistComp()
+      {
+          std::cout<<"Number of split chunks : "<<splitChunks_.size()<<std::endl;
+      }
 
       // Run the pipeline of operations to redistribute the data.
       // This fonction is the only one zhich should be called from
@@ -56,6 +59,8 @@ namespace decaf
       int getNbSources() { return nbSources_; }
       int getRankDest() { return rankDest_; }
       int getNbDest() { return nbDests_; }
+
+      virtual void flush() = 0;
 
 
   protected:

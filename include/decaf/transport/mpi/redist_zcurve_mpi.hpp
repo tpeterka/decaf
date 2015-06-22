@@ -107,6 +107,8 @@ void Morton_3D_Decode_10bit( const unsigned int morton,
                      std::vector<int> slices = std::vector<int>());
       ~RedistZCurveMPI();
 
+      void flush();
+
   protected:
 
       // Compute the values necessary to determine how the data should be splitted
@@ -609,7 +611,14 @@ RedistZCurveMPI::merge(RedistRole role)
     return std::shared_ptr<BaseData>();
 }
 
-
+void
+decaf::
+RedistZCurveMPI::flush()
+{
+    if(reqs.size())
+        MPI_Waitall(reqs.size(), &reqs[0], MPI_STATUSES_IGNORE);
+    reqs.clear();
+}
 
 
 #endif

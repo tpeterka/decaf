@@ -40,15 +40,15 @@ void printMorton(int nbSlices)
     }
 }
 
-void getHeatMapColor(float value, float *red, float *green, float *blue)
+void getHeatMapColor(double value, double *red, double *green, double *blue)
 {
   const int NUM_COLORS = 4;
-  static float color[NUM_COLORS][3] = { {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0} };
+  static double color[NUM_COLORS][3] = { {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0} };
     // A static array of 4 colors:  (blue,   green,  yellow,  red) using {r,g,b} for each.
 
   int idx1;        // |-- Our desired color will be between these two indexes in "color".
   int idx2;        // |
-  float fractBetween = 0;  // Fraction between "idx1" and "idx2" where our value is.
+  double fractBetween = 0;  // Fraction between "idx1" and "idx2" where our value is.
 
   if(value <= 0)      {  idx1 = idx2 = 0;            }    // accounts for an input <=0
   else if(value >= 1)  {  idx1 = idx2 = NUM_COLORS-1; }    // accounts for an input >=0
@@ -57,7 +57,7 @@ void getHeatMapColor(float value, float *red, float *green, float *blue)
     value = value * (NUM_COLORS-1);        // Will multiply value by 3.
     idx1  = floor(value);                  // Our desired color will be after this index.
     idx2  = idx1+1;                        // ... and before this index (inclusive).
-    fractBetween = value - float(idx1);    // Distance between the two indexes (0-1).
+    fractBetween = value - double(idx1);    // Distance between the two indexes (0-1).
   }
 
   *red   = (color[idx2][0] - color[idx1][0])*fractBetween + color[idx1][0];
@@ -70,14 +70,14 @@ T clip(const T& n, const T& lower, const T& upper) {
   return std::max(lower, std::min(n, upper));
 }
 
-void posToFile(const std::vector<float>& pos, const std::string filename, float color)
+void posToFile(const std::vector<double>& pos, const std::string filename, double color)
 {
     std::ofstream file;
     std::cout<<"Filename : "<<filename<<std::endl;
     file.open(filename.c_str());
     int nbParticules = pos.size() / 3;
 
-    float r,g,b;
+    double r,g,b;
     getHeatMapColor(color, &r, &g, &b);
     std::cout<<"Color : "<<r<<","<<g<<","<<b<<std::endl;
 
@@ -94,9 +94,9 @@ void posToFile(const std::vector<float>& pos, const std::string filename, float 
     file<<"ply"<<std::endl;
     file<<"format ascii 1.0"<<std::endl;
     file<<"element vertex "<<nbParticules<<std::endl;
-    file<<"property float x"<<std::endl;
-    file<<"property float y"<<std::endl;
-    file<<"property float z"<<std::endl;
+    file<<"property double x"<<std::endl;
+    file<<"property double y"<<std::endl;
+    file<<"property double z"<<std::endl;
     file<<"property uchar red"<<std::endl;
     file<<"property uchar green"<<std::endl;
     file<<"property uchar blue"<<std::endl;
@@ -111,7 +111,7 @@ void posToFile(const std::vector<float>& pos, const std::string filename, float 
 
 void printMap(ConstructData& map)
 {
-    std::shared_ptr<ArrayConstructData<float> > array = dynamic_pointer_cast<ArrayConstructData<float> >(map.getData("pos"));
+    std::shared_ptr<ArrayConstructData<double> > array = dynamic_pointer_cast<ArrayConstructData<double> >(map.getData("pos"));
     std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map.getData("nbParticules"));
 
     std::cout<<"Number of particule : "<<data->getData()<<std::endl;
@@ -124,42 +124,55 @@ void printMap(ConstructData& map)
     }
 }
 
-void initPosition(std::vector<float>& pos, int nbParticule, const std::vector<float>& bbox)
+void initPosition(std::vector<double>& pos, int nbParticule, const std::vector<double>& bbox)
 {
-    float dx = bbox[3] - bbox[0];
-    float dy = bbox[4] - bbox[1];
-    float dz = bbox[5] - bbox[2];
+    double dx = bbox[3] - bbox[0];
+    double dy = bbox[4] - bbox[1];
+    double dz = bbox[5] - bbox[2];
 
     for(int i = 0;i < nbParticule; i++)
     {
-        pos.push_back(bbox[0] + ((float)rand() / (float)RAND_MAX) * dx);
-        pos.push_back(bbox[1] + ((float)rand() / (float)RAND_MAX) * dy);
-        pos.push_back(bbox[2] + ((float)rand() / (float)RAND_MAX) * dz);
+        pos.push_back(bbox[0] + ((double)rand() / (double)RAND_MAX) * dx);
+        pos.push_back(bbox[1] + ((double)rand() / (double)RAND_MAX) * dy);
+        pos.push_back(bbox[2] + ((double)rand() / (double)RAND_MAX) * dz);
     }
 }
 
-void runTestParallelRedistOverlap(int startSource, int nbSource,
-                                   int startReceptors, int nbReceptors,
+void runTestParallel2RedistOverlap(int startSource, int nbSource,
+                                   int startReceptors1, int nbReceptors1,
+                                   int startReceptors2, int nbReceptors2,
                                    std::string basename)
 {
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if(size_world < max(startSource + nbSource, startReceptors + nbReceptors))
+    if(size_world < max( max(startSource + nbSource, startReceptors1 + nbReceptors1),
+                         startReceptors2 + nbReceptors2))
     {
-        std::cout<<"ERROR : not enough rank for "<<nbSource<<" sources and "<<nbReceptors<<" receivers"<<std::endl;
+        std::cout<<"ERROR : not enough rank for "<<nbSource<<" sources and "<<max(nbReceptors1,nbReceptors2)<<" receivers"<<std::endl;
         return;
     }
 
-    if(rank >= max(startSource + nbSource, startReceptors + nbReceptors))
+    if(rank >= max( max(startSource + nbSource, startReceptors1 + nbReceptors1),
+                    startReceptors2 + nbReceptors2))
         return;
 
-    std::vector<float> bbox = {0.0,0.0,0.0,10.0,10.0,10.0};
+    std::vector<double> bbox = {0.0,0.0,0.0,10.0,10.0,10.0};
 
-    RedistZCurveMPI *component = new RedistZCurveMPI(startSource, nbSource,
-                                                     startReceptors, nbReceptors,
-                                                     MPI_COMM_WORLD, bbox);
+    RedistCountMPI *component1 = NULL;
+    RedistCountMPI *component2 = NULL;
+
+    if(rank >= min(startSource,startReceptors1) &&
+        rank < max(startSource+nbSource,startReceptors1+nbReceptors1) )
+        component1 = new RedistCountMPI(startSource, nbSource,
+                                                     startReceptors1, nbReceptors1,
+                                                     MPI_COMM_WORLD);
+    if(rank >= min(startSource,startReceptors2) &&
+        rank < max(startSource+nbSource,startReceptors2+nbReceptors2) )
+        component2 = new RedistCountMPI(startSource, nbSource,
+                                                     startReceptors2, nbReceptors2,
+                                                     MPI_COMM_WORLD);
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;
@@ -167,35 +180,55 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
     if(rank >= startSource && rank < startSource + nbSource){
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
-                   "and "<<nbReceptors<<" consummers"<<std::endl;
+                   "and "<<nbReceptors1<<","<<nbReceptors2<<" consummers"<<std::endl;
 
-        std::vector<float> pos;
-        int nbParticule = 1000;
+        std::vector<double> pos;
+        int nbParticule = 4000;
 
-
-        initPosition(pos, nbParticule, bbox);
+        if(rank == startSource)
+            initPosition(pos, nbParticule, bbox);
+        else
+            nbParticule = 0;
 
 
         //Sending to the first
-        std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
-        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+        std::shared_ptr<ArrayConstructData<double> > array1 = std::make_shared<ArrayConstructData<double> >( pos, 3 );
+        std::shared_ptr<SimpleConstructData<int> > data1  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
-        std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
-        std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
-        object->appendData(std::string("nbParticules"), data,
+        std::shared_ptr<BaseData> container1 = std::shared_ptr<ConstructData>(new ConstructData());
+        std::shared_ptr<ConstructData> object1 = dynamic_pointer_cast<ConstructData>(container1);
+        object1->appendData(std::string("nbParticules"), data1,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
-        object->appendData(std::string("pos"), array,
+        object1->appendData(std::string("pos"), array1,
                              DECAF_ZCURVEKEY, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-        component->process(container, decaf::DECAF_REDIST_SOURCE);
-        component->flush();
+        component1->process(container1, decaf::DECAF_REDIST_SOURCE);
+        component1->flush();
+
+        //Sending to the second
+        std::shared_ptr<ArrayConstructData<double> > array2 = std::make_shared<ArrayConstructData<double> >( pos, 3 );
+        std::shared_ptr<SimpleConstructData<int> > data2  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+
+        std::shared_ptr<BaseData> container2 = std::shared_ptr<ConstructData>(new ConstructData());
+        std::shared_ptr<ConstructData> object2 = dynamic_pointer_cast<ConstructData>(container2);
+        object2->appendData(std::string("nbParticules"), data2,
+                             DECAF_NOFLAG, DECAF_SHARED,
+                             DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
+        object2->appendData(std::string("pos"), array2,
+                             DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+
+        component2->process(container2, decaf::DECAF_REDIST_SOURCE);
+        component2->flush();
+
+
     }
-    if(rank >= startReceptors && rank < startReceptors + nbReceptors)
+    if(rank >= startReceptors1 && rank < startReceptors1 + nbReceptors1)
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
-        component->process(result, decaf::DECAF_REDIST_DEST);
+        component1->process(result, decaf::DECAF_REDIST_DEST);
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
@@ -203,19 +236,27 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         result->printKeys();
         //printMap(*result);
         std::cout<<"==========================="<<std::endl;
-        std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
+        std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors1<<" consummer completed"<<std::endl;
 
-
-        std::stringstream filename;
-        std::shared_ptr<BaseConstructData> data = result->getData("pos");
-        std::shared_ptr<ArrayConstructData<float> > pos =
-                dynamic_pointer_cast<ArrayConstructData<float> >(data);
-        filename<<basename<<rank<<".ply";
-        posToFile(pos->getArray(), filename.str(),
-                  (float)(rank-startReceptors) / (float)nbReceptors);
     }
 
-    delete component;
+    if(rank >= startReceptors2 && rank < startReceptors2 + nbReceptors2)
+    {
+        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        component2->process(result, decaf::DECAF_REDIST_DEST);
+
+        std::cout<<"==========================="<<std::endl;
+        std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
+        std::cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<std::endl;
+        result->printKeys();
+        //printMap(*result);
+        std::cout<<"==========================="<<std::endl;
+        std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors2<<" consummer completed"<<std::endl;
+
+    }
+
+    if(component1) delete component1;
+    if(component2) delete component2;
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component with overlapping completed"<<std::endl;
@@ -241,7 +282,7 @@ int main(int argc,
 
     srand(time(NULL) + rank * size_world + nameLen);
 
-    runTestParallelRedistOverlap(0, 4, 4, 4, std::string("NoOverlap4-4_"));
+    runTestParallel2RedistOverlap(0, 4, 4, 1, 5, 1, std::string("NoOverlap4-4_"));
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
