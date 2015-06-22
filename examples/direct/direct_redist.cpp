@@ -63,6 +63,7 @@ extern "C"
       {
         fprintf(stderr, "+ producing time step %d\n", t_current);
         dataflows[i]->put(container, DECAF_PROD);
+        dataflows[i]->flush();
         std::cout<<"Prod Put done"<<std::endl;
       }
     }
@@ -116,6 +117,7 @@ extern "C"
 
         //Forwarding the data to the consumers
         dataflows[i]->put(container, DECAF_DFLOW);
+        dataflows[i]->flush();
         std::cout<<"dflow put done"<<std::endl;
     }
 

@@ -84,7 +84,6 @@ extern "C"
         {
             for (size_t i = 0; i < dataflows->size(); i++)
             {
-                std::cout<<"Sending for dataflow "<<i<<std::endl;
                 std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
                 if ((*dataflows)[i]->prod_comm()->rank() == 0) // lammps gathered all positions to rank 0
                 {
@@ -129,7 +128,6 @@ extern "C"
                int this_dataflow = -1)       // index of one dataflow in list of all
     {
         fprintf(stderr, "print redist\n");
-        std::cout<<"Number of dataflows : "<<dataflows->size()<<std::endl;
         if (!((t_current + 1) % t_interval))
         {
             //double* pos    = (double*)(*dataflows)[0]->get(); // we know dataflow.size() = 1 in this example
@@ -159,7 +157,6 @@ extern "C"
     {
         fprintf(stderr, "print2_prod redist \n");
         struct pos_args_t* a = (pos_args_t*)args;   // custom args
-        std::cout<<"Number of dataflows : "<<dataflows->size()<<std::endl;
 
         if (!((t_current + 1) % t_interval))
         {
@@ -222,7 +219,6 @@ extern "C"
         int rank_dflow;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank_dflow);
 
-        std::cerr<<"DFlow processing ("<<rank_dflow<<")"<<std::endl;
         for (size_t i = 0; i < dataflows->size(); i++)
         {
             if(((*dataflows)[i])->is_dflow())
@@ -230,7 +226,6 @@ extern "C"
                 //Getting the data from the producer
                 std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
                 (*dataflows)[i]->get(container, DECAF_DFLOW);
-                std::cout<<"dflow redist get done"<<std::endl;
                 std::shared_ptr<ArrayConstructData<double> > pos =
                         dynamic_pointer_cast<ArrayConstructData<double> >(container->getData(std::string("pos")));
 
@@ -239,7 +234,6 @@ extern "C"
                 //Forwarding the data to the consumers
                 (*dataflows)[i]->put(container, DECAF_DFLOW);
                 (*dataflows)[i]->flush();        // need to clean up after each time step
-                std::cout<<"dflow redist put done"<<std::endl;
             }
         }
     }

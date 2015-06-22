@@ -242,6 +242,10 @@ int main(int argc,
     srand(time(NULL) + rank * size_world + nameLen);
 
     runTestParallelRedistOverlap(0, 4, 4, 4, std::string("NoOverlap4-4_"));
+    runTestParallelRedistOverlap(0, 4, 4, 3, std::string("NoOverlap4-3_"));
+    runTestParallelRedistOverlap(0, 4, 2, 4, std::string("PartialOverlap4-4_"));
+    runTestParallelRedistOverlap(0, 4, 2, 3, std::string("PartialOverlap4-3_"));
+    runTestParallelRedistOverlap(0, 4, 0, 4, std::string("TotalOverlap4-4_"));
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();

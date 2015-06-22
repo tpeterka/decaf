@@ -723,10 +723,7 @@ public:
     //Todo : remove the code redundancy
     virtual bool merge(char* buffer, int size)
     {
-        //serial_buffer_.getline(buffer, size);
-        //boost::archive::binary_iarchive ia(serial_buffer_);
         in_serial_buffer_ = std::string(buffer, size);
-        std::cout<<"Serial buffer size : "<<in_serial_buffer_.size()<<std::endl;
         boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
         boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
         boost::archive::binary_iarchive ia(sout);
@@ -820,7 +817,6 @@ public:
 
     virtual bool merge()
     {
-        std::cout<<"Size of the received string : "<<in_serial_buffer_.size()<<std::endl;
         boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
         boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
         boost::archive::binary_iarchive ia(sout);
@@ -908,16 +904,6 @@ public:
         oa << container_;
         s.flush();
 
-        std::cout<<"Size of the string after serialization : "<<out_serial_buffer_.size()<<std::endl;
-
-        std::cout<<"Test serialization : "<<std::endl;
-        std::string test_deserialize;
-        test_deserialize.resize(out_serial_buffer_.size());
-        memcpy(&test_deserialize[0], &out_serial_buffer_[0], out_serial_buffer_.size());
-        boost::iostreams::basic_array_source<char> device(test_deserialize.data(), test_deserialize.size());
-        boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
-        boost::archive::binary_iarchive ia(sout);
-        std::cout<<"Serialization test completed."<<std::endl;
         return true;
     }
 
@@ -929,7 +915,6 @@ public:
     //Prepare enough space in the serial buffer
     virtual void allocate_serial_buffer(int size)
     {
-        std::cout<<"Allocating for "<<size<<" bytes"<<std::endl;
         in_serial_buffer_.resize(size);
     }
 
@@ -940,9 +925,6 @@ public:
     }
     virtual char* getOutSerialBuffer()
     {
-        std::cout<<"Out serial called"<<std::endl;
-        char* buffer = &out_serial_buffer_[0];
-        std::cout<<"Adress : "<<&buffer<<std::endl;
         return &out_serial_buffer_[0];
     }
     virtual int getOutSerialBufferSize(){ return out_serial_buffer_.size();}
@@ -954,9 +936,6 @@ public:
     }
     virtual char* getInSerialBuffer()
     {
-        std::cout<<"In serial called"<<std::endl;
-        char* buffer = &in_serial_buffer_[0];
-        std::cout<<"Adress : "<<&buffer<<std::endl;
         return &in_serial_buffer_[0];
     }
     virtual int getInSerialBufferSize(){ return in_serial_buffer_.size(); }
@@ -1121,7 +1100,6 @@ bool ConstructData::updateMetaData()
 
         if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
         {
-            std::cout<<"Add a ZCurve key field"<<std::endl;
             bZCurveKey_ = true;
             zCurveKey_ = std::get<3>(it->second);
         }

@@ -45,10 +45,7 @@ namespace decaf
           rankSource_(rankSource), nbSources_(nbSources),
           rankDest_(rankDest), nbDests_(nbDests), summerizeDest_(NULL){}
 
-      virtual ~RedistComp()
-      {
-          std::cout<<"Number of split chunks : "<<splitChunks_.size()<<std::endl;
-      }
+      virtual ~RedistComp(){}
 
       // Run the pipeline of operations to redistribute the data.
       // This fonction is the only one zhich should be called from
@@ -94,16 +91,11 @@ namespace decaf
 
 void decaf::RedistComp::process(shared_ptr<BaseData> data, RedistRole role)
 {
-    std::cout<<"========== PROCESS ==============="<<std::endl;
-    std::cout<<"Redist component ["<<rankSource_<<","
-            <<nbSources_<<","<<rankDest_<<","<<nbDests_<<"]"<<std::endl;
     computeGlobal(data, role);
 
     splitData(data, role);
 
     redistribute(data, role);
-    std::cout<<"========== PROCESS ==============="<<std::endl;
-    //merge();
 }
 
 #endif

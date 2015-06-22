@@ -159,6 +159,9 @@ void Morton_3D_Decode_10bit( const unsigned int morton,
       int indexes_per_dest_;
       int rankOffset_;
 
+      int *sum_;                // Used by the producer
+      int *destBuffer_;         // Used by the consumer
+
 
   };
 
@@ -177,8 +180,6 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
     bBox_(bBox),
     slices_(slices)
 {
-    std::cout<<"Generation of the Redist component with ["<<rankSource_<<","
-            <<nbSources_<<","<<rankDest_<<","<<nbDests_<<"]"<<std::endl;
     MPI_Group group, groupRedist, groupSource, groupDest;
     int range[3];
     MPI_Comm_group(world_comm, &group);
@@ -189,7 +190,6 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
 
     local_source_rank_ = 0;                     //Rank of first source in communicator_
     local_dest_rank_ = rankDest_ - rankSource_; //Rank of first destination in communucator_
-    std::cout<<"Local destination rank : "<<local_dest_rank_<<std::endl;
 
     //Generation of the group with all the sources and destination
     range[0] = rankSource;
@@ -200,13 +200,11 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
-    std::cout<<"Rank in the Redist component : "<<rank_<<std::endl;
 
     //Generation of the group with all the sources
     //if(world_rank >= rankSource_ && world_rank < rankSource_ + nbSources_)
     if(isSource())
     {
-        std::cout<<"Generating the source communicator"<<std::endl;
         range[0] = rankSource;
         range[1] = rankSource + nbSources - 1;
         range[2] = 1;
@@ -215,14 +213,12 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
         MPI_Group_free(&groupSource);
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
-        std::cout<<"Source Rank in the Redist component : "<<source_rank<<std::endl;
     }
 
     //Generation of the group with all the Destinations
     //if(world_rank >= rankDest_ && world_rank < rankDest_ + nbDests_)
     if(isDest())
     {
-        std::cout<<"Generating the destination communicator"<<std::endl;
         range[0] = rankDest;
         range[1] = rankDest + nbDests - 1;
         range[2] = 1;
@@ -231,21 +227,19 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
         MPI_Group_free(&groupDest);
         int dest_rank;
         MPI_Comm_rank(commDests_, &dest_rank);
-        std::cout<<"Dest Rank in the Redist component : "<<dest_rank<<std::endl;
-
     }
 
     MPI_Group_free(&group);
     MPI_Group_free(&groupRedist);
 
+    // The slices are the number rows in each dimension for the grid
     if(slices_.size() != 3)
     {
-        std::cout<<"No slices given, will use 8,8,8"<<std::endl;
+        std::cout<<"WARNING : No slices given, will use 8,8,8"<<std::endl;
         slices_ = { 8,8,8 };
     }
     else
     {
-        std::cout<<"Slices : [";
         for(unsigned int i = 0; i < 3; i++)
         {
             if(slices_.at(i) < 1)
@@ -253,23 +247,21 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
                 std::cout<<" ERROR : slices can't be inferior to 1. Switching the value to 1."<<std::endl;
                 slices_.at(i) = 1;
             }
-            std::cout<<slices_.at(i)<<",";
         }
-        std::cout<<"]"<<std::endl;
-
     }
 
     //Computing the index ranges per destination
     //We can use -1 because the constructor makes sure that all items of slices_ are > 0
     int maxIndex = Morton_3D_Encode_10bit(slices_[0]-1, slices_[1]-1, slices_[2]-1);
 
-    std::cout<<"Maximum morton code possible : "<<maxIndex<<std::endl;
     indexes_per_dest_ = maxIndex /  nbDests_;
-    std::cout<<"Number of indexes per destination : "<<indexes_per_dest_<<std::endl;
+    // From rank 0 to rankOffset_ - 1, each destination are assigned to indexes_per_dest_+1 indexes
+    // From rankOffset to the rest, each destination are assigned to indexes_per_dest_ indexes
     rankOffset_ = maxIndex %  nbDests_;
-    std::cout<<"RankOffset : "<<rankOffset_<<std::endl;
 
     // Checking the bounding box and updating the slicesDelta if possible
+    // If the bounding box is not available, this will be filled during the first
+    // computeGlobal() call
     if(bBox_.size() == 6)
     {
         bBBox_ = true;
@@ -278,6 +270,9 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource, int nbSources,
         slicesDelta_[1] = (bBox_[4] - bBox_[1]) / (float)(slices_[1]);
         slicesDelta_[2] = (bBox_[5] - bBox_[2]) / (float)(slices_[2]);
     }
+
+    destBuffer_ = new int[nbDests_];
+    sum_ = new int[nbDests_];
 }
 
 decaf::
@@ -289,20 +284,10 @@ RedistZCurveMPI::~RedistZCurveMPI()
     MPI_Comm_free(&commSources_);
   if (commDests_ != MPI_COMM_NULL)
     MPI_Comm_free(&commDests_);
+
+  delete[] destBuffer_;
+  delete[] sum_;
 }
-
-/*void
-decaf::
-RedistZCurveMPI::put(std::shared_ptr<BaseData> data, TaskType task_type)
-{
-    computeGlobal(data, DECAF_REDIST_SOURCE);
-
-    splitData(data, DECAF_REDIST_SOURCE);
-
-    redistribute(data, DECAF_REDIST_SOURCE);
-
-
-}*/
 
 void
 decaf::
@@ -323,10 +308,11 @@ RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 
             int nbParticules; // The size of the array is 3*nbParticules
             const float* key = data->getZCurveKey(&nbParticules);
-            if(key == NULL)
+            if(key == NULL){
                 std::cout<<"ERROR : the key pointer is NULL"<<std::endl;
-            else
-                std::cout<<"The key contains "<<nbParticules<<" particules."<<std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 0);
+            }
+
             float localBBox[6];
 
             // Computing the local bounding box
@@ -351,9 +337,6 @@ RedistZCurveMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
                 MPI_Allreduce(&(localBBox[0]), &(bBox_[0]), 3, MPI_FLOAT, MPI_MIN, commSources_);
                 MPI_Allreduce(&(localBBox[0])+3, &(bBox_[0])+3, 3, MPI_FLOAT, MPI_MAX, commSources_);
 
-                std::cout<<"The global bounding box is : ["<<localBBox[0]<<","<<localBBox[1]<<","<<localBBox[2]<<"]"
-                        <<"["<<localBBox[3]<<","<<localBBox[4]<<","<<localBBox[5]<<"]"<<std::endl;
-
                 bBBox_ = true;
 
                 //Updating the slices
@@ -375,7 +358,6 @@ void
 decaf::
 RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
 {
-    std::cout<<"Spliting with the rank "<<rank_<<std::endl;
     if(role == DECAF_REDIST_SOURCE){
 
         //Compute the split vector and the destination ranks
@@ -406,7 +388,6 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             if(z >= slices_[2]) z = slices_[2] - 1;
 
             unsigned int morton = Morton_3D_Encode_10bit(x,y,z);
-            //std::cout<<"Morton code for ["<<x<<","<<y<<","<<z<<"] : "<<morton<<std::endl;
 
             //Computing the destination rank
             int destination;
@@ -417,16 +398,12 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
             else
             {
                 morton -= rankOffset_ * (indexes_per_dest_+1);
-                //std::cout<<"New morton code : "<<morton<<std::endl;
-                //std::cout<<"Morton/indexes_per_dest : "<<morton/indexes_per_dest_<<std::endl;
                 destination = rankOffset_ + morton / indexes_per_dest_;
             }
 
             //Use for the case where morton == maxMorton
             if(destination == nbDests_)
                 destination = nbDests_ - 1;
-
-            //std::cout<<"The destination for the particule "<<i<<" is "<<destination<<std::endl;
 
             split_ranges[destination].push_back(i);
 
@@ -444,13 +421,8 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
         }
 
 
-        std::cout<<"Data will be split in "<<split_ranges.size()<<" chunks"<<std::endl;
-        std::cout<<"Size of Destinaton list :  "<<destList_.size()<<" chunks"<<std::endl;
-
         splitChunks_ =  data->split( split_ranges );
-        std::cout<<splitChunks_.size()<<" chunks have been produced"<<std::endl;
 
-        std::cout<<"Serializing the chunks..."<<std::endl;
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
             // TODO : Check the rank for the destination.
@@ -463,68 +435,53 @@ RedistZCurveMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
         // Data might be rewriten if producers and consummers are overlapping
         data->purgeData();
     }
-    else
-        std::cout<<"Destination, nothing to do in the split"<<std::endl;
-    std::cout<<"End of spliting"<<std::endl;
-
 }
 
 void
 decaf::
 RedistZCurveMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
-    std::cout<<"Redistributing with the rank "<<rank_<<std::endl;
     // Sum the number of emission for each destination
-    int *sum;
     if(role == DECAF_REDIST_SOURCE)
     {
-        if(rank_ == local_source_rank_) sum = new int[ nbDests_];
-        MPI_Reduce( summerizeDest_, sum,  nbDests_, MPI_INT, MPI_SUM,
+        MPI_Reduce( summerizeDest_, sum_,  nbDests_, MPI_INT, MPI_SUM,
                    local_source_rank_, commSources_);
     }
-    std::cout<<"Reduce the sum done."<<std::endl;
 
-    // Sending to the rank 0 of the destinations
-    if(role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
+    //Case with overlapping
+    if(rank_ == local_source_rank_ && rank_ == local_dest_rank_)
     {
-        //for(int i = 0; i < nbDests_;i++)
-        //    std::cout<<"Destination "<<i<<" : "<<sum[i]<<std::endl;
-        MPI_Request req;
-        reqs.push_back(req);
-        MPI_Isend(sum,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG, communicator_,&reqs.back());
-
-        std::cout<<"Sending the sum to the first destination ("<<rankDest_ -  rankSource_<<")"<<std::endl;
+        memcpy(destBuffer_, sum_, nbDests_ * sizeof(int));
     }
-
-
-    // Getting the accumulated buffer on the destination side
-    int *destBuffer;
-    if(role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) //Root of destination
+    else
     {
-        std::cout<<"Waiting for incomming array"<<std::endl;
-        MPI_Status status;
-        MPI_Probe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &status);
-        if (status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
+        // Sending to the rank 0 of the destinations
+        if(role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
         {
-
-            destBuffer = new int[ nbDests_];
-            MPI_Recv(destBuffer,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
-            std::cout<<"Receiving the sum  ("<<rankDest_ -  rankSource_<<")"<<std::endl;
+            MPI_Request req;
+            reqs.push_back(req);
+            MPI_Isend(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG, communicator_,&reqs.back());
         }
 
-        //for(int i = 0; i < nbDests_;i++)
-        //    std::cout<<"Reception : Destination "<<i<<" : "<<destBuffer[i]<<std::endl;
+
+        // Getting the accumulated buffer on the destination side
+        if(role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) //Root of destination
+        {
+            MPI_Status status;
+            MPI_Probe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &status);
+            if (status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
+            {
+                //destBuffer = new int[ nbDests_];
+                MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
+            }
+        }
     }
 
     // Scattering the sum accross all the destinations
     int nbRecep;
     if(role == DECAF_REDIST_DEST)
     {
-        std::cout<<"Scaterring with the rank "<<rank_<<std::endl;
-        MPI_Scatter(destBuffer,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
-
-        if(rank_ ==  local_dest_rank_) delete destBuffer;
-        std::cout<<"Scattering done."<<std::endl;
+        MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
     }
 
     // At this point, each source knows where they have to send data
@@ -533,7 +490,6 @@ RedistZCurveMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     //Processing the data exchange
     if(role == DECAF_REDIST_SOURCE)
     {
-        std::cout<<"Sending the data from the sources"<<std::endl;
         for(unsigned int i = 0; i <  destList_.size(); i++)
         {
             //Sending to self, we simply copy the string from the out to in
@@ -545,19 +501,16 @@ RedistZCurveMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             {
                 MPI_Request req;
                 reqs.push_back(req);
-                std::cout<<"Sending message of size : "<<splitChunks_.at(i)->getOutSerialBufferSize()
-                        <<" to destination "<<destList_.at(i)<<std::endl;
+
                 MPI_Isend( splitChunks_.at(i)->getOutSerialBuffer(),
                           splitChunks_.at(i)->getOutSerialBufferSize(),
                           MPI_BYTE, destList_.at(i), MPI_DATA_TAG, communicator_, &reqs.back());
             }
         }
-        std::cout<<"End of sending messages"<<std::endl;
     }
 
     if(role == DECAF_REDIST_DEST)
     {
-        std::cout<<"Receiving the data."<<std::endl;
         for(int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
@@ -566,22 +519,17 @@ RedistZCurveMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             {
                 int nitems; // number of items (of type dtype) in the message
                 MPI_Get_count(&status, MPI_BYTE, &nitems);
-                std::cout<<"Reception of a message with size "<<nitems<<std::endl;
 
                 //Allocating the space necessary
                 data->allocate_serial_buffer(nitems);
-                //std::vector<char> buffer(nitems);
-                std::cout<<"Allocation done"<<std::endl;
                 MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
                          status.MPI_TAG, communicator_, &status);
-                //MPI_Recv(&buffer[0], nitems, MPI_BYTE, status.MPI_SOURCE,
-                //                         status.MPI_TAG, communicator_, &status);
-                std::cout<<"Message received"<<std::endl;
+
+                // The dynamic type of merge is given by the user
+                // NOTE : examin if it's not more efficient to receive everything
+                // and then merge. Memory footprint more important but allows to
+                // aggregate the allocations etc
                 data->merge();
-                //data->merge(&buffer[0], nitems);
-                //A modifier
-                //shared_ptr<BaseData> newData = make_shared<BaseData>(data->get());
-                //receivedChunks_.push_back(newData);
             }
 
         }
@@ -589,16 +537,14 @@ RedistZCurveMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         // Checking if we have something in transit
         if(transit)
         {
-            std::cout<<"Getting the transit data"<<std::endl;
             data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
 
             //We don't need it anymore. Cleaning for the next iteration
             transit.reset();
         }
-        std::cout<<"End of reception."<<std::endl;
     }
-    std::cout<<"End of redistributing with the rank "<<rank_<<std::endl;
 }
+
 // Merge the chunks from the vector receivedChunks into one single Data.
 std::shared_ptr<decaf::BaseData>
 decaf::

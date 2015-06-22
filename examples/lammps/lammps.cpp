@@ -96,6 +96,7 @@ extern "C"
                 (*dataflows)[i]->flush();       // need to clean up after each time step
             }
         }
+        std::cout<<"End of iteration "<<t_current<<std::endl;
         delete[] x;
 
         if (t_current == t_nsteps - 1)          // last time step
@@ -122,6 +123,7 @@ extern "C"
             //       fprintf(stderr, "%.3lf %.3lf %.3lf\n", pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
             (*dataflows)[0]->flush();        // need to clean up after each time step
         }
+        std::cout<<"End of iteration "<<t_current<<std::endl;
     }
 
     // puts the atom positions to the dataflow
@@ -143,6 +145,7 @@ extern "C"
             (*dataflows)[0]->flush();        // need to clean up after each time step
             delete[] a->pos;
         }
+        std::cout<<"End of iteration "<<t_current<<std::endl;
     }
 
     // gets the atom positions and copies them
@@ -171,6 +174,7 @@ extern "C"
             }
             (*dataflows)[0]->flush();        // need to clean up after each time step
         }
+        std::cout<<"End of iteration "<<t_current<<std::endl;
     }
 
     // dataflow just needs to flush on every time step
@@ -191,6 +195,7 @@ extern "C"
             }
             (*dataflows)[i]->flush();        // need to clean up after each time step
         }
+        std::cout<<"End of iteration "<<t_current<<std::endl;
     }
 } // extern "C"
 
