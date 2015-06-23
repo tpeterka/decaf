@@ -14,6 +14,7 @@ install(DIRECTORY .
 find_package(Boost COMPONENTS serialization)
 if(Boost_FOUND)
     message("Building direct example python with Redistribution component")
+    include_directories(${Boost_INCLUDE_DIRS})
     cython_add_module( py_direct_redist driver_redist.pyx )
     target_link_libraries( py_direct_redist ${libraries} ${Boost_LIBRARIES})
 
