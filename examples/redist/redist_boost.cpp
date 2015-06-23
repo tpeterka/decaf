@@ -1,17 +1,18 @@
 //---------------------------------------------------------------------------
 //
-// example of direct coupling
+// Example of redistribution with Boost serialization
 //
-// Tom Peterka
+// Matthieu Dreher
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
-// tpeterka@mcs.anl.gov
+// mdreher@anl.gov
 //
 //--------------------------------------------------------------------------
+
 #include <decaf/decaf.hpp>
-#include <decaf/transport/mpi/redist_count_mpi.hpp>
-#include <decaf/transport/mpi/types.hpp>
+#include <decaf/transport/mpi/redist_count_mpi.h>
+#include <decaf/transport/mpi/types.h>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -662,32 +663,20 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
     }
 }
 
-void run(DecafSizes& decaf_sizes,
-         int prod_nsteps)
-{
-  MPI_Init(NULL, NULL);
-
-  int size_world, rank;
-  MPI_Comm_size(MPI_COMM_WORLD, &size_world);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  //runTestSimple();
-  runTestParallelRedist(5,2);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Finalize();
-}
-
 int main(int argc,
          char** argv)
 {
-  // parse command line args
-  DecafSizes decaf_sizes;
-  int prod_nsteps;
-  //GetArgs(argc, argv, decaf_sizes, prod_nsteps);
+    MPI_Init(NULL, NULL);
 
-  // run decaf
-  run(decaf_sizes, prod_nsteps);
+    int size_world, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size_world);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    //runTestSimple();
+    runTestParallelRedist(5,2);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
 
   return 0;
 }

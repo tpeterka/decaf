@@ -50,12 +50,12 @@ namespace decaf
       // Run the pipeline of operations to redistribute the data.
       // This fonction is the only one zhich should be called from
       // the main programm
-      virtual void process(shared_ptr<BaseData> data, RedistRole role);
+      virtual void process(std::shared_ptr<BaseData> data, RedistRole role);
 
-      int getRankSource() { return rankSource_; }
-      int getNbSources() { return nbSources_; }
-      int getRankDest() { return rankDest_; }
-      int getNbDest() { return nbDests_; }
+      int getRankSource();
+      int getNbSources();
+      int getRankDest();
+      int getNbDest();
 
       virtual void flush() = 0;
 
@@ -63,18 +63,18 @@ namespace decaf
   protected:
       // Compute the values necessary to determine how the data should be
       // splitted and redistributed.
-      virtual void computeGlobal(shared_ptr<BaseData> data, RedistRole role)=0;
+      virtual void computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)=0;
 
       // Seperate the Data into chunks for each destination involve in the
       // component and fill the splitChunks vector
-      virtual void splitData(shared_ptr<BaseData> data, RedistRole role)=0;
+      virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role)=0;
 
       // Transfert the chunks from the sources to the destination. The data
       // should be stored in the vector receivedChunks
-      virtual void redistribute(shared_ptr<BaseData> data, RedistRole role)=0;
+      virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role)=0;
 
       // Merge the chunks from the vector receivedChunks into one single Data.
-      virtual shared_ptr<BaseData> merge(RedistRole role)=0;
+      virtual std::shared_ptr<BaseData> merge(RedistRole role)=0;
 
       int rankSource_; // Rank of the first source (=sender)
       int nbSources_;  // Number of sources, supposed to be consecutives
@@ -88,14 +88,5 @@ namespace decaf
   };
 
 } //namespace decaf
-
-void decaf::RedistComp::process(shared_ptr<BaseData> data, RedistRole role)
-{
-    computeGlobal(data, role);
-
-    splitData(data, role);
-
-    redistribute(data, role);
-}
 
 #endif

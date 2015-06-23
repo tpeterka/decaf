@@ -1,7 +1,7 @@
 include (../../../cmake/UseCython.cmake)
 
 cython_add_module( py_direct driver.pyx )
-target_link_libraries( py_direct ${libraries})
+target_link_libraries( py_direct ${libraries} decaf_transport)
 
 install(TARGETS py_direct
         DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/python/
@@ -16,7 +16,7 @@ if(Boost_FOUND)
     message("Building direct example python with Redistribution component")
     include_directories(${Boost_INCLUDE_DIRS})
     cython_add_module( py_direct_redist driver_redist.pyx )
-    target_link_libraries( py_direct_redist ${libraries} ${Boost_LIBRARIES})
+    target_link_libraries( py_direct_redist ${libraries} ${Boost_LIBRARIES} decaf_transport)
 
     install(TARGETS py_direct_redist
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/python/

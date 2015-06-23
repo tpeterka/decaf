@@ -10,80 +10,14 @@
 //
 //--------------------------------------------------------------------------
 
-#ifndef DECAF_REDIST_ROUND_MPI_HPP
-#define DECAF_REDIST_ROUND_MPI_HPP
-
 #include <iostream>
 #include <assert.h>
+#include <string.h>
 
-#include <decaf/redist_comp.h>
-
-
-namespace decaf
-{
-
-  class RedistRoundMPI : public RedistComp
-  {
-  public:
-      RedistRoundMPI() :
-          communicator_(MPI_COMM_NULL),
-          commSources_(MPI_COMM_NULL),
-          commDests_(MPI_COMM_NULL) {}
-      RedistRoundMPI(int rankSource, int nbSources,
-                     int rankDest, int nbDests,
-                     CommHandle communicator);
-      ~RedistRoundMPI();
-
-      void flush();
-
-  protected:
-
-      // Compute the values necessary to determine how the data should be splitted
-      // and redistributed.
-      virtual void computeGlobal(std::shared_ptr<BaseData> data, RedistRole role);
-
-      // Seperate the Data into chunks for each destination involve in the component
-      // and fill the splitChunks vector
-      virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role);
-
-      // Transfert the chunks from the sources to the destination. The data should be
-      // be stored in the vector receivedChunks
-      virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role);
-
-
-      // Merge the chunks from the vector receivedChunks into one single Data.
-      virtual std::shared_ptr<BaseData> merge(RedistRole role);
-
-      // Merge the chunks from the vector receivedChunks into one single data->
-      //virtual BaseData* Merge();
-
-      //bool isSource(){ return rank_ <  nbSources_; }
-      //bool isDest(){ return rank_ >= rankDest_ - rankSource_; }
-
-      bool isSource(){ return rank_ >= local_source_rank_ && rank_ < local_source_rank_ + nbSources_; }
-      bool isDest(){ return rank_ >= local_dest_rank_ && rank_ < local_dest_rank_ + nbDests_; }
-
-      CommHandle communicator_; // Communicator for all the processes involve
-      CommHandle commSources_;  // Communicator of the sources
-      CommHandle commDests_;    // Communicator of the destinations
-      std::vector<CommRequest> reqs;       // pending communication requests
-
-      int rank_;                // Rank in the group communicator
-      int size_;                // Size of the group communicator
-      int local_source_rank_;   // Rank of the first source in communicator_
-      int local_dest_rank_;     // Rank of the first destination in communicator_
-
-      std::shared_ptr<BaseData> transit; // Used then a source and destination are overlapping
-
-      int *sum_;                // Used by the producer
-      int *destBuffer_;         // Used by the consumer
-
-  };
-
-} // namespace
+#include "decaf/transport/mpi/redist_count_mpi.h"
 
 decaf::
-RedistRoundMPI::RedistRoundMPI(int rankSource, int nbSources,
+RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
                                int rankDest, int nbDests, CommHandle world_comm) :
     RedistComp(rankSource, nbSources, rankDest, nbDests),
     communicator_(MPI_COMM_NULL),
@@ -105,7 +39,7 @@ RedistRoundMPI::RedistRoundMPI(int rankSource, int nbSources,
 
     //Generation of the group with all the sources and destination
     range[0] = rankSource;
-    range[1] = max(rankSource + nbSources - 1, rankDest + nbDests - 1);
+    range[1] = std::max(rankSource + nbSources - 1, rankDest + nbDests - 1);
     range[2] = 1;
 
     MPI_Group_range_incl(group, 1, &range, &groupRedist);
@@ -146,10 +80,11 @@ RedistRoundMPI::RedistRoundMPI(int rankSource, int nbSources,
 
     destBuffer_ = new int[nbDests_];
     sum_ = new int[nbDests_];
+
 }
 
 decaf::
-RedistRoundMPI::~RedistRoundMPI()
+RedistCountMPI::~RedistCountMPI()
 {
   if (communicator_ != MPI_COMM_NULL)
     MPI_Comm_free(&communicator_);
@@ -162,25 +97,92 @@ RedistRoundMPI::~RedistRoundMPI()
   delete[] sum_;
 }
 
+bool
+decaf::
+RedistCountMPI::isSource()
+{
+    return rank_ >= local_source_rank_ && rank_ < local_source_rank_ + nbSources_;
+}
+
+bool
+decaf::
+RedistCountMPI::isDest()
+{
+    return rank_ >= local_dest_rank_ && rank_ < local_dest_rank_ + nbDests_;
+}
+
+
 void
 decaf::
-RedistRoundMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
+RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 {
-   //Nothing to do here
-   return;
+    if(role == DECAF_REDIST_SOURCE)
+    {
+        int nbItems = data->getNbItems();
+
+        if(nbSources_ == 1)
+        {
+            global_item_rank_ = 0;
+            global_nb_items_ = nbItems;
+        }
+        else
+        {
+            //Computing the index of the local first item in the global array of data
+            MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_INT,
+                     MPI_SUM, commSources_);
+            global_item_rank_ -= nbItems;   // Process rank 0 has the item 0,
+                                            // rank 1 has the item nbItems(rank 0)
+                                            // and so on
+
+            //Compute the number of items in the global array
+            MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
+                          MPI_SUM, commSources_);
+        }
+    }
 }
 
 void
 decaf::
-RedistRoundMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
+RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE){
+        // We have the items global_item_rank to global_item_rank_ + data->getNbItems()
+        // We have to split global_nb_items_ into nbDest in total
+
+        //Computing the number of elements to split
+        int items_per_dest = global_nb_items_ /  nbDests_;
+
+        int rankOffset = global_nb_items_ %  nbDests_;
+
+        //debug
+        //std::cout<<"Ranks from 0 to "<<rankOffset-1<<" will receive "<< items_per_dest+1 <<
+        //           " items. Ranks from "<<rankOffset<< " to "<<  nbDests_-1<<
+        //           " will reiceive" <<items_per_dest<< " items"<< std::endl;
 
         //Computing how to split the data
 
+        //Compute the destination rank of the first item
+        int first_rank;
+        if( rankOffset == 0){ //  Case where nbDest divide the total number of item
+            first_rank = global_item_rank_ / items_per_dest;
+        }
+        else
+        {
+            // The first ranks have items_per_dest+1 items
+            first_rank = global_item_rank_ / (items_per_dest+1);
+
+            //If we starts
+            if(first_rank >= rankOffset)
+            {
+                first_rank = rankOffset +
+                        (global_item_rank_ - rankOffset*(items_per_dest+1)) / items_per_dest;
+            }
+        }
+
         //Compute the split vector and the destination ranks
-        std::vector<std::vector<int> > split_ranges = std::vector<std::vector<int> >( nbDests_);
-        int nbItems = data->getNbItems();
+        std::vector<int> split_ranges;
+        int items_left = data->getNbItems();
+        int current_rank = first_rank;
 
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
@@ -188,21 +190,48 @@ RedistRoundMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
          summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 
-        //Distributing the data in a round robin fashion
-        for(int i = 0; i < nbItems; i++)
-        {
-            split_ranges[i % nbDests_].push_back(i);
-        }
+        //We have nothing to do now, the necessary data are initialized
+        //if(items_left == 0)
+        //    return;
 
-        //Updating the informations about messages to send
-        for(unsigned int i = 0; i < split_ranges.size(); i++)
+        while(items_left != 0)
         {
-            if(split_ranges.at(i).size() > 0)
-                destList_.push_back(i + local_dest_rank_);
+            int currentNbItems;
+            //We may have to complete the rank
+            if(current_rank == first_rank){
+                int global_item_firstrank;
+                if(first_rank < rankOffset)
+                {
+                    global_item_firstrank = first_rank * (items_per_dest + 1);
+                    currentNbItems = std::min(items_left,
+                                         global_item_firstrank + items_per_dest + 1 - global_item_rank_);
+                }
+                else
+                {
+                    global_item_firstrank = rankOffset * (items_per_dest + 1) +
+                            (first_rank - rankOffset) * items_per_dest ;
+                    currentNbItems = std::min(items_left,
+                                     global_item_firstrank + items_per_dest - global_item_rank_);
+
+                }
+
+
+            }
+            else if(current_rank < rankOffset)
+                currentNbItems = std::min(items_left, items_per_dest + 1);
+            else
+                currentNbItems = std::min(items_left, items_per_dest);
+
+            split_ranges.push_back(currentNbItems);
 
             //We won't send a message if we send to self
-            if(i + local_dest_rank_ != rank_)
-                summerizeDest_[i] = 1;
+            if(current_rank + local_dest_rank_ != rank_)
+                summerizeDest_[current_rank] = 1;
+            // rankDest_ - rankSource_ is the rank of the first destination in the
+            // component communicator (communicator_)
+            destList_.push_back(current_rank + local_dest_rank_);
+            items_left -= currentNbItems;
+            current_rank++;
         }
 
         splitChunks_ =  data->split( split_ranges );
@@ -223,8 +252,9 @@ RedistRoundMPI::splitData(shared_ptr<BaseData> data, RedistRole role)
 
 void
 decaf::
-RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
+RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
+
     // Sum the number of emission for each destination
     if(role == DECAF_REDIST_SOURCE)
     {
@@ -255,7 +285,6 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             MPI_Probe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &status);
             if (status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
             {
-                //destBuffer = new int[ nbDests_];
                 MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
             }
         }
@@ -276,7 +305,7 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     {
         for(unsigned int i = 0; i <  destList_.size(); i++)
         {
-            //Sending to self, we simply copy the string from the out to in
+            //Sending to self, we store the data from the out to in
             if(destList_.at(i) == rank_)
             {
                 transit = splitChunks_.at(i);
@@ -305,6 +334,7 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 
                 //Allocating the space necessary
                 data->allocate_serial_buffer(nitems);
+
                 MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
                          status.MPI_TAG, communicator_, &status);
 
@@ -313,10 +343,12 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                 // and then merge. Memory footprint more important but allows to
                 // aggregate the allocations etc
                 data->merge();
+
             }
+
         }
 
-        // Checking if we have something in transit
+        // Checking if we have something in transit from self
         if(transit)
         {
             data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
@@ -324,29 +356,27 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             //We don't need it anymore. Cleaning for the next iteration
             transit.reset();
         }
+
     }
 }
 // Merge the chunks from the vector receivedChunks into one single Data.
 std::shared_ptr<decaf::BaseData>
 decaf::
-RedistRoundMPI::merge(RedistRole role)
+RedistCountMPI::merge(RedistRole role)
 {
     return std::shared_ptr<BaseData>();
 }
 
 void
 decaf::
-RedistRoundMPI::flush()
+RedistCountMPI::flush()
 {
     if(reqs.size())
         MPI_Waitall(reqs.size(), &reqs[0], MPI_STATUSES_IGNORE);
     reqs.clear();
 
+    // Data have been received, we can clean it now
     splitChunks_.clear();
     destList_.clear();
 }
 
-
-
-
-#endif

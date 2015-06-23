@@ -74,5 +74,5 @@ set                         (libraries
                              ${libraries}
                              ${transport_libraries}
                              ${CMAKE_DL_LIBS})
-
+add_subdirectory            (src)
 add_subdirectory            (examples)

@@ -105,7 +105,7 @@ struct WorkflowLink             // a dataflow
     void* dflow_args;           // dataflow callback arguments
     string path;                // path to callback function module
     string prod_dflow_redist;   // Redistribution component between producer and dflow
-    string dflow_cons_redist;   // Redistribution component between dflow and consumer
+    string dflow_con_redist;   // Redistribution component between dflow and consumer
 };
 
 struct Workflow            // an entire workflow

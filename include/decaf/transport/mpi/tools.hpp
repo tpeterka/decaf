@@ -10,15 +10,11 @@
 //
 //--------------------------------------------------------------------------
 
-#ifndef DECAF_TRANSPORT_MPI_TYPES_HPP
-#define DECAF_TRANSPORT_MPI_TYPES_HPP
+#ifndef DECAF_TRANSPORT_MPI_TOOLS_HPP
+#define DECAF_TRANSPORT_MPI_TOOLS_HPP
 
-#include<mpi.h>
-
-typedef MPI_Comm CommHandle;
-typedef MPI_Datatype CommDatatype;
-typedef MPI_Request CommRequest;
-typedef MPI_Aint Address;
+#include <mpi.h>
+#include <decaf/transport/mpi/types.h>
 
 // standalone utilities, not part of a class
 

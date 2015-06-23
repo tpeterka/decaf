@@ -1,3 +1,15 @@
+//---------------------------------------------------------------------------
+//
+// Example of redistribution using the Round Redistribution component
+//
+// Matthieu Dreher
+// Argonne National Laboratory
+// 9700 S. Cass Ave.
+// Argonne, IL 60439
+// mdreher@anl.gov
+//
+//--------------------------------------------------------------------------
+
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
@@ -10,7 +22,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <decaf/transport/mpi/redist_round_mpi.hpp>
+#include <decaf/transport/mpi/redist_round_mpi.h>
 
 #include <assert.h>
 #include <math.h>
@@ -96,10 +108,6 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
     std::cout<<"Test with Redistribution component with overlapping completed"<<std::endl;
     std::cout<<"-------------------------------------"<<std::endl;
 }
-
-
-
-
 
 int main(int argc,
          char** argv)

@@ -301,6 +301,8 @@ int main(int argc,
     link.nprocs = 1;
     link.dflow_func = "dflow";
     link.path = path;
+    link.prod_dflow_redist = "count";
+    link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
     link.prod = 3;                           // lammps - print1
@@ -309,6 +311,8 @@ int main(int argc,
     link.nprocs = 1;
     link.dflow_func = "dflow";
     link.path = path;
+    link.prod_dflow_redist = "count";
+    link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
     link.prod = 3;                           // lammps - print2
@@ -317,6 +321,8 @@ int main(int argc,
     link.nprocs = 1;
     link.dflow_func = "dflow";
     link.path = path;
+    link.prod_dflow_redist = "count";
+    link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
     // run decaf

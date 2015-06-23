@@ -1,17 +1,15 @@
 //---------------------------------------------------------------------------
 //
-// example of direct coupling
+// example of serialization with FFS and MPI (not supported anymore)
 //
-// Tom Peterka
+// Matthieu Dreher
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
-// tpeterka@mcs.anl.gov
+// mdreher@anl.gov
 //
 //--------------------------------------------------------------------------
-#include <decaf/decaf.hpp>
-#include <decaf/transport/mpi/redist_count_mpi.hpp>
-#include <decaf/transport/mpi/types.hpp>
+
 #include "ffs.h"
 #include "fm.h"
 
@@ -20,8 +18,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <mpi.h>
+#include <iostream>
 
-using namespace decaf;
+//using namespace decaf;
 
 typedef struct _particules
 {
@@ -55,36 +54,6 @@ FMStructDescRec block_format_list[]= {
     { NULL, NULL, 0, NULL},
 };
 
-
-// user-defined pipeliner code
-void pipeliner(Decaf* decaf)
-{
-}
-
-// user-defined resilience code
-void checker(Decaf* decaf)
-{
-}
-
-// gets command line args
-void GetArgs(int argc,
-             char **argv,
-             DecafSizes& decaf_sizes,
-             int& prod_nsteps)
-{
-  assert(argc >= 9);
-
-  decaf_sizes.prod_size    = atoi(argv[1]);
-  decaf_sizes.dflow_size   = atoi(argv[2]);
-  decaf_sizes.con_size     = atoi(argv[3]);
-
-  decaf_sizes.prod_start   = atoi(argv[4]);
-  decaf_sizes.dflow_start  = atoi(argv[5]);
-  decaf_sizes.con_start    = atoi(argv[6]);
-
-  prod_nsteps              = atoi(argv[7]);  // user's, not decaf's variable
-  decaf_sizes.con_nsteps   = atoi(argv[8]);
-}
 
 void runTestStruct()
 {
@@ -317,8 +286,7 @@ void runMPITestArrayOfStruct()
 
 }
 
-void run(DecafSizes& decaf_sizes,
-         int prod_nsteps)
+void run()
 {
   MPI_Init(NULL, NULL);
 
@@ -336,13 +304,8 @@ void run(DecafSizes& decaf_sizes,
 int main(int argc,
          char** argv)
 {
-  // parse command line args
-  DecafSizes decaf_sizes;
-  int prod_nsteps;
-  //GetArgs(argc, argv, decaf_sizes, prod_nsteps);
-
   // run decaf
-  run(decaf_sizes, prod_nsteps);
+  run();
 
   return 0;
 }

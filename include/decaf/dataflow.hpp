@@ -16,13 +16,13 @@
 
 // transport layer specific types
 #ifdef TRANSPORT_MPI
-#include "transport/mpi/types.hpp"
+#include "transport/mpi/types.h"
 #include "transport/mpi/comm.hpp"
 #include "transport/mpi/data.hpp"
 //New redistribution component
-#include "transport/mpi/redist_count_mpi.hpp"
-#include "transport/mpi/redist_round_mpi.hpp"
-#include "transport/mpi/redist_zcurve_mpi.hpp"
+#include "transport/mpi/redist_count_mpi.h"
+#include "transport/mpi/redist_round_mpi.h"
+#include "transport/mpi/redist_zcurve_mpi.h"
 #include <memory>
 #endif
 

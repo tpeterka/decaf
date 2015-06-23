@@ -8,7 +8,7 @@ if(FFS_FOUND)
     target_link_libraries       (testffs    ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
 
     add_executable              (redistffs redist.cpp)
-    target_link_libraries       (redistffs     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
+    target_link_libraries       (redistffs     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY} decaf_transport)
     install(TARGETS testffs redistffs
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
@@ -28,19 +28,19 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 
     add_executable              (testboost testBoost.cpp)
-    target_link_libraries       (testboost     ${libraries} ${Boost_LIBRARIES})
+    target_link_libraries       (testboost     ${libraries} ${Boost_LIBRARIES} decaf_transport)
 
     add_executable              (redistboost redist_boost.cpp)
-    target_link_libraries       (redistboost     ${libraries} ${Boost_LIBRARIES})
+    target_link_libraries       (redistboost     ${libraries} ${Boost_LIBRARIES} decaf_transport)
 
     add_executable              (testzcurve testZCurve.cpp)
-    target_link_libraries       (testzcurve     ${libraries} ${Boost_LIBRARIES})
+    target_link_libraries       (testzcurve     ${libraries} ${Boost_LIBRARIES} decaf_transport)
 
     add_executable              (testround testRound.cpp)
-    target_link_libraries       (testround     ${libraries} ${Boost_LIBRARIES})
+    target_link_libraries       (testround     ${libraries} ${Boost_LIBRARIES} decaf_transport)
 
     add_executable              (test2count test2Count.cpp)
-    target_link_libraries       (test2count     ${libraries} ${Boost_LIBRARIES})
+    target_link_libraries       (test2count     ${libraries} ${Boost_LIBRARIES} decaf_transport)
 
     install(TARGETS testboost redistboost testzcurve testround test2count
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/

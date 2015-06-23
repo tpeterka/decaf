@@ -26,7 +26,7 @@ struct BFSNode
 
 // transport layer specific types
 #ifdef TRANSPORT_MPI
-#include "transport/mpi/types.hpp"
+#include "transport/mpi/types.h"
 #include "transport/mpi/comm.hpp"
 #include "transport/mpi/data.hpp"
 #endif
@@ -63,7 +63,6 @@ namespace decaf
                 DecafSizes decaf_sizes;
                 for (size_t i = 0; i < workflow_.links.size(); i++)
                 {
-                    std::cout<<"Building Dataflow "<<i<<std::endl;
                     int prod  = workflow_.links[i].prod;    // index into workflow nodes
                     int dflow = i;                          // index into workflow links
                     int con   = workflow_.links[i].con;     // index into workflow nodes
@@ -74,7 +73,9 @@ namespace decaf
                     decaf_sizes.dflow_start = workflow_.links[dflow].start_proc;
                     decaf_sizes.con_start   = workflow_.nodes[con].start_proc;
                     decaf_sizes.con_nsteps  = con_nsteps_;
-                    dataflows.push_back(new Dataflow(world_comm_, decaf_sizes, pipeliner, checker, data));
+                    Decomposition prod_dflow_redist = stringToDecomposition(workflow_.links[dflow].prod_dflow_redist);
+                    Decomposition dflow_con_redist = stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
+                    dataflows.push_back(new Dataflow(world_comm_, decaf_sizes, pipeliner, checker, data, prod_dflow_redist, dflow_con_redist));
                     dataflows[i]->err();
                 }
             }

@@ -22,8 +22,8 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
                              ${FFTW_INCLUDE_DIR})
     add_executable              (lammps            lammps.cpp)
     add_library                 (mod_lammps MODULE lammps.cpp)
-    target_link_libraries       (lammps     ${lammps_libraries} )
-    target_link_libraries       (mod_lammps ${lammps_libraries} )
+    target_link_libraries       (lammps     ${lammps_libraries} decaf_transport)
+    target_link_libraries       (mod_lammps ${lammps_libraries} decaf_transport)
 
 
 
@@ -38,8 +38,8 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
         include_directories         (${Boost_INCLUDE_DIRS})
         add_executable              (lammps_redist            lammps_redist.cpp)
         add_library                 (mod_lammps_redist MODULE lammps_redist.cpp)
-        target_link_libraries       (lammps_redist     ${lammps_libraries} ${Boost_LIBRARIES})
-        target_link_libraries       (mod_lammps_redist ${lammps_libraries} ${Boost_LIBRARIES})
+        target_link_libraries       (lammps_redist     ${lammps_libraries} ${Boost_LIBRARIES} decaf_transport)
+        target_link_libraries       (mod_lammps_redist ${lammps_libraries} ${Boost_LIBRARIES} decaf_transport)
 
         install(TARGETS lammps_redist mod_lammps_redist
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/

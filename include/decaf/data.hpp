@@ -13,14 +13,15 @@
 #ifndef DECAF_DATA_HPP
 #define DECAF_DATA_HPP
 
-#include "types.hpp"
+#include "decaf/types.hpp"
 #include <math.h>
 #include <string.h>
 #include <vector>
 
 // transport layer implementations
 #ifdef TRANSPORT_MPI
-#include "transport/mpi/types.hpp"
+#include "decaf/transport/mpi/types.h"
+#include "decaf/transport/mpi/tools.hpp"
 #endif
 
 using namespace std;

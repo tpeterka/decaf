@@ -16,8 +16,8 @@
 #include <mpi.h>
 #include <vector>
 #include <memory>
-#include "types.hpp"
-#include "../../types.hpp"
+//#include "types.hpp"
+//#include "../../types.hpp"
 
 namespace  decaf {
 
@@ -76,7 +76,7 @@ namespace  decaf {
     // virtual bool isMergeable() = 0;
 
     // Insert the data from other into the current objects
-    virtual bool merge(shared_ptr<BaseData> other) = 0;
+    virtual bool merge(std::shared_ptr<BaseData> other) = 0;
 
     // Insert the data from other in its serialize form
     virtual bool merge(char* buffer, int size) = 0;
@@ -234,14 +234,6 @@ namespace  decaf {
           datalayout_.clear();
       }
 
-      /*virtual CommDatatype getMPIDatatype()
-      {
-            if(datalayout_.empty())
-                return 0;
-
-            return datalayout_.at(0)->getMPIDatatype();
-
-      }*/
 
   protected:
       std::vector<BaseData*> datalayout_;

@@ -1,3 +1,16 @@
+//---------------------------------------------------------------------------
+//
+// Example of Redistribution with the ZCurve component
+// .ply files are produced for each rank of the consumers
+//
+// Matthieu Dreher
+// Argonne National Laboratory
+// 9700 S. Cass Ave.
+// Argonne, IL 60439
+// mdreher@anl.gov
+//
+//--------------------------------------------------------------------------
+
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
@@ -10,7 +23,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <decaf/transport/mpi/redist_zcurve_mpi.hpp>
+#include <decaf/transport/mpi/redist_zcurve_mpi.h>
 
 #include <assert.h>
 #include <math.h>
@@ -23,22 +36,6 @@
 
 
 using namespace decaf;
-
-
-void printMorton(int nbSlices)
-{
-    std::cout<<"Print of the morton codes : "<<std::endl;
-    for(unsigned int i = 0; i < nbSlices; i++)
-    {
-        for(unsigned int j = 0; j < nbSlices; j++)
-        {
-            for(unsigned int k = 0; k < nbSlices; k++)
-            {
-                std::cout<<"Morton ["<<i<<","<<j<<","<<k<<"] =>" << Morton_3D_Encode_10bit(i,j,k)<<std::endl;
-            }
-        }
-    }
-}
 
 void getHeatMapColor(float value, float *red, float *green, float *blue)
 {

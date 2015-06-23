@@ -34,9 +34,9 @@ w.add_node("print1", start_proc=5, nprocs=1, prod_func= ''          , con_func='
 w.add_node("print2", start_proc=7, nprocs=1, prod_func='print2_prod', con_func='print2_con',
            path=mod_path)
 w.add_edge("lammps", "print1", start_proc=4, nprocs=1               , dflow_func='dflow'   ,
-           path=mod_path, prod_dflow_redist='count', dflow_cons_redist='count')
+           path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 w.add_edge("lammps", "print2", start_proc=6, nprocs=1               , dflow_func='dflow'   ,
-           path=mod_path, prod_dflow_redist='count', dflow_cons_redist='count')
+           path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # total number of time steps
 prod_nsteps  = 1

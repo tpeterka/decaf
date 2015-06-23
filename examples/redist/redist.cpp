@@ -1,17 +1,18 @@
 //---------------------------------------------------------------------------
 //
-// example of direct coupling
+// example of redistribution with FFS (not supported anymore)
 //
-// Tom Peterka
+// Matthieu Dreher
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
-// tpeterka@mcs.anl.gov
+// mdreher@anl.gov
 //
 //--------------------------------------------------------------------------
+
 #include <decaf/decaf.hpp>
-#include <decaf/transport/mpi/redist_count_mpi.hpp>
-#include <decaf/transport/mpi/types.hpp>
+#include <decaf/transport/mpi/redist_count_mpi.h>
+#include <decaf/transport/mpi/types.h>
 #include "ffs.h"
 #include "fm.h"
 

@@ -1,14 +1,15 @@
 //---------------------------------------------------------------------------
 //
-// example of direct coupling
+// Direct coupling example with the new data model API
 //
-// Tom Peterka
+// Matthieu Dreher
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
-// tpeterka@mcs.anl.gov
+// mdreher@anl.gov
 //
 //--------------------------------------------------------------------------
+
 #include <decaf/decaf.hpp>
 #include "../include/ConstructType.hpp"
 
@@ -40,7 +41,7 @@ extern "C"
             int t_current,                // current time step
             int t_interval,               // consumer time interval
             int t_nsteps,                 // total number of time steps
-            vector<Dataflow*>& dataflows, // all dataflows (for producer or consumer)
+            vector<Dataflow*>* dataflows, // all dataflows (for producer or consumer)
             int this_dataflow = -1)       // index of one dataflow in list of all
 
   {
@@ -59,11 +60,11 @@ extern "C"
 
     if (!((t_current + 1) % t_interval))
     {
-      for (size_t i = 0; i < dataflows.size(); i++)
+      for (size_t i = 0; i < dataflows->size(); i++)
       {
         fprintf(stderr, "+ producing time step %d\n", t_current);
-        dataflows[i]->put(container, DECAF_PROD);
-        dataflows[i]->flush();
+        (*dataflows)[i]->put(container, DECAF_PROD);
+        (*dataflows)[i]->flush();
         std::cout<<"Prod Put done"<<std::endl;
       }
     }
@@ -75,7 +76,7 @@ extern "C"
            int t_current,                  // current time step
            int t_interval,                 // consumer time interval
            int t_nsteps,                   // total number of time steps
-           vector<Dataflow*>& dataflows,   // all dataflows (for producer or consumer)
+           vector<Dataflow*>* dataflows,   // all dataflows (for producer or consumer)
            int this_dataflow = -1)         // index of one dataflow in list of all
   {
     if (!((t_current + 1) % t_interval))
@@ -83,7 +84,7 @@ extern "C"
       std::cout<<"Con"<<std::endl;
       //int* cd    = (int*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
       std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-      dataflows[0]->get(container, DECAF_CON);
+      (*dataflows)[0]->get(container, DECAF_CON);
       std::cout<<"Get done"<<std::endl;
       std::shared_ptr<SimpleConstructData<int> > sum =
               dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
@@ -98,17 +99,17 @@ extern "C"
              int t_current,                // current time step
              int t_interval,               // consumer time interval
              int t_nsteps,                 // total number of time steps
-             vector<Dataflow*>& dataflows, // all dataflows
+             vector<Dataflow*>* dataflows, // all dataflows
              int this_dataflow = -1)       // index of one dataflow in list of all
   {
     fprintf(stderr, "dflow\n");
     //for (size_t i = 0; i < dataflows.size(); i++)
     //  dataflows[i]->flush();               // need to clean up after each time step
-    for (size_t i = 0; i < dataflows.size(); i++)
+    for (size_t i = 0; i < dataflows->size(); i++)
     {
         //Getting the data from the producer
         std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-        dataflows[i]->get(container, DECAF_DFLOW);
+        (*dataflows)[i]->get(container, DECAF_DFLOW);
         std::cout<<"dflow get done"<<std::endl;
         std::shared_ptr<SimpleConstructData<int> > sum =
                 dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
@@ -116,8 +117,8 @@ extern "C"
         fprintf(stderr, "- dataflowing time step %d, sum = %d\n", t_current, sum->getData());
 
         //Forwarding the data to the consumers
-        dataflows[i]->put(container, DECAF_DFLOW);
-        dataflows[i]->flush();
+        (*dataflows)[i]->put(container, DECAF_DFLOW);
+        (*dataflows)[i]->flush();
         std::cout<<"dflow put done"<<std::endl;
     }
 
@@ -202,6 +203,8 @@ int main(int argc,
   link.nprocs = 2;
   link.dflow_func = "dflow";
   link.path = path;
+  link.prod_dflow_redist = "count";
+  link.dflow_con_redist = "count";
   workflow.links.push_back(link);
 
   // run decaf
