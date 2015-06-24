@@ -20,7 +20,7 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "../include/ConstructType.hpp"
+#include <decaf/data_model/constructtype.h>
 
 #include <assert.h>
 #include <math.h>

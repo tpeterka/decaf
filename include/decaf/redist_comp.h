@@ -13,7 +13,7 @@
 #ifndef DECAF_REDIST_COMP_H
 #define DECAF_REDIST_COMP_H
 
-#include "transport/mpi/newData.hpp"
+#include <decaf/data_model/basedata.h>
 #include <vector>
 #include <memory>
 #include <iostream>

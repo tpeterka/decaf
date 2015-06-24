@@ -14,7 +14,10 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "../include/ConstructType.hpp"
+#include <decaf/data_model/vectorconstructdata.hpp>
+#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/constructtype.h>
+
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -24,6 +27,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 
 #include <decaf/transport/mpi/redist_zcurve_mpi.h>
+
 
 #include <assert.h>
 #include <math.h>
@@ -108,16 +112,16 @@ void posToFile(const std::vector<double>& pos, const std::string filename, doubl
 
 void printMap(ConstructData& map)
 {
-    std::shared_ptr<ArrayConstructData<double> > array = dynamic_pointer_cast<ArrayConstructData<double> >(map.getData("pos"));
+    std::shared_ptr<VectorConstructData<double> > array = dynamic_pointer_cast<VectorConstructData<double> >(map.getData("pos"));
     std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map.getData("nbParticules"));
 
     std::cout<<"Number of particule : "<<data->getData()<<std::endl;
     std::cout<<"Positions : "<<std::endl;
-    for(unsigned int i = 0; i < array->getArray().size() / 3; i++)
+    for(unsigned int i = 0; i < array->getVector().size() / 3; i++)
     {
-        std::cout<<"["<<array->getArray().at(3*i)
-                 <<","<<array->getArray().at(3*i+1)
-                 <<","<<array->getArray().at(3*i+2)<<"]"<<std::endl;
+        std::cout<<"["<<array->getVector().at(3*i)
+                 <<","<<array->getVector().at(3*i+1)
+                 <<","<<array->getVector().at(3*i+2)<<"]"<<std::endl;
     }
 }
 
@@ -189,7 +193,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
 
 
         //Sending to the first
-        std::shared_ptr<ArrayConstructData<double> > array1 = std::make_shared<ArrayConstructData<double> >( pos, 3 );
+        std::shared_ptr<VectorConstructData<double> > array1 = std::make_shared<VectorConstructData<double> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data1  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
         std::shared_ptr<BaseData> container1 = std::shared_ptr<ConstructData>(new ConstructData());
@@ -205,7 +209,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         component1->flush();
 
         //Sending to the second
-        std::shared_ptr<ArrayConstructData<double> > array2 = std::make_shared<ArrayConstructData<double> >( pos, 3 );
+        std::shared_ptr<VectorConstructData<double> > array2 = std::make_shared<VectorConstructData<double> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data2  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
         std::shared_ptr<BaseData> container2 = std::shared_ptr<ConstructData>(new ConstructData());

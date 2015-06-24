@@ -1,8 +1,8 @@
 add_executable              (direct            direct.cpp)
 add_library                 (mod_direct MODULE direct.cpp)
 
-target_link_libraries       (direct      ${libraries} decaf_transport)
-target_link_libraries       (mod_direct  ${libraries} decaf_transport)
+target_link_libraries       (direct      ${libraries} decaf_transport )
+target_link_libraries       (mod_direct  ${libraries} decaf_transport )
 
 Message("Decaf transport : ${decaf_transport}")
 
@@ -24,8 +24,8 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     add_executable              (direct_redist            direct_redist.cpp)
     add_library                 (mod_direct_redist MODULE direct_redist.cpp)
-    target_link_libraries       (direct_redist     ${libraries} ${Boost_LIBRARIES} decaf_transport)
-    target_link_libraries       (mod_direct_redist ${libraries} ${Boost_LIBRARIES} decaf_transport)
+    target_link_libraries       (direct_redist     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    target_link_libraries       (mod_direct_redist ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
     install(TARGETS direct_redist mod_direct_redist
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/

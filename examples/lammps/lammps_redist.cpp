@@ -10,7 +10,7 @@
 //
 //--------------------------------------------------------------------------
 #include <decaf/decaf.hpp>
-#include "../include/ConstructType.hpp"
+#include <decaf/data_model/constructtype.h>
 
 #include <assert.h>
 #include <math.h>
@@ -92,8 +92,8 @@ extern "C"
                     //         for (int i = 0; i < 10; i++)         // print first few atoms
                     //           fprintf(stderr, "%.3lf %.3lf %.3lf\n", x[3 * i], x[3 * i + 1], x[3 * i + 2]);
                     //(*dataflows)[i]->put(x, 3 * natoms);
-                    std::shared_ptr<ArrayConstructData<double> > data  =
-                            std::make_shared<ArrayConstructData<double> >(x, 3 * natoms, 3);
+                    std::shared_ptr<VectorConstructData<double> > data  =
+                            std::make_shared<VectorConstructData<double> >(x, 3 * natoms, 3);
                     container->appendData(std::string("pos"), data,
                                          DECAF_NOFLAG, DECAF_PRIVATE,
                                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
@@ -102,8 +102,8 @@ extern "C"
                 {
                     //(*dataflows)[i]->put(NULL); // put is collective; all producer ranks must call it
                     std::vector<double> pos;
-                    std::shared_ptr<ArrayConstructData<double> > data  =
-                            std::make_shared<ArrayConstructData<double> >(pos, 3);
+                    std::shared_ptr<VectorConstructData<double> > data  =
+                            std::make_shared<VectorConstructData<double> >(pos, 3);
                     container->appendData(std::string("pos"), data,
                                          DECAF_NOFLAG, DECAF_PRIVATE,
                                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
@@ -134,8 +134,8 @@ extern "C"
             std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
             (*dataflows)[0]->get(container, DECAF_CON);
 
-            std::shared_ptr<ArrayConstructData<double> > pos =
-                    dynamic_pointer_cast<ArrayConstructData<double> >(container->getData(std::string("pos")));
+            std::shared_ptr<VectorConstructData<double> > pos =
+                    dynamic_pointer_cast<VectorConstructData<double> >(container->getData(std::string("pos")));
 
             // debug
             fprintf(stderr, "consumer redist print1 or print3 printing %d atoms\n",
@@ -162,8 +162,8 @@ extern "C"
         {
             std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
             fprintf(stderr, "+ print2 redist producing time step %d with %d atoms\n", t_current, a->natoms);
-            std::shared_ptr<ArrayConstructData<double> > data  =
-                    std::make_shared<ArrayConstructData<double> >(a->pos, 3 * a->natoms, 3);
+            std::shared_ptr<VectorConstructData<double> > data  =
+                    std::make_shared<VectorConstructData<double> >(a->pos, 3 * a->natoms, 3);
             container->appendData(std::string("pos"), data,
                                  DECAF_NOFLAG, DECAF_PRIVATE,
                                  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
@@ -192,9 +192,9 @@ extern "C"
             std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
             (*dataflows)[0]->get(container, DECAF_CON);
 
-            std::shared_ptr<ArrayConstructData<double> > data =
-                    dynamic_pointer_cast<ArrayConstructData<double> >(container->getData(std::string("pos")));
-            std::vector<double>& pos = data->getArray();
+            std::shared_ptr<VectorConstructData<double> > data =
+                    dynamic_pointer_cast<VectorConstructData<double> >(container->getData(std::string("pos")));
+            std::vector<double>& pos = data->getVector();
             a->natoms   = data->getNbItems();
             a->pos      = new double[a->natoms * 3];
             fprintf(stderr, "consumer redist print 2 copying %d atoms\n", a->natoms);
@@ -226,8 +226,8 @@ extern "C"
                 //Getting the data from the producer
                 std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
                 (*dataflows)[i]->get(container, DECAF_DFLOW);
-                std::shared_ptr<ArrayConstructData<double> > pos =
-                        dynamic_pointer_cast<ArrayConstructData<double> >(container->getData(std::string("pos")));
+                std::shared_ptr<VectorConstructData<double> > pos =
+                        dynamic_pointer_cast<VectorConstructData<double> >(container->getData(std::string("pos")));
 
                 fprintf(stderr, "- dataflowing redist time step %d, nbAtoms = %d\n", t_current, pos->getNbItems());
 

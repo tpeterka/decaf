@@ -13,7 +13,10 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "../include/ConstructType.hpp"
+#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/vectorconstructdata.hpp>
+#include <decaf/data_model/constructtype.h>
+
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -201,7 +204,7 @@ void testConstructType()
     std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0};
     int nbParticule = pos.size() / 3;
 
-    std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
+    std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
     std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
     ConstructData container;
@@ -251,13 +254,13 @@ void testConstructType()
 
 void printMap(ConstructData& map)
 {
-    std::shared_ptr<ArrayConstructData<float> > array = dynamic_pointer_cast<ArrayConstructData<float> >(map.getData("pos"));
+    std::shared_ptr<VectorConstructData<float> > array = dynamic_pointer_cast<VectorConstructData<float> >(map.getData("pos"));
     std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map.getData("nbParticules"));
 
     std::cout<<"Number of particule : "<<data->getData()<<std::endl;
     std::cout<<"Positions : [";
-    for(unsigned int i = 0; i < array->getArray().size(); i++)
-        std::cout<<array->getArray().at(i)<<",";
+    for(unsigned int i = 0; i < array->getVector().size(); i++)
+        std::cout<<array->getVector().at(i)<<",";
     std::cout<<"]"<<std::endl;
 }
 
@@ -268,7 +271,7 @@ void testConstructTypeSplit()
     std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0,3.0,4.0,5.0};
     int nbParticule = pos.size() / 3;
 
-    std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
+    std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
     std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
     ConstructData container;
@@ -335,7 +338,7 @@ void testConstructTypeSplitMPI()
         std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0,3.0,4.0,5.0};
         int nbParticule = pos.size() / 3;
 
-        std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
+        std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
         ConstructData container;
@@ -473,7 +476,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
 
         std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
         int nbParticule = pos.size() / 3;
-        std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
+        std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
 
@@ -534,7 +537,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
 
         /*std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
         int nbParticule = pos.size() / 3;
-        std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
+        std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
 

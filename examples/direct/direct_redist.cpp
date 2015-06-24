@@ -11,7 +11,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include "../include/ConstructType.hpp"
+#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/simpleconstructdata.hpp>
 
 #include <assert.h>
 #include <math.h>

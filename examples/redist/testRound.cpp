@@ -13,7 +13,7 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "../include/ConstructType.hpp"
+#include <decaf/data_model/constructtype.h>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -75,7 +75,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
             index[i] = i;
 
 
-        std::shared_ptr<ArrayConstructData<int> > array = std::make_shared<ArrayConstructData<int> >( index, 1 );
+        std::shared_ptr<VectorConstructData<int> > array = std::make_shared<VectorConstructData<int> >( index, 1 );
 
         std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
         std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
@@ -95,9 +95,9 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
         std::cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<std::endl;
         std::shared_ptr<BaseConstructData> data = result->getData("index");
-        std::shared_ptr<ArrayConstructData<int> > index =
-                dynamic_pointer_cast<ArrayConstructData<int> >(data);
-        printArray(index->getArray());
+        std::shared_ptr<VectorConstructData<int> > index =
+                dynamic_pointer_cast<VectorConstructData<int> >(data);
+        printArray(index->getVector());
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
     }

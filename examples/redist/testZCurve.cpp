@@ -14,7 +14,10 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "../include/ConstructType.hpp"
+#include <decaf/data_model/vectorconstructdata.hpp>
+#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/constructtype.h>
+
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -108,16 +111,16 @@ void posToFile(const std::vector<float>& pos, const std::string filename, float 
 
 void printMap(ConstructData& map)
 {
-    std::shared_ptr<ArrayConstructData<float> > array = dynamic_pointer_cast<ArrayConstructData<float> >(map.getData("pos"));
+    std::shared_ptr<VectorConstructData<float> > array = dynamic_pointer_cast<VectorConstructData<float> >(map.getData("pos"));
     std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map.getData("nbParticules"));
 
     std::cout<<"Number of particule : "<<data->getData()<<std::endl;
     std::cout<<"Positions : "<<std::endl;
-    for(unsigned int i = 0; i < array->getArray().size() / 3; i++)
+    for(unsigned int i = 0; i < array->getVector().size() / 3; i++)
     {
-        std::cout<<"["<<array->getArray().at(3*i)
-                 <<","<<array->getArray().at(3*i+1)
-                 <<","<<array->getArray().at(3*i+2)<<"]"<<std::endl;
+        std::cout<<"["<<array->getVector().at(3*i)
+                 <<","<<array->getVector().at(3*i+1)
+                 <<","<<array->getVector().at(3*i+2)<<"]"<<std::endl;
     }
 }
 
@@ -174,7 +177,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
 
         //Sending to the first
-        std::shared_ptr<ArrayConstructData<float> > array = std::make_shared<ArrayConstructData<float> >( pos, 3 );
+        std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
         std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
@@ -205,10 +208,10 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
         std::stringstream filename;
         std::shared_ptr<BaseConstructData> data = result->getData("pos");
-        std::shared_ptr<ArrayConstructData<float> > pos =
-                dynamic_pointer_cast<ArrayConstructData<float> >(data);
+        std::shared_ptr<VectorConstructData<float> > pos =
+                dynamic_pointer_cast<VectorConstructData<float> >(data);
         filename<<basename<<rank<<".ply";
-        posToFile(pos->getArray(), filename.str(),
+        posToFile(pos->getVector(), filename.str(),
                   (float)(rank-startReceptors) / (float)nbReceptors);
     }
 
