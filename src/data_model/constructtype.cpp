@@ -2,6 +2,40 @@
 
 using namespace decaf;
 
+typedef std::tuple<ConstructTypeFlag, ConstructTypeScope,
+    int, std::shared_ptr<BaseConstructData>,
+    ConstructTypeSplitPolicy, ConstructTypeMergePolicy> datafield;
+
+ConstructTypeFlag& getFlag(datafield& field)
+{
+    return std::get<0>(field);
+}
+
+ConstructTypeScope& getScope(datafield& field)
+{
+    return std::get<1>(field);
+}
+
+int& getNbItemsField(datafield& field)
+{
+    return std::get<2>(field);
+}
+
+std::shared_ptr<BaseConstructData>& getBaseData(datafield& field)
+{
+    return std::get<3>(field);
+}
+
+ConstructTypeSplitPolicy& getSplitPolicy(datafield& field)
+{
+    return std::get<4>(field);
+}
+
+ConstructTypeMergePolicy& getMergePolicy(datafield& field)
+{
+    return std::get<5>(field);
+}
+
 decaf::
 ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false), zCurveIndex_(NULL),
         bZCurveKey_(false), zCurveKey_(NULL)
@@ -49,7 +83,7 @@ ConstructData::printKeys()
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
     {
-        std::cout<<"Key : "<<it->first<<", nbItems : "<<std::get<2>(it->second)<<std::endl;
+        std::cout<<"Key : "<<it->first<<", nbItems : "<<getNbItemsField(it->second)<<std::endl;
     }
     std::cout<<"End of display of the map"<<std::endl;
 
@@ -139,7 +173,7 @@ ConstructData::split(
     {
         // Splitting the current field
         std::vector<std::shared_ptr<BaseConstructData> > splitFields;
-        splitFields = std::get<3>(it->second)->split(range, std::get<4>(it->second));
+        splitFields = getBaseData(it->second)->split(range, getSplitPolicy(it->second));
 
         // Inserting the splitted field into the splitted results
         if(splitFields.size() != result.size())
@@ -158,10 +192,10 @@ ConstructData::split(
             std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
             construct->appendData(it->first,
                                      splitFields.at(i),
-                                     std::get<0>(it->second),
+                                     getFlag(it->second),
                                      std::get<1>(it->second),
-                                     std::get<4>(it->second),
-                                     std::get<5>(it->second)
+                                     getSplitPolicy(it->second),
+                                     getMergePolicy(it->second)
                                      );
         }
     }
@@ -194,7 +228,7 @@ ConstructData::split(
     {
         // Splitting the current field
         std::vector<std::shared_ptr<BaseConstructData> > splitFields;
-        splitFields = std::get<3>(it->second)->split(range, std::get<4>(it->second));
+        splitFields = getBaseData(it->second)->split(range, getSplitPolicy(it->second));
 
         // Inserting the splitted field into the splitted results
         if(splitFields.size() != result.size())
@@ -213,10 +247,10 @@ ConstructData::split(
             std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
             construct->appendData(it->first,
                                      splitFields.at(i),
-                                     std::get<0>(it->second),
+                                     getFlag(it->second),
                                      std::get<1>(it->second),
-                                     std::get<4>(it->second),
-                                     std::get<5>(it->second)
+                                     getSplitPolicy(it->second),
+                                     getMergePolicy(it->second)
                                      );
         }
     }
@@ -268,7 +302,7 @@ ConstructData::merge(shared_ptr<BaseData> other)
                          <<"In the original map but not in the other one. Merge aborted."<<std::endl;
                 return false;
             }
-            if( !std::get<3>(otherIt->second)->canMerge(std::get<3>(it->second)) )
+            if( !getBaseData(otherIt->second)->canMerge(getBaseData(it->second)) )
                 return false;
         }
 
@@ -280,19 +314,20 @@ ConstructData::merge(shared_ptr<BaseData> other)
         {
             std::map<std::string, datafield>::iterator otherIt = otherConstruct->getMap()->find(it->first);
 
-            if(! std::get<3>(it->second)->merge(std::get<3>(otherIt->second), std::get<5>(otherIt->second)) )
+            if(! getBaseData(it->second)->merge(getBaseData(otherIt->second), getMergePolicy(otherIt->second)) )
             {
                 std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has be corrupted."<<std::endl;
                 return false;
             }
-            std::get<2>(it->second) = std::get<3>(it->second)->getNbItems();
+
+            //Updating the number of items of the field
+            getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
         }
     }
 
     return updateMetaData();
 }
 
-//Todo : remove the code redundancy
 bool
 decaf::
 ConstructData::merge(char* buffer, int size)
@@ -332,7 +367,7 @@ ConstructData::merge(char* buffer, int size)
                          <<"In the original map but not in the other one. Merge aborted."<<std::endl;
                 return false;
             }
-            if( !std::get<3>(otherIt->second)->canMerge(std::get<3>(it->second)))
+            if( !getBaseData(otherIt->second)->canMerge(getBaseData(it->second)))
                 return false;
         }
 
@@ -344,13 +379,13 @@ ConstructData::merge(char* buffer, int size)
         {
             std::map<std::string, datafield>::iterator otherIt = other->find(it->first);
 
-            if(! std::get<3>(it->second)->merge(std::get<3>(otherIt->second),
-                                                std::get<5>(otherIt->second)) )
+            if(! getBaseData(it->second)->merge(getBaseData(otherIt->second),
+                                                getMergePolicy(otherIt->second)) )
             {
                 std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has be corrupted."<<std::endl;
                 return false;
             }
-            std::get<2>(it->second) = std::get<3>(it->second)->getNbItems();
+            getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
         }
     }
 
@@ -361,61 +396,7 @@ bool
 decaf::
 ConstructData::merge()
 {
-    boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
-    boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
-    boost::archive::binary_iarchive ia(sout);
-
-    if(!data_ || container_->empty())
-    {
-        ia >> container_;
-
-        data_ = std::static_pointer_cast<void>(container_);
-    }
-    else
-    {
-        std::shared_ptr<std::map<std::string, datafield> > other;
-        ia >> other;
-
-        //We check that we can merge all the fields before merging
-        if(container_->size() != other->size())
-        {
-            std::cout<<"Error : the map don't have the same number of field. Merge aborted."<<std::endl;
-            return false;
-        }
-
-        for(std::map<std::string, datafield>::iterator it = container_->begin();
-            it != container_->end(); it++)
-        {
-            std::map<std::string, datafield>::iterator otherIt = other->find(it->first);
-            if( otherIt == other->end())
-            {
-                std::cout<<"Error : The field \""<<it->first<<"\" is present in the"
-                         <<"In the original map but not in the other one. Merge aborted."<<std::endl;
-                return false;
-            }
-            if( !std::get<3>(otherIt->second)->canMerge(std::get<3>(it->second)) )
-                return false;
-        }
-
-        //TODO : Add a checking on the merge policy and number of items in case of a merge
-
-        //We have done all the checking, now we can merge securely
-        for(std::map<std::string, datafield>::iterator it = container_->begin();
-            it != container_->end(); it++)
-        {
-            std::map<std::string, datafield>::iterator otherIt = other->find(it->first);
-
-            if(! std::get<3>(it->second)->merge(std::get<3>(otherIt->second),
-                                                std::get<5>(otherIt->second)) )
-            {
-                std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has be corrupted."<<std::endl;
-                return false;
-            }
-            std::get<2>(it->second) = std::get<3>(it->second)->getNbItems();
-        }
-    }
-
-    return updateMetaData();
+    return merge(&in_serial_buffer_[0], in_serial_buffer_.size());
 }
 
 bool
@@ -522,26 +503,26 @@ ConstructData::setData(std::shared_ptr<void> data)
         // Checking that we can insert this data and keep spliting the data after
         // If we already have fields with several items and we insert a new field
         // with another number of items, we can't split automatically
-        if(nbItems > 1 && nbItems != std::get<2>(it->second))
+        if(nbItems > 1 && nbItems != getNbItemsField(it->second))
         {
-            std::cout<<"ERROR : can add new field with "<<std::get<2>(it->second)<<" items."
+            std::cout<<"ERROR : can add new field with "<<getNbItemsField(it->second)<<" items."
                     <<" The current map has "<<nbItems<<" items. The number of items "
                     <<"of the new filed should be 1 or "<<nbItems<<std::endl;
             return false;
         }
         else // We still update the number of items
-            nbItems_ = std::get<2>(it->second);
+            nbItems_ = getNbItemsField(it->second);
 
-        if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
+        if(getFlag(it->second) == DECAF_ZCURVEKEY)
         {
             bZCurveKey = true;
-            zCurveKey = std::get<3>(it->second);
+            zCurveKey = getBaseData(it->second);
         }
 
-        if(std::get<0>(it->second) == DECAF_ZCURVEINDEX)
+        if(getFlag(it->second) == DECAF_ZCURVEINDEX)
         {
             bZCurveIndex = true;
-            zCurveIndex = std::get<3>(it->second);
+            zCurveIndex = getBaseData(it->second);
         }
 
         //The field is already in the map, we don't have to test the insert
@@ -574,7 +555,7 @@ ConstructData::getData(std::string key)
         return std::shared_ptr<BaseConstructData>();
     }
     else
-        return std::get<3>(it->second);
+        return getBaseData(it->second);
 }
 
 
@@ -594,26 +575,26 @@ ConstructData::updateMetaData()
         // Checking that we can insert this data and keep spliting the data after
         // If we already have fields with several items and we insert a new field
         // with another number of items, we can't split automatically
-        if(nbItems_ > 1 && nbItems_ != std::get<2>(it->second))
+        if(nbItems_ > 1 && nbItems_ != getNbItemsField(it->second))
         {
-            std::cout<<"ERROR : can add new field with "<<std::get<2>(it->second)<<" items."
+            std::cout<<"ERROR : can add new field with "<<getNbItemsField(it->second)<<" items."
                     <<" The current map has "<<nbItems_<<" items. The number of items "
                     <<"of the new filed should be 1 or "<<nbItems_<<std::endl;
             return false;
         }
         else // We still update the number of items
-            nbItems_ = std::get<2>(it->second);
+            nbItems_ = getNbItemsField(it->second);
 
-        if(std::get<0>(it->second) == DECAF_ZCURVEKEY)
+        if(getFlag(it->second) == DECAF_ZCURVEKEY)
         {
             bZCurveKey_ = true;
-            zCurveKey_ = std::get<3>(it->second);
+            zCurveKey_ = getBaseData(it->second);
         }
 
-        if(std::get<0>(it->second) == DECAF_ZCURVEINDEX)
+        if(getFlag(it->second) == DECAF_ZCURVEINDEX)
         {
             bZCurveIndex_ = true;
-            zCurveIndex_ = std::get<3>(it->second);
+            zCurveIndex_ = getBaseData(it->second);
         }
         //The field is already in the map, we don't have to test the insert
         nbFields_++;

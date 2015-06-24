@@ -106,8 +106,6 @@ public:
 
 protected:
     std::shared_ptr<std::map<std::string, datafield> > container_;
-    //std::map<std::string, datafield> *container_;
-    //int nbItems_;
     int nbFields_;
     bool bZCurveKey_;
     bool bZCurveIndex_;
