@@ -30,11 +30,112 @@ void Fluxes(int next, int previous, MPI_Comm globalComm);
 void Evolution(int Stage);
 int Initialize(int myid);
 int initialCond(int myid, int numprocs);
-int arrayAlloc(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5);
-int checkSDC3(float *mu1, int x, int y, int z, int step, int repair); 
-int multiToFlat(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5);
+int arrayAlloc();
+int multiToFlat(float *mu1, float *mu2, float *mu3);
 float *A3D(unsigned columns, unsigned rows, unsigned floors);
-int freeMem(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5);
+
+int getIndex(int i, int j, int k, int x, int y, int z) {
+    return ((i*y*z)+(j*z))+k;
+}
+
+struct detector {
+    char myname[32];
+    float merror;
+    float reduct;
+    float margin;
+    float reopen;
+    int nlearn;
+    int nbasic;
+    int repair;
+    int tmstep;
+};
+
+int detectorInit (struct detector *d, const char *name, int nlearn, int repair, int margin) {
+    d->merror = 0.0;
+    sprintf(d->myname, "%s", name);
+    d->nbasic = nlearn/5;
+    d->nlearn = nlearn;
+    d->reduct = 1.0;
+    d->margin = (float) margin;
+    d->reopen = (float) margin+5;
+    d->repair = repair;
+    d->tmstep = 0;
+    return 0;
+}
+
+
+float predict(float *mu1, int x, int y, int z, int i, int j, int k) {
+    float p1 = mu1[getIndex(i-1,j,k,x,y,z)] + (mu1[getIndex(i+1,j,k,x,y,z)] - mu1[getIndex(i-1,j,k,x,y,z)])/2;
+    float p2 = mu1[getIndex(i,j-1,k,x,y,z)] + (mu1[getIndex(i,j+1,k,x,y,z)] - mu1[getIndex(i,j-1,k,x,y,z)])/2;
+    float p3 = mu1[getIndex(i,j,k-1,x,y,z)] + (mu1[getIndex(i,j,k+1,x,y,z)] - mu1[getIndex(i,j,k-1,x,y,z)])/2;
+    return (p1+p2+p3)/3;
+}
+
+float updateError(float value, float predi, struct detector *d) {
+    float err = fabs(value - predi);
+
+    if ((d->tmstep > d->nbasic) && (d->tmstep < d->nlearn) && (err > d->merror))
+    {
+        d->margin = d->margin + 5;
+        d->reopen = d->reopen + 5;
+    }
+    if (err > (d->merror*((100.0-d->margin)/100.0))) {
+        d->merror = err*(((100.0+d->reopen)/100.0));
+        //printf("RANK %d : Error updated to %f \n", rank, d->merror);
+    }
+    return err;
+}
+
+int pointCheck(float *mu1, int index, float predi, struct detector *d)
+{
+    int det = 0;
+    if (d->tmstep < d->nlearn)
+    {
+        updateError(mu1[index], predi, d);
+    } else {
+        float er = fabs(mu1[index] - predi);
+        if (er > d->merror)
+        {
+            det = 1;
+            printf("%s: Corruption detected : %f > %f \n", d->myname, er, d->merror);
+            if (d->repair)
+            {
+                printf("%s: Corruption corrected : %f => %f \n", d->myname, mu1[index], predi);
+                mu1[index] = predi;
+            }
+        } else {
+            if (er > (d->merror*((100-d->margin)/100)))
+            {
+                updateError(mu1[index], predi, d);
+            }
+        }
+    }
+    return det;
+}
+
+int checkSDC3(float *mu1, int x, int y, int z, struct detector *d) {
+    int i, j, k, det = 0;
+    for (i = 1; i < x-1; i++)
+    {
+        for (j = 1; j < y-1; j++)
+        {
+            for (k = 1; k < z-1; k++)
+            {
+                int index = getIndex(i,j,k,x,y,z);
+                float predi = predict(mu1, x, y, z, i, j, k);
+                det = det + pointCheck(mu1, index, predi, d);
+            }
+        }
+    }
+    if (d->tmstep > d->nlearn && det == 0) {
+        d->merror = d->merror*((100.0-d->reduct)/100.0);
+        //printf("RANK %d : Error reduced to %f \n", rank, d->merror);
+    }
+    d->tmstep++;
+ 
+    return det;
+}
+
 
 // user-defined pipeliner code
 void pipeliner(Dataflow* decaf)
@@ -50,9 +151,9 @@ int LE = 80;
 int HI = 90;
 int DE = 90;   
         
-float *mu1, *mu2, *mu3, *mu4, *mu5;
-float* uptr;
-
+float *mu1, *mu2, *mu3, *uptr;
+struct detector d1, d2;
+   
 
 // node and link callback functions
 extern "C"
@@ -82,15 +183,13 @@ extern "C"
             int myid = myComm->rank();
 
             Initialize(myid);
-            int mem = (arrayAlloc(mu1, mu2, mu3, mu4, mu5)*sizeof(float))/(1024*1024);
+            int mem = (arrayAlloc()*sizeof(float))/(1024*1024);
             initialCond(myid, numprocs);
             if (myid == 0) printf("%d MB of memory per process.\n", mem);
 
             mu1 = A3D(LE+2, HI+2, DE+2);
             mu2 = A3D(LE+2, HI+2, DE+2);
             mu3 = A3D(LE+2, HI+2, DE+2);
-            mu4 = A3D(LE+2, HI+2, DE+2);
-            mu5 = A3D(LE+2, HI+2, DE+2);
         }
 
         if (t_current < t_nsteps)         // Main loop
@@ -102,14 +201,6 @@ extern "C"
             int nnext = (myid + 1)%numprocs;
             int previous = (myid + numprocs - 1)%numprocs;
 
-                //multiToFlat(mu1, mu2, mu3, mu4, mu5);
-                //checkSDC3(mu1, LEN+2, HIG+2, DEP+2, step, 0);
-                //checkSDC3(mu2, LEN+2, HIG+2, DEP+2, step, 0);
-                //checkSDC3(mu3, LEN+2, HIG+2, DEP+2, step, 0);
-                //checkSDC3(mu4, LEN+2, HIG+2, DEP+2, step, 0);
-                //if (step % OSTEP == 0) Output(myid, argv[2], step, mu1); // Take frame
-                //flatToMulti(mu1, mu2, mu3, mu4, mu5);
-            //}
             BounCondInGhostCells();
             Reconstruction(nnext, previous, globalComm);
             BounCondOnInterfaces();
@@ -128,7 +219,7 @@ extern "C"
         {
             for (size_t i = 0; i < dataflows->size(); i++)
             {
-                multiToFlat(mu1, mu2, mu3, mu4, mu5);
+                multiToFlat(mu1, mu2, mu3);
                 std::shared_ptr<VectorConstructData<float> > array = make_shared< VectorConstructData<float> >(mu1, (LE+1)*(HI+1)*(DE+1), 1);
                 container->appendData(std::string("speed"), array,
                          DECAF_NOFLAG, DECAF_PRIVATE,
@@ -142,7 +233,9 @@ extern "C"
 
         if (t_current == t_nsteps-1)        // Last iteration
         {
-            freeMem(mu1, mu2, mu3, mu4, mu5);
+            free(mu1);
+            free(mu2);
+            free(mu3);
         }
     }
 
@@ -161,6 +254,8 @@ extern "C"
             int myid = myComm->rank();
             Initialize(myid);
             uptr = A3D(LE+2, HI+2, DE+2);
+            detectorInit(&d1, "space", 50, 0, 10);
+            //detectorInit(&d2, "times", 50, 0, 20);
         }
         if (!((t_current + 1) % t_interval))
         {
@@ -192,7 +287,8 @@ extern "C"
             }
 
             //Output(myid, t_current, uptr);
-            checkSDC3(uptr, LE+2, HI+2, DE+2, t_current, 0);
+            //checkSDC3(uptr, LE+2, HI+2, DE+2, t_current, 0);
+            checkSDC3(uptr, LE+2, HI+2, DE+2, &d1);
             // For this example, the policy of the redistribute component is add
             fprintf(stderr, "--- consuming time step %d, sum = %f\n", t_current, uptr[100]);
         }

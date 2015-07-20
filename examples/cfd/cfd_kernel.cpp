@@ -43,11 +43,6 @@
 #define Fz4 zU4
 #define Fz5 zU5
 
-#define FSTEP   1
-#define OSTEP   10
-#define CSTEP   5000
-#define NSTEP   15500
-
 // MPI buffers
 float *Bufp, *Bufn, *pBuf, *nBuf;
 unsigned BufCountU, BufCountF; // BufCountU > BufCountF
@@ -1369,7 +1364,7 @@ float *A3D(unsigned columns, unsigned rows, unsigned floors)
 
 
 // Dynamic memory allocation for 3D arrays
-int arrayAlloc(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5)
+int arrayAlloc()
 {
     float ***fp[10];
     int mem = 15 * ((long)LEN + 2) * ((long)HIG + 2) * ((long)DEP + 2)
@@ -1450,15 +1445,6 @@ int initialCond(int myid, int numprocs)
 } // end Initialize( )
 
 
-int getIndex(int i, int j, int k, int x, int y, int z) {
-    return ((i*y*z)+(j*z))+k;
-}
-
-
-
-/***********
-*  OUTPUT  *   Outputs velocity 2D plane to file. 
-*  ********/
 void Output(int myid, int step, float *mu1)
 {
     char filename[32];
@@ -1483,14 +1469,14 @@ void Output(int myid, int step, float *mu1)
             W = 0.5 * (dv_dx - du_dy);
             float buf = sqrt(U * U + V * V + W * W);
             fprintf(g, "%.6f ", buf);*/
-            fprintf(g, "%.6f ", mu1[getIndex(i,j,k,LEN+2,HIG+2,DEP+2)]);
+            fprintf(g, "%.6f ", mu1[((i*(HIG+2)*(DEP+2))+(j*(DEP+2)))+k]);
         }
         fprintf(g, "\n");
     }
     fclose(g);
 } // end Output()
 
-int multiToFlat(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5)
+int multiToFlat(float *mu1, float *mu2, float *mu3)
 {
     int i, j, k;
     for (i = 0; i <= LENN; i++)
@@ -1502,15 +1488,12 @@ int multiToFlat(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5)
                 mu1[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k] = U1[i][j][k];
                 mu2[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k] = U2[i][j][k];
                 mu3[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k] = U3[i][j][k];
-                mu4[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k] = U4[i][j][k];
-                mu5[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k] = U5[i][j][k];
-                //if (U1[i][j][k] > 0.9805059 && U1[i][j][k] < 0.9805061) printf("%d %d %d \n", i, j, k);
             }
         }
     }
 }
 
-int flatToMulti(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5)
+int flatToMulti(float *mu1, float *mu2, float *mu3)
 {
     int i, j, k;
     for (i = 0; i <= LENN; i++)
@@ -1522,78 +1505,8 @@ int flatToMulti(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5)
                 U1[i][j][k] = mu1[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k];
                 U2[i][j][k] = mu2[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k];
                 U3[i][j][k] = mu3[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k];
-                U4[i][j][k] = mu4[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k];
-                U5[i][j][k] = mu5[(i*(HIG+2)*(DEP+2))+(j*(DEP+2))+k];
             }
         }
     }
 }
-
-int freeMem(float *mu1, float *mu2, float *mu3, float *mu4, float *mu5)
-{
-    free(mu1);
-    free(mu2);
-    free(mu3);
-    free(mu4);
-    free(mu5);
-}
-
-
-float prer = 0.0;
-int learn = 1;
-
-float predict(float *mu1, int x, int y, int z, int i, int j, int k) {
-    float p1 = mu1[getIndex(i-1,j,k,x,y,z)] + (mu1[getIndex(i+1,j,k,x,y,z)] - mu1[getIndex(i-1,j,k,x,y,z)])/2;
-    float p2 = mu1[getIndex(i,j-1,k,x,y,z)] + (mu1[getIndex(i,j+1,k,x,y,z)] - mu1[getIndex(i,j-1,k,x,y,z)])/2;
-    float p3 = mu1[getIndex(i,j,k-1,x,y,z)] + (mu1[getIndex(i,j,k+1,x,y,z)] - mu1[getIndex(i,j,k-1,x,y,z)])/2;
-    return (p1+p2+p3)/3;
-}
-
-float updateError(float value, float predi) {
-    float err = predi - value;
-    if (err < 0) err = -1*err;
-    if (err > prer) {
-        prer = err;
-        //printf("RANK %d : Error updated to %f \n", rank, prer);
-    }
-    return err;
-}
-
-int checkSDC3(float *mu1, int x, int y, int z, int step, int repair) {
-    int det = 0;
-    for (i = 1; i < x-1; i++)
-    {
-        for (j = 1; j < y-1; j++)
-        {
-            for (k = 1; k < z-1; k++)
-            {
-                if (step > 1)
-                {
-                    float predi = predict(mu1, x, y, z, i, j, k);
-                    if (learn)
-                    {
-                        updateError(mu1[getIndex(i,j,k,x,y,z)],predi);
-                    } else {
-                        if ((mu1[getIndex(i,j,k,x,y,z)] < (predi-prer)) ||
-                                (mu1[getIndex(i,j,k,x,y,z)] > (predi+prer)))
-                        {
-                            det++;
-                            //printf("RANK %d : Corruption detected : %f \n", rank, mu1[getIndex(i,j,k,x,y,z)]);
-                            if (repair)
-                            {
-                                //printf("RANK %d : Corruption corrected : %f => %f \n", rank, mu1[getIndex(i,j,k,x,y,z)], predi);
-                                mu1[getIndex(i,j,k,x,y,z)] = predi;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    //if (((step-1)%5) == 0) printf("RANK %d : Detected this check %d for injection in bit %d \n", rank, det, ij);
-    return det;
-}
-
-
-
 
