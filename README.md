@@ -5,7 +5,10 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 - C++11
 - MPI-3 (currently MPI is the only supported transport layer)
 - Boost
-- python and cython (optional, if you want the python version of the examples to be built)
+- Optionally, if you want the python version of the examples to be built,
+    - python
+    - cython
+    - networkx
 
 # Building decaf:
 
@@ -29,11 +32,14 @@ Currently, the available options are:
 - optimize           "Build Decaf with optimization"                OFF/ON, default OFF
 - transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
 
-Then, make and optionally install:
+Then, make, install, and set environment variables:
 ```
 make
 make install
+export DECAF_PREFIX=/path/to/decaf/install
+export DYLD_LIBRARY_PATH=/path/to/decaf/install/lib:$DYLD_LIBRARY_PATH
 ```
+(The syntax above is for Bash and Mac OSX; other shells and unixes are similar; eg., the dynamic library path variable is ```LD_LIBRARY_PATH on Linux```. You may consider setting the environment variables in .bashrc or .profile)
 
 # Building your project with decaf:
 
