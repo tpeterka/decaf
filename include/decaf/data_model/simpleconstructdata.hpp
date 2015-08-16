@@ -9,8 +9,13 @@ namespace decaf{
 template<typename T>
 class SimpleConstructData : public BaseConstructData {
 public:
-    SimpleConstructData() : BaseConstructData(){}
-    SimpleConstructData(T value) : value_(value), BaseConstructData(){}
+
+    SimpleConstructData(mapConstruct map = mapConstruct())
+        : BaseConstructData(map){}
+
+    SimpleConstructData(T value, mapConstruct map = mapConstruct())
+        : value_(value), BaseConstructData(map){}
+
     virtual ~SimpleConstructData(){}
 
     template<class Archive>
@@ -26,6 +31,7 @@ public:
 
     virtual std::vector< std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
@@ -34,19 +40,19 @@ public:
             case DECAF_SPLIT_DEFAULT :
             {
                 for(unsigned int i = 0; i < range.size(); i++)
-                    result.push_back(std::make_shared<SimpleConstructData<T> >(value_));
+                    result.push_back(std::make_shared<SimpleConstructData<T> >(value_, map_));
                 break;
             }
             case DECAF_SPLIT_KEEP_VALUE:
             {
                 for(unsigned int i = 0; i < range.size(); i++)
-                    result.push_back(std::make_shared<SimpleConstructData<T> >(value_));
+                    result.push_back(std::make_shared<SimpleConstructData<T> >(value_, map_));
                 break;
             }
             case DECAF_SPLIT_MINUS_NBITEM:
             {
                 for(unsigned int i = 0; i < range.size(); i++)
-                    result.push_back(std::make_shared<SimpleConstructData<T> >(range.at(i)));
+                    result.push_back(std::make_shared<SimpleConstructData<T> >(range.at(i), map_));
                 break;
             }
             default:
@@ -60,6 +66,7 @@ public:
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector< std::vector<int> >& range,
+            std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
@@ -92,10 +99,11 @@ public:
         return result;
     }
 
-    virtual bool merge(std::shared_ptr<BaseConstructData> other,
-              ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    virtual bool merge( std::shared_ptr<BaseConstructData> other,
+                        mapConstruct partial_map,
+                        ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
-        std::shared_ptr<SimpleConstructData<T> > other_ = dynamic_pointer_cast<SimpleConstructData<T> >(other);
+        std::shared_ptr<SimpleConstructData<T> > other_ = std::dynamic_pointer_cast<SimpleConstructData<T> >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge two objects with different types"<<std::endl;
@@ -139,7 +147,7 @@ public:
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)
     {
-        std::shared_ptr<SimpleConstructData<T> > other_ = dynamic_pointer_cast<SimpleConstructData<T> >(other);
+        std::shared_ptr<SimpleConstructData<T> > other_ = std::dynamic_pointer_cast<SimpleConstructData<T> >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge two objects with different types"<<std::endl;

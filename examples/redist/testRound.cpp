@@ -32,6 +32,9 @@
 #include <sstream>
 #include <fstream>
 
+using namespace decaf;
+using namespace std;
+
 void printArray(const std::vector<int>& array)
 {
     std::cout<<"[";
@@ -39,8 +42,6 @@ void printArray(const std::vector<int>& array)
         std::cout<<array[i]<<",";
     std::cout<<"]"<<std::endl;
 }
-
-using namespace decaf;
 
 void runTestParallelRedistOverlap(int startSource, int nbSource, int startReceptors, int nbReceptors)
 {

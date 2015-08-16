@@ -1,7 +1,6 @@
 #ifndef BASE_CONSTRUCT_DATA
 #define BASE_CONSTRUCT_DATA
 
-#include <decaf/decaf.hpp>
 #include <decaf/data_model/basedata.h>
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -12,7 +11,6 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
 #include "serialize_tuple.h"
-//#include <boost/serialization/shared_ptr.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/serialization/split_free.hpp>
@@ -27,6 +25,8 @@
 #include <map>
 #include <vector>
 #include <sstream>
+
+namespace decaf {
 
 enum ConstructTypeFlag {
     DECAF_NOFLAG = 0x0,     // No specific information on the data field
@@ -51,7 +51,19 @@ enum ConstructTypeMergePolicy {
     DECAF_MERGE_FIRST_VALUE = 0x1,    // Keep the same values for each split
     DECAF_MERGE_ADD_VALUE = 0x2,      // Add the values
     DECAF_MERGE_APPEND_VALUES = 0x4,  // Append the values into the current object
+    DECAF_MERGE_BBOX_POS = 0x8,       // Compute the bounding box from the field pos
 };
+
+class BaseConstructData;    //Define just after
+
+//Structure for ConstructType
+typedef std::tuple<ConstructTypeFlag, ConstructTypeScope,
+    int, std::shared_ptr<BaseConstructData>,
+    ConstructTypeSplitPolicy, ConstructTypeMergePolicy> datafield;
+
+typedef std::shared_ptr<std::map<std::string, datafield> > mapConstruct;
+
+} //namepsace
 
 //---/ Wrapper for std::shared_ptr<> /------------------------------------------
 
@@ -89,9 +101,13 @@ inline void serialize(Archive & archive, std::shared_ptr<Type> & value, const un
 
 }}
 
+namespace decaf {
+
+
 class BaseConstructData {
 public:
-    BaseConstructData(){}
+    BaseConstructData(mapConstruct map = mapConstruct()) :
+        map_(map){}
     virtual ~BaseConstructData(){}
 
     template<class Archive>
@@ -103,18 +119,28 @@ public:
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
-            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT ) = 0;
+            std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector< std::vector<int> >& range,
-            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT ) = 0;
+            std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 
     virtual bool merge(std::shared_ptr<BaseConstructData> other,
+                       mapConstruct partial_map,
                        ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT) = 0;
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other) = 0;
 
+    void setMap(mapConstruct map){ map_ = map; }
+    mapConstruct getMap(){ return map_; }
+protected:
+    mapConstruct map_;
+
 };
-BOOST_CLASS_EXPORT_GUID(BaseConstructData,"BaseConstructData")
+
+}// namespace
+BOOST_CLASS_EXPORT_GUID(decaf::BaseConstructData,"BaseConstructData")
 
 #endif

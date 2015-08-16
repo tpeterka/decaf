@@ -14,9 +14,10 @@
 #include <decaf/data_model/vectorconstructdata.hpp>
 #include <decaf/data_model/constructtype.h>
 #include "bboxconstructData.hpp"
-#include "arrayconstructdata.hpp"
+#include <decaf/data_model/arrayconstructdata.hpp>
 #include "tetcounterdata.hpp"
 #include "arraytetsdata.hpp"
+#include "verttotetdata.hpp"
 
 #include "tess/tess.h"
 #include "tess/tess.hpp"
@@ -27,6 +28,7 @@
 #include <diy/io/block.hpp>
 
 using namespace decaf;
+using namespace std;
 
 void containerToBlock(std::shared_ptr<ConstructData> container, dblock_t* block)
 {
@@ -284,16 +286,37 @@ int main(int argc,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
+        //Table Vertices to tet
+        std::shared_ptr<VertToTetData> verttotet = std::make_shared<VertToTetData>(
+                    block->vert_to_tet, block->num_particles, 1, false, container->getMap());
+        container->appendData("verttotet", verttotet,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
         //We have to merge first the tets, and then the particles and then the bbox.
         //No split order specific
         std::vector<std::string> mergeOrder =
-                {"gid","num_orig_particles","num_particles","num_tets","tets","pos","bbox"};
+                {"gid","num_orig_particles","num_particles","num_tets","tets","pos","bbox","verttotet"};
         container->setMergeOrder(mergeOrder);
+        std::vector<std::string> splitOrder =
+                {"gid","num_orig_particles","num_particles","num_tets","tets","pos","bbox","verttotet"};
+        container->setSplitOrder(splitOrder);
+
+        std::cout<<"Test d'acces aux donnees : "<<std::endl;
+        std::cout<<"Acces au tableau de pos... ";
+        container->getData(std::string("pos"));
+        std::cout<<"OK"<<std::endl;
+        std::cout<<"Acces a la table de tets... ";
+        container->getData(std::string("verttotet"));
+        std::cout<<"OK"<<std::endl;
+        std::cout<<"Number of elements the array of verts : "
+                 <<container->getData(std::string("verttotet"))->getNbItems()<<std::endl;
+        std::cout<<"Fin des tests d'acces aux donnees."<<std::endl;
 
         //Debug
-        dblock_t* b = static_cast<dblock_t*>(create_block());
-        containerToBlock(container, b);
-        printBlock(b);
+        //dblock_t* b = static_cast<dblock_t*>(create_block());
+        //containerToBlock(container, b);
+        //printBlock(b);
 
         blocks.push_back(container);
 
@@ -304,6 +327,27 @@ int main(int argc,
     for(int i = 1; i < blocks.size(); i++)
     {
         std::cout<<"Merging with "<<i<<"..."<<std::endl;
+        std::cout<<"Test d'acces aux donnees pour le block 0 : "<<std::endl;
+        std::cout<<"Acces au tableau de pos... ";
+        blocks[0]->getData(std::string("pos"));
+        std::cout<<"OK"<<std::endl;
+        std::cout<<"Acces a la table de tets... ";
+        blocks[0]->getData(std::string("verttotet"));
+        std::cout<<"OK"<<std::endl;
+        std::cout<<"Number of elements the array of verts : ";
+        std::cout<<blocks[0]->getData(std::string("verttotet"))->getNbItems()<<std::endl;
+        std::cout<<"Fin des tests d'acces aux donnees."<<std::endl;
+        std::cout<<"Test d'acces aux donnees pour le block "<<i<<" : "<<std::endl;
+        std::cout<<"Acces au tableau de pos... ";
+        blocks[i]->getData(std::string("pos"));
+        std::cout<<"OK"<<std::endl;
+        std::cout<<"Acces a la table de tets... ";
+        blocks[i]->getData(std::string("verttotet"));
+        std::cout<<"OK"<<std::endl;
+        std::cout<<"Number of elements the array of verts : ";
+        std::cout<<blocks[i]->getData(std::string("verttotet"))->getNbItems()<<std::endl;
+        std::cout<<"Fin des tests d'acces aux donnees."<<std::endl;
+
         blocks[0]->merge(blocks[i]);
         std::cout<<"Merging with "<<i<<" done."<<std::endl;
     }

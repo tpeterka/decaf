@@ -39,6 +39,7 @@
 
 
 using namespace decaf;
+using namespace std;
 
 void getHeatMapColor(float value, float *red, float *green, float *blue)
 {
@@ -108,6 +109,39 @@ void posToFile(const std::vector<float>& pos, const std::string filename, float 
 }
 
 
+void posToFile(const std::vector<float>& pos, const std::string filename, unsigned int r, unsigned int g, unsigned int b)
+{
+    std::ofstream file;
+    std::cout<<"Filename : "<<filename<<std::endl;
+    file.open(filename.c_str());
+    int nbParticules = pos.size() / 3;
+
+    unsigned int ur,ug,ub;
+    ur = r;
+    ug = g;
+    ub = b;
+    ur = clip<unsigned int>(ur, 0, 255);
+    ug = clip<unsigned int>(ug, 0, 255);
+    ub = clip<unsigned int>(ub, 0, 255);
+    std::cout<<"UColor : "<<ur<<","<<ug<<","<<ub<<std::endl;
+
+    std::cout<<"Number of particules to save : "<<nbParticules<<std::endl;
+    file<<"ply"<<std::endl;
+    file<<"format ascii 1.0"<<std::endl;
+    file<<"element vertex "<<nbParticules<<std::endl;
+    file<<"property float x"<<std::endl;
+    file<<"property float y"<<std::endl;
+    file<<"property float z"<<std::endl;
+    file<<"property uchar red"<<std::endl;
+    file<<"property uchar green"<<std::endl;
+    file<<"property uchar blue"<<std::endl;
+    file<<"end_header"<<std::endl;
+    for(int i = 0; i < nbParticules; i++)
+        file<<pos[3*i]<<" "<<pos[3*i+1]<<" "<<pos[3*i+2]
+            <<" "<<ur<<" "<<ug<<" "<<ub<<std::endl;
+    file.close();
+}
+
 
 void printMap(ConstructData& map)
 {
@@ -165,6 +199,11 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
     std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;
     std::cout<<"-------------------------------------"<<std::endl;
 
+    unsigned int r,g,b;
+    r = rand() % 255;
+    g = rand() % 255;
+    b = rand() % 255;
+
     if(rank >= startSource && rank < startSource + nbSource){
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
                    "and "<<nbReceptors<<" consummers"<<std::endl;
@@ -182,6 +221,11 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
         std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
         std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
+
+        std::stringstream filename;
+        filename<<basename<<rank<<"_before.ply";
+        posToFile(array->getVector(), filename.str(),r,g,b);
+
         object->appendData(std::string("nbParticules"), data,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
@@ -211,8 +255,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         std::shared_ptr<VectorConstructData<float> > pos =
                 dynamic_pointer_cast<VectorConstructData<float> >(data);
         filename<<basename<<rank<<".ply";
-        posToFile(pos->getVector(), filename.str(),
-                  (float)(rank-startReceptors) / (float)nbReceptors);
+        posToFile(pos->getVector(), filename.str(),r,g,b);
     }
 
     delete component;

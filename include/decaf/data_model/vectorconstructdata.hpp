@@ -8,17 +8,20 @@ namespace decaf {
 template<typename T>
 class VectorConstructData : public BaseConstructData {
 public:
-    VectorConstructData() : BaseConstructData(){}
-    VectorConstructData(std::vector<T>& value, int element_per_items) :
-                       BaseConstructData(), value_(value),
+    VectorConstructData(mapConstruct map = mapConstruct())
+        : BaseConstructData(map){}
+
+    VectorConstructData(std::vector<T>& value, int element_per_items, mapConstruct map = mapConstruct()) :
+                       BaseConstructData(map), value_(value),
                        element_per_items_(element_per_items){}
     VectorConstructData(typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end,
-                       int element_per_items) : element_per_items_(element_per_items)
+                       int element_per_items, mapConstruct map = mapConstruct()) :
+        element_per_items_(element_per_items), BaseConstructData(map)
     {
         value_ = std::vector<T>(begin, end);
     }
-    VectorConstructData(T* Vector, int size, int element_per_items) :
-                        element_per_items_(element_per_items)
+    VectorConstructData(T* Vector, int size, int element_per_items, mapConstruct map = mapConstruct()) :
+                        element_per_items_(element_per_items), BaseConstructData(map)
     {
         value_.resize(size);
         value_ = std::vector<T>(Vector, Vector + size);
@@ -34,13 +37,14 @@ public:
         ar & BOOST_SERIALIZATION_NVP(element_per_items_);
     }
 
-    std::vector<T>& getVector(){ return value_; }
+    virtual std::vector<T>& getVector(){ return value_; }
 
     virtual int getNbItems(){ return value_.size() / element_per_items_; }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
-          const std::vector<int>& range,
-          ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
+            const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
         switch( policy )
@@ -86,6 +90,7 @@ public:
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector< std::vector<int> >& range,
+            std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
@@ -129,10 +134,13 @@ public:
         return result;
     }
 
-    virtual bool merge(std::shared_ptr<BaseConstructData> other,
-              ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+
+
+    virtual bool merge( std::shared_ptr<BaseConstructData> other,
+                        mapConstruct partial_map,
+                        ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
-        std::shared_ptr<VectorConstructData<T> > other_ = dynamic_pointer_cast<VectorConstructData<T> >(other);
+        std::shared_ptr<VectorConstructData<T> > other_ = std::dynamic_pointer_cast<VectorConstructData<T> >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge to objects with different types"<<std::endl;
@@ -175,7 +183,7 @@ public:
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)
     {
-        std::shared_ptr<VectorConstructData<T> >other_ = dynamic_pointer_cast<VectorConstructData<T> >(other);
+        std::shared_ptr<VectorConstructData<T> >other_ = std::dynamic_pointer_cast<VectorConstructData<T> >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge two objects with different types"<<std::endl;
@@ -187,6 +195,7 @@ public:
 
 
 protected:
+
     std::vector<T> value_;
     int element_per_items_; //One semantic item is composed of element_per_items_ items in the vector
 };

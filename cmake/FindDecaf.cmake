@@ -1,0 +1,41 @@
+FIND_PATH(DECAF_INCLUDE_DIR decaf.hpp HINTS
+  ${DECAF_PREFIX}/include/decaf
+  /usr/include/decaf
+  /usr/local/include/decaf
+  /opt/local/include/decaf
+  /sw/include/decaf
+)
+FIND_LIBRARY(DECAF_DATA_MODEL_LIBRARY NAMES decaf_datamodel HINTS
+  ${DECAF_PREFIX}/lib
+  /usr/lib
+  /usr/local/lib
+  /opt/local/lib
+  /sw/lib
+)
+
+FIND_LIBRARY(DECAF_DATA_TRANSPORT_LIBRARY NAMES decaf_transport HINTS
+  ${DECAF_PREFIX}/lib
+  /usr/lib
+  /usr/local/lib
+  /opt/local/lib
+  /sw/lib
+)
+
+IF(DECAF_INCLUDE_DIR AND DECAF_DATA_MODEL_LIBRARY AND DECAF_DATA_TRANSPORT_LIBRARY)
+  SET(DECAF_FOUND 1 CACHE BOOL "Found decaf libraries")
+  STRING(REGEX REPLACE "/decaf" "" DECAF_INCLUDE_DIR ${DECAF_INCLUDE_DIR})
+ELSE(DECAF_INCLUDE_DIR AND DECAF_DATA_MODEL_LIBRARY AND DECAF_DATA_TRANSPORT_LIBRARY)
+  SET(DECAF_FOUND 0 CACHE BOOL "Not found decaf libraries")
+  IF (DECAF_FIND_REQUIRED)
+    MESSAGE(FATAL_ERROR "Decaf library not found. Please install and provide the DECAF_PREFIX variable to help finding the library")
+  ENDIF(DECAF_FIND_REQUIRED)
+ENDIF(DECAF_INCLUDE_DIR AND DECAF_DATA_MODEL_LIBRARY AND DECAF_DATA_TRANSPORT_LIBRARY)
+
+MARK_AS_ADVANCED(
+  DECAF_INCLUDE_DIR
+  DECAF_DATA_MODEL_LIBRARY
+  DECAF_DATA_TRANSPORT_LIBRARY
+  DECAF_FOUND
+)
+
+

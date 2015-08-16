@@ -35,6 +35,7 @@
 #include <sstream>
 
 using namespace decaf;
+using namespace std;
 
 class particules
 {

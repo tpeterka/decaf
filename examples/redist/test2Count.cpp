@@ -26,7 +26,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <decaf/transport/mpi/redist_zcurve_mpi.h>
+#include <decaf/transport/mpi/redist_count_mpi.h>
 
 
 #include <assert.h>
@@ -40,6 +40,7 @@
 
 
 using namespace decaf;
+using namespace std;
 
 void getHeatMapColor(double value, double *red, double *green, double *blue)
 {

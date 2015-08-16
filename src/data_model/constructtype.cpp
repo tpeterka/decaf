@@ -1,10 +1,7 @@
 #include <decaf/data_model/constructtype.h>
 
 using namespace decaf;
-
-typedef std::tuple<ConstructTypeFlag, ConstructTypeScope,
-    int, std::shared_ptr<BaseConstructData>,
-    ConstructTypeSplitPolicy, ConstructTypeMergePolicy> datafield;
+using namespace std;
 
 ConstructTypeFlag& getFlag(datafield& field)
 {
@@ -36,6 +33,47 @@ ConstructTypeMergePolicy& getMergePolicy(datafield& field)
     return std::get<5>(field);
 }
 
+bool
+decaf::
+ConstructData::setMergeOrder(std::vector<std::string>& merge_order)
+{
+    //TODO : check the name of the fields as well
+    if(merge_order.size() == container_->size())
+    {
+        merge_order_ = merge_order;
+        return true;
+    }
+    else
+        return false;
+}
+
+const std::vector<std::string>&
+decaf::
+ConstructData::getMergeOrder()
+{
+    return merge_order_;
+}
+
+bool
+decaf::
+ConstructData::setSplitOrder(std::vector<std::string>& split_order)
+{
+    //TODO : check the name of the fields as well
+    if(split_order.size() == container_->size())
+    {
+        split_order_ = split_order;
+        return true;
+    }
+    else
+        return false;
+}
+
+const std::vector<string> &decaf::ConstructData::getSplitOrder()
+{
+    return split_order_;
+}
+
+
 decaf::
 ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false), zCurveIndex_(NULL),
         bZCurveKey_(false), zCurveKey_(NULL)
@@ -57,6 +95,13 @@ ConstructData::appendData(std::string name,
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
     ret = container_->insert(std::pair<std::string, datafield>(name, newEntry));
+
+    if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+    {
+        std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+        merge_order_.clear();
+        split_order_.clear();
+    }
 
     return ret.second && updateMetaData();
 }
@@ -154,8 +199,14 @@ ConstructData::split(
         const std::vector<int>& range)
 {
     std::vector< std::shared_ptr<BaseData> > result;
+    std::vector< mapConstruct > result_maps;
     for(unsigned int i = 0; i < range.size(); i++)
+    {
         result.push_back(std::make_shared<ConstructData>());
+        std::shared_ptr<ConstructData> construct =
+                dynamic_pointer_cast<ConstructData>(result.back());
+        result_maps.push_back(construct->getMap());
+    }
 
     //Sanity check
     int totalRange = 0;
@@ -168,35 +219,80 @@ ConstructData::split(
         return result;
     }
 
-    for(std::map<std::string, datafield>::iterator it = container_->begin();
-        it != container_->end(); it++)
+    //Splitting data
+    if(split_order_.size() > 0) //Splitting from the user order
     {
-        // Splitting the current field
-        std::vector<std::shared_ptr<BaseConstructData> > splitFields;
-        splitFields = getBaseData(it->second)->split(range, getSplitPolicy(it->second));
-
-        // Inserting the splitted field into the splitted results
-        if(splitFields.size() != result.size())
+        for(unsigned int i = 0; i < split_order_.size(); i++)
         {
-            std::cout<<"ERROR : A field was not splited properly."
-                    <<" The number of chunks does not match the expected number of chunks"<<std::endl;
-            // Cleaning the result to avoid corrupt data
-            result.clear();
+            std::map<std::string, datafield>::iterator data  = container_->find(split_order_.at(i));
+            if(data == container_->end())
+            {
+                std::cerr<<"ERROR : field \""<<split_order_.at(i)<<"\" provided by the user to "
+                        <<"split the data not found in the map."<<std::endl;
+                return result;
 
-            return result;
+            }
+            // Splitting the current field
+            std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            splitFields = getBaseData(data->second)->split(range, result_maps, getSplitPolicy(data->second));
+
+            // Inserting the splitted field into the splitted results
+            if(splitFields.size() != result.size())
+            {
+                std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                // Cleaning the result to avoid corrupt data
+                result.clear();
+
+                return result;
+            }
+
+            //Adding the splitted results into the splitted maps
+            for(unsigned int j = 0; j < result.size(); j++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
+                construct->appendData(split_order_.at(i),
+                                         splitFields.at(j),
+                                         getFlag(data->second),
+                                         std::get<1>(data->second),
+                                         getSplitPolicy(data->second),
+                                         getMergePolicy(data->second)
+                                         );
+            }
         }
-
-        //Adding the splitted results into the splitted maps
-        for(unsigned int i = 0; i < result.size(); i++)
+    }
+    else
+    {
+        for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
         {
-            std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
-            construct->appendData(it->first,
-                                     splitFields.at(i),
-                                     getFlag(it->second),
-                                     std::get<1>(it->second),
-                                     getSplitPolicy(it->second),
-                                     getMergePolicy(it->second)
-                                     );
+            // Splitting the current field
+            std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            splitFields = getBaseData(it->second)->split(range, result_maps, getSplitPolicy(it->second));
+
+            // Inserting the splitted field into the splitted results
+            if(splitFields.size() != result.size())
+            {
+                std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                // Cleaning the result to avoid corrupt data
+                result.clear();
+
+                return result;
+            }
+
+            //Adding the splitted results into the splitted maps
+            for(unsigned int i = 0; i < result.size(); i++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
+                construct->appendData(it->first,
+                                         splitFields.at(i),
+                                         getFlag(it->second),
+                                         std::get<1>(it->second),
+                                         getSplitPolicy(it->second),
+                                         getMergePolicy(it->second)
+                                         );
+            }
         }
     }
 
@@ -209,8 +305,14 @@ ConstructData::split(
         const std::vector<std::vector<int> >& range)
 {
     std::vector< std::shared_ptr<BaseData> > result;
+    std::vector< mapConstruct > result_maps;
     for(unsigned int i = 0; i < range.size(); i++)
+    {
         result.push_back(std::make_shared<ConstructData>());
+        std::shared_ptr<ConstructData> construct =
+                dynamic_pointer_cast<ConstructData>(result.back());
+        result_maps.push_back(construct->getMap());
+    }
 
     //Sanity check
     int totalItems = 0;
@@ -223,35 +325,80 @@ ConstructData::split(
         return result;
     }
 
-    for(std::map<std::string, datafield>::iterator it = container_->begin();
-        it != container_->end(); it++)
+    //Splitting data
+    if(split_order_.size() > 0) //Splitting from the user order
     {
-        // Splitting the current field
-        std::vector<std::shared_ptr<BaseConstructData> > splitFields;
-        splitFields = getBaseData(it->second)->split(range, getSplitPolicy(it->second));
-
-        // Inserting the splitted field into the splitted results
-        if(splitFields.size() != result.size())
+        for(unsigned int i = 0; i < split_order_.size(); i++)
         {
-            std::cout<<"ERROR : A field was not splited properly."
-                    <<" The number of chunks does not match the expected number of chunks"<<std::endl;
-            // Cleaning the result to avoid corrupt data
-            result.clear();
+            std::map<std::string, datafield>::iterator data  = container_->find(split_order_.at(i));
+            if(data == container_->end())
+            {
+                std::cerr<<"ERROR : field \""<<split_order_.at(i)<<"\" provided by the user to "
+                        <<"split the data not found in the map."<<std::endl;
+                return result;
 
-            return result;
+            }
+            // Splitting the current field
+            std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            splitFields = getBaseData(data->second)->split(range, result_maps, getSplitPolicy(data->second));
+
+            // Inserting the splitted field into the splitted results
+            if(splitFields.size() != result.size())
+            {
+                std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                // Cleaning the result to avoid corrupt data
+                result.clear();
+
+                return result;
+            }
+
+            //Adding the splitted results into the splitted maps
+            for(unsigned int j = 0; j < result.size(); j++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
+                construct->appendData(split_order_.at(i),
+                                         splitFields.at(j),
+                                         getFlag(data->second),
+                                         std::get<1>(data->second),
+                                         getSplitPolicy(data->second),
+                                         getMergePolicy(data->second)
+                                         );
+            }
         }
-
-        //Adding the splitted results into the splitted maps
-        for(unsigned int i = 0; i < result.size(); i++)
+    }
+    else    //Splitting from the map order
+    {
+        for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
         {
-            std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
-            construct->appendData(it->first,
-                                     splitFields.at(i),
-                                     getFlag(it->second),
-                                     std::get<1>(it->second),
-                                     getSplitPolicy(it->second),
-                                     getMergePolicy(it->second)
-                                     );
+            // Splitting the current field
+            std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            splitFields = getBaseData(it->second)->split(range, result_maps, getSplitPolicy(it->second));
+
+            // Inserting the splitted field into the splitted results
+            if(splitFields.size() != result.size())
+            {
+                std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                // Cleaning the result to avoid corrupt data
+                result.clear();
+
+                return result;
+            }
+
+            //Adding the splitted results into the splitted maps
+            for(unsigned int i = 0; i < result.size(); i++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
+                construct->appendData(it->first,
+                                         splitFields.at(i),
+                                         getFlag(it->second),
+                                         std::get<1>(it->second),
+                                         getSplitPolicy(it->second),
+                                         getMergePolicy(it->second)
+                                         );
+            }
         }
     }
 
@@ -309,19 +456,51 @@ ConstructData::merge(shared_ptr<BaseData> other)
         //TODO : Add a checking on the merge policy and number of items in case of a merge
 
         //We have done all the checking, now we can merge securely
-        for(std::map<std::string, datafield>::iterator it = container_->begin();
-            it != container_->end(); it++)
+        if(merge_order_.size() > 0) //We have a priority list
         {
-            std::map<std::string, datafield>::iterator otherIt = otherConstruct->getMap()->find(it->first);
-
-            if(! getBaseData(it->second)->merge(getBaseData(otherIt->second), getMergePolicy(otherIt->second)) )
+            for(unsigned int i = 0; i < merge_order_.size(); i++)
             {
-                std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has be corrupted."<<std::endl;
-                return false;
-            }
+                std::cout<<"Merging the field "<<merge_order_.at(i).c_str()<<"..."<<std::endl;
+                std::map<std::string, datafield>::iterator dataLocal
+                        = container_->find(merge_order_.at(i));
+                std::map<std::string, datafield>::iterator dataOther
+                        = otherConstruct->getMap()->find(merge_order_.at(i));
 
-            //Updating the number of items of the field
-            getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+                if(dataLocal == container_->end() || dataOther == otherConstruct->getMap()->end())
+                {
+                    std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
+                            <<"merge the data not found in the map."<<std::endl;
+                    return false;
+                }
+
+                if(! getBaseData(dataLocal->second)->merge(getBaseData(dataOther->second),
+                                                    container_,
+                                                    getMergePolicy(dataOther->second)) )
+                {
+                    std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
+                    return false;
+                }
+                getBaseData(dataLocal->second)->setMap(container_);
+                getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
+            }
+        }
+        else  // No priority, we merge in the field order
+        {
+            for(std::map<std::string, datafield>::iterator it = container_->begin();
+                it != container_->end(); it++)
+            {
+                std::map<std::string, datafield>::iterator otherIt = otherConstruct->getMap()->find(it->first);
+
+                if(! getBaseData(it->second)->merge(getBaseData(otherIt->second),
+                                                    container_,
+                                                    getMergePolicy(otherIt->second)) )
+                {
+                    std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has be corrupted."<<std::endl;
+                    return false;
+                }
+                getBaseData(it->second)->setMap(container_);
+                getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+            }
         }
     }
 
@@ -374,18 +553,50 @@ ConstructData::merge(char* buffer, int size)
         //TODO : Add a checking on the merge policy and number of items in case of a merge
 
         //We have done all the checking, now we can merge securely
-        for(std::map<std::string, datafield>::iterator it = container_->begin();
-            it != container_->end(); it++)
+        if(merge_order_.size() > 0) //We have a priority list
         {
-            std::map<std::string, datafield>::iterator otherIt = other->find(it->first);
-
-            if(! getBaseData(it->second)->merge(getBaseData(otherIt->second),
-                                                getMergePolicy(otherIt->second)) )
+            for(unsigned int i = 0; i < merge_order_.size(); i++)
             {
-                std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has be corrupted."<<std::endl;
-                return false;
+                std::map<std::string, datafield>::iterator dataLocal
+                        = container_->find(merge_order_.at(i));
+                std::map<std::string, datafield>::iterator dataOther
+                        = other->find(merge_order_.at(i));
+
+                if(dataLocal == container_->end() || dataOther == other->end())
+                {
+                    std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
+                            <<"merge the data not found in the map."<<std::endl;
+                    return false;
+                }
+
+                if(! getBaseData(dataLocal->second)->merge(getBaseData(dataOther->second),
+                                                    container_,
+                                                    getMergePolicy(dataOther->second)) )
+                {
+                    std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
+                    return false;
+                }
+                getBaseData(dataLocal->second)->setMap(container_);
+                getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
             }
-            getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+        }
+        else  // No priority, we merge in the field order
+        {
+            for(std::map<std::string, datafield>::iterator it = container_->begin();
+                it != container_->end(); it++)
+            {
+                std::map<std::string, datafield>::iterator otherIt = other->find(it->first);
+
+                if(! getBaseData(it->second)->merge(getBaseData(otherIt->second),
+                                                    container_,
+                                                    getMergePolicy(otherIt->second)) )
+                {
+                    std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has been corrupted."<<std::endl;
+                    return false;
+                }
+                getBaseData(it->second)->setMap(container_);
+                getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+            }
         }
     }
 
@@ -484,7 +695,7 @@ ConstructData::purgeData()
 bool
 decaf::
 ConstructData::setData(std::shared_ptr<void> data)
-{
+{    
     std::shared_ptr<std::map<std::string, datafield> > container =
             static_pointer_cast<std::map<std::string, datafield> >(data);
 
@@ -505,7 +716,7 @@ ConstructData::setData(std::shared_ptr<void> data)
         // with another number of items, we can't split automatically
         if(nbItems > 1 && nbItems != getNbItemsField(it->second))
         {
-            std::cout<<"ERROR : can add new field with "<<getNbItemsField(it->second)<<" items."
+            std::cout<<"ERROR : can't add new field with "<<getNbItemsField(it->second)<<" items."
                     <<" The current map has "<<nbItems<<" items. The number of items "
                     <<"of the new filed should be 1 or "<<nbItems<<std::endl;
             return false;

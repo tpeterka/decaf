@@ -28,17 +28,23 @@ w = nx.DiGraph()
 # example of 4 nodes and 3 edges (single source)
 # this is the example diagrammed above, and for which driver.pyx is made
 w.add_node("lammps", start_proc=0, nprocs=4, prod_func='lammps'     , con_func=''          ,
-           path=mod_path)
+           path=mod_path, data_required=[] , data_produced=["nbParticules","pos","speed"])
+
 w.add_node("print1", start_proc=5, nprocs=1, prod_func= ''          , con_func='print'     ,
-           path=mod_path)
+           path=mod_path, data_required=["nbParticules","pos","speed"] , data_produced=[])
+
 w.add_node("print2", start_proc=7, nprocs=1, prod_func='print2_prod', con_func='print2_con',
-           path=mod_path)
+           path=mod_path, data_required=["nbParticules","pos"] , data_produced=["nbParticules","pos"])
+
 w.add_node("print3", start_proc=9, nprocs=1, prod_func=''           , con_func='print'     ,
-           path=mod_path)
+           path=mod_path, data_required=["pos"] , data_produced=[])
+
 w.add_edge("lammps", "print1", start_proc=4, nprocs=1               , dflow_func='dflow'   ,
            path=mod_path, prod_dflow_redist='count', dflow_cons_redist='count')
+
 w.add_edge("lammps", "print2", start_proc=6, nprocs=1               , dflow_func='dflow'   ,
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
+
 w.add_edge("print2", "print3", start_proc=8, nprocs=1               , dflow_func='dflow'   ,
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 

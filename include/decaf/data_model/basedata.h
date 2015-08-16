@@ -11,10 +11,9 @@
 //
 //--------------------------------------------------------------------------
 
-#ifndef DECAF_TRANSPORT_MPI_NEWDATA_HPP
-#define DECAF_TRANSPORT_MPI_NEWDATA_HPP
+#ifndef DECAF_BASEDATA_H
+#define DECAF_BASEDATA_H
 
-#include <mpi.h>
 #include <vector>
 #include <memory>
 

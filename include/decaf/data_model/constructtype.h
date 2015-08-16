@@ -1,7 +1,7 @@
 #ifndef CONSTRUCT_TYPE
 #define CONSTRUCT_TYPE
 
-#include <decaf/decaf.hpp>
+//#include <decaf/decaf.hpp>
 #include <decaf/data_model/basedata.h>
 #include <decaf/data_model/vectorconstructdata.hpp>
 
@@ -28,12 +28,10 @@
 #include <map>
 #include <vector>
 #include <sstream>
+#include <memory>
+
 
 namespace decaf {
-
-typedef std::tuple<ConstructTypeFlag, ConstructTypeScope,
-    int, std::shared_ptr<BaseConstructData>,
-    ConstructTypeSplitPolicy, ConstructTypeMergePolicy> datafield;
 
 class ConstructData  : public BaseData {
 
@@ -44,10 +42,10 @@ public:
 
     bool appendData(std::string name,
                     std::shared_ptr<BaseConstructData>  data,
-                    ConstructTypeFlag flags = DECAF_NOFLAG,
-                    ConstructTypeScope scope =  DECAF_PRIVATE,
-                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
+                    ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
+                    ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
+                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
 
     int getNbFields();
 
@@ -71,10 +69,8 @@ public:
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<std::vector<int> >& range);
 
-    //Todo : remove the code redundancy
-    virtual bool merge(shared_ptr<BaseData> other);
+    virtual bool merge(std::shared_ptr<BaseData> other);
 
-    //Todo : remove the code redundancy
     virtual bool merge(char* buffer, int size);
 
     virtual bool merge();
@@ -104,8 +100,14 @@ public:
 
     std::shared_ptr<BaseConstructData> getData(std::string key);
 
+    bool setMergeOrder(std::vector<std::string>& merge_order);
+    const std::vector<std::string>& getMergeOrder();
+
+    bool setSplitOrder(std::vector<std::string>& split_order);
+    const std::vector<std::string>& getSplitOrder();
+
 protected:
-    std::shared_ptr<std::map<std::string, datafield> > container_;
+    mapConstruct container_;
     int nbFields_;
     bool bZCurveKey_;
     bool bZCurveIndex_;
@@ -124,6 +126,9 @@ protected:
 
     std::string out_serial_buffer_;
     std::string in_serial_buffer_;
+
+    std::vector<std::string> merge_order_;
+    std::vector<std::string> split_order_;
 
 
 

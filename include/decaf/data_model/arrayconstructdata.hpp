@@ -150,7 +150,7 @@ public:
                         mapConstruct partial_map,
                         ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
-        std::shared_ptr<ArrayConstructData<T> > other_ = dynamic_pointer_cast<ArrayConstructData<T> >(other);
+        std::shared_ptr<ArrayConstructData<T> > other_ = std::dynamic_pointer_cast<ArrayConstructData<T> >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge to objects with different types"<<std::endl;
@@ -208,7 +208,7 @@ public:
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)
     {
-        std::shared_ptr<ArrayConstructData<T> >other_ = dynamic_pointer_cast<ArrayConstructData<T> >(other);
+        std::shared_ptr<ArrayConstructData<T> >other_ = std::dynamic_pointer_cast<ArrayConstructData<T> >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge two objects with different types"<<std::endl;

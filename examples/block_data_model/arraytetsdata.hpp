@@ -1,7 +1,7 @@
 #ifndef ARRAY_TETS_DATA
 #define ARRAY_TETS_DATA
 
-#include "arrayconstructdata.hpp"
+#include <decaf/data_model/arrayconstructdata.hpp>
 #include <numeric>
 #include "tess/tet.h"
 
@@ -44,7 +44,7 @@ public:
     virtual int getNbItems()
     {
         std::map<std::string, datafield>::iterator data;
-        data = map_->find("pos");
+        data = map_->find(std::string("pos"));
         if(data == map_->end())
         {
             std::cerr<<"ERROR : Field \"pos\" not found in the map. Required for "
@@ -142,7 +142,7 @@ public:
                 //Generating the objects the splits
                 for(int i = 0; i < range.size(); i++)
                 {
-                    std::shared_ptr<ArrayTetsData> data = make_shared<ArrayTetsData>(
+                    std::shared_ptr<ArrayTetsData> data = std::make_shared<ArrayTetsData>(
                                 arrays_tet.at(i),
                                 range_sum.at(i),
                                 element_per_items_,
@@ -244,7 +244,7 @@ public:
                 //Generating the objects the splits
                 for(int i = 0; i < range.size(); i++)
                 {
-                    std::shared_ptr<ArrayTetsData> data = make_shared<ArrayTetsData>(
+                    std::shared_ptr<ArrayTetsData> data = std::make_shared<ArrayTetsData>(
                                 arrays_tet.at(i),
                                 range_sum.at(i),
                                 element_per_items_,
@@ -273,7 +273,7 @@ public:
         //To merge the tet, we have to shift all the references to the particles
         //by the current number of particles and all the references of the tets
 
-        std::shared_ptr<ArrayTetsData> otherArray = dynamic_pointer_cast<ArrayTetsData >(other);
+        std::shared_ptr<ArrayTetsData> otherArray = std::dynamic_pointer_cast<ArrayTetsData >(other);
         if(!otherArray)
         {
             std::cout<<"ERROR : trying to merge to objects with different types"<<std::endl;
@@ -295,7 +295,7 @@ public:
                 }
 
                 std::shared_ptr<SimpleConstructData<int> > numOrigParticules =
-                        dynamic_pointer_cast<SimpleConstructData<int> >(std::get<3>(field->second));
+                        std::dynamic_pointer_cast<SimpleConstructData<int> >(std::get<3>(field->second));
                 if(!numOrigParticules)
                 {
                     std::cerr<<"ERROR : unable to cast the field num_particles with the type "

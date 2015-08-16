@@ -2,7 +2,7 @@
 #define BBOX_CONSTRUCT_DATA
 
 #include <decaf/data_model/vectorconstructdata.hpp>
-#include "arrayconstructdata.hpp"
+#include <decaf/data_model/arrayconstructdata.hpp>
 
 namespace decaf {
 
@@ -139,7 +139,7 @@ public:
                         mapConstruct partial_map,
                         ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
-        std::shared_ptr<BBoxConstructData > other_ = dynamic_pointer_cast<BBoxConstructData >(other);
+        std::shared_ptr<BBoxConstructData > other_ = std::dynamic_pointer_cast<BBoxConstructData >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge to objects with different types"<<std::endl;
@@ -153,9 +153,9 @@ public:
                 if(value_ != other_->value_)
                 {
                     for(unsigned int i = 0; i < 3; i++)
-                        value_[i] = min(value_[i], other_->value_[i]);
+                        value_[i] = std::min(value_[i], other_->value_[i]);
                     for(unsigned int i = 3; i < 6; i++)
-                        value_[i] = max(value_[i], other_->value_[i]);
+                        value_[i] = std::max(value_[i], other_->value_[i]);
                 }
                 return true;
                 break;
@@ -171,7 +171,7 @@ public:
                 //We try the possible field conversion
                 bool success_conv = false;
                 std::shared_ptr<VectorConstructData<float> > posvf =
-                        dynamic_pointer_cast<VectorConstructData<float> >(posvf);
+                        std::dynamic_pointer_cast<VectorConstructData<float> >(posvf);
                 if(posvf)
                 {
                     success_conv = true;
@@ -179,7 +179,7 @@ public:
                     computeBBoxFromPosF(&pos[0], posvf->getNbItems());
                 }
                 std::shared_ptr<VectorConstructData<double> > posvd =
-                        dynamic_pointer_cast<VectorConstructData<double> >(posvd);
+                        std::dynamic_pointer_cast<VectorConstructData<double> >(posvd);
                 if(posvd)
                 {
                     success_conv = true;
@@ -187,7 +187,7 @@ public:
                     computeBBoxFromPosD(&pos[0], posvd->getNbItems());
                 }
                 std::shared_ptr<ArrayConstructData<float> > posaf =
-                        dynamic_pointer_cast<ArrayConstructData<float> >(posaf);
+                        std::dynamic_pointer_cast<ArrayConstructData<float> >(posaf);
                 if(posaf)
                 {
                     success_conv = true;
@@ -195,7 +195,7 @@ public:
                     computeBBoxFromPosF(pos, posaf->getNbItems());
                 }
                 std::shared_ptr<ArrayConstructData<double> > posad =
-                        dynamic_pointer_cast<ArrayConstructData<double> >(posad);
+                        std::dynamic_pointer_cast<ArrayConstructData<double> >(posad);
                 if(posad)
                 {
                     success_conv = true;
@@ -219,7 +219,7 @@ public:
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)
     {
-        std::shared_ptr<BBoxConstructData>other_ = dynamic_pointer_cast<BBoxConstructData >(other);
+        std::shared_ptr<BBoxConstructData>other_ = std::dynamic_pointer_cast<BBoxConstructData >(other);
         if(!other_)
         {
             std::cout<<"ERROR : trying to merge two objects with different types"<<std::endl;
@@ -235,9 +235,9 @@ protected:
         for(int i = 0; i < nbPos; i++)
         {
             for(unsigned int j = 0; j < 3; j++)
-                value_[j] = min(value_[j], pos[3*i+j]);
+                value_[j] = std::min(value_[j], pos[3*i+j]);
             for(unsigned int j = 3; j < 6; j++)
-                value_[j] = max(value_[j], pos[3*i+j]);
+                value_[j] = std::max(value_[j], pos[3*i+j]);
         }
     }
 
@@ -246,9 +246,9 @@ protected:
         for(int i = 0; i < nbPos; i++)
         {
             for(unsigned int j = 0; j < 3; j++)
-                value_[j] = min(value_[j], (float)(pos[3*i+j]));
+                value_[j] = std::min(value_[j], (float)(pos[3*i+j]));
             for(unsigned int j = 3; j < 6; j++)
-                value_[j] = max(value_[j], (float)(pos[3*i+j]));
+                value_[j] = std::max(value_[j], (float)(pos[3*i+j]));
         }
     }
 };
