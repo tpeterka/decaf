@@ -4,10 +4,10 @@ add_subdirectory            (direct)
 
 add_subdirectory            (redist)
 
-if                          (DLAMMPS_INCLUDE_DIR AND
-                             DLAMMPS_LIBRARY     AND
-                             DFFTW_INCLUDE_DIR   AND
-                             DFFTW_LIBRARY)
+if                          (LAMMPS_INCLUDE_DIR AND
+                             LAMMPS_LIBRARY     AND
+                             FFTW_INCLUDE_DIR   AND
+                             FFTW_LIBRARY)
   add_subdirectory          (lammps)
   message                   ("Building lammps example")
 else                        ()
