@@ -52,6 +52,7 @@ typedef unsigned char TaskType;
 #define DECAF_PROD      0x00
 #define DECAF_DFLOW     0x01
 #define DECAF_CON       0x02
+#define DECAF_BOTH      0x04
 
 // communicator types
 typedef unsigned char CommType;
@@ -86,10 +87,19 @@ struct WorkflowNode        // a producer or consumer
     vector<int> in_links;  // indices of incoming links
     int start_proc;        // starting proc rank in world communicator for this producer or consumer
     int nprocs;            // number of processes for this producer or consumer
+
+    // TODO: remove prod_func and con_func; replaced by func
     string prod_func;      // name of producer callback
     string con_func;       // name of consumer callback
+
+    string func;           // name of node callback
+    TaskType type;         // producer, consumer, or both
+
+    // TODO: remove prod_args and con_args; relaced by args
     void* prod_args;       // producer callback arguments
     void* con_args;        // consumer callback arguments
+
+    void* args;            // callback arguments
     string path;           // path to producer and consumer callback function module
     // when a node is both producer and consumer, both callbacks must be
     // in the same file; ie, we only store one path (can change if needed)
@@ -101,11 +111,19 @@ struct WorkflowLink             // a dataflow
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
     int nprocs;                 // number of processes in the dataflow
+
+    // TODO: remove dflow_func; replaced by func
     string dflow_func;          // name of dataflow callback
+
+    string func;                // name of dataflow callback
+
+    // TODO: remove dflow_args; relaced by args
     void* dflow_args;           // dataflow callback arguments
+
+    void* args;                 // callback arguments
     string path;                // path to callback function module
-    string prod_dflow_redist;   // Redistribution component between producer and dflow
-    string dflow_con_redist;   // Redistribution component between dflow and consumer
+    string prod_dflow_redist;   // redistribution component between producer and dflow
+    string dflow_con_redist;    // redistribution component between dflow and consumer
 };
 
 struct Workflow            // an entire workflow

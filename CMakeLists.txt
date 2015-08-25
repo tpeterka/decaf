@@ -76,10 +76,12 @@ set                         (libraries
                              ${libraries}
                              ${transport_libraries}
                              ${CMAKE_DL_LIBS})
+
+# subdirectories
 add_subdirectory            (src)
 add_subdirectory            (examples)
 
-# Installing the headers
+# Install the headers
 file(GLOB DEPLOY_FILES_AND_DIRS "${PROJECT_SOURCE_DIR}/include/*")
 foreach(ITEM ${DEPLOY_FILES_AND_DIRS})
    if( IS_DIRECTORY "${ITEM}" )

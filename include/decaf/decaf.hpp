@@ -66,16 +66,24 @@ namespace decaf
                     int prod  = workflow_.links[i].prod;    // index into workflow nodes
                     int dflow = i;                          // index into workflow links
                     int con   = workflow_.links[i].con;     // index into workflow nodes
-                    decaf_sizes.prod_size   = workflow_.nodes[prod].nprocs;
-                    decaf_sizes.dflow_size  = workflow_.links[dflow].nprocs;
-                    decaf_sizes.con_size    = workflow_.nodes[con].nprocs;
-                    decaf_sizes.prod_start  = workflow_.nodes[prod].start_proc;
-                    decaf_sizes.dflow_start = workflow_.links[dflow].start_proc;
-                    decaf_sizes.con_start   = workflow_.nodes[con].start_proc;
-                    decaf_sizes.con_nsteps  = con_nsteps_;
-                    Decomposition prod_dflow_redist = stringToDecomposition(workflow_.links[dflow].prod_dflow_redist);
-                    Decomposition dflow_con_redist = stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
-                    dataflows.push_back(new Dataflow(world_comm_, decaf_sizes, pipeliner, checker, data, prod_dflow_redist, dflow_con_redist));
+                    decaf_sizes.prod_size           = workflow_.nodes[prod].nprocs;
+                    decaf_sizes.dflow_size          = workflow_.links[dflow].nprocs;
+                    decaf_sizes.con_size            = workflow_.nodes[con].nprocs;
+                    decaf_sizes.prod_start          = workflow_.nodes[prod].start_proc;
+                    decaf_sizes.dflow_start         = workflow_.links[dflow].start_proc;
+                    decaf_sizes.con_start           = workflow_.nodes[con].start_proc;
+                    decaf_sizes.con_nsteps          = con_nsteps_;
+                    Decomposition prod_dflow_redist =
+                        stringToDecomposition(workflow_.links[dflow].prod_dflow_redist);
+                    Decomposition dflow_con_redist =
+                        stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
+                    dataflows.push_back(new Dataflow(world_comm_,
+                                                     decaf_sizes,
+                                                     pipeliner,
+                                                     checker,
+                                                     data,
+                                                     prod_dflow_redist,
+                                                     dflow_con_redist));
                     dataflows[i]->err();
                 }
             }
@@ -241,21 +249,41 @@ Decaf::run(decaf::Data* data,                     // data model
                 // debug
                 // fprintf(stderr, "level = %d n = %d u = %d\n", level, n, u);
 
-                //Special case when the same rank is both consummer and producer
+                // special case when the same rank is both consummer and producer
                 if(in_dataflows.size() && in_dataflows[0]->is_con()
                    && out_dataflows.size() && out_dataflows[0]->is_prod())
                 {
-                    // First we consume the data
-                    func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                        load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
-                    func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_,
-                         &in_dataflows, -1);
+                    // first consume the data
+                    if (workflow_.nodes[u].con_func == "") // TODO: DEPRECATE this test and else clause
+                    {
+                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
+                        func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
+                             &in_dataflows, -1);
+                    }
+                    else
+                    {
+                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
+                        func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_,
+                             &in_dataflows, -1);
+                    }
 
-                    //Then we can produce
-                    func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                        load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
-                    func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_,
-                         &out_dataflows, -1);
+                    // then produce
+                    if (workflow_.nodes[u].prod_func == "") // TODO: DEPRECATE this test and else clause
+                    {
+                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
+                        func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
+                             &out_dataflows, -1);
+                    }
+                    else
+                    {
+                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
+                        func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_,
+                             &out_dataflows, -1);
+                    }
                 }
                 else
                 {
@@ -263,10 +291,20 @@ Decaf::run(decaf::Data* data,                     // data model
                     // producer
                     if (out_dataflows.size() && out_dataflows[0]->is_prod())
                     {
-                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
-                        func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_,
-                             &out_dataflows, -1);
+                        if (workflow_.nodes[u].prod_func == "") // TODO: DEPRECATE this test and else clause
+                        {
+                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
+                            func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
+                                 &out_dataflows, -1);
+                        }
+                        else
+                        {
+                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
+                            func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_,
+                                 &out_dataflows, -1);
+                        }
                     }
 
                     // dataflow
@@ -275,20 +313,40 @@ Decaf::run(decaf::Data* data,                     // data model
                         int l = workflow_.nodes[u].out_links[j];
                         if (out_dataflows[j]->is_dflow())
                         {
-                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                                load_mod(mods, workflow_.links[l].path, workflow_.links[l].dflow_func);
-                            func(workflow_.links[l].dflow_args, t, con_interval, prod_nsteps_,
-                                 &out_dataflows, -1);
+                            if (workflow_.links[l].dflow_func == "") // TODO: DEPRECATE this test and else clause
+                            {
+                                func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                                    load_mod(mods, workflow_.links[l].path, workflow_.links[l].func);
+                                func(workflow_.links[l].args, t, con_interval, prod_nsteps_,
+                                     &out_dataflows, -1);
+                            }
+                            else
+                            {
+                                func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                                    load_mod(mods, workflow_.links[l].path, workflow_.links[l].dflow_func);
+                                func(workflow_.links[l].dflow_args, t, con_interval, prod_nsteps_,
+                                     &out_dataflows, -1);
+                            }
                         }
                     }
 
                     // consumer
                     if (in_dataflows.size() && in_dataflows[0]->is_con())
                     {
-                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
-                        func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_,
-                             &in_dataflows, -1);
+                        if (workflow_.nodes[u].con_func == "") // TODO: DEPRECATE this test and else clause
+                        {
+                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
+                            func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
+                                 &in_dataflows, -1);
+                        }
+                        else
+                        {
+                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
+                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
+                            func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_,
+                                 &in_dataflows, -1);
+                        }
                     }
                 }
 
