@@ -1,16 +1,5 @@
 include (../../../cmake/UseCython.cmake)
 
-cython_add_module( py_cfd driver.pyx )
-target_link_libraries( py_cfd ${libraries} decaf_transport)
-
-install(TARGETS py_cfd
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/cfd/python/
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE)
-    install(DIRECTORY .
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/cfd/python/
-        FILES_MATCHING PATTERN "*.py*"
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE)
-
 find_package(Boost COMPONENTS serialization)
 if(Boost_FOUND)
     message("Building cfd example python with Redistribution component")

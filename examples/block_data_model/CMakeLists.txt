@@ -5,7 +5,7 @@ find_package(Boost COMPONENTS serialization REQUIRED)
 find_path                   (DIY_INCLUDE_DIRS       diy/types.h HINTS ${DIY_PREFIX})
 
 if(Boost_FOUND)
-    message("Building boost based redistribution example")
+    message("Building block data model example")
     include_directories(${Boost_INCLUDE_DIRS})
     include_directories(${DIY_INCLUDE_DIRS} ${TESS_INCLUDE_DIRS})
 
@@ -22,7 +22,7 @@ if(Boost_FOUND)
             )
 
 else(Boost_FOUND)
-    message("Boost or Boost serialization component not found. Skipping boost based redistribution example")
+    message("Boost or Boost serialization component not found. Skipping block data model example")
 endif(Boost_FOUND)
 
 

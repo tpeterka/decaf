@@ -93,7 +93,7 @@ struct WorkflowNode        // a producer or consumer
     string con_func;       // name of consumer callback
 
     string func;           // name of node callback
-    TaskType type;    // producer, consumer, or both
+    TaskType type;         // producer, consumer, or both
 
     // TODO: remove prod_args and con_args; relaced by args
     void* prod_args;       // producer callback arguments
