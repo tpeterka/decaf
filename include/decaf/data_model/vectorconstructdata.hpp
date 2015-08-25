@@ -29,6 +29,8 @@ public:
 
     virtual ~VectorConstructData(){}
 
+    virtual bool isBlockSplitable(){ return false; }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
@@ -134,6 +136,15 @@ public:
         return result;
     }
 
+    //This function should never be called
+    virtual std::vector<std::shared_ptr<BaseConstructData> > split(
+            const std::vector< block3D >& range,
+            std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
+        return result;
+    }
 
 
     virtual bool merge( std::shared_ptr<BaseConstructData> other,
