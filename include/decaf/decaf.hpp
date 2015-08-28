@@ -136,9 +136,9 @@ namespace decaf
                 return bfs_node.dist;
             }
 
-        // loads a module (if it has not been loaded) containing a callback function name
+        // loads a node module (if it has not been loaded) containing a callback function name
         // returns a pointer to the function
-        void* load_mod(
+        void* load_node(
             map<string, void*>& mods,      // (name, handle) of modules dynamically loaded so far
             string mod_name,               // module name (path) to be loaded
             string func_name)              // function name to be called
@@ -146,7 +146,41 @@ namespace decaf
                 map<string, void*>::iterator it;              // iterator into the modules
                 pair<string, void*> p;                        // (module name, module handle)
                 pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
-                void(*func)(void*, int, int, int, vector<Dataflow*>*, int); // ptr to callback func
+                void(*func)(void*,                            // ptr to callback func
+                            int,
+                            int,
+                            int,
+                            vector<Dataflow*>*,
+                            vector<Dataflow*>*);
+
+                if ((it = mods.find(mod_name)) == mods.end())
+                {
+                    void* f = dlopen(mod_name.c_str(), RTLD_LAZY);
+                    if (!f)
+                        fprintf(stderr, "Error: module %s could not be loaded\n",
+                                mod_name.c_str());
+                    p = make_pair(mod_name, f);
+                    ret = mods.insert(p);
+                    it = ret.first;
+                }
+                return dlsym(it->second, func_name.c_str());
+            }
+
+        // loads a dataflow module (if it has not been loaded) containing a callback function name
+        // returns a pointer to the function
+        void* load_dflow(
+            map<string, void*>& mods,      // (name, handle) of modules dynamically loaded so far
+            string mod_name,               // module name (path) to be loaded
+            string func_name)              // function name to be called
+            {
+                map<string, void*>::iterator it;              // iterator into the modules
+                pair<string, void*> p;                        // (module name, module handle)
+                pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
+                void(*func)(void*,                            // ptr to callback func
+                            int,
+                            int,
+                            int,
+                            Dataflow*);
 
                 if ((it = mods.find(mod_name)) == mods.end())
                 {
@@ -192,8 +226,18 @@ Decaf::run(decaf::Data* data,                     // data model
     build_dataflows(dataflows, pipeliner, checker, data);
 
     // dynamically loaded modules (plugins)
-    void(*func)(void*, int, int, int, vector<Dataflow*>*, int); // ptr to callback func in a module
-    map<string, void*> mods;                                    // modules dynamically loaded so far
+    void(*node_func)(void*,                       // ptr to producer or consumer callback func
+                     int,                         // in a module
+                     int,
+                     int,
+                     vector<Dataflow*>*,
+                     vector<Dataflow*>*);
+    void(*dflow_func)(void*,                      // ptr to dataflow callback func in a module
+                      int,
+                      int,
+                      int,
+                      Dataflow*);
+    map<string, void*> mods;                       // modules dynamically loaded so far
 
     // TODO: assuming the same consumer interval for the entire workflow
     // this should not be necessary, need to experiment
@@ -247,107 +291,66 @@ Decaf::run(decaf::Data* data,                     // data model
                     in_dataflows.push_back(dataflows[workflow_.nodes[u].in_links[j]]);
 
                 // debug
-                // fprintf(stderr, "level = %d n = %d u = %d\n", level, n, u);
+                // fprintf(stderr, "level = %d n = %d u = %d in_size = %d out_size = %d\n",
+                //         level, n, u, in_dataflows.size(), out_dataflows.size());
 
-                // special case when the same rank is both consummer and producer
-                if(in_dataflows.size() && in_dataflows[0]->is_con()
-                   && out_dataflows.size() && out_dataflows[0]->is_prod())
+                // only producer or both producer and consumer
+                if (out_dataflows.size() && out_dataflows[0]->is_prod())
                 {
-                    // first consume the data
-                    if (workflow_.nodes[u].con_func == "") // TODO: DEPRECATE this test and else clause
-                    {
-                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
-                        func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
-                             &in_dataflows, -1);
-                    }
-                    else
-                    {
-                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
-                        func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_,
-                             &in_dataflows, -1);
-                    }
+                    // cerr << "a" << endl;
+                    node_func = (void(*)(void*,
+                                         int,
+                                         int,
+                                         int,
+                                         vector<Dataflow*>*,
+                                         vector<Dataflow*>*))
+                        load_node(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
+                    node_func(workflow_.nodes[u].args,
+                              t,
+                              con_interval,
+                              prod_nsteps_,
+                              &in_dataflows,
+                              &out_dataflows);
+                }
 
-                    // then produce
-                    if (workflow_.nodes[u].prod_func == "") // TODO: DEPRECATE this test and else clause
+                // dataflow
+                for (size_t j = 0; j < out_dataflows.size(); j++)
+                {
+                    int l = workflow_.nodes[u].out_links[j];
+                    if (out_dataflows[j]->is_dflow())
                     {
-                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
-                        func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
-                             &out_dataflows, -1);
-                    }
-                    else
-                    {
-                        func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                            load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
-                        func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_,
-                             &out_dataflows, -1);
+                        // cerr << "b" << endl;
+                        dflow_func = (void(*)(void*,
+                                              int,
+                                              int,
+                                              int,
+                                              Dataflow*))
+                            load_dflow(mods, workflow_.links[l].path, workflow_.links[l].func);
+                        dflow_func(workflow_.links[l].args,
+                                   t,
+                                   con_interval,
+                                   prod_nsteps_,
+                                   out_dataflows[0]);
                     }
                 }
-                else
+
+                // only consumer (not both producer and consumer)
+                if (in_dataflows.size() && !out_dataflows.size() && in_dataflows[0]->is_con())
                 {
-
-                    // producer
-                    if (out_dataflows.size() && out_dataflows[0]->is_prod())
-                    {
-                        if (workflow_.nodes[u].prod_func == "") // TODO: DEPRECATE this test and else clause
-                        {
-                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
-                            func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
-                                 &out_dataflows, -1);
-                        }
-                        else
-                        {
-                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].prod_func);
-                            func(workflow_.nodes[u].prod_args, t, con_interval, prod_nsteps_,
-                                 &out_dataflows, -1);
-                        }
-                    }
-
-                    // dataflow
-                    for (size_t j = 0; j < out_dataflows.size(); j++)
-                    {
-                        int l = workflow_.nodes[u].out_links[j];
-                        if (out_dataflows[j]->is_dflow())
-                        {
-                            if (workflow_.links[l].dflow_func == "") // TODO: DEPRECATE this test and else clause
-                            {
-                                func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                                    load_mod(mods, workflow_.links[l].path, workflow_.links[l].func);
-                                func(workflow_.links[l].args, t, con_interval, prod_nsteps_,
-                                     &out_dataflows, -1);
-                            }
-                            else
-                            {
-                                func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                                    load_mod(mods, workflow_.links[l].path, workflow_.links[l].dflow_func);
-                                func(workflow_.links[l].dflow_args, t, con_interval, prod_nsteps_,
-                                     &out_dataflows, -1);
-                            }
-                        }
-                    }
-
-                    // consumer
-                    if (in_dataflows.size() && in_dataflows[0]->is_con())
-                    {
-                        if (workflow_.nodes[u].con_func == "") // TODO: DEPRECATE this test and else clause
-                        {
-                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
-                            func(workflow_.nodes[u].args, t, con_interval, prod_nsteps_,
-                                 &in_dataflows, -1);
-                        }
-                        else
-                        {
-                            func = (void(*)(void*, int, int, int, vector<Dataflow*>*, int))
-                                load_mod(mods, workflow_.nodes[u].path, workflow_.nodes[u].con_func);
-                            func(workflow_.nodes[u].con_args, t, con_interval, prod_nsteps_,
-                                 &in_dataflows, -1);
-                        }
-                    }
+                    // cerr << "c" << endl;
+                    node_func = (void(*)(void*,
+                                         int,
+                                         int,
+                                         int,
+                                         vector<Dataflow*>*,
+                                         vector<Dataflow*>*))
+                        load_node(mods, workflow_.nodes[u].path, workflow_.nodes[u].func);
+                    node_func(workflow_.nodes[u].args,
+                              t,
+                              con_interval,
+                              prod_nsteps_,
+                              &in_dataflows,
+                              &out_dataflows);
                 }
 
                 n++;

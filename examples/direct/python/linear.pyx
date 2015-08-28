@@ -11,12 +11,7 @@ cdef extern from "decaf/types.hpp":
         vector[int] in_links
         int start_proc
         int nprocs
-        string prod_func                     # TODO: remove
-        string con_func                      # TODO: remove
         string func
-        unsigned char type
-        void* prod_args                      # TODO: remove
-        void* con_args                       # TODO: remove
         void* args
         string path
     struct WorkflowLink:
@@ -24,9 +19,7 @@ cdef extern from "decaf/types.hpp":
         int con
         int start_proc
         int nprocs
-        string dflow_func                    # TODO: remove
         string func
-        void* dflow_args                     # TODO: remove
         void* args
         string path
         string prod_dflow_redist
@@ -51,14 +44,6 @@ def pyrun(workflow, prod_nsteps, con_nsteps):
         wnode.start_proc = node[1]['start_proc']
         wnode.nprocs     = node[1]['nprocs']
         wnode.func       = node[1]['func']
-        if node[1]['type'] == 'prod':
-            wnode.type = DECAF_PROD
-        elif node[1]['type'] == 'con':
-            wnode.type = DECAF_CON
-        elif node[1]['type'] == 'both':
-            wnode.type = DECAF_BOTH
-        else:
-            print 'unrecognized node type in python workflow'
         wnode.path       = node[1]['path']
         node[1]['index'] = i                         # add identifier to each node
         i += 1

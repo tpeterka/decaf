@@ -39,18 +39,18 @@ namespace decaf
              DecafSizes& decaf_sizes,
              void (*pipeliner)(Dataflow*),
              void (*checker)(Dataflow*),
-             Data* data,
+             // Data* data,
              Decomposition prod_dflow_redist = DECAF_CONTIG_DECOMP,
              Decomposition dflow_cons_redist = DECAF_CONTIG_DECOMP);
     ~Dataflow();
     void run();
-    void put(void* d, int count = 1);
-    void* get(bool no_copy = false);
+    // void put(void* d, int count = 1);
+    // void* get(bool no_copy = false);
     void put(std::shared_ptr<BaseData> data, TaskType role);
     void get(std::shared_ptr<BaseData> data, TaskType role);
-    int get_nitems(bool no_copy = false)
-      { return(no_copy? data_->put_nitems() : data_->get_nitems(DECAF_CON)); }
-    Data* data()           { return data_; }
+    // int get_nitems(bool no_copy = false)
+    //   { return(no_copy? data_->put_nitems() : data_->get_nitems(DECAF_CON)); }
+    // Data* data()           { return data_; }
     DecafSizes* sizes()    { return &sizes_; }
     void flush();
     void err()             { ::all_err(err_); }
@@ -58,21 +58,21 @@ namespace decaf
     bool is_prod()         { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
     bool is_dflow()        { return((type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM); }
     bool is_con()          { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
-    CommHandle prod_comm_handle() { return prod_comm_->handle(); }
-    CommHandle con_comm_handle()  { return con_comm_->handle();  }
-    Comm* prod_comm()             { return prod_comm_; }
-    Comm* con_comm()              { return con_comm_;  }
+    // CommHandle prod_comm_handle() { return prod_comm_->handle(); }
+    // CommHandle con_comm_handle()  { return con_comm_->handle();  }
+    // Comm* prod_comm()             { return prod_comm_; }
+    // Comm* con_comm()              { return con_comm_;  }
     void forward();             //NOTE : was private
 
   private:
     CommHandle world_comm_;     // handle to original world communicator
-    Comm* prod_comm_;           // producer communicator
-    Comm* con_comm_;            // consumer communicator
-    Comm* prod_dflow_comm_;     // communicator covering producer and dataflow
-    Comm* dflow_con_comm_;      // communicator covering dataflow and consumer
+    // Comm* prod_comm_;           // producer communicator
+    // Comm* con_comm_;            // consumer communicator
+    // Comm* prod_dflow_comm_;     // communicator covering producer and dataflow
+    // Comm* dflow_con_comm_;      // communicator covering dataflow and consumer
     RedistComp* redist_prod_dflow_;  // Redistribution component between producer and dataflow
     RedistComp* redist_dflow_con_;   // Redestribution component between a dataflow and consummer
-    Data* data_;                // data model
+    // Data* data_;                // data model
     DecafSizes sizes_;          // sizes of communicators, time steps
     void (*pipeliner_)(Dataflow*); // user-defined pipeliner code
     void (*checker_)(Dataflow*);   // user-defined resilience code
@@ -89,7 +89,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    DecafSizes& decaf_sizes,
                    void (*pipeliner)(Dataflow*),
                    void (*checker)(Dataflow*),
-                   Data* data,
+                   // Data* data,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist):
   world_comm_(world_comm),

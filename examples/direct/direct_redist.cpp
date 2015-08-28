@@ -38,13 +38,12 @@ extern "C"
 {
   // producer
   // check your modulo arithmetic to ensure you get exactly con_nsteps times
-  void prod(void* args,                   // arguments to the callback
-            int t_current,                // current time step
-            int t_interval,               // consumer time interval
-            int t_nsteps,                 // total number of time steps
-            vector<Dataflow*>* dataflows, // all dataflows (for producer or consumer)
-            int this_dataflow = -1)       // index of one dataflow in list of all
-
+  void prod(void* args,                       // arguments to the callback
+            int t_current,                    // current time step
+            int t_interval,                   // consumer time interval
+            int t_nsteps,                     // total number of time steps
+            vector<Dataflow*>* in_dataflows,  // all inbound dataflows
+            vector<Dataflow*>* out_dataflows) // all outbound dataflows
   {
     fprintf(stderr, "prod\n");
 
@@ -61,31 +60,28 @@ extern "C"
 
     if (!((t_current + 1) % t_interval))
     {
-      for (size_t i = 0; i < dataflows->size(); i++)
-      {
         fprintf(stderr, "+ producing time step %d\n", t_current);
-        (*dataflows)[i]->put(container, DECAF_PROD);
-        (*dataflows)[i]->flush();
+        (*out_dataflows)[0]->put(container, DECAF_PROD);
+        (*out_dataflows)[0]->flush();
         std::cout<<"Prod Put done"<<std::endl;
-      }
     }
   }
 
   // consumer
   // check your modulo arithmetic to ensure you get exactly con_nsteps times
-  void con(void* args,                     // arguments to the callback
-           int t_current,                  // current time step
-           int t_interval,                 // consumer time interval
-           int t_nsteps,                   // total number of time steps
-           vector<Dataflow*>* dataflows,   // all dataflows (for producer or consumer)
-           int this_dataflow = -1)         // index of one dataflow in list of all
+  void con(void* args,                       // arguments to the callback
+           int t_current,                    // current time step
+           int t_interval,                   // consumer time interval
+           int t_nsteps,                     // total number of time steps
+           vector<Dataflow*>* in_dataflows,  // all inbound dataflows
+           vector<Dataflow*>* out_dataflows) // all outbound dataflows
   {
     if (!((t_current + 1) % t_interval))
     {
       std::cout<<"Con"<<std::endl;
       //int* cd    = (int*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
       std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-      (*dataflows)[0]->get(container, DECAF_CON);
+      (*in_dataflows)[0]->get(container, DECAF_CON);
       std::cout<<"Get done"<<std::endl;
       std::shared_ptr<SimpleConstructData<int> > sum =
               dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
@@ -100,29 +96,23 @@ extern "C"
              int t_current,                // current time step
              int t_interval,               // consumer time interval
              int t_nsteps,                 // total number of time steps
-             vector<Dataflow*>* dataflows, // all dataflows
-             int this_dataflow = -1)       // index of one dataflow in list of all
+             Dataflow* dataflow)           // dataflow
   {
     fprintf(stderr, "dflow\n");
-    //for (size_t i = 0; i < dataflows.size(); i++)
-    //  dataflows[i]->flush();               // need to clean up after each time step
-    for (size_t i = 0; i < dataflows->size(); i++)
-    {
-        //Getting the data from the producer
-        std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-        (*dataflows)[i]->get(container, DECAF_DFLOW);
-        std::cout<<"dflow get done"<<std::endl;
-        std::shared_ptr<SimpleConstructData<int> > sum =
-                dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
 
-        fprintf(stderr, "- dataflowing time step %d, sum = %d\n", t_current, sum->getData());
+    //Getting the data from the producer
+    std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
+    dataflow->get(container, DECAF_DFLOW);
+    std::cout<<"dflow get done"<<std::endl;
+    std::shared_ptr<SimpleConstructData<int> > sum =
+        dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
 
-        //Forwarding the data to the consumers
-        (*dataflows)[i]->put(container, DECAF_DFLOW);
-        (*dataflows)[i]->flush();
-        std::cout<<"dflow put done"<<std::endl;
-    }
+    fprintf(stderr, "- dataflowing time step %d, sum = %d\n", t_current, sum->getData());
 
+    //Forwarding the data to the consumers
+    dataflow->put(container, DECAF_DFLOW);
+    dataflow->flush();
+    std::cout<<"dflow put done"<<std::endl;
   }
 } // extern "C"
 
@@ -135,10 +125,10 @@ void run(Workflow& workflow,             // workflow
   pd = new int[1];
   for (size_t i = 0; i < workflow.nodes.size(); i++)
   {
-    if (workflow.nodes[i].prod_func == "prod")
-      workflow.nodes[i].prod_args = pd;
-    if (workflow.nodes[i].prod_func == "con")
-      workflow.nodes[i].prod_args = cd;
+    if (workflow.nodes[i].func == "prod")
+      workflow.nodes[i].args = pd;
+    if (workflow.nodes[i].func == "con")
+      workflow.nodes[i].args = cd;
   }
 
   MPI_Init(NULL, NULL);
@@ -181,8 +171,7 @@ int main(int argc,
   node.out_links.push_back(0);
   node.start_proc = 0;
   node.nprocs = 4;
-  node.prod_func = "prod";
-  node.con_func = "";
+  node.func = "prod";
   node.path = path;
   workflow.nodes.push_back(node);
 
@@ -191,8 +180,7 @@ int main(int argc,
   node.in_links.push_back(0);
   node.start_proc = 6;
   node.nprocs = 2;
-  node.prod_func = "";
-  node.con_func = "con";
+  node.func = "con";
   node.path = path;
   workflow.nodes.push_back(node);
 
@@ -202,7 +190,7 @@ int main(int argc,
   link.con = 1;
   link.start_proc = 4;
   link.nprocs = 2;
-  link.dflow_func = "dflow";
+  link.func = "dflow";
   link.path = path;
   link.prod_dflow_redist = "count";
   link.dflow_con_redist = "count";

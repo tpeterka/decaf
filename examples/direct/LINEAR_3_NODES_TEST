@@ -39,13 +39,13 @@ exe=./linear_3_nodes
 
 if [ "$ARCH" = "MAC_OSX" ]; then
 
-mpiexec -l -n $num_procs $exe
+#mpiexec -l -n $num_procs $exe
 
 #dsymutil $exe ; mpiexec -l -n $num_procs xterm -e lldb --args $exe
 
 #dsymutil $exe ; mpiexec -n $num_procs valgrind -q $exe
 
-#dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
+dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
 
 fi
 
