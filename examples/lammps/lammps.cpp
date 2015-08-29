@@ -278,7 +278,7 @@ int main(int argc,
         exit(1);
     }
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/lammps/libmod_lammps_redist.so"));
+    path.append(string("/examples/lammps/libmod_lammps.so"));
     string infile = argv[1];
 
 

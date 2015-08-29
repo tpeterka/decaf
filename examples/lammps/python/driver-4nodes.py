@@ -6,10 +6,10 @@ import os
 # --- set your options here ---
 
 # path to .so for driver
-driver_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/python/libpy_lammps_redist.so'
+driver_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/python/libpy_lammps.so'
 
 # path to .so module for callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/libmod_lammps_redist.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/libmod_lammps.so'
 
 # define workflow graph
 # 4-node workflow
@@ -50,5 +50,5 @@ infile = os.environ['DECAF_PREFIX'] + "/examples/lammps/in.melt"
 # call driver
 
 import imp
-driver = imp.load_dynamic('driver_redist', driver_path)
+driver = imp.load_dynamic('driver', driver_path)
 driver.pyrun(w, prod_nsteps, con_nsteps, infile)

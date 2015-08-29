@@ -24,20 +24,20 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
   find_package(Boost COMPONENTS serialization)
   if(Boost_FOUND)
     include_directories     (${Boost_INCLUDE_DIRS})
-    add_executable          (lammps_redist            lammps_redist.cpp)
-    add_library             (mod_lammps_redist MODULE lammps_redist.cpp)
-    target_link_libraries   (lammps_redist
+    add_executable          (lammps            lammps.cpp)
+    add_library             (mod_lammps MODULE lammps.cpp)
+    target_link_libraries   (lammps
       ${lammps_libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
-    target_link_libraries   (mod_lammps_redist
+    target_link_libraries   (mod_lammps
       ${lammps_libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
-    install(TARGETS lammps_redist mod_lammps_redist
+    install(TARGETS lammps mod_lammps
       DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/
       PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
       GROUP_READ GROUP_WRITE GROUP_EXECUTE
       WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-    install(FILES  LAMMPS_REDIST_TEST in.melt
+    install(FILES  LAMMPS_TEST in.melt
       DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/
       PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
       GROUP_READ GROUP_WRITE GROUP_EXECUTE
