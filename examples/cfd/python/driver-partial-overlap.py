@@ -6,10 +6,10 @@ import os
 # --- set your options here ---
 
 # path to .so driver
-driver_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/libpy_direct_redist.so'
+driver_path = os.environ['DECAF_PREFIX'] + '/examples/cfd/python/libpy_cfd.so'
 
 # path to .so module for callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/libmod_direct_redist.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/cfd/libmod_cfd.so'
 
 # define workflow graph
 # 2-node workflow
@@ -30,5 +30,5 @@ con_nsteps   = 3
 # --- do not edit below this point --
 
 import imp
-driver = imp.load_dynamic('driver_redist', driver_path)
+driver = imp.load_dynamic('driver', driver_path)
 driver.pyrun(w, prod_nsteps, con_nsteps)

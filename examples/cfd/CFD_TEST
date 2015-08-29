@@ -30,7 +30,7 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executable
-exe=./cfd_redist
+exe=./cfd
 
 #------
 #

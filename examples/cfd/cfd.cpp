@@ -362,7 +362,7 @@ int main(int argc,
         exit(1);
     }
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/cfd/libmod_cfd_redist.so"));
+    path.append(string("/examples/cfd/libmod_cfd.so"));
 
     // fill workflow nodes
     WorkflowNode node;
@@ -378,11 +378,8 @@ int main(int argc,
     node.out_links.clear();                  // consumer
     node.in_links.clear();
     node.in_links.push_back(0);
-    // node.start_proc = 6;                  // no overlap
-    node.start_proc = 2;                     // partial overlap
-    // node.start_proc = 0;                  // total overlap
-    node.nprocs = 2;                         // no or partial overlap
-    // node.nprocs = 4;                      // total overlap
+    node.start_proc = 2;
+    node.nprocs = 2;
     node.func = "con";
     node.path = path;
     workflow.nodes.push_back(node);
@@ -391,11 +388,8 @@ int main(int argc,
     WorkflowLink link;
     link.prod = 0;                           // dataflow
     link.con = 1;
-    // link.start_proc = 4;                  // no overlap
-    link.start_proc = 1;                     // partial overlap
-    // link.start_proc = 0;                  // total overlap
-    link.nprocs = 2;                         // no or partial overlap
-    // link.nprocs = 4;                      // total overlap
+    link.start_proc = 1;
+    link.nprocs = 2;
     link.func = "dflow";
     link.path = path;
     link.prod_dflow_redist = "count";
