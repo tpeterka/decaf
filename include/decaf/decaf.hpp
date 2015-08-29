@@ -264,10 +264,6 @@ Decaf::run(decaf::Data* data,                     // data model
     //   fprintf(stderr, "nlevels = %d bfs[%d] = index %d dist %d\n",
     //           nlevels, i, bfs_order[i].index, bfs_order[i].dist);
 
-    // start the dataflows
-    for (size_t i = 0; i < workflow_.links.size(); i++)
-        dataflows[i]->run();
-
     // run the main loop
     for (int t = 0; t < prod_nsteps_; t++)
     {
