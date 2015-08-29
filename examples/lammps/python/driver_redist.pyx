@@ -11,18 +11,16 @@ cdef extern from "decaf/types.hpp":
         vector[int] in_links
         int start_proc
         int nprocs
-        string prod_func
-        string con_func
-        void* prod_args
-        void* con_args
+        string func
+        void* args
         string path
     struct WorkflowLink:
         int prod
         int con
         int start_proc
         int nprocs
-        string dflow_func
-        void* dflow_args
+        string func
+        void* args
         string path
         string prod_dflow_redist
         string dflow_con_redist
@@ -45,8 +43,7 @@ def pyrun(workflow, prod_nsteps, con_nsteps, infile):
     for node in workflow.nodes_iter(data=True):
         wnode.start_proc = node[1]['start_proc']
         wnode.nprocs     = node[1]['nprocs']
-        wnode.prod_func  = node[1]['prod_func']
-        wnode.con_func   = node[1]['con_func']
+        wnode.func       = node[1]['func']
         wnode.path       = node[1]['path']
         node[1]['index'] = i                         # add identifier to each node
         i += 1
@@ -59,14 +56,14 @@ def pyrun(workflow, prod_nsteps, con_nsteps, infile):
     # iterate over edges
     i = 0
     for edge in workflow.edges_iter(data=True):
-        wlink.prod       = workflow.node[edge[0]]['index']
-        wlink.con        = workflow.node[edge[1]]['index']
-        wlink.start_proc = edge[2]['start_proc']
-        wlink.nprocs     = edge[2]['nprocs']
-        wlink.dflow_func = edge[2]['dflow_func']
-        wlink.path       = edge[2]['path']
+        wlink.prod              = workflow.node[edge[0]]['index']
+        wlink.con               = workflow.node[edge[1]]['index']
+        wlink.start_proc        = edge[2]['start_proc']
+        wlink.nprocs            = edge[2]['nprocs']
+        wlink.func              = edge[2]['func']
+        wlink.path              = edge[2]['path']
         wlink.prod_dflow_redist = edge[2]['prod_dflow_redist']
-        wlink.dflow_con_redist = edge[2]['dflow_con_redist']
+        wlink.dflow_con_redist  = edge[2]['dflow_con_redist']
 
         # add edge to corresponding nodes
         wflow.nodes[wlink.prod].out_links.push_back(i)

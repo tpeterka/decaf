@@ -11,8 +11,8 @@
 # tpeterka@mcs.anl.gov
 #
 #----------------------------------------------------------------------------
-#ARCH=MAC_OSX
-ARCH=LINUX
+ARCH=MAC_OSX
+#ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
 #ARCH=CRAY

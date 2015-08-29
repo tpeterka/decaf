@@ -59,9 +59,8 @@ extern "C"
                 int t_current,               // current time step
                 int t_interval,              // consumer time interval
                 int t_nsteps,                // total number of time steps
-                vector<Dataflow*>* dataflows,// all dataflows (for producer or consumer)
-                int this_dataflow = -1)      // index of one dataflow in list of all
-
+                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
+                vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
         fprintf(stderr, "lammps\n");
         struct lammps_args_t* a = (lammps_args_t*)args; // custom args
@@ -70,7 +69,7 @@ extern "C"
         if (t_current == 0)                  // first time step
         {
             // only create lammps for first dataflow instance
-            a->lammps = new LAMMPS(0, NULL, (*dataflows)[0]->prod_comm_handle());
+            a->lammps = new LAMMPS(0, NULL, (*out_dataflows)[0]->prod_comm_handle());
             a->lammps->input->file(a->infile.c_str());
         }
 
@@ -105,12 +104,12 @@ extern "C"
 
     // gets the atom positions and prints them
     // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void print(void* args,                   // arguments to the callback
-               int t_current,                // current time step
-               int t_interval,               // consumer time interval
-               int t_nsteps,                 // total number of time steps
-               vector<Dataflow*>* dataflows, // all dataflows (for producer or consumer)
-               int this_dataflow = -1)       // index of one dataflow in list of all
+    void print(void* args,                       // arguments to the callback
+               int t_current,                    // current time step
+               int t_interval,                   // consumer time interval
+               int t_nsteps,                     // total number of time steps
+               vector<Dataflow*>* in_dataflows,  // all inbound dataflows
+               vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
         fprintf(stderr, "print\n");
         if (!((t_current + 1) % t_interval))
@@ -128,12 +127,12 @@ extern "C"
 
     // puts the atom positions to the dataflow
     // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void print2_prod(void* args,             // arguments to the callback
-                     int t_current,          // current time step
-                     int t_interval,         // consumer time interval
-                     int t_nsteps,           // total number of time steps
-                     vector<Dataflow*>* dataflows, // all dataflows (for producer or consumer)
-                     int this_datafow = -1)  // index of one dataflow in list of all
+    void print2(void* args,                       // arguments to the callback
+                int t_current,                    // current time step
+                int t_interval,                   // consumer time interval
+                int t_nsteps,                     // total number of time steps
+                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
+                vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
         fprintf(stderr, "print2_prod\n");
         struct pos_args_t* a = (pos_args_t*)args;   // custom args
@@ -147,6 +146,8 @@ extern "C"
         }
         std::cout<<"End of iteration "<<t_current<<std::endl;
     }
+
+    // TODO: copy print2_con to print2 above and then remove print2_con
 
     // gets the atom positions and copies them
     // check your modulo arithmetic to ensure you get exactly con_nsteps times
@@ -182,8 +183,7 @@ extern "C"
                int t_current,                // current time step
                int t_interval,               // consumer time interval
                int t_nsteps,                 // total number of time steps
-               vector<Dataflow*>* dataflows, // all dataflows
-               int this_dataflow = -1)       // index of one dataflow in list of all
+               Dataflow* dataflow,           // dataflow
     {
         fprintf(stderr, "dflow\n");
         for (size_t i = 0; i < dataflows->size(); i++)
@@ -211,12 +211,12 @@ void run(Workflow& workflow,                 // workflow
     pos_args.pos = NULL;
     for (size_t i = 0; i < workflow.nodes.size(); i++)
     {
-        if (workflow.nodes[i].prod_func == "lammps")
-            workflow.nodes[i].prod_args = &lammps_args;
-        if (workflow.nodes[i].prod_func == "print2_prod")
-            workflow.nodes[i].prod_args = &pos_args;
-        if (workflow.nodes[i].con_func  == "print2_con"|| workflow.nodes[i].con_func  == "print")
-            workflow.nodes[i].con_args  = &pos_args;
+        if (workflow.nodes[i].func == "lammps")
+            workflow.nodes[i].args = &lammps_args;
+        if (workflow.nodes[i].func == "print2")
+            workflow.nodes[i].args = &pos_args;
+        if (workflow.nodes[i].func == "print")
+            workflow.nodes[i].args = &pos_args;
     }
 
     MPI_Init(NULL, NULL);
@@ -256,8 +256,7 @@ int main(int argc,
     node.in_links.push_back(1);              // print1
     node.start_proc = 5;
     node.nprocs = 1;
-    node.prod_func = "";
-    node.con_func = "print";
+    node.func = "print";
     node.path = path;
     workflow.nodes.push_back(node);
 
@@ -266,8 +265,7 @@ int main(int argc,
     node.in_links.push_back(0);              // print3
     node.start_proc = 9;
     node.nprocs = 1;
-    node.prod_func = "";
-    node.con_func = "print";
+    node.func = "print";
     node.path = path;
     workflow.nodes.push_back(node);
 
@@ -277,8 +275,7 @@ int main(int argc,
     node.in_links.push_back(2);
     node.start_proc = 7;
     node.nprocs = 1;
-    node.prod_func = "print2_prod";
-    node.con_func = "print2_con";
+    node.func = "print2";
     node.path = path;
     workflow.nodes.push_back(node);
 
@@ -288,8 +285,7 @@ int main(int argc,
     node.out_links.push_back(2);
     node.start_proc = 0;
     node.nprocs = 4;
-    node.prod_func = "lammps";
-    node.con_func = "";
+    node.func = "lammps";
     node.path = path;
     workflow.nodes.push_back(node);
 
@@ -299,7 +295,7 @@ int main(int argc,
     link.con = 1;
     link.start_proc = 8;
     link.nprocs = 1;
-    link.dflow_func = "dflow";
+    link.func = "dflow";
     link.path = path;
     link.prod_dflow_redist = "count";
     link.dflow_con_redist = "count";
@@ -309,7 +305,7 @@ int main(int argc,
     link.con = 0;
     link.start_proc = 4;
     link.nprocs = 1;
-    link.dflow_func = "dflow";
+    link.func = "dflow";
     link.path = path;
     link.prod_dflow_redist = "count";
     link.dflow_con_redist = "count";
@@ -319,7 +315,7 @@ int main(int argc,
     link.con = 2;
     link.start_proc = 6;
     link.nprocs = 1;
-    link.dflow_func = "dflow";
+    link.func = "dflow";
     link.path = path;
     link.prod_dflow_redist = "count";
     link.dflow_con_redist = "count";

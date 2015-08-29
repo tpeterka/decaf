@@ -27,15 +27,12 @@ w = nx.DiGraph()
 
 # example of 3 nodes and 2 edges (single source)
 # this is the example diagrammed above, and for which driver.pyx is made
-w.add_node("lammps", start_proc=0, nprocs=4, prod_func='lammps'     , con_func=''          ,
-           path=mod_path)
-w.add_node("print1", start_proc=5, nprocs=1, prod_func= ''          , con_func='print'     ,
-           path=mod_path)
-w.add_node("print2", start_proc=7, nprocs=1, prod_func='print2_prod', con_func='print2_con',
-           path=mod_path)
-w.add_edge("lammps", "print1", start_proc=4, nprocs=1               , dflow_func='dflow'   ,
+w.add_node("lammps", start_proc=0, nprocs=4, func='lammps', path=mod_path)
+w.add_node("print1", start_proc=5, nprocs=1, func='print' , path=mod_path)
+w.add_node("print2", start_proc=7, nprocs=1, func='print2', path=mod_path)
+w.add_edge("lammps", "print1", start_proc=4, nprocs=1, func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
-w.add_edge("lammps", "print2", start_proc=6, nprocs=1               , dflow_func='dflow'   ,
+w.add_edge("lammps", "print2", start_proc=6, nprocs=1, func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # total number of time steps

@@ -23,11 +23,9 @@ w = nx.DiGraph()
 
 # example of 4 nodes and 3 edges (single source)
 # this is the example diagrammed above, and for which driver.pyx is made
-w.add_node("lammps", start_proc=0, nprocs=4, prod_func='lammps', con_func=''       ,
-           path=mod_path)
-w.add_node("print",  start_proc=6, nprocs=2, prod_func= ''     , con_func='print'  ,
-           path=mod_path)
-w.add_edge("lammps", "print", start_proc=4, nprocs=2           , dflow_func='dflow',
+w.add_node("lammps", start_proc=0, nprocs=4, func='lammps', path=mod_path)
+w.add_node("print",  start_proc=6, nprocs=2, func='print' , path=mod_path)
+w.add_edge("lammps", "print", start_proc=4, nprocs=2 , func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # total number of time steps

@@ -54,14 +54,14 @@ def pyrun(workflow, prod_nsteps, con_nsteps):
     # iterate over edges
     i = 0
     for edge in workflow.edges_iter(data=True):
-        wlink.prod       = workflow.node[edge[0]]['index']
-        wlink.con        = workflow.node[edge[1]]['index']
-        wlink.start_proc = edge[2]['start_proc']
-        wlink.nprocs     = edge[2]['nprocs']
-        wlink.func       = edge[2]['func']
-        wlink.path       = edge[2]['path']
+        wlink.prod              = workflow.node[edge[0]]['index']
+        wlink.con               = workflow.node[edge[1]]['index']
+        wlink.start_proc        = edge[2]['start_proc']
+        wlink.nprocs            = edge[2]['nprocs']
+        wlink.func              = edge[2]['func']
+        wlink.path              = edge[2]['path']
         wlink.prod_dflow_redist = edge[2]['prod_dflow_redist']
-        wlink.dflow_con_redist = edge[2]['dflow_con_redist']
+        wlink.dflow_con_redist  = edge[2]['dflow_con_redist']
 
         # add edge to corresponding nodes
         wflow.nodes[wlink.prod].out_links.push_back(i)

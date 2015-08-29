@@ -362,7 +362,7 @@ int main(int argc,
         exit(1);
     }
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/direct/libmod_direct.so"));
+    path.append(string("/examples/cfd/libmod_cfd_redist.so"));
 
     // fill workflow nodes
     WorkflowNode node;

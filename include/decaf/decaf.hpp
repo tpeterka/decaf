@@ -81,7 +81,7 @@ namespace decaf
                                                      decaf_sizes,
                                                      pipeliner,
                                                      checker,
-                                                     data,
+                                                     // data,
                                                      prod_dflow_redist,
                                                      dflow_con_redist));
                     dataflows[i]->err();

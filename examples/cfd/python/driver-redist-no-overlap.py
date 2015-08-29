@@ -16,13 +16,12 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/cfd/libmod_cfd_redist.so'
 #
 #    lammps (4 procs) - print (2 procs)
 #
-#  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
-#  dataflow can be overlapped, but currently all disjoint procs (simplest case)
+#  entire workflow takes 9 procs
 
 w = nx.DiGraph()
-w.add_node("prod", start_proc=0, nprocs=4, prod_func='prod', con_func='',        path=mod_path)
-w.add_node("con",  start_proc=5, nprocs=4, prod_func= ''   , con_func='con',     path=mod_path)
-w.add_edge("prod", "con", start_proc=4, nprocs=1,            dflow_func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
+w.add_node("prod", start_proc=0, nprocs=4, func='prod', path=mod_path)
+w.add_node("con",  start_proc=5, nprocs=4, func='con' , path=mod_path)
+w.add_edge("prod", "con", start_proc=4, nprocs=1, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # total number of time steps
 prod_nsteps  = 10

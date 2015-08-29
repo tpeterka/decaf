@@ -96,8 +96,6 @@ extern "C"
                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
                vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
-        // cerr << "node1: both, in_dataflows.size = " << in_dataflows->size() << " out_dataflows.size() = " << out_dataflows->size() << endl;
-
         // get
         shared_ptr<ConstructData> get_container = make_shared<ConstructData>();
         (*in_dataflows)[0]->get(get_container, DECAF_CON);

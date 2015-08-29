@@ -19,9 +19,9 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/libmod_direct_redist.s
 #  entire workflow takes 4 procs (total overlap)
 
 w = nx.DiGraph()
-w.add_node("prod", start_proc=0, nprocs=4, prod_func='prod', con_func='',        path=mod_path)
-w.add_node("con",  start_proc=0, nprocs=4, prod_func= ''   , con_func='con',     path=mod_path)
-w.add_edge("prod", "con", start_proc=0, nprocs=4,            dflow_func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
+w.add_node("prod", start_proc=0, nprocs=4, func='prod', path=mod_path)
+w.add_node("con",  start_proc=0, nprocs=4, func='con' , path=mod_path)
+w.add_edge("prod", "con", start_proc=0, nprocs=4, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # total number of time steps
 prod_nsteps  = 2
