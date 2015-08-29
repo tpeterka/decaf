@@ -18,7 +18,7 @@ ARCH=MAC_OSX
 #ARCH=CRAY
 
 # number of procs
-num_procs=12
+num_procs=8
 
 # procs per node
 ppn=1 # adjustable for BG/Q, allowed 1, 2, 4, 8, 16, 32, 64
@@ -30,7 +30,7 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executable
-exe=./linear_3_nodes
+exe=./linear_2nodes
 
 #------
 #
@@ -41,7 +41,7 @@ if [ "$ARCH" = "MAC_OSX" ]; then
 
 mpiexec -l -n $num_procs $exe
 
-#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e lldb --args $exe
+#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e gdb -x gdb.run --args $exe
 
 #dsymutil $exe ; mpiexec -n $num_procs valgrind -q $exe
 

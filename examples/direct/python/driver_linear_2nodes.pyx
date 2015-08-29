@@ -28,7 +28,7 @@ cdef extern from "decaf/types.hpp":
         vector[WorkflowNode] nodes
         vector[WorkflowLink] links
 
-cdef extern from "../examples/direct/direct_redist.cpp":
+cdef extern from "../examples/direct/linear_2nodes.cpp":
     void run(Workflow& workflow, int prod_nsteps, int con_nsteps)
 
 def pyrun(workflow, prod_nsteps, con_nsteps):

@@ -214,7 +214,7 @@ int main(int argc,
     }
 
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/direct/libmod_linear_3_nodes.so"));
+    path.append(string("/examples/direct/libmod_linear_3nodes.so"));
 
     // fill workflow nodes
     WorkflowNode node;
