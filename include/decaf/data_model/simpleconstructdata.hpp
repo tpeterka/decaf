@@ -25,6 +25,8 @@ public:
         ar & BOOST_SERIALIZATION_NVP(value_);
     }
 
+    virtual bool isBlockSplitable(){ return false; }
+
     virtual int getNbItems(){ return 1; }
 
     T& getData(){ return value_; }
@@ -96,6 +98,16 @@ public:
                 break;
             }
         }
+        return result;
+    }
+
+    //This function should never be called
+    virtual std::vector<std::shared_ptr<BaseConstructData> > split(
+            const std::vector< block3D >& range,
+            std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
         return result;
     }
 

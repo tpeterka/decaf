@@ -54,6 +54,12 @@ enum ConstructTypeMergePolicy {
     DECAF_MERGE_BBOX_POS = 0x8,       // Compute the bounding box from the field pos
 };
 
+struct block3D
+{
+    int base[3];
+    int extends[3];
+};
+
 class BaseConstructData;    //Define just after
 
 //Structure for ConstructType
@@ -117,6 +123,8 @@ public:
 
     virtual int getNbItems() = 0;
 
+    virtual bool isBlockSplitable() = 0;
+
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
             std::vector< mapConstruct >& partial_map,
@@ -124,6 +132,11 @@ public:
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector< std::vector<int> >& range,
+            std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
+
+    virtual std::vector<std::shared_ptr<BaseConstructData> > split(
+            const std::vector< block3D >& range,
             std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 

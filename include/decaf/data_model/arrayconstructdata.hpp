@@ -33,6 +33,8 @@ public:
 
     }
 
+    virtual bool isBlockSplitable(){ return false; }
+
     virtual T* getArray(){ return value_; }
 
     virtual int getNbItems(){ return size_ / element_per_items_; }
@@ -143,6 +145,16 @@ public:
                 break;
             }
         }
+        return result;
+    }
+
+    //This function should never be called
+    virtual std::vector<std::shared_ptr<BaseConstructData> > split(
+            const std::vector< block3D >& range,
+            std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
         return result;
     }
 

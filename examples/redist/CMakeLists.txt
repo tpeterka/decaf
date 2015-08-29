@@ -42,12 +42,14 @@ if(Boost_FOUND)
     add_executable              (test2count test2Count.cpp)
     target_link_libraries       (test2count     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
-    install(TARGETS testboost redistboost testzcurve testround test2count
+    add_executable              (testarrayndim testArrayNDim.cpp)
+    target_link_libraries       (testarrayndim     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+
+    install(TARGETS testboost redistboost testzcurve testround test2count testarrayndim
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )
-
-    install(FILES TESTBOOST REDISTBOOST TESTZCURVE TESTROUND TEST2COUNT
+    install(FILES TESTBOOST REDISTBOOST TESTZCURVE TESTROUND TEST2COUNT TESTNARRAY
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )
