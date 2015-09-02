@@ -97,23 +97,16 @@ extern "C"
                vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
         // get
-        shared_ptr<ConstructData> get_container = make_shared<ConstructData>();
-        (*in_dataflows)[0]->get(get_container, DECAF_CON);
+        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        (*in_dataflows)[0]->get(container, DECAF_CON);
         cerr << "node1: get done" << endl;
-        shared_ptr<SimpleConstructData<int> > sum =
-            dynamic_pointer_cast<SimpleConstructData<int> >
-            (get_container->getData(string("node0")));
+
+        (*in_dataflows)[0]->flush();        // need to clean up after each time step
 
         // put
-        shared_ptr<SimpleConstructData<int> > data  =
-            make_shared<SimpleConstructData<int> >(sum->getData());
-        shared_ptr<ConstructData> put_container = make_shared<ConstructData>();
-        put_container->appendData(string("node1"), data,
-                              DECAF_NOFLAG, DECAF_PRIVATE,
-                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
         if (!((t_current + 1) % t_interval))
         {
-            (*out_dataflows)[0]->put(put_container, DECAF_PROD);
+            (*out_dataflows)[0]->put(container, DECAF_PROD);
             (*out_dataflows)[0]->flush();
             cerr << "node1: put done" << endl;
         }
@@ -133,7 +126,7 @@ extern "C"
         cerr<<"dflow12: get done"<<endl;
         shared_ptr<SimpleConstructData<int> > sum =
             dynamic_pointer_cast<SimpleConstructData<int> >
-            (container->getData(string("node1")));
+            (container->getData(string("node0")));
 
         cerr << "- dataflowing 1->2 time " << t_current << " sum " << sum->getData() << endl;
 
@@ -160,7 +153,7 @@ extern "C"
             cerr<<"node2: get done"<<endl;
             shared_ptr<SimpleConstructData<int> > sum =
                 dynamic_pointer_cast<SimpleConstructData<int> >
-                (container->getData(string("node1")));
+                (container->getData(string("node0")));
 
             // for this example, the policy of the redistribute component is add
             cerr << "- consuming time step " << t_current << " sum = " << sum->getData() << endl;

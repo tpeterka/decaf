@@ -31,7 +31,7 @@ void Evolution(int Stage);
 int Initialize(int myid);
 int initialCond(int myid, int numprocs);
 int arrayAlloc();
-int multiToFlat(float *mu1, float *mu2, float *mu3);
+void multiToFlat(float *mu1, float *mu2, float *mu3);
 float *A3D(unsigned columns, unsigned rows, unsigned floors);
 
 int getIndex(int i, int j, int k, int x, int y, int z) {

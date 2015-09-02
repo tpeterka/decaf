@@ -256,7 +256,7 @@ const float BB = 4., C1 = 0.33333333, C2 = 0.16666667;
 *******************/
 void Reconstruction(int next, int previous, MPI_Comm globalComm)
 {
-register float kk;
+float kk;
 MPI_Status s[4];
 MPI_Request r[4];
 
@@ -642,7 +642,7 @@ void BounCondOnInterfaces( void )
 ***********/
 void Fluxes(int next, int previous, MPI_Comm globalComm)
 {
-register float RU; // convective normal mass flux
+float RU; // convective normal mass flux
 MPI_Status s[4];
 MPI_Request r[4];
 
@@ -1105,8 +1105,8 @@ MPI_Request r[4];
  **************/
 void Evolution(int Stage)
 {
-    register float R;
-    register float RU;
+    float R;
+    float RU;
     if (Stage == 1)
     {
         for (i = 1, _i = 0; i < LENN; i++, _i++)
@@ -1476,7 +1476,7 @@ void Output(int myid, int step, float *mu1)
     fclose(g);
 } // end Output()
 
-int multiToFlat(float *mu1, float *mu2, float *mu3)
+void multiToFlat(float *mu1, float *mu2, float *mu3)
 {
     int i, j, k;
     for (i = 0; i <= LENN; i++)
@@ -1493,7 +1493,7 @@ int multiToFlat(float *mu1, float *mu2, float *mu3)
     }
 }
 
-int flatToMulti(float *mu1, float *mu2, float *mu3)
+void flatToMulti(float *mu1, float *mu2, float *mu3)
 {
     int i, j, k;
     for (i = 0; i <= LENN; i++)

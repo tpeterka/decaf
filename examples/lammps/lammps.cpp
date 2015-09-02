@@ -162,46 +162,19 @@ extern "C"
                 vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
         fprintf(stderr, "print2\n");
-        // struct pos_args_t* a = (pos_args_t*)args;   // custom args, DEPRECATED
 
         if (!((t_current + 1) % t_interval))
         {
             // get
-            // debug
-            cout << "Number of dataflows: in " << in_dataflows->size() <<
-                " out " << out_dataflows->size() << endl;
-            shared_ptr<ConstructData> get_container = make_shared<ConstructData>();
-            (*in_dataflows)[0]->get(get_container, DECAF_CON);
+            shared_ptr<ConstructData> container = make_shared<ConstructData>();
+            (*in_dataflows)[0]->get(container, DECAF_CON);
 
-            shared_ptr<VectorConstructData<double> > get_data =
-                dynamic_pointer_cast<VectorConstructData<double> >
-                (get_container->getData(string("pos")));
-
-            // DEPRECATED: should not need to copy out into pos
-            // vector<double>& pos = data->getVector();
-            // a->natoms   = data->getNbItems();
-            // a->pos      = new double[a->natoms * 3];
-            // fprintf(stderr, "consumer redist print 2 copying %d atoms\n", a->natoms);
-            // for (int i = 0; i < a->natoms; i++)
-            // {
-            //     a->pos[3 * i    ] = pos[3 * i    ];
-            //     a->pos[3 * i + 1] = pos[3 * i + 1];
-            //     a->pos[3 * i + 2] = pos[3 * i + 2];
-            // }
             (*in_dataflows)[0]->flush();        // need to clean up after each time step
 
             // put
-            shared_ptr<ConstructData> put_container = make_shared<ConstructData>();
             fprintf(stderr, "+ print2 forwarding time step %d\n", t_current);
-            // TODO: following does not compile; learn how to do this correctly
-            // shared_ptr<VectorConstructData<double> > put_data  =
-            //     make_shared<VectorConstructData<double> >(get_data->getVector());
-            // put_container->appendData(string("pos"), put_data,
-            //                           DECAF_NOFLAG, DECAF_PRIVATE,
-            //                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
-            (*out_dataflows)[0]->put(put_container, DECAF_PROD);
+            (*out_dataflows)[0]->put(container, DECAF_PROD);
             (*out_dataflows)[0]->flush();        // need to clean up after each time step
-            // delete[] a->pos;   // DEPRECATED; should not need pos
         }
     }
 
