@@ -167,11 +167,12 @@ public:
                 {
                     std::cerr<<"ERROR : The field pos does not exist in the partial map. "
                             <<"Unable to compute the bbox from the positions."<<std::endl;
+                    return false;
                 }
                 //We try the possible field conversion
                 bool success_conv = false;
                 std::shared_ptr<VectorConstructData<float> > posvf =
-                        std::dynamic_pointer_cast<VectorConstructData<float> >(posvf);
+                        std::dynamic_pointer_cast<VectorConstructData<float> >(std::get<3>(field->second));
                 if(posvf)
                 {
                     success_conv = true;
@@ -179,7 +180,7 @@ public:
                     computeBBoxFromPosF(&pos[0], posvf->getNbItems());
                 }
                 std::shared_ptr<VectorConstructData<double> > posvd =
-                        std::dynamic_pointer_cast<VectorConstructData<double> >(posvd);
+                        std::dynamic_pointer_cast<VectorConstructData<double> >(std::get<3>(field->second));
                 if(posvd)
                 {
                     success_conv = true;
@@ -187,7 +188,7 @@ public:
                     computeBBoxFromPosD(&pos[0], posvd->getNbItems());
                 }
                 std::shared_ptr<ArrayConstructData<float> > posaf =
-                        std::dynamic_pointer_cast<ArrayConstructData<float> >(posaf);
+                        std::dynamic_pointer_cast<ArrayConstructData<float> >(std::get<3>(field->second));
                 if(posaf)
                 {
                     success_conv = true;
@@ -195,7 +196,7 @@ public:
                     computeBBoxFromPosF(pos, posaf->getNbItems());
                 }
                 std::shared_ptr<ArrayConstructData<double> > posad =
-                        std::dynamic_pointer_cast<ArrayConstructData<double> >(posad);
+                        std::dynamic_pointer_cast<ArrayConstructData<double> >(std::get<3>(field->second));
                 if(posad)
                 {
                     success_conv = true;

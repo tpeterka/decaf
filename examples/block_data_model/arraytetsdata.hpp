@@ -262,6 +262,8 @@ public:
             }
         }
 
+        return result;
+
     }
 
     virtual bool merge(std::shared_ptr<BaseConstructData> other,
