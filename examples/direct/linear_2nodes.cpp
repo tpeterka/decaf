@@ -45,7 +45,7 @@ extern "C"
             vector<Dataflow*>* in_dataflows,  // all inbound dataflows
             vector<Dataflow*>* out_dataflows) // all outbound dataflows
   {
-    fprintf(stderr, "prod\n");
+    std::cerr<<"prod"<<std::endl;
 
     int* pd = (int*)args;                 // producer data
     *pd = t_current;                      // just assign something, current time step for example
@@ -62,8 +62,7 @@ extern "C"
     {
         fprintf(stderr, "+ producing time step %d\n", t_current);
         (*out_dataflows)[0]->put(container, DECAF_PROD);
-        (*out_dataflows)[0]->flush();
-        std::cout<<"Prod Put done"<<std::endl;
+        std::cerr<<"Prod Put done"<<std::endl;
     }
   }
 
@@ -78,11 +77,11 @@ extern "C"
   {
     if (!((t_current + 1) % t_interval))
     {
-      std::cout<<"Con"<<std::endl;
+      std::cerr<<"Con"<<std::endl;
       //int* cd    = (int*)dataflows[0]->get(); // we know dataflow.size() = 1 in this example
       std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
       (*in_dataflows)[0]->get(container, DECAF_CON);
-      std::cout<<"Get done"<<std::endl;
+      std::cerr<<"Get done"<<std::endl;
       std::shared_ptr<SimpleConstructData<int> > sum =
               dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
 
@@ -98,12 +97,12 @@ extern "C"
              int t_nsteps,                 // total number of time steps
              Dataflow* dataflow)           // dataflow
   {
-    fprintf(stderr, "dflow\n");
+    std::cerr<<"dflow"<<std::endl;
 
     //Getting the data from the producer
     std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
     dataflow->get(container, DECAF_DFLOW);
-    std::cout<<"dflow get done"<<std::endl;
+    std::cerr<<"dflow get done"<<std::endl;
     std::shared_ptr<SimpleConstructData<int> > sum =
         dynamic_pointer_cast<SimpleConstructData<int> >(container->getData(std::string("t_current")));
 
@@ -111,8 +110,7 @@ extern "C"
 
     //Forwarding the data to the consumers
     dataflow->put(container, DECAF_DFLOW);
-    dataflow->flush();
-    std::cout<<"dflow put done"<<std::endl;
+    std::cerr<<"dflow put done"<<std::endl;
   }
 } // extern "C"
 

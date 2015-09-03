@@ -60,7 +60,6 @@ extern "C"
         {
             cerr << "+ producing time step " << t_current << endl;
             (*out_dataflows)[0]->put(container, DECAF_PROD);
-            (*out_dataflows)[0]->flush();
             cerr<<"node0: put done"<<endl;
         }
     }
@@ -84,7 +83,6 @@ extern "C"
 
         // forward the data to the consumers
         dataflow->put(container, DECAF_DFLOW);
-        dataflow->flush();
         cerr<<"dflow01: put done"<<endl;
     }
 
@@ -101,13 +99,11 @@ extern "C"
         (*in_dataflows)[0]->get(container, DECAF_CON);
         cerr << "node1: get done" << endl;
 
-        (*in_dataflows)[0]->flush();        // need to clean up after each time step
 
         // put
         if (!((t_current + 1) % t_interval))
         {
             (*out_dataflows)[0]->put(container, DECAF_PROD);
-            (*out_dataflows)[0]->flush();
             cerr << "node1: put done" << endl;
         }
     }
@@ -132,7 +128,6 @@ extern "C"
 
         // forwarding the data to the consumers
         dataflow->put(container, DECAF_DFLOW);
-        dataflow->flush();
         cerr<<"dflow12: put done"<<endl;
     }
 

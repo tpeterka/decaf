@@ -1,4 +1,4 @@
-#include <decaf/data_model/arrayndimension.hpp>
+#include <decaf/data_model/array3dconstructdata.hpp>
 #include <decaf/transport/mpi/redist_zcurve_mpi.h>
 #include <decaf/data_model/constructtype.h>
 
@@ -20,7 +20,7 @@ void testSimpleArray()
         }
     }
 
-    std::shared_ptr<ArrayNDimConstructData<float,3> > data = make_shared<ArrayNDimConstructData<float,3> >(
+    std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
                 array);
 
     boost::multi_array<float,3> array2 = data->getArray();
@@ -56,8 +56,8 @@ void testSimpleArray()
             std::shared_ptr<BaseConstructData> field = container2->getData("array");
             if(!field)
                 std::cout<<"ERROR : unable to find the field array."<<std::endl;
-            std::shared_ptr<ArrayNDimConstructData<float,3> > constructField =
-                    dynamic_pointer_cast<ArrayNDimConstructData<float,3> >(field);
+            std::shared_ptr<Array3DConstructData<float> > constructField =
+                    dynamic_pointer_cast<Array3DConstructData<float> >(field);
             boost::multi_array<float,3> array3 = constructField->getArray();
 
             std::cout<<"Array3 : "<<std::endl;

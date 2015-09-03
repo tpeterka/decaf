@@ -112,7 +112,6 @@ extern "C"
                                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
                 }
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
-                (*out_dataflows)[i]->flush();       // need to clean up after each time step
             }
         }
         delete[] x;
@@ -150,7 +149,6 @@ extern "C"
             //       fprintf(stderr, "%.3lf %.3lf %.3lf\n",
             // pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
 
-            (*in_dataflows)[0]->flush();            // need to clean up after each time step
         }
     }
 
@@ -171,12 +169,10 @@ extern "C"
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
             (*in_dataflows)[0]->get(container, DECAF_CON);
 
-            (*in_dataflows)[0]->flush();        // need to clean up after each time step
 
             // put
             fprintf(stderr, "+ print2 forwarding time step %d\n", t_current);
             (*out_dataflows)[0]->put(container, DECAF_PROD);
-            (*out_dataflows)[0]->flush();        // need to clean up after each time step
         }
     }
 
@@ -201,7 +197,6 @@ extern "C"
 
         // forwarding the data to the consumers
         dataflow->put(container, DECAF_DFLOW);
-        dataflow->flush();        // need to clean up after each time step
     }
 } // extern "C"
 

@@ -250,12 +250,14 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         if(redist_prod_dflow_ == NULL) std::cerr<<"Trying to access a null communicator."<<
                                            std::endl;
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
+        redist_prod_dflow_->flush();
     }
     else if(role == DECAF_DFLOW)
     {
         if(redist_dflow_con_ == NULL) std::cerr<<"Trying to access a null communicator."<<
                                           std::endl;
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
+        redist_dflow_con_->flush();
     }
 }
 
@@ -268,12 +270,14 @@ Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
         if(redist_prod_dflow_ == NULL) std::cerr<<"Trying to access a null communicator."<<
                                            std::endl;
         redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+        redist_prod_dflow_->flush();
     }
     else if(role == DECAF_CON)
     {
         if(redist_dflow_con_ == NULL) std::cerr<<"Trying to access a null communicator."<<
                                           std::endl;
         redist_dflow_con_->process(data, DECAF_REDIST_DEST);
+        redist_dflow_con_->flush();
     }
 }
 
