@@ -293,7 +293,7 @@ Decaf::run(decaf::Data* data,                     // data model
                 // only producer or both producer and consumer
                 if (out_dataflows.size() && out_dataflows[0]->is_prod())
                 {
-                    // cerr << "a" << endl;
+                    cerr << "a" << endl;
                     node_func = (void(*)(void*,
                                          int,
                                          int,
