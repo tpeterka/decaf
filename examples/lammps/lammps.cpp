@@ -63,7 +63,8 @@ extern "C"
                 vector<Dataflow*>* in_dataflows,  // all inbound dataflows
                 vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
-        fprintf(stderr, "lammps redist\n");
+        fprintf(stderr, "lammps\n");
+
         struct lammps_args_t* a = (lammps_args_t*)args; // custom args
         double* x;                           // atom positions
 
@@ -88,7 +89,7 @@ extern "C"
                 // lammps gathered all positions to rank 0
                 if ((*out_dataflows)[i]->prod_comm()->rank() == 0)
                 {
-                    fprintf(stderr, "+ lammps redist producing time step %d with %d atoms\n",
+                    fprintf(stderr, "+ lammps producing time step %d with %d atoms\n",
                             t_current, natoms);
                     // debug
                     //         for (int i = 0; i < 10; i++)         // print first few atoms
@@ -129,7 +130,8 @@ extern "C"
                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
                vector<Dataflow*>* out_dataflows) // all outbound dataflows
     {
-        fprintf(stderr, "print redist\n");
+        fprintf(stderr, "print\n");
+
         if (!((t_current + 1) % t_interval))
         {
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
@@ -140,7 +142,7 @@ extern "C"
                 (container->getData(string("pos")));
 
             // debug
-            fprintf(stderr, "consumer redist print1 or print3 printing %d atoms\n",
+            fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
                     pos->getNbItems());
 
             // debug
@@ -183,24 +185,23 @@ extern "C"
                int t_current,                // current time step
                int t_interval,               // consumer time interval
                int t_nsteps,                 // total number of time steps
-               Dataflow* dataflow)           // all dataflows
+               Dataflow* dataflow)           // dataflow
     {
-        if(dataflow->is_dflow())             // TODO: will this ever be false?
-        {
-            // getting the data from the producer
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            dataflow->get(container, DECAF_DFLOW);
-            shared_ptr<VectorConstructData<double> > pos =
-                dynamic_pointer_cast<VectorConstructData<double> >
-                (container->getData(string("pos")));
+        fprintf(stderr, "dflow\n");
 
-            fprintf(stderr, "- dataflowing redist time step %d, nbAtoms = %d\n",
-                    t_current, pos->getNbItems());
+        // getting the data from the producer
+        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        dataflow->get(container, DECAF_DFLOW);
+        shared_ptr<VectorConstructData<double> > pos =
+            dynamic_pointer_cast<VectorConstructData<double> >
+            (container->getData(string("pos")));
 
-            // forwarding the data to the consumers
-            dataflow->put(container, DECAF_DFLOW);
-            dataflow->flush();        // need to clean up after each time step
-        }
+        fprintf(stderr, "- dataflowing time step %d, nbAtoms = %d\n",
+                t_current, pos->getNbItems());
+
+        // forwarding the data to the consumers
+        dataflow->put(container, DECAF_DFLOW);
+        dataflow->flush();        // need to clean up after each time step
     }
 } // extern "C"
 

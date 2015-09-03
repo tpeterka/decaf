@@ -326,7 +326,7 @@ Decaf::run(decaf::Data* data,                     // data model
                                    t,
                                    con_interval,
                                    prod_nsteps_,
-                                   out_dataflows[0]);
+                                   out_dataflows[j]);
                     }
                 }
 
