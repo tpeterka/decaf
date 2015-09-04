@@ -586,6 +586,7 @@ void runTestSimpleRedist()
                     new ParticuleType(static_pointer_cast<void>(p)));
 
         component.process(data, decaf::DECAF_REDIST_SOURCE);
+        component.flush();
 
 
     }
@@ -594,6 +595,7 @@ void runTestSimpleRedist()
         std::shared_ptr<ParticuleType> result = std::shared_ptr<ParticuleType>(
                     new ParticuleType());
         component.process(result, decaf::DECAF_REDIST_DEST);
+        component.flush();
 
         particules *p = (particules *)(result->getData().get());
 
@@ -642,6 +644,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
                     new ParticuleType(static_pointer_cast<void>(p)));
 
         component.process(data, decaf::DECAF_REDIST_SOURCE);
+        component.flush();
 
 
     }
@@ -650,6 +653,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
         std::shared_ptr<ParticuleType> result = std::shared_ptr<ParticuleType>(
                     new ParticuleType());
         component.process(result, decaf::DECAF_REDIST_DEST);
+        component.flush();
 
         particules *p = (particules *)(result->getData().get());
 

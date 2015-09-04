@@ -240,6 +240,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
         component->process(result, decaf::DECAF_REDIST_DEST);
+        component->flush();
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;

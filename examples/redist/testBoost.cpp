@@ -560,11 +560,13 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
         component->process(container, decaf::DECAF_REDIST_SOURCE);
+        component->flush();
     }
     if(rank >= startReceptors && rank < startReceptors + nbReceptors)
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
         component->process(result, decaf::DECAF_REDIST_DEST);
+        component->flush();
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;

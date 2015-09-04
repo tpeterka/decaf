@@ -181,7 +181,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     std::cout<<"-------------------------------------"<<std::endl;
 
     if(rank >= startSource && rank < startSource + nbSource){
-        std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
+        std::cout<<"Running Redistributed test between "<<nbSource<<" producers "
                    "and "<<nbReceptors1<<","<<nbReceptors2<<" consummers"<<std::endl;
 
         std::vector<double> pos;
@@ -207,7 +207,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component1->process(container1, decaf::DECAF_REDIST_SOURCE);
-        component1->flush();
+        component1->flush();    // We still need to flush if not doing a get/put
 
         //Sending to the second
         std::shared_ptr<VectorConstructData<double> > array2 = std::make_shared<VectorConstructData<double> >( pos, 3 );
@@ -223,7 +223,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component2->process(container2, decaf::DECAF_REDIST_SOURCE);
-        component2->flush();
+        component2->flush();    // We still need to flush if not doing a get/put
 
 
     }
@@ -231,6 +231,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
         component1->process(result, decaf::DECAF_REDIST_DEST);
+        component1->flush();    // We still need to flush if not doing a get/put
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
@@ -246,6 +247,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
         component2->process(result, decaf::DECAF_REDIST_DEST);
+        component2->flush();    // We still need to flush if not doing a get/put
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
