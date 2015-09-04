@@ -458,6 +458,7 @@ ConstructData::merge(shared_ptr<BaseData> other)
         //We have done all the checking, now we can merge securely
         if(merge_order_.size() > 0) //We have a priority list
         {
+            std::cout<<"Merging with a specific order."<<std::endl;
             for(unsigned int i = 0; i < merge_order_.size(); i++)
             {
                 std::cout<<"Merging the field "<<merge_order_.at(i).c_str()<<"..."<<std::endl;

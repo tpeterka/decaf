@@ -282,8 +282,8 @@ public:
 
                 //Now we can simply concatenate the arrays
                 int* new_tets = new int[size_ + otherNbTets];
-                memcpy(new_tets, value_, size_ * sizeof(tet_t));
-                memcpy(new_tets + size_, other_tets, otherNbTets * sizeof(tet_t));
+                memcpy(new_tets, value_, size_ * sizeof(int));
+                memcpy(new_tets + size_, other_tets, otherNbTets * sizeof(int));
 
                 //Cleaning the older array if we have to
                 if(owner_) delete value_;
