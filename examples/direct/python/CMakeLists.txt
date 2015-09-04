@@ -4,7 +4,6 @@ find_package(Boost COMPONENTS serialization)
 
 if(Boost_FOUND)
 
-  message("Building direct examples with python")
   include_directories(${Boost_INCLUDE_DIRS})
   cython_add_module(py_linear_2nodes driver_linear_2nodes.pyx )
   target_link_libraries(py_linear_2nodes

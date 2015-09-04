@@ -4,7 +4,6 @@ find_package(Boost COMPONENTS serialization)
 
 if(Boost_FOUND)
 
-  message("Building cfd example with python")
   include_directories(${Boost_INCLUDE_DIRS})
   cython_add_module( py_cfd driver.pyx )
   target_link_libraries( py_cfd ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)

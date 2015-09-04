@@ -1,5 +1,3 @@
-Message("Decaf transport : ${decaf_transport}")
-
 if                          (python_examples)
     add_subdirectory          (python)
 endif                       (python_examples)
