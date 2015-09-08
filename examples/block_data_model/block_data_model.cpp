@@ -102,11 +102,18 @@ void containerToBlock(std::shared_ptr<ConstructData> container, dblock_t* block)
     else
         std::cerr<<"ERROR : tets not found in the map"<<std::endl;
 
+    field = container->getData("verttotet");
+    if(field)
+    {
+        std::shared_ptr<VertToTetData> table = dynamic_pointer_cast<VertToTetData>(field);
+        block->vert_to_tet = table->getArray();
+    }
+    else
+        std::cerr<<"ERROR : verttotet not found in the map"<<std::endl;
+
     //Initializing the array which we don't merged
     block->rem_gids = new int[block->num_particles - block->num_orig_particles];
     block->rem_lids = new int[block->num_particles - block->num_orig_particles];
-    block->vert_to_tet = new int[block->num_particles];
-    bzero(block->vert_to_tet, block->num_particles * sizeof(int));
     block->num_grid_pts = 0;
     block->density = new float[1];
 }
@@ -126,6 +133,121 @@ void printBlock(dblock_t* block)
         std::cout<<"           : ["<<block->tets[0].tets[0]<<","<<block->tets[0].tets[1]<<","<<block->tets[0].tets[2]<<","<<block->tets[0].tets[3]<<"]"<<std::endl;
         std::cout<<"Last tets : ["<<block->tets[block->num_tets-1].verts[0]<<","<<block->tets[block->num_tets-1].verts[1]<<","<<block->tets[block->num_tets-1].verts[2]<<","<<block->tets[block->num_tets-1].verts[3]<<"]"<<std::endl;
         std::cout<<"           : ["<<block->tets[block->num_tets-1].tets[0]<<","<<block->tets[block->num_tets-1].tets[1]<<","<<block->tets[block->num_tets-1].tets[2]<<","<<block->tets[block->num_tets-1].tets[3]<<"]"<<std::endl;
+    }
+}
+
+void countNbTetsContainer(std::shared_ptr<ConstructData> container)
+{
+    std::shared_ptr<BaseConstructData> field = container->getData("tets");
+    std::shared_ptr<BaseConstructData> field2 = container->getData("pos");
+    if(field && field2)
+    {
+        std::shared_ptr<ArrayTetsData > tets = dynamic_pointer_cast<ArrayTetsData>(field);
+        std::shared_ptr<ArrayConstructData<float> > pos = dynamic_pointer_cast<ArrayConstructData<float> >(field2);
+        tet_t* array = tets->getArray();
+        float* particles = pos->getArray();
+        std::cout<<"Number of particles : "<<pos->getNbItems()<<std::endl;
+        std::cout<<"Size of the array of particles : "<<pos->getSize()<<std::endl;
+        int nbTets = tets->getSize();
+        int nbValidTets = 0;
+        for(int i = 0; i < nbTets; i++)
+        {
+            if(array[i].tets[0] != -1 && array[i].tets[1] != -1 &&
+               array[i].tets[2] != -1 && array[i].tets[3] != -1)
+            {
+                nbValidTets++;
+                if(nbValidTets < 20)
+                {
+                    std::cout<<"Indices : ["<<array[i].verts[0]
+                             <<","<<array[i].verts[1]<<","
+                             <<array[i].verts[2]<<","
+                             <<array[i].verts[3]<<"]"<<std::endl;
+                    std::cout<<"Tet valid : "<<std::endl;
+                    std::cout<<"Vert 1 ["<<particles[array[i].verts[0] * 3]
+                            <<" , "<<particles[array[i].verts[0] * 3 + 1]
+                            <<" , "<<particles[array[i].verts[0] * 3 + 2]<<"]"<<std::endl;
+                    std::cout<<"Vert 2 ["<<particles[array[i].verts[1] * 3]
+                            <<" , "<<particles[array[i].verts[1] * 3 + 1]
+                            <<" , "<<particles[array[i].verts[1] * 3 + 2]<<"]"<<std::endl;
+                    std::cout<<"Vert 3 ["<<particles[array[i].verts[2] * 3]
+                            <<" , "<<particles[array[i].verts[2] * 3 + 1]
+                            <<" , "<<particles[array[i].verts[2] * 3 + 2]<<"]"<<std::endl;
+                    std::cout<<"Vert 4 ["<<particles[array[i].verts[3] * 3]
+                            <<" , "<<particles[array[i].verts[3] * 3 + 1]
+                            <<" , "<<particles[array[i].verts[3] * 3 + 2]<<"]"<<std::endl;
+                }
+            }
+        }
+        std::cout<<"The container has "<<nbValidTets<<" valid tets."<<std::endl;
+        return;
+    }
+    else
+    {
+        std::cerr<<"ERROR : tets not found in the map"<<std::endl;
+        return;
+    }
+}
+
+void countNbTetsBlock(dblock_t* block)
+{
+    tet_t* array = block->tets;
+    int nbTets = block->num_tets;
+    int nbValidTets = 0;
+    for(int i = 0; i < nbTets; i++)
+    {
+        if(array[i].tets[0] != -1 && array[i].tets[1] != -1 &&
+           array[i].tets[2] != -1 && array[i].tets[3] != -1)
+        {
+            nbValidTets++;
+            if(nbValidTets < 20)
+            {
+                std::cout<<"Tet valid : "<<std::endl;
+                std::cout<<"Indices : ["<<array[i].verts[0]
+                         <<","<<array[i].verts[1]<<","
+                         <<array[i].verts[2]<<","
+                         <<array[i].verts[3]<<"]"<<std::endl;
+                std::cout<<"Vert 1 ["<<block->particles[array[i].verts[0] * 3]
+                        <<" , "<<block->particles[array[i].verts[0] * 3 + 1]
+                        <<" , "<<block->particles[array[i].verts[0] * 3 + 2]<<"]"<<std::endl;
+                std::cout<<"Vert 2 ["<<block->particles[array[i].verts[1] * 3]
+                        <<" , "<<block->particles[array[i].verts[1] * 3 + 1]
+                        <<" , "<<block->particles[array[i].verts[1] * 3 + 2]<<"]"<<std::endl;
+                std::cout<<"Vert 3 ["<<block->particles[array[i].verts[2] * 3]
+                        <<" , "<<block->particles[array[i].verts[2] * 3 + 1]
+                        <<" , "<<block->particles[array[i].verts[2] * 3 + 2]<<"]"<<std::endl;
+                std::cout<<"Vert 4 ["<<block->particles[array[i].verts[3] * 3]
+                        <<" , "<<block->particles[array[i].verts[3] * 3 + 1]
+                        <<" , "<<block->particles[array[i].verts[3] * 3 + 2]<<"]"<<std::endl;
+            }
+
+        }
+    }
+    std::cout<<"The block has "<<nbValidTets<<" valid tets."<<std::endl;
+    return;
+}
+
+void checkTets(std::shared_ptr<ConstructData> container, dblock_t* block)
+{
+    std::shared_ptr<BaseConstructData> field = container->getData("tets");
+    if(field)
+    {
+        std::shared_ptr<ArrayTetsData > tets = dynamic_pointer_cast<ArrayTetsData>(field);
+        tet_t* arrayContainer = tets->getArray();
+        int nbTetsContainer = tets->getSize();
+        tet_t* arrayBlock = block->tets;
+        int nbTetsBlock = block->num_tets;
+
+
+        int nbValidTets = 0;
+        std::cout<<"Tets in container : "<<nbTetsContainer<<", Tets in block : "<<nbTetsBlock<<std::endl;
+
+
+        return;
+    }
+    else
+    {
+        std::cerr<<"ERROR : tets not found in the map"<<std::endl;
+        return;
     }
 }
 
@@ -238,8 +360,13 @@ int main(int argc,
     {
         //Local container. Will be merged with the global one
         std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-
         dblock_t* block = master.block<dblock_t>(i);
+
+        std::cout<<"===================================="<<std::endl;
+        std::cout<<"Test of the block "<<i<<std::endl;
+        std::cout<<"===================================="<<std::endl;
+        countNbTetsBlock(block);
+
 
         //GID
         std::shared_ptr<SimpleConstructData<int> > gid  = std::make_shared<SimpleConstructData<int> >( block->gid, container->getMap() );
@@ -268,7 +395,7 @@ int main(int argc,
         //Particle positions
         std::shared_ptr<ArrayConstructData<float> > pos =
                 std::make_shared<ArrayConstructData<float> >(
-                    block->particles, block->num_particles * 3, 3, false, container->getMap());
+                    block->particles, block->num_orig_particles * 3, 3, false, container->getMap());
         container->appendData("pos", pos,
                               DECAF_ZCURVEKEY, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
@@ -278,6 +405,7 @@ int main(int argc,
         container->appendData("num_tets", numTets,
                               DECAF_NOFLAG, DECAF_SHARED,
                               DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
+        std::cout<<"Number of tets : "<<block->num_tets<<std::endl;
 
         //Tets
         std::shared_ptr<ArrayTetsData> tets = std::make_shared<ArrayTetsData>(
@@ -288,7 +416,7 @@ int main(int argc,
 
         //Table Vertices to tet
         std::shared_ptr<VertToTetData> verttotet = std::make_shared<VertToTetData>(
-                    block->vert_to_tet, block->num_particles, 1, false, container->getMap());
+                    block->vert_to_tet, block->num_orig_particles, 1, false, container->getMap());
         container->appendData("verttotet", verttotet,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
@@ -296,10 +424,10 @@ int main(int argc,
         //We have to merge first the tets, and then the particles and then the bbox.
         //No split order specific
         std::vector<std::string> mergeOrder =
-        {"gid","num_orig_particles","num_particles", "num_tets","tets","pos","bbox","verttotet"};
+        {"gid","num_orig_particles","num_particles", "num_tets","pos","tets","bbox","verttotet"};
         container->setMergeOrder(mergeOrder);
         std::vector<std::string> splitOrder =
-        {"gid","num_orig_particles","num_particles","num_tets","tets","pos","bbox","verttotet"};
+        {"gid","num_orig_particles","num_particles","num_tets","pos","tets","bbox","verttotet"};
         container->setSplitOrder(splitOrder);
 
         std::cout<<"Test d'acces aux donnees : "<<std::endl;
@@ -312,6 +440,12 @@ int main(int argc,
         std::cout<<"Number of elements the array of verts : "
                  <<container->getData(std::string("verttotet"))->getNbItems()<<std::endl;
         std::cout<<"Fin des tests d'acces aux donnees."<<std::endl;
+
+        std::cout<<"===================================="<<std::endl;
+        std::cout<<"Test of the container "<<i<<std::endl;
+        std::cout<<"===================================="<<std::endl;
+        countNbTetsContainer(container);
+
 
         //Debug
         //dblock_t* b = static_cast<dblock_t*>(create_block());
@@ -341,6 +475,8 @@ int main(int argc,
         std::cout<<"Acces au tableau de pos... ";
         blocks[i]->getData(std::string("pos"));
         std::cout<<"OK"<<std::endl;
+        std::cout<<"Number of particules : ";
+        std::cout<<blocks[i]->getData(std::string("pos"))->getNbItems()<<std::endl;
         std::cout<<"Acces a la table de tets... ";
         blocks[i]->getData(std::string("verttotet"));
         std::cout<<"OK"<<std::endl;
@@ -375,7 +511,12 @@ int main(int argc,
         b->num_grid_pts = 0;
         b->density = NULL;
 
+        std::cout<<"Global containter setup."<<std::endl;
+        countNbTetsContainer(blocks.at(0));
+
         containerToBlock(blocks.at(0), b);
+        countNbTetsBlock(b);
+        checkTets(blocks.at(0), b);
         printBlock(b);
 
         std::cout<<"Clearing the master..."<<std::endl;

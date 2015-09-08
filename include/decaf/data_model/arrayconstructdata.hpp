@@ -200,12 +200,14 @@ public:
             }
             case DECAF_MERGE_APPEND_VALUES:
             {
+                std::cout<<"Merging arrays of size "<<size_<<" and "<<other_->size_<<std::endl;
                 T* newArray = new T[size_ + other_->size_];
                 memcpy(newArray, value_, size_ * sizeof(T));
                 memcpy(newArray + size_, other_->value_, other_->size_);
 
                 if(owner_) delete[] value_;
                 value_ = newArray;
+                size_ = size_ + other_->size_;
                 return true;
                 break;
             }

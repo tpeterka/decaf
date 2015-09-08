@@ -251,7 +251,7 @@ public:
             {
                 // Getting the local number of particles for the shift
                 int localNbParticles;
-                std::map<std::string, datafield>::iterator field = partial_map->find("num_particles");
+                std::map<std::string, datafield>::iterator field = partial_map->find("num_orig_particles");
                 if(field == partial_map->end())
                 {
                     std::cerr<<"ERROR : unable to find the field num_particles which is required "

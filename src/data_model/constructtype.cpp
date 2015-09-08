@@ -784,14 +784,17 @@ ConstructData::updateMetaData()
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
     {
+        std::cout<<"Checking the field "<<it->first<<std::endl;
+        std::cout<<"Number of items in the data : "<<getBaseData(it->second)->getNbItems()<<std::endl;
+        std::cout<<"Number of items in the map : "<<getNbItemsField(it->second)<<std::endl;
         // Checking that we can insert this data and keep spliting the data after
         // If we already have fields with several items and we insert a new field
         // with another number of items, we can't split automatically
         if(nbItems_ > 1 && nbItems_ != getNbItemsField(it->second))
         {
-            std::cout<<"ERROR : can add new field with "<<getNbItemsField(it->second)<<" items."
+            std::cout<<"ERROR : can not add new field with "<<getNbItemsField(it->second)<<" items."
                     <<" The current map has "<<nbItems_<<" items. The number of items "
-                    <<"of the new filed should be 1 or "<<nbItems_<<std::endl;
+                    <<"of the new field should be 1 or "<<nbItems_<<std::endl;
             return false;
         }
         else // We still update the number of items
@@ -814,4 +817,3 @@ ConstructData::updateMetaData()
 
     return true;
 }
-
