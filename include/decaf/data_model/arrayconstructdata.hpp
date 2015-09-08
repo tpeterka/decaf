@@ -203,7 +203,7 @@ public:
                 std::cout<<"Merging arrays of size "<<size_<<" and "<<other_->size_<<std::endl;
                 T* newArray = new T[size_ + other_->size_];
                 memcpy(newArray, value_, size_ * sizeof(T));
-                memcpy(newArray + size_, other_->value_, other_->size_);
+                memcpy(newArray + size_, other_->value_, other_->size_ * sizeof(T));
 
                 if(owner_) delete[] value_;
                 value_ = newArray;

@@ -251,7 +251,31 @@ void checkTets(std::shared_ptr<ConstructData> container, dblock_t* block)
     }
 }
 
+void checkPosContainer(std::shared_ptr<ConstructData> container)
+{
+    std::shared_ptr<BaseConstructData> field = container->getData("pos");
+    if(field)
+    {
+        std::shared_ptr<ArrayConstructData<float> > pos =
+                dynamic_pointer_cast<ArrayConstructData<float> >(field);
+        int nbParticles = pos->getNbItems();
+        float* array = pos->getArray();
+        std::cout<<"Invalid particles  [";
+        for(int i = 0; i< nbParticles; i++)
+        {
+            if(array[3*i] < 0.0001f && array[3*i] > -0.0001f)
+            {
+                std::cout<<i<<",";
+            }
+        }
+        std::cout<<"]"<<std::endl;
 
+    }
+    else
+    {
+        std::cerr<<"ERROR : pos not found in the map."<<std::endl;
+    }
+}
 
 
 // 3d point or vector
@@ -362,10 +386,10 @@ int main(int argc,
         std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
         dblock_t* block = master.block<dblock_t>(i);
 
-        std::cout<<"===================================="<<std::endl;
+        /*std::cout<<"===================================="<<std::endl;
         std::cout<<"Test of the block "<<i<<std::endl;
         std::cout<<"===================================="<<std::endl;
-        countNbTetsBlock(block);
+        countNbTetsBlock(block);*/
 
 
         //GID
@@ -444,8 +468,8 @@ int main(int argc,
         std::cout<<"===================================="<<std::endl;
         std::cout<<"Test of the container "<<i<<std::endl;
         std::cout<<"===================================="<<std::endl;
-        countNbTetsContainer(container);
-
+        //countNbTetsContainer(container);
+        checkPosContainer(container);
 
         //Debug
         //dblock_t* b = static_cast<dblock_t*>(create_block());
@@ -485,6 +509,7 @@ int main(int argc,
         std::cout<<"Fin des tests d'acces aux donnees."<<std::endl;
 
         blocks[0]->merge(blocks[i]);
+        checkPosContainer(blocks[0]);
         std::cout<<"Merging with "<<i<<" done."<<std::endl;
     }
     std::cout<<"All blocks have been merged."<<std::endl;
