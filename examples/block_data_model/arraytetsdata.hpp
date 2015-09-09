@@ -296,7 +296,7 @@ public:
                     return false;
                 }
 
-                std::shared_ptr<SimpleConstructData<int> > numOrigParticules =
+                std::shared_ptr<SimpleConstructData<int> > numParticules =
                         std::dynamic_pointer_cast<SimpleConstructData<int> >(std::get<3>(field->second));
                 if(!numOrigParticules)
                 {
@@ -304,7 +304,7 @@ public:
                             <<"SimpleConstructData<int> during the merge of a type ArrayTetsData."<<std::endl;
                     return false;
                 }
-                localNbParticles = numOrigParticules->getData();
+                localNbParticles = numParticules->getData();
 
                 // Number of tets currently in the field. Use to shift the tets indexes
                 int localNbTets = size_;

@@ -277,6 +277,21 @@ void checkPosContainer(std::shared_ptr<ConstructData> container)
     }
 }
 
+void checkPosBlock(dblock_t* block)
+{
+    int nbParticles = block->num_particles;
+    float* array = block->particles;
+    std::cout<<"Invalid particles block [";
+    for(int i = 0; i< nbParticles; i++)
+    {
+        if(array[3*i] < 0.0001f && array[3*i] > -0.0001f)
+        {
+            std::cout<<i<<",";
+        }
+    }
+    std::cout<<"]"<<std::endl;
+}
+
 
 // 3d point or vector
 struct vec3d {
@@ -419,7 +434,7 @@ int main(int argc,
         //Particle positions
         std::shared_ptr<ArrayConstructData<float> > pos =
                 std::make_shared<ArrayConstructData<float> >(
-                    block->particles, block->num_orig_particles * 3, 3, false, container->getMap());
+                    block->particles, block->num_particles * 3, 3, false, container->getMap());
         container->appendData("pos", pos,
                               DECAF_ZCURVEKEY, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
@@ -543,6 +558,8 @@ int main(int argc,
         countNbTetsBlock(b);
         checkTets(blocks.at(0), b);
         printBlock(b);
+        std::cout<<"Checking the invalid particles in the final block : "<<std::endl;
+        checkPosBlock(b);
 
         std::cout<<"Clearing the master..."<<std::endl;
         master.clear();
@@ -550,6 +567,10 @@ int main(int argc,
         diy::Link l;
         master.add(b->gid, b, &l);
         std::cout<<"Merged block added."<<std::endl;
+
+        std::cout<<"Checking the block in the master : "<<std::endl;
+        checkPosBlock(master.block<dblock_t>(0));
+        countNbTetsBlock(master.block<dblock_t>(0));
 
 
         //Storing the data into
