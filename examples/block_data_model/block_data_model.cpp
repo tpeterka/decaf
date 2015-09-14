@@ -463,7 +463,7 @@ int main(int argc,
         //We have to merge first the tets, and then the particles and then the bbox.
         //No split order specific
         std::vector<std::string> mergeOrder =
-        {"gid","num_orig_particles","num_particles", "num_tets","pos","tets","bbox","verttotet"};
+        {"gid","num_orig_particles","num_particles","pos","tets","num_tets", "bbox","verttotet"};
         container->setMergeOrder(mergeOrder);
         std::vector<std::string> splitOrder =
         {"gid","num_orig_particles","num_particles","num_tets","pos","tets","bbox","verttotet"};

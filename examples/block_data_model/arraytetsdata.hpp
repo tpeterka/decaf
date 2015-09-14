@@ -298,7 +298,7 @@ public:
 
                 std::shared_ptr<SimpleConstructData<int> > numParticules =
                         std::dynamic_pointer_cast<SimpleConstructData<int> >(std::get<3>(field->second));
-                if(!numOrigParticules)
+                if(!numParticules)
                 {
                     std::cerr<<"ERROR : unable to cast the field num_particles with the type "
                             <<"SimpleConstructData<int> during the merge of a type ArrayTetsData."<<std::endl;
@@ -313,6 +313,7 @@ public:
                 tet_t* other_tets = otherArray->getArray();
                 int otherNbTets = otherArray->getSize(); // getNbItems is the number of semantic items -> nbParticles
 
+                std::cout<<"Shifting the particles by "<<localNbParticles<<std::endl;
                 for(int i = 0; i < otherNbTets; i++)
                 {
                     //Shifting the particle indexes
