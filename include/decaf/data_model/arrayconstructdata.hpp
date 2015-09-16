@@ -244,6 +244,7 @@ protected:
 
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<float>,"ArrayConstructData<float>")
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<int>,"ArrayConstructData<int>")
+BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<unsigned int>,"ArrayConstructData<unsigned int>")
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<double>,"ArrayConstructData<double>")
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<char>,"ArrayConstructData<char>")
 
