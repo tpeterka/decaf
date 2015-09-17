@@ -9,7 +9,8 @@ template<typename T>
 class ArrayConstructData : public BaseConstructData {
 public:
 
-    ArrayConstructData(mapConstruct map = mapConstruct()) : BaseConstructData(map){}
+    ArrayConstructData(mapConstruct map = mapConstruct()) :
+        value_(nullptr), size_(0), element_per_items_(0), owner_(false), BaseConstructData(map){}
 
     ArrayConstructData(T* array, int size, int element_per_items, bool owner = false, mapConstruct map = mapConstruct()) :
                         value_(array), element_per_items_(element_per_items),
@@ -28,6 +29,12 @@ public:
         ar & BOOST_SERIALIZATION_NVP(size_);
         ar & BOOST_SERIALIZATION_NVP(owner_);
         //ar & BOOST_SERIALIZATION_NVP(value_);
+        if(Archive::is_loading::value)
+        {
+            assert(value_ == nullptr);
+            owner_ = true;
+            value_ = new T[size_];
+        }
         ar & boost::serialization::make_array<T>(value_, size_);
 
 

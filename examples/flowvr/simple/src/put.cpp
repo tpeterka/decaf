@@ -34,7 +34,6 @@
 
 //Decaf
 #include <decaf/data_model/simpleconstructdata.hpp>
-#include <decaf/data_model/vectorconstructdata.hpp>
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/baseconstructdata.hpp>
@@ -85,7 +84,7 @@ int main(int argc, const char** argv)
     {
         m.data = flowvr->alloc(container->getOutSerialBufferSize());
         memcpy(m.data.writeAccess(), container->getOutSerialBuffer(), container->getOutSerialBufferSize());
-        std::cout<<"Serialization successful. Size of the buffer : "<<container->getOutSerialBufferSize()<<std::endl;
+        std::cout<<"It "<<it<<", size of the buffer : "<<container->getOutSerialBufferSize()<<std::endl;
     }
     else
     {
