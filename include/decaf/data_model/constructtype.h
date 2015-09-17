@@ -106,6 +106,9 @@ public:
     bool setSplitOrder(std::vector<std::string>& split_order);
     const std::vector<std::string>& getSplitOrder();
 
+    template<typename T>
+    std::shared_ptr<T> getTypedData(std::string key);
+
 protected:
     mapConstruct container_;
     int nbFields_;
@@ -133,6 +136,26 @@ protected:
 
 
 };
+
+//Have to define it here because of the template
+template<typename T>
+std::shared_ptr<T>
+decaf::
+ConstructData::getTypedData(std::string key)
+{
+    std::shared_ptr<BaseConstructData> field = this->getData(key);
+    if(!field)
+    {
+        return std::shared_ptr<T>();
+    }
+
+    std::shared_ptr<T> result = std::dynamic_pointer_cast<T>(field);
+
+    //Checking if the pointer is valid
+    assert(result);
+
+    return result;
+}
 
 } //namespace
 BOOST_CLASS_EXPORT_GUID(decaf::ConstructData,"ConstructData")

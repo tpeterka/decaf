@@ -770,7 +770,6 @@ ConstructData::getData(std::string key)
         return getBaseData(it->second);
 }
 
-
 bool
 decaf::
 ConstructData::updateMetaData()

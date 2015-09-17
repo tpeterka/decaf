@@ -59,26 +59,15 @@ int main(int argc, const char** argv)
   int it=0;
   while (flowvr->wait())
   {
+    //Read the message and unserialize it
     std::shared_ptr<ConstructData> container = get(flowvr, &pIn);
 
     //Extracting the fields
-    std::shared_ptr<BaseConstructData> baseItData = container->getData("it");
-    if(!baseItData)
-    {
-        std::cerr<<"ERROR : Could not find the field \"it\" in the datamodel. Abording."<<std::endl;
-        exit(1);
-    }
     std::shared_ptr<SimpleConstructData<int> > itData =
-            dynamic_pointer_cast<SimpleConstructData<int> >(baseItData);
-
-    std::shared_ptr<BaseConstructData> baseArrayData = container->getData("array");
-    if(!baseArrayData)
-    {
-        std::cerr<<"ERROR : Could not find the field \"array\" in the datamodel. Abording."<<std::endl;
-        exit(1);
-    }
+            container->getTypedData<SimpleConstructData<int> >("it");
     std::shared_ptr<ArrayConstructData<int> > arrayData =
-            dynamic_pointer_cast<ArrayConstructData<int> >(baseArrayData);
+            container->getTypedData<ArrayConstructData<int> >("array");
+
     int* array = arrayData->getArray();
 
 
