@@ -37,6 +37,7 @@
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/baseconstructdata.hpp>
+#include <decaf/flowvr/flowvr_wrap.hpp>
 
 
 #define ARRAY_SIZE 100
@@ -80,20 +81,7 @@ int main(int argc, const char** argv)
                           DECAF_NOFLAG, DECAF_PRIVATE,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-    if(container->serialize())
-    {
-        m.data = flowvr->alloc(container->getOutSerialBufferSize());
-        memcpy(m.data.writeAccess(), container->getOutSerialBuffer(), container->getOutSerialBufferSize());
-        std::cout<<"It "<<it<<", size of the buffer : "<<container->getOutSerialBufferSize()<<std::endl;
-    }
-    else
-    {
-        std::cerr<<"ERROR : unable to serialize the data."<<std::endl;
-        exit(1);
-    }
-
-    // Send message
-    flowvr->put(&pOut,m);
+    put(flowvr, m, &pOut, container);
 
     sleep(sleep_time);
     ++it;

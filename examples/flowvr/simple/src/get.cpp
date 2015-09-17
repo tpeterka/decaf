@@ -37,6 +37,7 @@
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/baseconstructdata.hpp>
+#include <decaf/flowvr/flowvr_wrap.hpp>
 
 using namespace decaf;
 using namespace std;
@@ -58,17 +59,7 @@ int main(int argc, const char** argv)
   int it=0;
   while (flowvr->wait())
   {
-    // Get Message
-    flowvr::Message m;
-    flowvr->get(&pIn,m);
-
-    //Creating the
-    char* serialBuffer = (char*)(m.data.readAccess());
-    int sizeSerialBuffer = m.data.getSize();
-    std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-    container->allocate_serial_buffer(sizeSerialBuffer);
-    memcpy(container->getInSerialBuffer(), serialBuffer, sizeSerialBuffer);
-    container->merge();
+    std::shared_ptr<ConstructData> container = get(flowvr, &pIn);
 
     //Extracting the fields
     std::shared_ptr<BaseConstructData> baseItData = container->getData("it");
