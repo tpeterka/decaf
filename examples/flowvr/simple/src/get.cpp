@@ -60,7 +60,8 @@ int main(int argc, const char** argv)
   while (flowvr->wait())
   {
     //Read the message and unserialize it
-    std::shared_ptr<ConstructData> container = get(flowvr, &pIn);
+    flowvr::Message msg;
+    std::shared_ptr<ConstructData> container = get(flowvr, msg, &pIn);
 
     //Extracting the fields
     std::shared_ptr<SimpleConstructData<int> > itData =

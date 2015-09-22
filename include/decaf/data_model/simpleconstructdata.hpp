@@ -2,7 +2,7 @@
 #define SIMPLE_CONSTRUCT_DATA
 
 #include "baseconstructdata.hpp"
-
+#include <decaf/data_model/block.hpp>
 namespace decaf{
 
 
@@ -103,7 +103,7 @@ public:
 
     //This function should never be called
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
-            const std::vector< block3D >& range,
+            const std::vector< Block<3> >& range,
             std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {

@@ -6,16 +6,14 @@
 
 using namespace decaf;
 
-bool put(flowvr::ModuleAPI* module,
-         flowvr::MessageWrite& msg,
-         flowvr::OutputPort* pOut,
-         std::shared_ptr<ConstructData> container)
+bool containerToMsg(flowvr::ModuleAPI* module,
+                    flowvr::MessageWrite& msg,
+                    std::shared_ptr<ConstructData> container)
 {
     if(container->serialize())
     {
         msg.data = module->alloc(container->getOutSerialBufferSize());
         memcpy(msg.data.writeAccess(), container->getOutSerialBuffer(), container->getOutSerialBufferSize());
-        module->put(pOut, msg);
     }
     else
     {
@@ -26,15 +24,29 @@ bool put(flowvr::ModuleAPI* module,
     return true;
 }
 
+bool put(flowvr::ModuleAPI* module,
+         flowvr::MessageWrite& msg,
+         flowvr::OutputPort* pOut,
+         std::shared_ptr<ConstructData> container)
+{
+    if(containerToMsg(module, msg, container))
+    {
+        module->put(pOut, msg);
+        return true;
+    }
+    else
+        return false;
+}
+
 std::shared_ptr<ConstructData> get(flowvr::ModuleAPI* module,
+                                   flowvr::Message& msg,
                                    flowvr::InputPort* pIn)
 {
-    flowvr::Message m;
-    module->get(pIn,m);
+    module->get(pIn,msg);
 
     std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
-    container->allocate_serial_buffer(m.data.getSize());
-    memcpy(container->getInSerialBuffer(), m.data.readAccess(), m.data.getSize());
+    container->allocate_serial_buffer(msg.data.getSize());
+    memcpy(container->getInSerialBuffer(), msg.data.readAccess(), msg.data.getSize());
     container->merge();
 
     return container;

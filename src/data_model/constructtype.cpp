@@ -1,4 +1,5 @@
 #include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/arrayconstructdata.hpp>
 
 using namespace decaf;
 using namespace std;
@@ -393,6 +394,185 @@ ConstructData::split(
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
                 construct->appendData(it->first,
                                          splitFields.at(i),
+                                         getFlag(it->second),
+                                         std::get<1>(it->second),
+                                         getSplitPolicy(it->second),
+                                         getMergePolicy(it->second)
+                                         );
+            }
+        }
+    }
+
+    return result;
+}
+
+void
+computeIndexesFromBlocks(
+        const std::vector<Block<3> >& blocks,
+        float* pos,
+        unsigned int nbPos,
+        std::vector<std::vector<int> > &result)
+{
+    assert(result.size() == blocks.size());
+
+    int notInBlock = 0;
+    for(int i = 0; i < nbPos; i++)
+    {
+        bool particlesInBlock = false;
+        for(unsigned int b = 0; b < blocks.size(); b++)
+        {
+            if(blocks.at(b).isInLocalBlock(pos[3*i], pos[3*i+1], pos[3*i+2]) )
+            {
+                result.at(b).push_back(i);
+                particlesInBlock = true;
+                break;
+            }
+        }
+        if(!particlesInBlock)
+        {
+            std::cout<<"Not attributed : ["<<pos[3*i]<<","<<pos[3*i+1]<<","<<pos[3*i+2]<<"]"<<std::endl;
+            notInBlock++;
+        }
+    }
+
+    return;
+}
+
+std::vector< std::shared_ptr<BaseData> >
+decaf::
+ConstructData::split(const std::vector<Block<3> >& range)
+{
+
+    std::vector< std::shared_ptr<BaseData> > result;
+    std::vector< mapConstruct > result_maps;
+    for(unsigned int i = 0; i < range.size(); i++)
+    {
+        result.push_back(std::make_shared<ConstructData>());
+        std::shared_ptr<ConstructData> construct =
+                dynamic_pointer_cast<ConstructData>(result.back());
+        result_maps.push_back(construct->getMap());
+    }
+
+    //Preparing the ranges if some fields are not splitable with a block
+    bool computeRanges = false;
+    std::vector<std::vector<int> > rangeItems;
+    for(unsigned int i = 0; i < range.size(); i++)
+        rangeItems.push_back(std::vector<int>());
+
+    //Splitting data
+    if(split_order_.size() > 0) //Splitting from the user order
+    {
+        for(unsigned int i = 0; i < split_order_.size(); i++)
+        {
+            std::map<std::string, datafield>::iterator data  = container_->find(split_order_.at(i));
+            if(data == container_->end())
+            {
+                std::cerr<<"ERROR : field \""<<split_order_.at(i)<<"\" provided by the user to "
+                        <<"split the data not found in the map."<<std::endl;
+                return result;
+
+            }
+            // Splitting the current field
+            std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            if(getBaseData(data->second)->isBlockSplitable())
+                splitFields = getBaseData(data->second)->split(range, result_maps, getSplitPolicy(data->second));
+            else
+            {
+                if(!computeRanges)
+                {
+                    //The ranges by items have not been computed yet
+                    //We need the Morton key to compute them
+                    if(!bZCurveKey_)
+                    {
+                        std::cerr<<"ERROR : The field \""<<split_order_.at(i)<<"\" is not splitable by "
+                                 <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
+
+                        return result;
+                    }
+
+                    std::shared_ptr<ArrayConstructData<float> > posData =
+                            std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
+                    computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
+                    computeRanges = true;
+                }
+
+                splitFields = getBaseData(data->second)->split(rangeItems, result_maps, getSplitPolicy(data->second));
+            }
+
+            // Inserting the splitted field into the splitted results
+            if(splitFields.size() != result.size())
+            {
+                std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                // Cleaning the result to avoid corrupt data
+                result.clear();
+
+                return result;
+            }
+
+            //Adding the splitted results into the splitted maps
+            for(unsigned int j = 0; j < result.size(); j++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
+                construct->appendData(split_order_.at(i),
+                                         splitFields.at(j),
+                                         getFlag(data->second),
+                                         std::get<1>(data->second),
+                                         getSplitPolicy(data->second),
+                                         getMergePolicy(data->second)
+                                         );
+            }
+        }
+    }
+    else
+    {
+        for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
+        {
+            // Splitting the current field
+            std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            if(getBaseData(it->second)->isBlockSplitable())
+                splitFields = getBaseData(it->second)->split(range, result_maps, getSplitPolicy(it->second));
+            else
+            {
+                if(!computeRanges)
+                {
+                    //The ranges by items have not been computed yet
+                    //We need the Morton key to compute them
+                    if(!bZCurveKey_)
+                    {
+                        std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
+                                 <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
+
+                        return result;
+                    }
+
+                    std::shared_ptr<ArrayConstructData<float> > posData =
+                            std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
+                    computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
+                    computeRanges = true;
+                }
+
+                splitFields = getBaseData(it->second)->split(rangeItems, result_maps, getSplitPolicy(it->second));
+            }
+
+            // Inserting the splitted field into the splitted results
+            if(splitFields.size() != result.size())
+            {
+                std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                // Cleaning the result to avoid corrupt data
+                result.clear();
+
+                return result;
+            }
+
+            //Adding the splitted results into the splitted maps
+            for(unsigned int j = 0; j < result.size(); j++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
+                construct->appendData(it->first,
+                                         splitFields.at(j),
                                          getFlag(it->second),
                                          std::get<1>(it->second),
                                          getSplitPolicy(it->second),

@@ -4,6 +4,7 @@
 //#include <decaf/decaf.hpp>
 #include <decaf/data_model/basedata.h>
 #include <decaf/data_model/vectorconstructdata.hpp>
+#include <decaf/data_model/block.hpp>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -18,6 +19,8 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <boost/unordered_map.hpp>
+
+
 
 
 
@@ -68,6 +71,9 @@ public:
 
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<std::vector<int> >& range);
+
+    virtual std::vector< std::shared_ptr<BaseData> > split(
+            const std::vector<Block<3> >& range);
 
     virtual bool merge(std::shared_ptr<BaseData> other);
 

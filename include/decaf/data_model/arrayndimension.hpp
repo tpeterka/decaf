@@ -45,6 +45,7 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
+        std::cout<<"ERROR : the spliting of a n-dimension array is not implemted yet."<<std::endl;
         return result;
     }
 
@@ -54,6 +55,7 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
+        std::cout<<"ERROR : the spliting of a n-dimension array is not implemted yet."<<std::endl;
         return result;
     }
 
@@ -63,6 +65,10 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
+
+        std::cout<<"ERROR : using a dimension non defined"<<std::endl;
+
+
         return result;
     }
 
@@ -90,6 +96,57 @@ public:
 protected:
     boost::multi_array<T, Dim> value_;
 };
+
+template<typename T>
+std::vector<std::shared_ptr<BaseConstructData> > ArrayNDimConstructData<T,2>::split(
+        const std::vector< std::vector<int> >& range,
+        std::vector< mapConstruct >& partial_map,
+        ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
+{
+    std::vector<std::shared_ptr<BaseConstructData> > result;
+    std::cout<<"Specialized version for 2D version"<<std::endl;
+
+    if(value_.num_dimensions() != 3)
+    {
+        std::cout<<"ERROR : split function is only implemented for dimension 3."<<std::endl;
+        return result;
+    }
+
+    for(unsigned int i = 0; i < range.size(); i++)
+    {
+        // Sanity check
+        for(unsigned int d = 0 ; d < 3; d++)
+        {
+            if(range.at(i).extends[d] > value_.shape()[d])
+            {
+                std::cout<<"ERROR : trying to cut an array out of boundary."
+                        <<"("<<range.at(i).extends[d]<<" available, "<<value_.shape()[d]<<" requested on dimension "<<d<<")"<<std::endl;
+                return result;
+            }
+
+        }
+    }
+
+    // Naive method
+    for(unsigned int i = 0; i < range.size(); i++)
+    {
+        boost::multi_array<T, 3> subArray(boost::extents[range.at(i).extends[0]][range.at(i).extends[1]][range.at(i).extends[2]]);
+        for(int x = 0; x < range.at(i).extends[0]; x++)
+        {
+            for(int y = 0; y < range.at(i).extends[1]; y++)
+            {
+                for(int z = 0; z < range.at(i).extends[2]; z++)
+                    subArray[x][y][z] = value_[range.at(i).base[0]+x][range.at(i).base[1]+y][range.at(i).base[2]+z];
+            }
+        }
+
+        std::shared_ptr<ArrayNDimConstructData<float,3> > data = std::make_shared<ArrayNDimConstructData<float,3> >(
+                    subArray);
+        result.push_back(data);
+    }
+
+    return result;
+}
 
 typedef ArrayNDimConstructData<float,2> ArrayNDimConstructDataf2D;
 typedef ArrayNDimConstructData<double,2> ArrayNDimConstructDatad2D;

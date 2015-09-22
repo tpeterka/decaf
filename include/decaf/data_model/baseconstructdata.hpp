@@ -2,6 +2,7 @@
 #define BASE_CONSTRUCT_DATA
 
 #include <decaf/data_model/basedata.h>
+#include <decaf/data_model/block.hpp>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -52,12 +53,6 @@ enum ConstructTypeMergePolicy {
     DECAF_MERGE_ADD_VALUE = 0x2,      // Add the values
     DECAF_MERGE_APPEND_VALUES = 0x4,  // Append the values into the current object
     DECAF_MERGE_BBOX_POS = 0x8,       // Compute the bounding box from the field pos
-};
-
-struct block3D
-{
-    int base[3];
-    int extends[3];
 };
 
 class BaseConstructData;    //Define just after
@@ -136,7 +131,7 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
-            const std::vector< block3D >& range,
+            const std::vector< Block<3> >& range,
             std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 
