@@ -108,6 +108,34 @@ void printPos(std::shared_ptr<BaseData> data)
                 std::cout<<pos[3*i]<<" "<<pos[3*i+1]<<" "<<pos[3*i+2]<<std::endl;
 }
 
+void printArray3d(std::shared_ptr<ConstructData> container)
+{
+    std::shared_ptr<BaseConstructData> field = container->getData("array3d");
+    if(!field)
+        std::cout<<"ERROR : unable to find the field array3d."<<std::endl;
+    std::shared_ptr<Array3DConstructData<float> > constructField =
+            dynamic_pointer_cast<Array3DConstructData<float> >(field);
+    boost::multi_array<float,3> array = constructField->getArray();
+    int x = array.shape()[0];
+    int y = array.shape()[1];
+    int z = array.shape()[2];
+
+    std::cout<<"Array : "<<std::endl;
+
+    for(int i = 0; i < x; i++)
+    {
+        std::cout<<"[";
+        for(int j = 0; j < y; j++)
+        {
+            for(int k = 0; k < z; k++)
+            {
+                std::cout<<array[i][j][k]<<",";
+            }
+        }
+        std::cout<<"]"<<std::endl;
+    }
+}
+
 void testSimpleArray()
 {
 
@@ -261,6 +289,96 @@ void testBlockSplitingArray1D()
     }*/
 
     posToFile(splitResult, numParticles, std::string("outSplitBlock.ply"));
+}
+
+void testBlockSplitingArray3D()
+{
+
+    std::cout<<"============================"<<std::endl;
+    std::cout<<"= testBlockSplitingArray3D ="<<std::endl;
+    std::cout<<"============================"<<std::endl;
+    std::vector<float> globalBBox = {0.0, 0.0, 0.0, 10.0, 10.0, 1.0};
+    std::vector<Block<3> > blocks;
+    float gridspace = 1.0;
+
+    //First Block, no ghost
+    Block<3> block1;
+    block1.setGridspace(gridspace);
+    block1.setGlobalBBox(globalBBox);
+    std::vector<float> localBBox = {0.0, 0.0, 0.0, 5.0, 5.0, 1.0};
+    block1.setLocalBBox(localBBox);
+    block1.updateExtends();
+    blocks.push_back(block1);
+
+    //Second block
+    Block<3> block2;
+    block2.setGridspace(gridspace);
+    block2.setGlobalBBox(globalBBox);
+    localBBox = {5.0, 0.0, 0.0, 5.0, 5.0, 1.0};
+    block2.setLocalBBox(localBBox);
+    block2.updateExtends();
+    blocks.push_back(block2);
+
+    //Third block
+    Block<3> block3;
+    block3.setGridspace(gridspace);
+    block3.setGlobalBBox(globalBBox);
+    localBBox = {0.0, 5.0, 0.0, 5.0, 5.0, 1.0};
+    block3.setLocalBBox(localBBox);
+    block3.updateExtends();
+    blocks.push_back(block3);
+
+    //Forth block
+    Block<3> block4;
+    block4.setGridspace(gridspace);
+    block4.setGlobalBBox(globalBBox);
+    localBBox = {5.0, 5.0, 0.0, 5.0, 5.0, 1.0};
+    block4.setLocalBBox(localBBox);
+    block4.updateExtends();
+    blocks.push_back(block4);
+
+    // Generation of the 3D array
+    unsigned int x = 10, y = 10, z = 1;
+    boost::multi_array<float,3> array(boost::extents[x][y][z]);
+    for(int i = 0; i < x; i++)
+    {
+        for(int j = 0; j < y; j++)
+        {
+            for(int k = 0; k < z; k++)
+            {
+                array[i][j][k] = i+j;
+            }
+        }
+    }
+    Block<3> blockArray;
+    blockArray.setGridspace(gridspace);
+    blockArray.setGlobalBBox(globalBBox);
+    blockArray.setLocalBBox(globalBBox);
+    blockArray.updateExtends();
+
+    std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
+                array, blockArray);
+
+
+    //Building the datamodel
+    std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
+    container->appendData("array3d", data,
+                          DECAF_NOFLAG, DECAF_PRIVATE,
+                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
+    std::cout<<"Original array : "<<std::endl;
+    printArray3d(container);
+
+
+    std::vector< std::shared_ptr<BaseData> > splitResult = container->split(blocks);
+
+    for(unsigned int i = 0; i < splitResult.size(); i++)
+    {
+        std::cout<<"Array number "<<i<<" : "<<std::endl;
+        std::shared_ptr<ConstructData> subcontainer =
+                std::dynamic_pointer_cast<ConstructData>(splitResult.at(i));
+        printArray3d(subcontainer);
+    }
 
 }
 
@@ -276,6 +394,7 @@ int main(int argc,
     {
         testSimpleArray();
         testBlockSplitingArray1D();
+        testBlockSplitingArray3D();
     }
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();

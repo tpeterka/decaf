@@ -6,11 +6,26 @@
 #include <boost/serialization/array.hpp>
 #include <decaf/data_model/multiarrayserialize.hpp>
 #include <decaf/data_model/block.hpp>
+#include <math.h>
 
 
 
 // TODO :  See http://www.boost.org/doc/libs/1_46_1/libs/serialization/doc/special.html
 // for serialization optimizations
+
+
+//Tool function to extract the overlap between to intervale
+bool hasOverlap(unsigned int baseMin, unsigned int baseMax,
+                unsigned int otherMin, unsigned int otherMax,
+                unsigned int & overlapMin, unsigned int & overlapMax)
+{
+    if(otherMax < baseMin || otherMin > baseMax )
+        return false;
+
+    overlapMin = std::max(baseMin, otherMin);
+    overlapMax = std::min(baseMax, otherMax);
+    return true;
+}
 
 
 namespace decaf {
@@ -21,9 +36,9 @@ public:
     Array3DConstructData(mapConstruct map = mapConstruct())
         : BaseConstructData(map){}
 
-    Array3DConstructData(boost::multi_array<T, 3> value,
+    Array3DConstructData(boost::multi_array<T, 3> value, Block<3> block = Block<3>(),
                            mapConstruct map = mapConstruct()) :
-        BaseConstructData(map), value_(value){}
+        BaseConstructData(map), value_(value), block_(block){}
 
     virtual ~Array3DConstructData(){}
 
@@ -70,8 +85,6 @@ public:
     {
 
         std::vector<std::shared_ptr<BaseConstructData> > result;
-        std::cout<<"Specialized version for 3D version"<<std::endl;
-
 
         for(unsigned int i = 0; i < range.size(); i++)
         {
@@ -83,36 +96,94 @@ public:
                     std::cerr<<"ERROR : one block doesn't have a local box to split a 3d array."<<std::endl;
                     return result;
                 }
+            }
 
-                if(range.at(i).localExtends_[d+3] > value_.shape()[d])
-                {
-                    std::cout<<"ERROR : trying to cut an array out of boundary."
-                            <<"("<<range.at(i).localExtends_[d+3]<<" available, "<<value_.shape()[d]<<" requested on dimension "<<d<<")"<<std::endl;
-                    return result;
-                }
-
+            if(!block_.hasLocalExtends_)
+            {
+                std::cerr<<"ERROR : the block of the 3d array doesn't have informations about the local grid"<<std::endl;
+                return result;
             }
         }
 
-        // Naive method
+        // Naive method to write the subarray
+        unsigned int startX, endX, startY, endY, startZ, endZ;
+        startX = block_.localExtends_[0];
+        endX = block_.localExtends_[0] + block_.localExtends_[3];
+        startY = block_.localExtends_[1];
+        endY = block_.localExtends_[1] + block_.localExtends_[4];
+        startZ = block_.localExtends_[2];
+        endZ = block_.localExtends_[2] + block_.localExtends_[5];
+
+
         for(unsigned int i = 0; i < range.size(); i++)
         {
-            boost::multi_array<T, 3> subArray(boost::extents[range.at(i).localExtends_[0]][range.at(i).localExtends_[1]][range.at(i).localExtends_[2]]);
-            for(int x = 0; x < range.at(i).localExtends_[3]; x++)
+            //Computing the window of data to cut for each dimension
+            unsigned int startSplitX, endSplitX, startSplitY, endSplitY, startSplitZ, endSplitZ;
+            startSplitX = range.at(i).localExtends_[0];
+            endSplitX = range.at(i).localExtends_[0] + range.at(i).localExtends_[3];
+            startSplitY = range.at(i).localExtends_[1];
+            endSplitY = range.at(i).localExtends_[1] + range.at(i).localExtends_[4];
+            startSplitZ = range.at(i).localExtends_[2];
+            endSplitZ = range.at(i).localExtends_[2] + range.at(i).localExtends_[5];
+
+            unsigned int xmin, xmax, ymin, ymax, zmin, zmax;
+            bool overlapX = hasOverlap(startX, endX, startSplitX, endSplitX, xmin, xmax);
+            bool overlapY = hasOverlap(startY, endY, startSplitY, endSplitY, ymin, ymax);
+            bool overlapZ = hasOverlap(startZ, endZ, startSplitZ, endSplitZ, zmin, zmax);
+            unsigned int dx = xmax - xmin, dy = ymax - ymin, dz = zmax - zmin;
+
+            if(overlapX && overlapY && overlapZ)
             {
-                for(int y = 0; y < range.at(i).localExtends_[4]; y++)
+                //There is an intersection between the blocks
+                boost::multi_array<T, 3> subArray(boost::extents[dx][dy][dz]);
+                for(int x = xmin; x < xmax; x++)
                 {
-                    for(int z = 0; z < range.at(i).localExtends_[5]; z++)
-                        subArray[x][y][z] = value_[range.at(i).localExtends_[0]+x][range.at(i).localExtends_[1]+y][range.at(i).localExtends_[2]+z];
+                    for(int y = ymin; y < ymax; y++)
+                    {
+                        for(int z = zmin; z < zmax; z++)
+                        {
+                            subArray[x-xmin][y-ymin][z-zmin] =
+                                    value_[x-startX][y-startY][z-startZ];
+                        }
+                    }
                 }
+
+                Block<3> subBlock = block_;
+
+                subBlock.localExtends_ = {xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin};
+                subBlock.localBBox_ = { subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
+                                        subBlock.globalBBox_[1] + ymin * subBlock.gridspace_,
+                                        subBlock.globalBBox_[2] + zmin * subBlock.gridspace_,
+                                        (xmax - xmin) * subBlock.gridspace_,
+                                        (ymax - ymin) * subBlock.gridspace_,
+                                        (zmax - zmin) * subBlock.gridspace_};
+
+                // TODO : manage the own as well
+
+                std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
+                            subArray, subBlock);
+
+                result.push_back(data);
+
+            }
+            else
+            {
+                //No data here
+                boost::multi_array<T, 3> subArray(boost::extents[0][0][0]);
+                Block<3> subBlock = block_;
+
+                subBlock.localExtends_ = {0, 0, 0, 0, 0, 0};
+                subBlock.localBBox_ = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+                std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
+                            subArray, subBlock);
+
+
+                result.push_back(data);
             }
 
-            std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
-                        subArray);
-
-            //TODO : should maintain a Block structure
-            result.push_back(data);
         }
+
 
         return result;
     }
