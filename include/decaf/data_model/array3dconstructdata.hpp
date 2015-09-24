@@ -6,12 +6,15 @@
 #include <boost/serialization/array.hpp>
 #include <decaf/data_model/multiarrayserialize.hpp>
 #include <decaf/data_model/block.hpp>
+#include <decaf/data_model/blockconstructdata.hpp>
 #include <math.h>
 
 
 
 // TODO :  See http://www.boost.org/doc/libs/1_46_1/libs/serialization/doc/special.html
 // for serialization optimizations
+
+namespace decaf {
 
 
 //Tool function to extract the overlap between to intervale
@@ -27,20 +30,43 @@ bool hasOverlap(unsigned int baseMin, unsigned int baseMax,
     return true;
 }
 
+template<typename T>
+void copy3DArray(boost::multi_array<T, 3>* dest, Block<3>& blockDest,
+                 boost::multi_array<T, 3>* src, Block<3>& blockSrc)
+{
+    assert(blockDest.hasLocalExtends_ && blockSrc.hasLocalExtends_);
 
-namespace decaf {
+    int offsetX = blockSrc.localExtends_[0] - blockDest.localExtends_[0];
+    int offsetY = blockSrc.localExtends_[1] - blockDest.localExtends_[1];
+    int offsetZ = blockSrc.localExtends_[2] - blockDest.localExtends_[2];
+
+    assert(offsetX >= 0 && offsetY >= 0 && offsetZ >= 0);
+
+    for(unsigned int x = 0; x < src->shape()[0]; x++)
+    {
+        for(unsigned int y = 0; y < src->shape()[1]; y++)
+        {
+            for(unsigned int z = 0; z < src->shape()[2]; z++)
+                (*dest)[x + offsetX][y + offsetY][z + offsetZ] += (*src)[x][y][z];
+        }
+    }
+}
 
 template<typename T>
 class Array3DConstructData : public BaseConstructData {
 public:
     Array3DConstructData(mapConstruct map = mapConstruct())
-        : BaseConstructData(map){}
+        : BaseConstructData(map), value_(NULL), isOwner_(false){}
 
-    Array3DConstructData(boost::multi_array<T, 3> value, Block<3> block = Block<3>(),
-                           mapConstruct map = mapConstruct()) :
-        BaseConstructData(map), value_(value), block_(block){}
+    Array3DConstructData(boost::multi_array<T, 3> *value, Block<3> block = Block<3>(),
+                           bool isOwner = false, mapConstruct map = mapConstruct()) :
+        BaseConstructData(map), value_(value), block_(block), isOwner_(isOwner){}
 
-    virtual ~Array3DConstructData(){}
+    virtual ~Array3DConstructData()
+    {
+        if(isOwner_)
+            delete value_;
+    }
 
     virtual bool isBlockSplitable(){ return true; }
 
@@ -54,9 +80,9 @@ public:
         ar & BOOST_SERIALIZATION_NVP(block_);
     }
 
-    virtual boost::multi_array<T, 3> getArray(){ return value_; }
+    virtual boost::multi_array<T, 3>* getArray(){ return value_; }
 
-    virtual int getNbItems(){ return value_.size(); }
+    virtual int getNbItems(){ return value_->size(); }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
@@ -135,15 +161,15 @@ public:
             if(overlapX && overlapY && overlapZ)
             {
                 //There is an intersection between the blocks
-                boost::multi_array<T, 3> subArray(boost::extents[dx][dy][dz]);
+                boost::multi_array<T, 3>* subArray = new boost::multi_array<T, 3>(boost::extents[dx][dy][dz]);
                 for(int x = xmin; x < xmax; x++)
                 {
                     for(int y = ymin; y < ymax; y++)
                     {
                         for(int z = zmin; z < zmax; z++)
                         {
-                            subArray[x-xmin][y-ymin][z-zmin] =
-                                    value_[x-startX][y-startY][z-startZ];
+                            (*subArray)[x-xmin][y-ymin][z-zmin] =
+                                    (*value_)[x-startX][y-startY][z-startZ];
                         }
                     }
                 }
@@ -161,7 +187,7 @@ public:
                 // TODO : manage the own as well
 
                 std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
-                            subArray, subBlock);
+                            subArray, subBlock, true);
 
                 result.push_back(data);
 
@@ -169,14 +195,14 @@ public:
             else
             {
                 //No data here
-                boost::multi_array<T, 3> subArray(boost::extents[0][0][0]);
+                boost::multi_array<T, 3> *subArray = new boost::multi_array<T, 3>(boost::extents[0][0][0]);
                 Block<3> subBlock = block_;
 
                 subBlock.localExtends_ = {0, 0, 0, 0, 0, 0};
                 subBlock.localBBox_ = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
                 std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
-                            subArray, subBlock);
+                            subArray, subBlock, true);
 
 
                 result.push_back(data);
@@ -192,7 +218,63 @@ public:
                         mapConstruct partial_map,
                         ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
-        return false;
+        switch(policy)
+        {
+            case DECAF_MERGE_DEFAULT:
+            {
+                //Getting the shape of the merged array
+                std::map<std::string, datafield>::iterator field = partial_map->find("domain_block");
+                if(field == partial_map->end())
+                {
+                    std::cerr<<"ERROR : unable to find the field \'domain_block\' "
+                             <<"required to merge array3dconstructdata type."<<std::endl;
+                    return false;
+                }
+                std::shared_ptr<BlockConstructData> domainBlock =
+                        std::dynamic_pointer_cast<BlockConstructData>(std::get<3>(field->second));
+
+
+                Block<3>& domain = domainBlock->getData();
+
+                std::shared_ptr<Array3DConstructData<T> >other_ =
+                        std::dynamic_pointer_cast<Array3DConstructData<T> >(other);
+
+                // Checking if the current array has the correct shape
+                if(block_.hasSameExtends(domain))
+                {
+                    // The block has already the correct shape, we simply add the
+                    // values from the other array
+                    copy3DArray(value_, block_, other_->value_, other_->block_);
+                }
+                else
+                {
+                    //Creating the new array with the correct shape
+                    boost::multi_array<T, 3> *newArray = new boost::multi_array<T, 3>(boost::extents[domain.localExtends_[3]][domain.localExtends_[4]][domain.localExtends_[5]]);
+
+                    //Adding the current array
+                    copy3DArray(newArray, domain, value_, block_);
+
+                    //Adding the other array
+                    copy3DArray(newArray, domain, other_->value_, other_->block_);
+
+                    //We can now replace the old array
+                    if(isOwner_) delete value_;
+                    value_ = newArray; //TODO : check the memory of this, probably copy
+                    block_ = domain;
+                    isOwner_ = true;
+                }
+
+                break;
+            }
+            default:
+            {
+                std::cerr<<"ERROR : Policy "<<policy<<" not supported for Array3constructData."<<std::endl;
+                return false;
+            }
+
+        }
+
+        return true;
     }
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)
@@ -210,8 +292,9 @@ public:
 
 
 protected:
-    boost::multi_array<T, 3> value_;
+    boost::multi_array<T, 3>* value_;
     Block<3> block_;
+    bool isOwner_;
 };
 
 

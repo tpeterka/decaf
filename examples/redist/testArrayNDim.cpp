@@ -115,10 +115,10 @@ void printArray3d(std::shared_ptr<ConstructData> container)
         std::cout<<"ERROR : unable to find the field array3d."<<std::endl;
     std::shared_ptr<Array3DConstructData<float> > constructField =
             dynamic_pointer_cast<Array3DConstructData<float> >(field);
-    boost::multi_array<float,3> array = constructField->getArray();
-    int x = array.shape()[0];
-    int y = array.shape()[1];
-    int z = array.shape()[2];
+    boost::multi_array<float,3> *array = constructField->getArray();
+    int x = array->shape()[0];
+    int y = array->shape()[1];
+    int z = array->shape()[2];
 
     std::cout<<"Array : "<<std::endl;
 
@@ -129,7 +129,7 @@ void printArray3d(std::shared_ptr<ConstructData> container)
         {
             for(int k = 0; k < z; k++)
             {
-                std::cout<<array[i][j][k]<<",";
+                std::cout<<(*array)[i][j][k]<<",";
             }
         }
         std::cout<<"]"<<std::endl;
@@ -156,9 +156,9 @@ void testSimpleArray()
     }
 
     std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
-                array);
+                &array);
 
-    boost::multi_array<float,3> array2 = data->getArray();
+    boost::multi_array<float,3>* array2 = data->getArray();
 
     std::cout<<"Array2 : "<<std::endl;
     std::cout<<"[";
@@ -168,7 +168,7 @@ void testSimpleArray()
         {
             for(int k = 0; k < z; k++)
             {
-                std::cout<<array2[i][j][k]<<",";
+                std::cout<<(*array2)[i][j][k]<<",";
             }
         }
     }
@@ -193,7 +193,7 @@ void testSimpleArray()
                 std::cout<<"ERROR : unable to find the field array."<<std::endl;
             std::shared_ptr<Array3DConstructData<float> > constructField =
                     dynamic_pointer_cast<Array3DConstructData<float> >(field);
-            boost::multi_array<float,3> array3 = constructField->getArray();
+            boost::multi_array<float,3> *array3 = constructField->getArray();
 
             std::cout<<"Array3 : "<<std::endl;
             std::cout<<"[";
@@ -203,7 +203,7 @@ void testSimpleArray()
                 {
                     for(int k = 0; k < z; k++)
                     {
-                        std::cout<<array3[i][j][k]<<",";
+                        std::cout<<(*array3)[i][j][k]<<",";
                     }
                 }
             }
@@ -212,6 +212,10 @@ void testSimpleArray()
     }
     else
         std::cout<<"ERROR : failed to serialized the array"<<std::endl;
+
+    std::cout<<"================================================"<<std::endl;
+    std::cout<<"= test serialization/deserialization completed ="<<std::endl;
+    std::cout<<"================================================"<<std::endl;
 }
 
 void testBlockSplitingArray1D()
@@ -289,6 +293,10 @@ void testBlockSplitingArray1D()
     }*/
 
     posToFile(splitResult, numParticles, std::string("outSplitBlock.ply"));
+
+    std::cout<<"======================================"<<std::endl;
+    std::cout<<"= testBlockSplitingArray1D completed ="<<std::endl;
+    std::cout<<"======================================"<<std::endl;
 }
 
 void testBlockSplitingArray3D()
@@ -357,7 +365,7 @@ void testBlockSplitingArray3D()
     blockArray.updateExtends();
 
     std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
-                array, blockArray);
+                &array, blockArray, false);
 
 
     //Building the datamodel
@@ -378,7 +386,28 @@ void testBlockSplitingArray3D()
         std::shared_ptr<ConstructData> subcontainer =
                 std::dynamic_pointer_cast<ConstructData>(splitResult.at(i));
         printArray3d(subcontainer);
+
+        //Pushing the global domain info to merge after
+        std::shared_ptr<BlockConstructData> blockData =
+                std::make_shared<BlockConstructData>(blockArray, subcontainer->getMap());
+        subcontainer->appendData("domain_block", blockData,
+                             DECAF_NOFLAG, DECAF_PRIVATE,
+                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
     }
+
+    std::cout<<"Merging back the blocks..."<<std::endl;
+    for(unsigned int i = 1; i < splitResult.size(); i++)
+    {
+        splitResult.at(0)->merge(splitResult.at(i));
+    }
+
+    std::shared_ptr<ConstructData> mergedContainer =
+            std::dynamic_pointer_cast<ConstructData>(splitResult.at(0));
+    printArray3d(mergedContainer);
+
+    std::cout<<"======================================"<<std::endl;
+    std::cout<<"= testBlockSplitingArray3D completed ="<<std::endl;
+    std::cout<<"======================================"<<std::endl;
 
 }
 

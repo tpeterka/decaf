@@ -173,6 +173,31 @@ public:
                z >= ownExtends_[2] && z < ownExtends_[2] + ownExtends_[5];
     }
 
+    bool hasSameExtends(const Block<Dim> & other)
+    {
+        if(hasGlobalExtends_ && other.hasGlobalExtends_)
+        {
+            for(unsigned int i = 0; i < 2 * Dim; i++)
+                if(globalExtends_[i] != other.globalExtends_[i])
+                    return false;
+        }
+
+        if(hasLocalExtends_ && other.hasLocalExtends_)
+        {
+            for(unsigned int i = 0; i < 2 * Dim; i++)
+                if(localExtends_[i] != other.localExtends_[i])
+                    return false;
+        }
+
+        if(hasOwnExtends_ && other.hasOwnExtends_)
+        {
+            for(unsigned int i = 0; i < 2 * Dim; i++)
+                if(ownExtends_[i] != other.ownExtends_[i])
+                    return false;
+        }
+
+        return true;
+    }
 
 
     bool hasGridspace_;                     //Size of a cell
