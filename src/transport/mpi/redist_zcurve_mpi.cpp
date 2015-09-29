@@ -354,11 +354,15 @@ RedistZCurveMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         for(unsigned int i = 0; i < split_ranges.size(); i++)
         {
             if(split_ranges.at(i).size() > 0)
+            {
                 destList_.push_back(i + local_dest_rank_);
 
-            //We won't send a message if we send to self
-            if(i + local_dest_rank_ != rank_)
-                summerizeDest_[i] = 1;
+                //We won't send a message if we send to self
+                if(i + local_dest_rank_ != rank_)
+                    summerizeDest_[i] = 1;
+            }
+            else
+                destList_.push_back(-1);
         }
 
 
@@ -438,7 +442,7 @@ RedistZCurveMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             {
                 transit = splitChunks_.at(i);
             }
-            else
+            else if(destList_.at(i) != -1)
             {
                 MPI_Request req;
                 reqs.push_back(req);

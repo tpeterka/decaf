@@ -1,7 +1,8 @@
 add_library             (decaf_transport SHARED     ../redist_comp.cpp
                                                     redist_count_mpi.cpp
                                                     redist_round_mpi.cpp
-                                                    redist_zcurve_mpi.cpp)
+                                                    redist_zcurve_mpi.cpp
+						    redist_block_mpi.cpp)
 target_link_libraries   (decaf_transport            ${libraries})
 
 install(TARGETS decaf_transport

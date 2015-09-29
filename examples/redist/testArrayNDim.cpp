@@ -1,8 +1,8 @@
 #include <decaf/data_model/array3dconstructdata.hpp>
 #include <decaf/data_model/arrayconstructdata.hpp>
-#include <decaf/transport/mpi/redist_zcurve_mpi.h>
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/block.hpp>
+#include <decaf/transport/mpi/redist_block_mpi.h>
 
 #include <fstream>
 
@@ -160,7 +160,7 @@ void testSimpleArray()
 
     boost::multi_array<float,3>* array2 = data->getArray();
 
-    std::cout<<"Array2 : "<<std::endl;
+    std::cout<<"Array before serialization : "<<std::endl;
     std::cout<<"[";
     for(int i = 0; i < x; i++)
     {
@@ -195,7 +195,7 @@ void testSimpleArray()
                     dynamic_pointer_cast<Array3DConstructData<float> >(field);
             boost::multi_array<float,3> *array3 = constructField->getArray();
 
-            std::cout<<"Array3 : "<<std::endl;
+            std::cout<<"Array after serialization : "<<std::endl;
             std::cout<<"[";
             for(int i = 0; i < x; i++)
             {
@@ -405,17 +405,168 @@ void testBlockSplitingArray3D()
             std::dynamic_pointer_cast<ConstructData>(splitResult.at(0));
     printArray3d(mergedContainer);
 
+    blocks.clear();
+
+    //First Block, no ghost
+    block1.setGridspace(gridspace);
+    block1.setGlobalBBox(globalBBox);
+    localBBox = {0.0, 0.0, 0.0, 6.0, 6.0, 1.0};
+    block1.setLocalBBox(localBBox);
+    block1.updateExtends();
+    blocks.push_back(block1);
+
+    //Second block
+    block2.setGridspace(gridspace);
+    block2.setGlobalBBox(globalBBox);
+    localBBox = {6.0, 0.0, 0.0, 4.0, 6.0, 1.0};
+    block2.setLocalBBox(localBBox);
+    block2.updateExtends();
+    blocks.push_back(block2);
+
+    //Third block
+    block3.setGridspace(gridspace);
+    block3.setGlobalBBox(globalBBox);
+    localBBox = {0.0, 6.0, 0.0, 6.0, 4.0, 1.0};
+    block3.setLocalBBox(localBBox);
+    block3.updateExtends();
+    blocks.push_back(block3);
+
+    //Forth block
+    block4.setGridspace(gridspace);
+    block4.setGlobalBBox(globalBBox);
+    localBBox = {6.0, 6.0, 0.0, 4.0, 4.0, 1.0};
+    block4.setLocalBBox(localBBox);
+    block4.updateExtends();
+    blocks.push_back(block4);
+
+    std::vector< std::shared_ptr<BaseData> > splitResult2 = container->split(blocks);
+
+    for(unsigned int i = 0; i < splitResult2.size(); i++)
+    {
+        std::cout<<"Array number "<<i<<" : "<<std::endl;
+        std::shared_ptr<ConstructData> subcontainer =
+                std::dynamic_pointer_cast<ConstructData>(splitResult2.at(i));
+        printArray3d(subcontainer);
+
+        //Pushing the global domain info to merge after
+        std::shared_ptr<BlockConstructData> blockData =
+                std::make_shared<BlockConstructData>(blockArray, subcontainer->getMap());
+        subcontainer->appendData("domain_block", blockData,
+                             DECAF_NOFLAG, DECAF_PRIVATE,
+                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+    }
+
+    std::cout<<"Merging back the blocks..."<<std::endl;
+    for(unsigned int i = 1; i < splitResult.size(); i++)
+    {
+        splitResult2.at(0)->merge(splitResult2.at(i));
+    }
+
+    std::shared_ptr<ConstructData> mergedContainer2 =
+            std::dynamic_pointer_cast<ConstructData>(splitResult2.at(0));
+    printArray3d(mergedContainer2);
+
     std::cout<<"======================================"<<std::endl;
     std::cout<<"= testBlockSplitingArray3D completed ="<<std::endl;
     std::cout<<"======================================"<<std::endl;
 
 }
 
+void testRedistBlock()
+{
+    std::cout<<"==================="<<std::endl;
+    std::cout<<"= testRedistBlock ="<<std::endl;
+    std::cout<<"==================="<<std::endl;
+
+    int size_world, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size_world);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    std::cout<<"Rank : "<<rank<<std::endl;
+
+    // We split an array into 4 block. Rank 0 is building the main block,
+    // rank 1 to 4 are receiving the splits.
+    if(rank > 4)
+        return;
+
+    RedistBlockMPI* component = new RedistBlockMPI(0, 1, 1, 4, MPI_COMM_WORLD);
+
+    if(rank == 0) //Source code
+    {
+        std::cout<<"Source generating the complete array"<<std::endl;
+
+        // Generation of the 3D array
+        unsigned int x = 10, y = 10, z = 1;
+        boost::multi_array<float,3> array(boost::extents[x][y][z]);
+        for(int i = 0; i < x; i++)
+        {
+            for(int j = 0; j < y; j++)
+            {
+                for(int k = 0; k < z; k++)
+                {
+                    array[i][j][k] = i+j;
+                }
+            }
+        }
+
+        std::vector<float> globalBBox = {0.0, 0.0, 0.0, 10.0, 10.0, 1.0};
+        float gridspace = 1.0;
+        Block<3> blockArray;
+        blockArray.setGridspace(gridspace);
+        blockArray.setGlobalBBox(globalBBox);
+        blockArray.setLocalBBox(globalBBox);
+        blockArray.updateExtends();
+
+        std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
+                    &array, blockArray, false);
+
+
+        //Building the datamodel
+        std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
+        container->appendData("array3d", data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
+        //Pushing the global domain info for the redistribution component
+        std::shared_ptr<BlockConstructData> blockData =
+                std::make_shared<BlockConstructData>(blockArray, container->getMap());
+        container->appendData("domain_block", blockData,
+                             DECAF_NOFLAG, DECAF_PRIVATE,
+                             DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
+        std::cout<<"Original array : "<<std::endl;
+        printArray3d(container);
+
+        component->process(container, decaf::DECAF_REDIST_SOURCE);
+        component->flush();    // We still need to flush if not doing a get/put
+
+        std::cout<<"End of the producer."<<std::endl;
+
+    }
+    else    // Destination code
+    {
+        std::cout<<"Consummer receiving a part of the block."<<std::endl;
+
+        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        component->process(result, decaf::DECAF_REDIST_DEST);
+        component->flush();    // We still need to flush if not doing a get/put
+
+        printArray3d(result);
+
+        std::cout<<"End of the consummer."<<std::endl;
+    }
+
+
+    std::cout<<"============================="<<std::endl;
+    std::cout<<"= testRedistBlock completed ="<<std::endl;
+    std::cout<<"============================="<<std::endl;
+}
+
 int main(int argc,
          char** argv)
 {
     MPI_Init(NULL, NULL);
-    srand(354343);
+    srand(3543437);
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -426,6 +577,10 @@ int main(int argc,
         testBlockSplitingArray3D();
     }
     MPI_Barrier(MPI_COMM_WORLD);
+    if(size_world >= 5 && rank < 5)
+    {
+        testRedistBlock();
+    }
     MPI_Finalize();
 
     return 0;

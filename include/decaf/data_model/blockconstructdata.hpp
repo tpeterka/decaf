@@ -21,7 +21,7 @@ public:
         ar & BOOST_SERIALIZATION_NVP(value_);
     }
 
-    virtual bool isBlockSplitable(){ return false; }
+    virtual bool isBlockSplitable(){ return true; }
 
     virtual int getNbItems(){ return 1; }
 
@@ -92,6 +92,20 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
+        switch(policy)
+        {
+            case DECAF_SPLIT_KEEP_VALUE:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                    result.push_back(std::make_shared<BlockConstructData>(value_));
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for BlockConstructData"<<std::endl;
+                break;
+            }
+        }
         return result;
     }
 

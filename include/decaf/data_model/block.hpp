@@ -51,7 +51,7 @@ public:
 
     void setGlobalExtends(std::vector<unsigned int> globalExtends)
     {
-        assert(globalExtends.size() == Dim);
+        assert(globalExtends.size() == Dim * 2);
         globalExtends_ =  globalExtends;
         hasGlobalExtends_ = true;
     }
