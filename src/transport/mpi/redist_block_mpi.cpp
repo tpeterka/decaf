@@ -116,7 +116,7 @@ RedistBlockMPI::~RedistBlockMPI()
   delete[] sum_;
 }
 
-void
+/*void
 decaf::
 RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
 {
@@ -185,8 +185,99 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
         subblocks_.push_back(sub);
     }
 
+}*/
+
+// TODO : remove the recursion on this
+void splitExtends(std::vector<unsigned int>& extends, int nbSubblock, std::vector< std::vector<unsigned int> >& subblocks)
+{
+    if(nbSubblock == 1)
+    {
+        subblocks.push_back(extends);
+        return ;
+    }
+
+    //Determine the highest dimension
+    int dim = 0;
+    if(extends[4] > extends[3+dim])
+        dim = 1;
+    if(extends[5] > extends[3+dim])
+        dim = 2;
+
+    assert(extends[dim+3] >= 2);
+
+    //For this block, only the dimension in which we cut is changed
+    std::vector<unsigned int> block1(extends);
+    block1[3+dim] = (block1[3+dim] / 2) + block1[3+dim] % 2;
+
+    std::vector<unsigned int> block2(extends);
+    block2[dim] += block1[3+dim];
+    block2[3+dim] = (block1[3+dim] / 2) + block1[3+dim];
+
+    if(nbSubblock == 2)
+    {
+        subblocks.push_back(block1);
+        subblocks.push_back(block2);
+        return;
+    }
+    else
+    {
+        splitExtends(block1, (nbSubblock / 2) + nbSubblock % 2, subblocks);
+        splitExtends(block2, (nbSubblock / 2), subblocks);
+    }
+
+    return;
 }
 
+void
+decaf::
+RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
+{
+
+    // BVH spliting method : we cut on the highest dimension
+    if(!base.hasGlobalExtends_)
+    {
+        std::cerr<<"ERROR : The global domain doesn't have global extends. Abording."<<std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 0);
+    }
+
+    if(!base.hasGlobalBBox_)
+    {
+        std::cerr<<"ERROR : The global domain doesn't have global bbox. Abording."<<std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 0);
+    }
+
+    if(!base.hasGridspace_)
+    {
+        std::cerr<<"ERROR : The global domain doesn't have gridspace. Abording."<<std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 0);
+    }
+
+    if(base.globalExtends_[3] < nbSubblock && base.globalExtends_[4] && base.globalExtends_[5])
+    {
+        std::cerr<<"ERROR : none of the dimension is large enough to cut in "<<nbSubblock<<" parts. Abording."<<std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 0);
+    }
+
+    std::vector< std::vector<unsigned int> > subBlocks;
+    splitExtends(base.globalExtends_, nbSubblock, subBlocks);
+
+    //Generating the corresponding BBox
+    for(unsigned int i = 0; i < subBlocks.size(); i++)
+    {
+        Block<3> newBlock;
+        newBlock.setGridspace(base.gridspace_);
+        newBlock.setGlobalBBox(base.globalBBox_);
+        newBlock.setGlobalExtends(base.globalExtends_);
+        newBlock.setLocalExtends(subBlocks.at(i));
+        std::vector<float> localBBox;
+        for(unsigned int j = 0; j < 6; j++)
+            localBBox.push_back((float)subBlocks.at(i)[j] * base.gridspace_);
+        newBlock.setLocalBBox(localBBox);
+
+        subblocks_.push_back(newBlock);
+    }
+
+}
 void
 decaf::
 RedistBlockMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
