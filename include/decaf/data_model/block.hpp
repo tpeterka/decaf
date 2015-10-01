@@ -8,12 +8,18 @@
 
 namespace decaf {
 
+void printExtends(std::vector<unsigned int>& extend)
+{
+    std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
+             <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]<<","<<extend[2]+extend[5]<<"]"<<std::endl;
+}
+
 template<int Dim>
 class Block {
 
 public:
     Block() : hasGridspace_(false), hasGlobalBBox_(false), hasGlobalExtends_(false),
-              hasLocalBBox_(false), hasLocalExtends_(false), hasGhostRegions_(false),
+              hasLocalBBox_(false), hasLocalExtends_(false), ghostSize_(0),
               hasOwnBBox_(false), hasOwnExtends_(false){}
 
     template<class Archive>
@@ -29,7 +35,7 @@ public:
         ar & BOOST_SERIALIZATION_NVP(localBBox_);
         ar & BOOST_SERIALIZATION_NVP(hasLocalExtends_);
         ar & BOOST_SERIALIZATION_NVP(localExtends_);
-        ar & BOOST_SERIALIZATION_NVP(hasGhostRegions_);
+        ar & BOOST_SERIALIZATION_NVP(ghostSize_);
         ar & BOOST_SERIALIZATION_NVP(hasOwnBBox_);
         ar & BOOST_SERIALIZATION_NVP(ownBBox_);
         ar & BOOST_SERIALIZATION_NVP(hasOwnExtends_);
@@ -199,6 +205,41 @@ public:
         return true;
     }
 
+    void buildGhostRegions(unsigned int ghostSize)
+    {
+        assert(hasLocalExtends_ && hasLocalBBox_);
+
+        ghostSize_ = ghostSize;
+
+        //The ownBox is becomming is becomming the localBox and we extend
+        //the localBox with the ghost region
+
+        setOwnBBox(localBBox_);
+        setOwnExtends(localExtends_);
+
+        //Updating the info of the localbox
+        //Checking the minimum dimension if we don't go bellow 0
+        for(unsigned int i = 0; i < 3; i++)
+        {
+            if(localExtends_[i] >= ghostSize_)
+                //We can safely extend the region
+                localExtends_[i] -= ghostSize_;
+            else
+                localExtends_[i] = 0;
+        }
+
+        //Checking if with the ghost region we don't go outside of the global box
+        for(unsigned int i = 3; i < 6; i++)
+        {
+            if(localExtends_[i-3] + localExtends_[i] + ghostSize_ <= globalExtends_[i])
+                localExtends_[i] += ghostSize_;
+            else
+                localExtends_[i] += globalExtends_[i] - localExtends_[i-3] - localExtends_[i];
+        }
+    }
+
+    bool hasGhostRegions(){ return ghostSize_ > 0; }
+
 
     bool hasGridspace_;                     //Size of a cell
     float gridspace_;
@@ -214,9 +255,9 @@ public:
     std::vector<float> localBBox_;          //Min, delta for the localdomain domain with ghost
     bool hasLocalExtends_;
     std::vector<unsigned int> localExtends_;//Start offset + Number of cells in each dimensions with ghost
-    bool hasGhostRegions_;
 
     //Local domain manage within the process without Ghost region
+    unsigned int ghostSize_;                //Width of the ghost region in the 3 dimensions
     bool hasOwnBBox_;
     std::vector<float> ownBBox_;            //Min, delta without ghost region
     bool hasOwnExtends_;

@@ -20,6 +20,12 @@
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/blockconstructdata.hpp>
 
+void printExtends(std::vector<unsigned int>& extend)
+{
+    std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
+             <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]<<","<<extend[2]+extend[5]<<"]"<<std::endl;
+}
+
 
 namespace decaf
 {
@@ -207,11 +213,11 @@ void splitExtends(std::vector<unsigned int>& extends, int nbSubblock, std::vecto
 
     //For this block, only the dimension in which we cut is changed
     std::vector<unsigned int> block1(extends);
-    block1[3+dim] = (block1[3+dim] / 2) + block1[3+dim] % 2;
+    block1[3+dim] = (extends[3+dim] / 2) + extends[3+dim] % 2;
 
     std::vector<unsigned int> block2(extends);
     block2[dim] += block1[3+dim];
-    block2[3+dim] = (block1[3+dim] / 2) + block1[3+dim];
+    block2[3+dim] = (extends[3+dim] / 2);
 
     if(nbSubblock == 2)
     {
@@ -264,6 +270,7 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
     //Generating the corresponding BBox
     for(unsigned int i = 0; i < subBlocks.size(); i++)
     {
+
         Block<3> newBlock;
         newBlock.setGridspace(base.gridspace_);
         newBlock.setGlobalBBox(base.globalBBox_);
@@ -274,10 +281,28 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
             localBBox.push_back((float)subBlocks.at(i)[j] * base.gridspace_);
         newBlock.setLocalBBox(localBBox);
 
+        if(base.hasGhostRegions())
+            newBlock.buildGhostRegions(base.ghostSize_);
+
         subblocks_.push_back(newBlock);
     }
-
 }
+
+
+void
+decaf::
+RedistBlockMPI::updateBlockDomainFields()
+{
+    assert(subblocks_.size() == splitChunks_.size());
+
+    for(unsigned int i = 0; i < subblocks_.size(); i++)
+    {
+        std::shared_ptr<BlockConstructData> newBlock = std::make_shared<BlockConstructData>(subblocks_.at(i));
+        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(splitChunks_.at(i));
+        container->updateData("domain_block", newBlock);
+    }
+}
+
 void
 decaf::
 RedistBlockMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
@@ -334,6 +359,10 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 
         splitChunks_ =  container->split( subblocks_ );
+
+        //Pushing the subdomain block into each split chunk.
+        //The field domain_block is updated
+        updateBlockDomainFields();
 
         //Updating the informations about messages to send
         for(unsigned int i = 0; i < subblocks_.size(); i++)

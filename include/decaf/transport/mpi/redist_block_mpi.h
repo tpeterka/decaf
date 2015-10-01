@@ -62,6 +62,8 @@ namespace decaf
 
       void splitBlock(Block<3> & base, int nbSubblock);
 
+      void updateBlockDomainFields();
+
       bool isSource();
       bool isDest();
 

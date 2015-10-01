@@ -50,6 +50,11 @@ public:
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
                     ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
 
+    bool removeData(std::string name);
+
+    bool updateData(std::string name,
+                    std::shared_ptr<BaseConstructData>  data);
+
     int getNbFields();
 
     std::shared_ptr<std::map<std::string, datafield> > getMap();

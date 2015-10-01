@@ -43,6 +43,7 @@ T clip(const T& n, const T& lower, const T& upper) {
   return std::max(lower, std::min(n, upper));
 }
 
+
 void posToFile(std::vector< std::shared_ptr<BaseData> > data, int totalParticles, const std::string filename)
 {
     std::ofstream file;
@@ -134,6 +135,79 @@ void printArray3d(std::shared_ptr<ConstructData> container)
         }
         std::cout<<"]"<<std::endl;
     }
+}
+
+void printArrayByBlock(std::shared_ptr<ConstructData> container)
+{
+    std::shared_ptr<Array3DConstructData<float> > arrayData =
+            container->getTypedData<Array3DConstructData<float> >("array3d");
+    std::shared_ptr<BlockConstructData> blockData =
+            container->getTypedData<BlockConstructData>("domain_block");
+
+    if(!arrayData || !blockData)
+    {
+        std::cerr<<"ERROR : domain_block or array3d is not available to print."<<std::endl;
+        return;
+    }
+
+    Block<3>& block = blockData->getData();
+    boost::multi_array<float,3> *array = arrayData->getArray();
+
+    if(block.hasLocalExtends_)
+    {
+        std::cout<<"Local array : "<<std::endl;
+        int x = block.localExtends_[3];
+        int y = block.localExtends_[4];
+        int z = block.localExtends_[5];
+
+        std::cout<<"Extends of the localArray : ";
+        printExtends(block.localExtends_);
+        std::cout<<"Extends of the ownArray : ";
+        printExtends(block.ownExtends_);
+        std::cout<<"Shape of the localArray : "<<array->shape()[0]<<","<<array->shape()[1]<<","<<array->shape()[2]<<std::endl;
+
+        for(int i = 0; i < x; i++)
+        {
+            std::cout<<"[";
+            for(int j = 0; j < y; j++)
+            {
+                for(int k = 0; k < z; k++)
+                {
+                    std::cout<<(*array)[i][j][k]<<",";
+                }
+            }
+            std::cout<<"]"<<std::endl;
+        }
+    }
+    else
+        std:cout<<"Local extends not available."<<std::endl;
+
+    if(block.hasOwnExtends_)
+    {
+        std::cout<<"Own array : "<<std::endl;
+        int xstart = block.ownExtends_[0] - block.localExtends_[0];
+        int xend = xstart + block.ownExtends_[3];
+        int ystart = block.ownExtends_[1] - block.localExtends_[1];
+        int yend = ystart + block.ownExtends_[4];
+        int zstart = block.ownExtends_[2] - block.localExtends_[2];
+        int zend = zstart + block.ownExtends_[5];
+
+        for(int i = xstart; i < xend; i++)
+        {
+            std::cout<<"[";
+            for(int j = ystart; j < yend; j++)
+            {
+                for(int k = zstart; k < zend; k++)
+                {
+                    std::cout<<(*array)[i][j][k]<<",";
+                }
+            }
+            std::cout<<"]"<<std::endl;
+        }
+
+    }
+    else
+        std::cout<<"Own extends not available."<<std::endl;
 }
 
 void testSimpleArray()
@@ -484,19 +558,14 @@ void testRedistBlock()
 
     std::cout<<"Rank : "<<rank<<std::endl;
 
-    // We split an array into 4 block. Rank 0 is building the main block,
-    // rank 1 to 4 are receiving the splits.
-    if(rank > 4)
-        return;
-
-    RedistBlockMPI* component = new RedistBlockMPI(0, 1, 1, 4, MPI_COMM_WORLD);
+    RedistBlockMPI* component = new RedistBlockMPI(0, 1, 1, size_world-1, MPI_COMM_WORLD);
 
     if(rank == 0) //Source code
     {
         std::cout<<"Source generating the complete array"<<std::endl;
 
         // Generation of the 3D array
-        unsigned int x = 10, y = 10, z = 1;
+        unsigned int x = 20, y = 20, z = 1;
         boost::multi_array<float,3> array(boost::extents[x][y][z]);
         for(int i = 0; i < x; i++)
         {
@@ -509,13 +578,14 @@ void testRedistBlock()
             }
         }
 
-        std::vector<float> globalBBox = {0.0, 0.0, 0.0, 10.0, 10.0, 1.0};
+        std::vector<float> globalBBox = {0.0, 0.0, 0.0, 20.0, 20.0, 1.0};
         float gridspace = 1.0;
         Block<3> blockArray;
         blockArray.setGridspace(gridspace);
         blockArray.setGlobalBBox(globalBBox);
         blockArray.setLocalBBox(globalBBox);
         blockArray.updateExtends();
+        blockArray.ghostSize_ = 1;
 
         std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
                     &array, blockArray, false);
@@ -551,7 +621,7 @@ void testRedistBlock()
         component->process(result, decaf::DECAF_REDIST_DEST);
         component->flush();    // We still need to flush if not doing a get/put
 
-        printArray3d(result);
+        printArrayByBlock(result);
 
         std::cout<<"End of the consummer."<<std::endl;
     }
@@ -577,7 +647,7 @@ int main(int argc,
         testBlockSplitingArray3D();
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    if(size_world >= 5 && rank < 5)
+    if(size_world >= 2)
     {
         testRedistBlock();
     }

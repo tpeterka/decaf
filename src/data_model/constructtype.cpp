@@ -107,6 +107,47 @@ ConstructData::appendData(std::string name,
     return ret.second && updateMetaData();
 }
 
+bool
+decaf::
+ConstructData::removeData(std::string name)
+{
+    std::map<std::string, datafield>::iterator it = container_->find(name);
+    if(it != container_->end())
+    {
+        container_->erase(it);
+        if(!merge_order_.empty() || !split_order_.empty())
+        {
+            std::cout<<"Field erased. The priority split/merge list is invalid. Clearing."<<std::endl;
+            merge_order_.clear();
+            split_order_.clear();
+        }
+
+        return updateMetaData();
+    }
+
+    return false;
+}
+
+bool
+decaf::
+ConstructData::updateData(std::string name,
+                std::shared_ptr<BaseConstructData>  data)
+{
+    std::map<std::string, datafield>::iterator it = container_->find(name);
+    if(it != container_->end())
+    {
+        std::get<3>(it->second) = data;
+        return updateMetaData();
+    }
+    else
+    {
+        std::cerr<<"ERROR : field \'"<<name<<"\' not found in the map. "
+                 <<"Unable to update the map."<<std::endl;
+        return false;
+    }
+
+}
+
 int
 decaf::
 ConstructData::getNbFields()
