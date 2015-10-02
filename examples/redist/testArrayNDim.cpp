@@ -558,10 +558,12 @@ void testRedistBlock()
 
     std::cout<<"Rank : "<<rank<<std::endl;
 
-    RedistBlockMPI* component = new RedistBlockMPI(0, 1, 1, size_world-1, MPI_COMM_WORLD);
+    RedistBlockMPI* component1;
+    RedistBlockMPI* component2;
 
     if(rank == 0) //Source code
     {
+        component1 = new RedistBlockMPI(0, 1, 1, size_world-2, MPI_COMM_WORLD);
         std::cout<<"Source generating the complete array"<<std::endl;
 
         // Generation of the 3D array
@@ -607,23 +609,41 @@ void testRedistBlock()
         std::cout<<"Original array : "<<std::endl;
         printArray3d(container);
 
-        component->process(container, decaf::DECAF_REDIST_SOURCE);
-        component->flush();    // We still need to flush if not doing a get/put
+        component1->process(container, decaf::DECAF_REDIST_SOURCE);
+        component1->flush();    // We still need to flush if not doing a get/put
 
         std::cout<<"End of the producer."<<std::endl;
 
     }
-    else    // Destination code
+    else if(rank < size_world - 1)   // Destination code
     {
-        std::cout<<"Consummer receiving a part of the block."<<std::endl;
+        component1 = new RedistBlockMPI(0, 1, 1, size_world-2, MPI_COMM_WORLD);
+        component2 = new RedistBlockMPI(1, size_world-2, size_world-1, 1, MPI_COMM_WORLD);
+        std::cout<<"Intermediate consummer receiving a part of the block."<<std::endl;
 
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
-        component->process(result, decaf::DECAF_REDIST_DEST);
-        component->flush();    // We still need to flush if not doing a get/put
+        component1->process(result, decaf::DECAF_REDIST_DEST);
+        component1->flush();    // We still need to flush if not doing a get/put
 
         printArrayByBlock(result);
 
-        std::cout<<"End of the consummer."<<std::endl;
+        std::cout<<"Intermediate consummer sending its block to the last rank."<<std::endl;
+        component2->process(result, decaf::DECAF_REDIST_SOURCE);
+
+        std::cout<<"End of the intermediate consummer. Forwarding to the final process."<<std::endl;
+    }
+    else
+    {
+        component2 = new RedistBlockMPI(1, size_world-2, size_world-1, 1, MPI_COMM_WORLD);
+        std::cout<<"Final consummer receiving all the partial blocks and merging them."<<std::endl;
+
+        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        component2->process(result, decaf::DECAF_REDIST_DEST);
+        component2->flush();    // We still need to flush if not doing a get/put
+
+        printArrayByBlock(result);
+
+        std::cout<<"End of the final consummer."<<std::endl;
     }
 
 
@@ -647,7 +667,7 @@ int main(int argc,
         testBlockSplitingArray3D();
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    if(size_world >= 2)
+    if(size_world >= 3)
     {
         testRedistBlock();
     }
