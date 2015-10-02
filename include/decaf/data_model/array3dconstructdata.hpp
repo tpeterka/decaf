@@ -114,14 +114,11 @@ public:
 
         for(unsigned int i = 0; i < range.size(); i++)
         {
-            // Sanity check
-            for(unsigned int d = 0 ; d < 3; d++)
+
+            if(!range.at(i).hasLocalExtends_)
             {
-                if(!range.at(i).hasLocalExtends_)
-                {
-                    std::cerr<<"ERROR : one block doesn't have a local box to split a 3d array."<<std::endl;
-                    return result;
-                }
+                std::cerr<<"ERROR : the block "<<i<<" doesn't have a local box to split a 3d array."<<std::endl;
+                return result;
             }
 
             if(!block_.hasLocalExtends_)
@@ -176,16 +173,63 @@ public:
 
                 Block<3> subBlock = block_;
 
-                subBlock.localExtends_ = {xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin};
-                subBlock.localBBox_ = { subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
+                subBlock.setLocalExtends({xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin});
+                subBlock.setLocalBBox({ subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
                                         subBlock.globalBBox_[1] + ymin * subBlock.gridspace_,
                                         subBlock.globalBBox_[2] + zmin * subBlock.gridspace_,
                                         (xmax - xmin) * subBlock.gridspace_,
                                         (ymax - ymin) * subBlock.gridspace_,
-                                        (zmax - zmin) * subBlock.gridspace_};
+                                        (zmax - zmin) * subBlock.gridspace_});
 
-                // TODO : manage the own as well
+                // Updating the own information as well
+                if(range.at(i).hasOwnExtends_)
+                {
+                    startSplitX = range.at(i).ownExtends_[0];
+                    endSplitX = range.at(i).ownExtends_[0] + range.at(i).ownExtends_[3];
+                    startSplitY = range.at(i).ownExtends_[1];
+                    endSplitY = range.at(i).ownExtends_[1] + range.at(i).ownExtends_[4];
+                    startSplitZ = range.at(i).ownExtends_[2];
+                    endSplitZ = range.at(i).ownExtends_[2] + range.at(i).ownExtends_[5];
 
+                    overlapX = hasOverlap(startX, endX, startSplitX, endSplitX, xmin, xmax);
+                    overlapY = hasOverlap(startY, endY, startSplitY, endSplitY, ymin, ymax);
+                    overlapZ = hasOverlap(startZ, endZ, startSplitZ, endSplitZ, zmin, zmax);
+
+                    if(overlapX && overlapY && overlapZ)
+                    {
+                        subBlock.ownExtends_ = {xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin};
+                        subBlock.ownBBox_ = { subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
+                                                subBlock.globalBBox_[1] + ymin * subBlock.gridspace_,
+                                                subBlock.globalBBox_[2] + zmin * subBlock.gridspace_,
+                                                (xmax - xmin) * subBlock.gridspace_,
+                                                (ymax - ymin) * subBlock.gridspace_,
+                                                (zmax - zmin) * subBlock.gridspace_};
+
+                        if(subBlock.localExtends_ == subBlock.ownExtends_)
+                            subBlock.ghostSize_ = 0;
+                        else
+                        {
+                            subBlock.ghostSize_ = std::max(subBlock.ownExtends_[0] - subBlock.localExtends_[0],
+                                     subBlock.ownExtends_[1] - subBlock.localExtends_[1]);
+                            subBlock.ghostSize_ = std::max(subBlock.ghostSize_,
+                                     subBlock.ownExtends_[2] - subBlock.localExtends_[2]);
+                            subBlock.ghostSize_ = std::max(subBlock.ghostSize_,
+                                     subBlock.localExtends_[0] - subBlock.ownExtends_[0]);
+                            subBlock.ghostSize_ = std::max(subBlock.ghostSize_,
+                                     subBlock.localExtends_[1] - subBlock.ownExtends_[1]);
+                            subBlock.ghostSize_ = std::max(subBlock.ghostSize_,
+                                     subBlock.localExtends_[2] - subBlock.ownExtends_[2]);
+                        }
+
+                    }
+                }
+                else
+                {
+                    subBlock.ghostSize_ = 0;
+                    subBlock.setOwnExtends(subBlock.localExtends_);
+                    subBlock.setOwnBBox(subBlock.localBBox_);
+
+                }
                 std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
                             subArray, subBlock, true);
 
@@ -200,6 +244,9 @@ public:
 
                 subBlock.localExtends_ = {0, 0, 0, 0, 0, 0};
                 subBlock.localBBox_ = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+                subBlock.ownExtends_ = subBlock.localExtends_;
+                subBlock.ownBBox_ = subBlock.localBBox_;
+                subBlock.ghostSize_ = 0;
 
                 std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
                             subArray, subBlock, true);

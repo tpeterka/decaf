@@ -283,6 +283,12 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
 
         if(base.hasGhostRegions())
             newBlock.buildGhostRegions(base.ghostSize_);
+        else
+        {
+            newBlock.ghostSize_ = 0;
+            newBlock.setOwnExtends(newBlock.localExtends_);
+            newBlock.setOwnBBox(newBlock.localBBox_);
+        }
 
         subblocks_.push_back(newBlock);
     }

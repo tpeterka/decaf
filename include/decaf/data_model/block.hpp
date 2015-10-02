@@ -22,6 +22,7 @@ public:
               hasLocalBBox_(false), hasLocalExtends_(false), ghostSize_(0),
               hasOwnBBox_(false), hasOwnExtends_(false){}
 
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
