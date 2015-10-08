@@ -8,10 +8,16 @@
 
 namespace decaf {
 
-void printExtends(std::vector<unsigned int>& extend)
+void printExtend(std::vector<unsigned int>& extend)
 {
     std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
              <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]<<","<<extend[2]+extend[5]<<"]"<<std::endl;
+}
+
+void printBox(std::vector<float>& box)
+{
+    std::cout<<"["<<box[0]<<","<<box[1]<<","<<box[2]<<"]"
+             <<"["<<box[0]+box[3]<<","<<box[1]+box[4]<<","<<box[2]+box[5]<<"]"<<std::endl;
 }
 
 template<int Dim>
@@ -237,9 +243,54 @@ public:
             else
                 localExtends_[i] += globalExtends_[i] - localExtends_[i-3] - localExtends_[i];
         }
+
+        for(unsigned int j = 0; j < 3; j++)
+            localBBox_[j] = globalBBox_[j] + (float)localExtends_[j] * gridspace_;
+        for(unsigned int j = 3; j < 6; j++)
+            localBBox_[j] = (float)(localExtends_[j]) * gridspace_;
+
     }
 
     bool hasGhostRegions(){ return ghostSize_ > 0; }
+
+    void printBoxes()
+    {
+        if(hasGlobalBBox_)
+        {
+            std::cout<<"Global bounding box : ";
+            printBox(globalBBox_);
+        }
+        if(hasLocalBBox_)
+        {
+            std::cout<<"Local bounding box : ";
+            printBox(localBBox_);
+        }
+        if(hasOwnBBox_)
+        {
+            std::cout<<"Own bounding box : ";
+            printBox(ownBBox_);
+        }
+    }
+
+    void printExtends()
+    {
+        if(hasGlobalExtends_)
+        {
+            std::cout<<"Global Extends : ";
+            printExtend(globalExtends_);
+        }
+        if(hasLocalExtends_)
+        {
+            std::cout<<"Local Extends : ";
+            printExtend(localExtends_);
+        }
+        if(hasOwnExtends_)
+        {
+            std::cout<<"Own Extends : ";
+            printExtend(ownExtends_);
+        }
+
+    }
 
 
     bool hasGridspace_;                     //Size of a cell

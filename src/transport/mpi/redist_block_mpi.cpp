@@ -277,12 +277,16 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
         newBlock.setGlobalExtends(base.globalExtends_);
         newBlock.setLocalExtends(subBlocks.at(i));
         std::vector<float> localBBox;
-        for(unsigned int j = 0; j < 6; j++)
-            localBBox.push_back((float)subBlocks.at(i)[j] * base.gridspace_);
+        for(unsigned int j = 0; j < 3; j++)
+            localBBox.push_back(newBlock.globalBBox_[j] + (float)subBlocks.at(i)[j] * base.gridspace_);
+        for(unsigned int j = 3; j < 6; j++)
+            localBBox.push_back((float)(subBlocks.at(i)[j]) * base.gridspace_);
         newBlock.setLocalBBox(localBBox);
 
         if(base.hasGhostRegions())
+        {
             newBlock.buildGhostRegions(base.ghostSize_);
+        }
         else
         {
             newBlock.ghostSize_ = 0;
@@ -399,6 +403,9 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         // Everything is done, now we can clean the data.
         // Data might be rewriten if producers and consummers are overlapping
         data->purgeData();
+
+        subblocks_.clear();
+
     }
 }
 

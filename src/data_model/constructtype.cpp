@@ -466,7 +466,6 @@ computeIndexesFromBlocks(
             {
                 result.at(b).push_back(i);
                 particlesInBlock = true;
-                break;
             }
         }
         if(!particlesInBlock)
@@ -588,8 +587,11 @@ ConstructData::split(const std::vector<Block<3> >& range)
                         return result;
                     }
 
+                    assert(zCurveKey_);
+
                     std::shared_ptr<ArrayConstructData<float> > posData =
                             std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
+                    assert(posData);
                     computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
                     computeRanges = true;
                 }
@@ -622,6 +624,8 @@ ConstructData::split(const std::vector<Block<3> >& range)
             }
         }
     }
+
+    assert(result.size() == range.size());
 
     return result;
 }

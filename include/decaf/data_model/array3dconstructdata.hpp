@@ -82,7 +82,7 @@ public:
 
     virtual boost::multi_array<T, 3>* getArray(){ return value_; }
 
-    virtual int getNbItems(){ return value_->size(); }
+    virtual int getNbItems(){ return value_->shape()[0] * value_->shape()[1] * value_->shape()[2]; }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,

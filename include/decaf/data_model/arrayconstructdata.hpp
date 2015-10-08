@@ -112,7 +112,7 @@ public:
             case DECAF_SPLIT_DEFAULT:
             {
                 //Sanity check
-                int totalRange = 0;
+                /*int totalRange = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
                     totalRange+= range.at(i).size();
                 if(totalRange != getNbItems()){
@@ -120,7 +120,7 @@ public:
                              <<") does not match the number of items of the object ("
                              <<getNbItems()<<")"<<std::endl;
                     return result;
-                }
+                }*/
 
                 //typename std::vector<T>::iterator it = value_.begin();
                 //unsigned int offset = 0;
@@ -153,6 +153,8 @@ public:
                 break;
             }
         }
+
+        assert(result.size() == range.size());
         return result;
     }
 
@@ -208,7 +210,7 @@ public:
             }
             case DECAF_MERGE_APPEND_VALUES:
             {
-                std::cout<<"Merging arrays of size "<<size_<<" and "<<other_->size_<<std::endl;
+                //std::cout<<"Merging arrays of size "<<size_<<" and "<<other_->size_<<std::endl;
                 T* newArray = new T[size_ + other_->size_];
                 memcpy(newArray, value_, size_ * sizeof(T));
                 memcpy(newArray + size_, other_->value_, other_->size_ * sizeof(T));

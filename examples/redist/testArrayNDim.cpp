@@ -161,9 +161,9 @@ void printArrayByBlock(std::shared_ptr<ConstructData> container)
         int z = block.localExtends_[5];
 
         std::cout<<"Extends of the localArray : ";
-        printExtends(block.localExtends_);
+        printExtend(block.localExtends_);
         std::cout<<"Extends of the ownArray : ";
-        printExtends(block.ownExtends_);
+        printExtend(block.ownExtends_);
         std::cout<<"Shape of the localArray : "<<array->shape()[0]<<","<<array->shape()[1]<<","<<array->shape()[2]<<std::endl;
 
         for(int i = 0; i < x; i++)
