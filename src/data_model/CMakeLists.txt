@@ -2,6 +2,8 @@ find_package(Boost COMPONENTS serialization REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
+message("Boost : ${Boost_LIBRARIES}")
+
 add_library             (decaf_datamodel SHARED     constructtype.cpp)
 target_link_libraries   (decaf_datamodel            ${libraries} ${Boost_LIBRARIES} decaf_transport)
 

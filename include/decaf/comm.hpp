@@ -32,7 +32,7 @@ namespace decaf
              int num_srcs = 0,
              int num_dests = 0,
              int start_dest = 0,
-             CommType comm_type = 0);
+             CommTypeDecaf comm_type = 0);
         ~Comm();
         CommHandle handle() { return handle_; }
         int size() { return size_; }
@@ -45,7 +45,7 @@ namespace decaf
         void get(Data* data,
                  TaskType task_type);
         void flush();
-        CommType type() { return type_; }
+        CommTypeDecaf type() { return type_; }
         int num_inputs();
         int start_input();
         int num_outputs();
@@ -63,7 +63,7 @@ namespace decaf
         int num_srcs;             // number of sources (producers) within the communicator
         int num_dests;            // numbers of destinations (consumers) within the communicator
         int start_dest;           // first destination rank within the communicator (0 to size_ - 1)
-        CommType type_;           // communicator type (prod, dflow, con, prod_dflow, or dflow_con)
+        CommTypeDecaf type_;           // communicator type (prod, dflow, con, prod_dflow, or dflow_con)
     };
 
 } // namespace

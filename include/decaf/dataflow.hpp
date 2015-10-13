@@ -66,7 +66,7 @@ namespace decaf
     void (*pipeliner_)(Dataflow*); // user-defined pipeliner code
     void (*checker_)(Dataflow*);   // user-defined resilience code
     int err_;                   // last error
-    CommType type_;             // whether this instance is producer, consumer, dataflow, or other
+    CommTypeDecaf type_;             // whether this instance is producer, consumer, dataflow, or other
   };
 
 } // namespace
