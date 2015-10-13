@@ -29,7 +29,7 @@ Comm::Comm(CommHandle world_comm,
            int num_srcs,
            int num_dests,
            int start_dest,
-           CommType comm_type):
+           CommTypeDecaf comm_type):
     min_rank(min_rank),
     num_srcs(num_srcs),
     num_dests(num_dests),

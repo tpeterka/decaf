@@ -229,7 +229,7 @@ void testSimpleArray()
         }
     }
 
-    std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
+    std::shared_ptr<Array3DConstructData<float> > data = std::make_shared<Array3DConstructData<float> >(
                 &array);
 
     boost::multi_array<float,3>* array2 = data->getArray();
@@ -438,7 +438,7 @@ void testBlockSplitingArray3D()
     blockArray.setLocalBBox(globalBBox);
     blockArray.updateExtends();
 
-    std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
+    std::shared_ptr<Array3DConstructData<float> > data = std::make_shared<Array3DConstructData<float> >(
                 &array, blockArray, false);
 
 
@@ -589,7 +589,7 @@ void testRedistBlock()
         blockArray.updateExtends();
         blockArray.ghostSize_ = 1;
 
-        std::shared_ptr<Array3DConstructData<float> > data = make_shared<Array3DConstructData<float> >(
+        std::shared_ptr<Array3DConstructData<float> > data = std::make_shared<Array3DConstructData<float> >(
                     &array, blockArray, false);
 
 
