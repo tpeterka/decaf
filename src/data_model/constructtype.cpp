@@ -1021,7 +1021,7 @@ ConstructData::updateMetaData()
                     <<"of the new field should be 1 or "<<nbItems_<<std::endl;
             return false;
         }
-        else // We still update the number of items
+        else if(getNbItemsField(it->second) > 0)// We still update the number of items
             nbItems_ = getNbItemsField(it->second);
 
         if(getFlag(it->second) == DECAF_ZCURVEKEY)

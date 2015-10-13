@@ -209,6 +209,9 @@ void splitExtends(std::vector<unsigned int>& extends, int nbSubblock, std::vecto
     if(extends[5] > extends[3+dim])
         dim = 2;
 
+    //Debug test
+    //dim = 0;
+
     assert(extends[dim+3] >= 2);
 
     //For this block, only the dimension in which we cut is changed
@@ -294,6 +297,8 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
             newBlock.setOwnBBox(newBlock.localBBox_);
         }
 
+        newBlock.printExtends();
+        newBlock.printBoxes();
         subblocks_.push_back(newBlock);
     }
 }
@@ -391,13 +396,13 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
-            if(splitChunks_.at(i)->getNbItems() > 0)
-            {
+            //if(splitChunks_.at(i)->getNbItems() > 0)
+            //{
                 // TODO : Check the rank for the destination.
                 // Not necessary to serialize if overlapping
                 if(!splitChunks_.at(i)->serialize())
                     std::cout<<"ERROR : unable to serialize one object"<<std::endl;
-            }
+            //}
         }
 
         // Everything is done, now we can clean the data.
