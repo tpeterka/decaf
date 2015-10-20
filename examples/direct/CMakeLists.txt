@@ -10,8 +10,10 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     add_executable              (linear_2nodes             linear_2nodes.cpp)
     add_executable              (linear_3nodes             linear_3nodes.cpp)
+    # add_executable              (cycle_4nodes              cycle_4nodes.cpp)
     add_library                 (mod_linear_2nodes  MODULE linear_2nodes.cpp)
     add_library                 (mod_linear_3nodes  MODULE linear_3nodes.cpp)
+    # add_library                 (mod_cycle_4nodes   MODULE cycle_4nodes.cpp)
     target_link_libraries       (linear_2nodes
       ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
     target_link_libraries       (linear_3nodes
