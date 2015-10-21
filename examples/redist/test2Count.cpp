@@ -142,8 +142,7 @@ void initPosition(std::vector<double>& pos, int nbParticule, const std::vector<d
 
 void runTestParallel2RedistOverlap(int startSource, int nbSource,
                                    int startReceptors1, int nbReceptors1,
-                                   int startReceptors2, int nbReceptors2,
-                                   std::string basename)
+                                   int startReceptors2, int nbReceptors2)
 {
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
@@ -187,10 +186,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         std::vector<double> pos;
         int nbParticule = 4000;
 
-        if(rank == startSource)
-            initPosition(pos, nbParticule, bbox);
-        else
-            nbParticule = 0;
+        initPosition(pos, nbParticule, bbox);
 
 
         //Sending to the first
@@ -209,6 +205,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         component1->process(container1, decaf::DECAF_REDIST_SOURCE);
         component1->flush();    // We still need to flush if not doing a get/put
 
+
         //Sending to the second
         std::shared_ptr<VectorConstructData<double> > array2 = std::make_shared<VectorConstructData<double> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data2  = std::make_shared<SimpleConstructData<int> >( nbParticule );
@@ -221,6 +218,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         object2->appendData(std::string("pos"), array2,
                              DECAF_ZCURVEKEY, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+
 
         component2->process(container2, decaf::DECAF_REDIST_SOURCE);
         component2->flush();    // We still need to flush if not doing a get/put
@@ -245,6 +243,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
 
     if(rank >= startReceptors2 && rank < startReceptors2 + nbReceptors2)
     {
+        std::cout<<"Reception from the second receptor..."<<std::endl;
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
         component2->process(result, decaf::DECAF_REDIST_DEST);
         component2->flush();    // We still need to flush if not doing a get/put
@@ -286,7 +285,7 @@ int main(int argc,
 
     srand(time(NULL) + rank * size_world + nameLen);
 
-    runTestParallel2RedistOverlap(0, 4, 4, 1, 5, 1, std::string("NoOverlap4-4_"));
+    runTestParallel2RedistOverlap(0, 4, 4, 1, 5, 1);
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
