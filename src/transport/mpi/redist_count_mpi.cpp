@@ -16,9 +16,15 @@
 
 #include "decaf/transport/mpi/redist_count_mpi.h"
 
+// create communicators for contiguous process assignment
+// ranks within source and destination must be contiguous, but
+// destination ranks need not be higher numbered than source ranks
 decaf::
-RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
-                               int rankDest, int nbDests, CommHandle world_comm) :
+RedistCountMPI::RedistCountMPI(int rankSource,
+                               int nbSources,
+                               int rankDest,
+                               int nbDests,
+                               CommHandle world_comm) :
     RedistComp(rankSource, nbSources, rankDest, nbDests),
     communicator_(MPI_COMM_NULL),
     commSources_(MPI_COMM_NULL),
@@ -37,7 +43,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     local_source_rank_ = 0;                     //Rank of first source in communicator_
     local_dest_rank_ = rankDest_ - rankSource_; //Rank of first destination in communucator_
 
-    //Generation of the group with all the sources and destination
+    // group covering both the sources and destinations
     range[0] = rankSource;
     range[1] = std::max(rankSource + nbSources - 1, rankDest + nbDests - 1);
     range[2] = 1;
@@ -47,8 +53,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
 
-    //Generation of the group with all the sources
-    //if(world_rank >= rankSource_ && world_rank < rankSource_ + nbSources_)
+    // group with all the sources
     if(isSource())
     {
         range[0] = rankSource;
@@ -61,8 +66,7 @@ RedistCountMPI::RedistCountMPI(int rankSource, int nbSources,
         MPI_Comm_rank(commSources_, &source_rank);
     }
 
-    //Generation of the group with all the Destinations
-    //if(world_rank >= rankDest_ && world_rank < rankDest_ + nbDests_)
+    // group with all the destinations
     if(isDest())
     {
         range[0] = rankDest;
