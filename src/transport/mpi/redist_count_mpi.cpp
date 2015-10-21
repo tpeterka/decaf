@@ -33,22 +33,26 @@ RedistCountMPI::RedistCountMPI(int rankSource,
     destBuffer_(NULL)
 {
     MPI_Group group, groupRedist, groupSource, groupDest;
-    int range[3];
     MPI_Comm_group(world_comm, &group);
     int world_rank, world_size;
 
     MPI_Comm_rank(world_comm, &world_rank);
     MPI_Comm_size(world_comm, &world_size);
 
-    local_source_rank_ = 0;                     //Rank of first source in communicator_
-    local_dest_rank_ = rankDest_ - rankSource_; //Rank of first destination in communucator_
+    local_source_rank_ = 0;                     // rank of first source in communicator_
+    local_dest_rank_   = nbSources;             // rank of first destination in communicator_
 
     // group covering both the sources and destinations
-    range[0] = rankSource;
-    range[1] = std::max(rankSource + nbSources - 1, rankDest + nbDests - 1);
-    range[2] = 1;
+    // destination ranks need not be higher than source ranks
+    int range_both[2][3];
+    range_both[0][0] = rankSource;
+    range_both[0][1] = rankSource + nbSources - 1;
+    range_both[0][2] = 1;
+    range_both[1][0] = rankDest;
+    range_both[1][1] = rankDest + nbDests - 1;
+    range_both[1][2] = 1;
 
-    MPI_Group_range_incl(group, 1, &range, &groupRedist);
+    MPI_Group_range_incl(group, 2, range_both, &groupRedist);
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
@@ -56,10 +60,11 @@ RedistCountMPI::RedistCountMPI(int rankSource,
     // group with all the sources
     if(isSource())
     {
-        range[0] = rankSource;
-        range[1] = rankSource + nbSources - 1;
-        range[2] = 1;
-        MPI_Group_range_incl(group, 1, &range, &groupSource);
+        int range_src[3];
+        range_src[0] = rankSource;
+        range_src[1] = rankSource + nbSources - 1;
+        range_src[2] = 1;
+        MPI_Group_range_incl(group, 1, &range_src, &groupSource);
         MPI_Comm_create_group(world_comm, groupSource, 0, &commSources_);
         MPI_Group_free(&groupSource);
         int source_rank;
@@ -69,10 +74,11 @@ RedistCountMPI::RedistCountMPI(int rankSource,
     // group with all the destinations
     if(isDest())
     {
-        range[0] = rankDest;
-        range[1] = rankDest + nbDests - 1;
-        range[2] = 1;
-        MPI_Group_range_incl(group, 1, &range, &groupDest);
+        int range_dest[3];
+        range_dest[0] = rankDest;
+        range_dest[1] = rankDest + nbDests - 1;
+        range_dest[2] = 1;
+        MPI_Group_range_incl(group, 1, &range_dest, &groupDest);
         MPI_Comm_create_group(world_comm, groupDest, 0, &commDests_);
         MPI_Group_free(&groupDest);
         int dest_rank;
@@ -84,7 +90,6 @@ RedistCountMPI::RedistCountMPI(int rankSource,
 
     destBuffer_ = new int[nbDests_];
     sum_ = new int[nbDests_];
-
 }
 
 decaf::
