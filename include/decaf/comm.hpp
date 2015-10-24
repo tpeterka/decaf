@@ -33,19 +33,20 @@ namespace decaf
              int num_dests = 0,
              int start_dest = 0,
              CommTypeDecaf comm_type = 0);
+        Comm(CommHandle world_comm);
         ~Comm();
-        CommHandle handle() { return handle_; }
-        int size() { return size_; }
-        int rank() { return rank_; }
-        int world_rank(int rank) { return(rank + min_rank); } // world rank of any rank in this comm
-        int world_rank() { return(rank_ + min_rank); } // my world rank
+        CommHandle handle()      { return handle_;           }
+        int size()               { return size_;             }
+        int rank()               { return rank_;             }
+        int world_rank(int rank) { return(rank + min_rank);  }// world rank of any rank in this comm
+        int world_rank()         { return(rank_ + min_rank); }// my world rank
+        CommTypeDecaf type()     { return type_;             }
         void put(Data* data,
                  int dest,
                  TaskType task_type);
         void get(Data* data,
                  TaskType task_type);
         void flush();
-        CommTypeDecaf type() { return type_; }
         int num_inputs();
         int start_input();
         int num_outputs();
@@ -63,7 +64,8 @@ namespace decaf
         int num_srcs;             // number of sources (producers) within the communicator
         int num_dests;            // numbers of destinations (consumers) within the communicator
         int start_dest;           // first destination rank within the communicator (0 to size_ - 1)
-        CommTypeDecaf type_;           // communicator type (prod, dflow, con, prod_dflow, or dflow_con)
+        CommTypeDecaf type_;      // communicator type (prod, dflow, con, prod_dflow, or dflow_con)
+        bool new_comm_handle_;    // a new low level communictor (handle) was created
     };
 
 } // namespace

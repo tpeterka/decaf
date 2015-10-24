@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// forms a communicator from contiguous world ranks
+// forms a deaf communicator from contiguous world ranks of an MPI communicator
 // only collective over the ranks in the range [min_rank, max_rank]
 decaf::
 Comm::Comm(CommHandle world_comm,
@@ -49,12 +49,30 @@ Comm::Comm(CommHandle world_comm,
 
     MPI_Comm_rank(handle_, &rank_);
     MPI_Comm_size(handle_, &size_);
+    new_comm_handle_ = true;
+}
+
+// wraps a decaf communicator around an entire MPI communicator
+decaf::
+Comm::Comm(CommHandle world_comm):
+    handle_(world_comm),
+    min_rank(0)
+{
+    num_srcs         = 0;
+    num_dests        = 0;
+    start_dest       = 0;
+    type_            = 0;
+    new_comm_handle_ = false;
+
+    MPI_Comm_rank(handle_, &rank_);
+    MPI_Comm_size(handle_, &size_);
 }
 
 decaf::
 Comm::~Comm()
 {
-    MPI_Comm_free(&handle_);
+    if (new_comm_handle_)
+        MPI_Comm_free(&handle_);
 }
 
 // puts data to a destination

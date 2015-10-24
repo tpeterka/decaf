@@ -46,12 +46,13 @@ namespace decaf
             world_comm_(world_comm),
             workflow_(workflow),
             prod_nsteps_(prod_nsteps),
-            con_nsteps_(con_nsteps)  {}
-        ~Decaf()                   {}
-        void err()                 { ::all_err(err_); }
+            con_nsteps_(con_nsteps) { world = new Comm(world_comm); }
+        ~Decaf()                    { delete world;                 }
+        void err()                  { ::all_err(err_);              }
         void run(Data* data,
                  void (*pipeliner)(Dataflow*),
                  void (*checker)(Dataflow*));
+        Comm* world;
 
     private:
         // builds a vector of dataflows for all links in the workflow
@@ -247,6 +248,9 @@ Decaf::run(decaf::Data* data,                     // data model
     else
         con_interval = -1;                          // don't consume
 
+
+#if 0    // --- original, static runtime ---
+
     // find the sources of the workflow
     vector<int> sources;
     for (size_t i = 0; i < workflow_.nodes.size(); i++)
@@ -293,7 +297,6 @@ Decaf::run(decaf::Data* data,                     // data model
                 // only producer or both producer and consumer
                 if (out_dataflows.size() && out_dataflows[0]->is_prod())
                 {
-                    cerr << "a" << endl;
                     node_func = (void(*)(void*,
                                          int,
                                          int,
@@ -315,7 +318,6 @@ Decaf::run(decaf::Data* data,                     // data model
                     int l = workflow_.nodes[u].out_links[j];
                     if (out_dataflows[j]->is_dflow())
                     {
-                        // cerr << "b" << endl;
                         dflow_func = (void(*)(void*,
                                               int,
                                               int,
@@ -333,7 +335,6 @@ Decaf::run(decaf::Data* data,                     // data model
                 // only consumer (not both producer and consumer)
                 if (in_dataflows.size() && !out_dataflows.size() && in_dataflows[0]->is_con())
                 {
-                    // cerr << "c" << endl;
                     node_func = (void(*)(void*,
                                          int,
                                          int,
@@ -353,6 +354,120 @@ Decaf::run(decaf::Data* data,                     // data model
             }
         }
     }
+
+#else    // --- new, dynamic runtime ---
+
+    // set the sources of the workflow, provided by user
+    // hard-coded for now
+    vector<int> sources;
+    sources.push_back(0);
+
+    // start all the nonsource nodes running
+    for (int i = 0; i < workflow_.nodes.size(); i++)
+    {
+        // check if this process belongs to the node
+        if (world->rank() < workflow_.nodes[i].start_proc ||
+            world->rank() >= workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs)
+            continue;
+
+        // skip sources
+        if (count(sources.begin(), sources.end(), i))              // TODO: better way to do this?
+            continue;
+
+        // fprintf(stderr, "1: world_rank %d start %d end %d\n",
+        //         world->rank(), workflow_.nodes[i].start_proc,
+        //         workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs - 1);
+
+        // fill dataflows for this node
+        vector<decaf::Dataflow*> out_dataflows;
+        vector<decaf::Dataflow*> in_dataflows;
+        for (size_t j = 0; j < workflow_.nodes[i].out_links.size(); j++)
+            out_dataflows.push_back(dataflows[workflow_.nodes[i].out_links[j]]);
+        for (size_t j = 0; j < workflow_.nodes[i].in_links.size(); j++)
+            in_dataflows.push_back(dataflows[workflow_.nodes[i].in_links[j]]);
+
+        node_func = (void(*)(void*,
+                             int,
+                             int,
+                             int,
+                             vector<Dataflow*>*,
+                             vector<Dataflow*>*))
+            load_node(mods, workflow_.nodes[i].path, workflow_.nodes[i].func);
+        node_func(workflow_.nodes[i].args,
+                  -1,                        // TODO: not used
+                  con_interval,
+                  prod_nsteps_,
+                  &in_dataflows,
+                  &out_dataflows);
+    }
+
+    // start all dataflows running
+    for (size_t i = 0; i < workflow_.links.size(); i++)
+    {
+        // check if this process belongs to the node
+        if (world->rank() < workflow_.links[i].start_proc ||
+            world->rank() >= workflow_.links[i].start_proc + workflow_.links[i].nprocs)
+            continue;
+
+        // fprintf(stderr, "2: world_rank %d start %d end %d\n",
+        //         world->rank(), workflow_.links[i].start_proc,
+        //         workflow_.links[i].start_proc + workflow_.links[i].nprocs - 1);
+
+        dflow_func = (void(*)(void*,
+                              int,
+                              int,
+                              int,
+                              Dataflow*))
+            load_dflow(mods, workflow_.links[i].path, workflow_.links[i].func);
+        dflow_func(workflow_.links[i].args,
+                   -1,                       // TODO: not used
+                   con_interval,
+                   prod_nsteps_,
+                   dataflows[i]);
+    }
+
+    // run the main loop for the sources
+    for (int t = 0; t < prod_nsteps_; t++)
+    {
+        for (size_t s = 0; s < sources.size(); s++)
+        {
+            int i = sources[s];
+
+            // check if this process belongs to the node
+            if (world->rank() < workflow_.nodes[i].start_proc ||
+                world->rank() >= workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs)
+                continue;
+
+            // fprintf(stderr, "3: world_rank %d start %d end %d\n",
+            //         world->rank(), workflow_.nodes[i].start_proc,
+            //         workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs - 1);
+
+            // fill dataflows for this node
+            vector<decaf::Dataflow*> out_dataflows;
+            vector<decaf::Dataflow*> in_dataflows;
+            for (size_t j = 0; j < workflow_.nodes[i].out_links.size(); j++)
+                out_dataflows.push_back(dataflows[workflow_.nodes[i].out_links[j]]);
+            for (size_t j = 0; j < workflow_.nodes[i].in_links.size(); j++)
+                in_dataflows.push_back(dataflows[workflow_.nodes[i].in_links[j]]);
+
+            node_func = (void(*)(void*,
+                                 int,
+                                 int,
+                                 int,
+                                 vector<Dataflow*>*,
+                                 vector<Dataflow*>*))
+                load_node(mods, workflow_.nodes[i].path, workflow_.nodes[i].func);
+            node_func(workflow_.nodes[i].args,
+                      t,
+                      con_interval,
+                      prod_nsteps_,
+                      &in_dataflows,
+                      &out_dataflows);
+        }
+    }
+
+
+#endif
 
     // cleanup
     unload_mods(mods);

@@ -137,7 +137,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     {
         case DECAF_ROUND_ROBIN_DECOMP:
         {
-            std::cout<<"Using Round for prod -> dflow"<<std::endl;
+            // fprintf(stderr, "Using Round for prod -> dflow\n");
             redist_prod_dflow_ = new RedistRoundMPI(sizes_.prod_start, sizes_.prod_size,
                                                sizes_.dflow_start, sizes_.dflow_size,
                                                world_comm);
@@ -145,7 +145,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         case DECAF_CONTIG_DECOMP:
         {
-            std::cout<<"Using Count for prod -> dflow"<<std::endl;
+            // fprintf(stderr, "Using Count for prod -> dflow\n");
             redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start, sizes_.prod_size,
                                                sizes_.dflow_start, sizes_.dflow_size,
                                                world_comm);
@@ -153,7 +153,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         case DECAF_ZCURVE_DECOMP:
         {
-            std::cout<<"Using ZCurve for prod -> dflow"<<std::endl;
+            // fprintf(stderr, "Using ZCurve for prod -> dflow\n");
             redist_prod_dflow_ = new RedistZCurveMPI(sizes_.prod_start, sizes_.prod_size,
                                                sizes_.dflow_start, sizes_.dflow_size,
                                                world_comm);
@@ -161,9 +161,8 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         default:
         {
-            std::cout<<"ERROR : policy "<<prod_dflow_redist<<
-                " unrecognized to select a redistribution component"
-                     <<" Using the RedistCountMPI instead>"<<std::endl;
+            fprintf(stderr, "ERROR: policy %d unrecognized to select a redistribution component. "
+                    "Using RedistCountMPI instead\n", prod_dflow_redist);
             redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start, sizes_.prod_size,
                                                     sizes_.dflow_start, sizes_.dflow_size,
                                                     world_comm);
@@ -174,7 +173,7 @@ Dataflow::Dataflow(CommHandle world_comm,
   }
   else
   {
-      std::cout<<"No Redistribution between producer and dflow needed."<<std::endl;
+      // fprintf(stderr, "No redistribution between producer and dflow needed.\n");
       redist_prod_dflow_ = NULL;
   }
   if (world_rank >= dflow_con_start && world_rank <= dflow_con_end)
@@ -183,7 +182,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     {
         case DECAF_ROUND_ROBIN_DECOMP:
         {
-            std::cout<<"Using Round for dflow -> cons"<<std::endl;
+            // fprintf(stderr, "Using Round for dflow -> cons\n");
             redist_dflow_con_ = new RedistRoundMPI(sizes_.dflow_start, sizes_.dflow_size,
                                                sizes_.con_start, sizes_.con_size,
                                                world_comm);
@@ -191,7 +190,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         case DECAF_CONTIG_DECOMP:
         {
-            std::cout<<"Using Count for dflow -> cons"<<std::endl;
+            // fprintf(stderr, "Using Count for dflow -> cons\n");
             redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start, sizes_.dflow_size,
                                                    sizes_.con_start, sizes_.con_size,
                                                world_comm);
@@ -199,7 +198,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         case DECAF_ZCURVE_DECOMP:
         {
-            std::cout<<"Using ZCurve for dflow -> cons"<<std::endl;
+            // fprintf(stderr, "Using ZCurve for dflow -> cons\n");
             redist_dflow_con_ = new RedistZCurveMPI(sizes_.dflow_start, sizes_.dflow_size,
                                                     sizes_.con_start, sizes_.con_size,
                                                world_comm);
@@ -207,9 +206,8 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         default:
         {
-            std::cout<<"ERROR : policy "<<prod_dflow_redist<<
-                " unrecognized to select a redistribution component."
-                     <<" Using the RedistCountMPI instead."<<std::endl;
+            fprintf(stderr, "ERROR: policy %d unrecognized to select a redistribution component. "
+                    "Using RedistCountMPI instead\n", prod_dflow_redist);
             redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start, sizes_.dflow_size,
                                                    sizes_.con_start, sizes_.con_size,
                                                    world_comm);
@@ -220,7 +218,7 @@ Dataflow::Dataflow(CommHandle world_comm,
   }
   else
   {
-      std::cout<<"No Redistribution between dflow and cons needed."<<std::endl;
+      // fprintf(stderr, "No redistribution between dflow and cons needed.\n");
       redist_dflow_con_ = NULL;
   }
 
@@ -247,15 +245,15 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
 {
     if(role == DECAF_PROD)
     {
-        if(redist_prod_dflow_ == NULL) std::cerr<<"Trying to access a null communicator."<<
-                                           std::endl;
+        if(redist_prod_dflow_ == NULL)
+            fprintf(stderr, "Trying to access a null communicator\n");
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
         redist_prod_dflow_->flush();
     }
     else if(role == DECAF_DFLOW)
     {
-        if(redist_dflow_con_ == NULL) std::cerr<<"Trying to access a null communicator."<<
-                                          std::endl;
+        if(redist_dflow_con_ == NULL)
+            fprintf(stderr, "Trying to access a null communicator\n");
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
     }
@@ -267,15 +265,15 @@ Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
 {
     if(role == DECAF_DFLOW)
     {
-        if(redist_prod_dflow_ == NULL) std::cerr<<"Trying to access a null communicator."<<
-                                           std::endl;
+        if(redist_prod_dflow_ == NULL)
+            fprintf(stderr, "Trying to access a null communicator\n");
         redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
     }
     else if(role == DECAF_CON)
     {
-        if(redist_dflow_con_ == NULL) std::cerr<<"Trying to access a null communicator."<<
-                                          std::endl;
+        if(redist_dflow_con_ == NULL)
+            fprintf(stderr, "Trying to access a null communicator\n");
         redist_dflow_con_->process(data, DECAF_REDIST_DEST);
         redist_dflow_con_->flush();
     }
