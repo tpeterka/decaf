@@ -81,7 +81,6 @@ RedistCountMPI::RedistCountMPI(int rankSource,
     }
 
     MPI_Group_free(&group);
-
     destBuffer_ = new int[nbDests_];
     sum_ = new int[nbDests_];
 }

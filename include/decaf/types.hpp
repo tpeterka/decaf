@@ -53,6 +53,7 @@ typedef unsigned char TaskType;
 #define DECAF_DFLOW     0x01
 #define DECAF_CON       0x02
 #define DECAF_BOTH      0x04
+#define DECAF_NONE      0x08
 
 // communicator types
 typedef unsigned char CommTypeDecaf;

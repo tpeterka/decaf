@@ -46,102 +46,97 @@ extern "C"
 {
     void node_a(void* args,                       // arguments to the callback
                 int t_current,                    // current time step
-                int t_interval,                   // consumer time interval
                 int t_nsteps,                     // total number of time steps
                 vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-                vector<Dataflow*>* out_dataflows) // all outbound dataflows
+                vector<Dataflow*>* out_dataflows, // all outbound dataflows
+                void* in_data)                    // input data
     {
         fprintf(stderr, "node_a\n");
 
-        if (t_current == 0)                  // first time step
+        if (t_current == 0)                        // first time step
         {
         }
 
-        if (!((t_current + 1) % t_interval)) // analyze this time step
-        {
-        }
-
-        if (t_current == t_nsteps - 1)          // last time step
+        if (t_current == t_nsteps - 1)              // last time step
             ;
     }
 
-    void node_b(void* args,                       // arguments to the callback
-               int t_current,                    // current time step
-               int t_interval,                   // consumer time interval
-               int t_nsteps,                     // total number of time steps
-               vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-               vector<Dataflow*>* out_dataflows) // all outbound dataflows
+    void node_b(void* args,                         // arguments to the callback
+                int t_current,                      // current time step
+                int t_nsteps,                       // total number of time steps
+                vector<Dataflow*>* out_dataflows,   // all outbound dataflows
+                shared_ptr<ConstructData>* in_data) // input data
     {
         fprintf(stderr, "node_b\n");
 
+        int t_interval = 1;                        // for example
         if (!((t_current + 1) % t_interval))
         {
         }
     }
 
-    void node_c(void* args,                       // arguments to the callback
-                int t_current,                    // current time step
-                int t_interval,                   // consumer time interval
-                int t_nsteps,                     // total number of time steps
-                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-                vector<Dataflow*>* out_dataflows) // all outbound dataflows
+    void node_c(void* args,                         // arguments to the callback
+                int t_current,                      // current time step
+                int t_nsteps,                       // total number of time steps
+                vector<Dataflow*>* out_dataflows,   // all outbound dataflows
+                shared_ptr<ConstructData>* in_data) // input data
     {
         fprintf(stderr, "node_c\n");
 
+        int t_interval = 1;                         // for example
         if (!((t_current + 1) % t_interval))
         {
         }
     }
 
-    void node_d(void* args,                       // arguments to the callback
-                int t_current,                    // current time step
-                int t_interval,                   // consumer time interval
-                int t_nsteps,                     // total number of time steps
-                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-                vector<Dataflow*>* out_dataflows) // all outbound dataflows
+    void node_d(void* args,                         // arguments to the callback
+                int t_current,                      // current time step
+                int t_nsteps,                       // total number of time steps
+                vector<Dataflow*>* out_dataflows,   // all outbound dataflows
+                shared_ptr<ConstructData>* in_data) // input data
     {
         fprintf(stderr, "node_d\n");
 
+        int t_interval = 1;                         // for example
         if (!((t_current + 1) % t_interval))
         {
         }
     }
 
     // dataflow just needs to flush on every time step
-    void dflow(void* args,                   // arguments to the callback
-               int t_current,                // current time step
-               int t_interval,               // consumer time interval
-               int t_nsteps,                 // total number of time steps
-               Dataflow* dataflow)           // dataflow
+    void dflow(void* args,                          // arguments to the callback
+               int t_current,                       // current time step
+               int t_nsteps,                        // total number of time steps
+               Dataflow* dataflow,                  // dataflow
+               void* in_data)                       // input data
     {
         fprintf(stderr, "dflow\n");
 
     }
 } // extern "C"
 
-void run(Workflow& workflow,                 // workflow
-         int prod_nsteps,                    // number of producer time steps
-         int con_nsteps)                     // number of consumer time steps
+void run(Workflow&   workflow,                      // workflow
+         int         prod_nsteps,                   // number of producer time steps
+         vector<int> sources)                       // source workflow nodes
 {
     // callback args
     for (size_t i = 0; i < workflow.nodes.size(); i++)
     {
         if (workflow.nodes[i].func == "node_a")
-            ;                                // TODO: set up args
+            ;                                       // TODO: set up args
         if (workflow.nodes[i].func == "node_b")
-            ;                                // TODO: set up args
+            ;                                       // TODO: set up args
         if (workflow.nodes[i].func == "node_c")
-            ;                                // TODO: set up args
+            ;                                       // TODO: set up args
         if (workflow.nodes[i].func == "node_d")
-            ;                                // TODO: set up args
+            ;                                       // TODO: set up args
     }
 
     MPI_Init(NULL, NULL);
 
     // create and run decaf
-    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps, con_nsteps);
-    Data data(MPI_DOUBLE);
-    decaf->run(&data, &pipeliner, &checker);
+    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps);
+    decaf->run(&pipeliner, &checker, sources);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -157,20 +152,19 @@ int main(int argc,
 {
     Workflow workflow;
     int prod_nsteps = 1;
-    int con_nsteps = 1;
     char * prefix = getenv("DECAF_PREFIX");
-    if(prefix == NULL)
+    if (prefix == NULL)
     {
-        cout<<"ERROR : environment variable DECAF_PREFIX not defined."
-                <<" Please export DECAF_PREFIX to point to the root of you decaf install directory."<<endl;
+        fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
+                "DECAF_PREFIX to point to the root of your decaf install directory.\n");
         exit(1);
     }
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/lammps/libmod_cycle_4nodes.so"));
+    path.append(string("/examples/direct/libmod_cycle_4nodes.so"));
 
     // fill workflow nodes
     WorkflowNode node;
-    node.in_links.push_back(1);              // node_b
+    node.in_links.push_back(1);                     // node_b
     node.start_proc = 5;
     node.nprocs = 1;
     node.func = "node_b";
@@ -179,7 +173,7 @@ int main(int argc,
 
     node.out_links.clear();
     node.in_links.clear();
-    node.in_links.push_back(0);              // node_d
+    node.in_links.push_back(0);                     // node_d
     node.start_proc = 9;
     node.nprocs = 1;
     node.func = "node_d";
@@ -188,7 +182,7 @@ int main(int argc,
 
     node.out_links.clear();
     node.in_links.clear();
-    node.out_links.push_back(0);             // node_c
+    node.out_links.push_back(0);                    // node_c
     node.in_links.push_back(2);
     node.start_proc = 7;
     node.nprocs = 1;
@@ -198,7 +192,7 @@ int main(int argc,
 
     node.out_links.clear();
     node.in_links.clear();
-    node.out_links.push_back(1);             // node_a
+    node.out_links.push_back(1);                    // node_a
     node.out_links.push_back(2);
     node.start_proc = 0;
     node.nprocs = 4;
@@ -208,7 +202,7 @@ int main(int argc,
 
     // fill workflow links
     WorkflowLink link;
-    link.prod = 2;                           // node_c -> node_d
+    link.prod = 2;                                  // node_c -> node_d
     link.con = 1;
     link.start_proc = 8;
     link.nprocs = 1;
@@ -218,7 +212,7 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
-    link.prod = 3;                           // node_a -> node_b
+    link.prod = 3;                                  // node_a -> node_b
     link.con = 0;
     link.start_proc = 4;
     link.nprocs = 1;
@@ -228,7 +222,7 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
-    link.prod = 3;                           // node_a -> node_c
+    link.prod = 3;                                  // node_a -> node_c
     link.con = 2;
     link.start_proc = 6;
     link.nprocs = 1;
@@ -238,7 +232,7 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
-    link.prod = 1;                           // node_d -> node_c
+    link.prod = 1;                                  // node_d -> node_c
     link.con = 2;
     link.start_proc = 10;
     link.nprocs = 1;
@@ -248,8 +242,8 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
-    link.prod = 3;                           // node_b -> node_a
-    link.con = 0;
+    link.prod = 0;                                  // node_b -> node_a
+    link.con = 3;
     link.start_proc = 11;
     link.nprocs = 1;
     link.func = "dflow";
@@ -258,8 +252,12 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
+    // identify sources
+    vector<int> sources;
+    sources.push_back(3);                           // node_a
+
     // run decaf
-    run(workflow, prod_nsteps, con_nsteps);
+    run(workflow, prod_nsteps, sources);
 
     return 0;
 }

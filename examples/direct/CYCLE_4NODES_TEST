@@ -30,7 +30,7 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executable
-exe=./linear_3nodes
+exe=./cycle_4nodes
 
 #------
 #

@@ -38,12 +38,12 @@ extern "C"
 {
     // producer
     // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void prod(void* args,                       // arguments to the callback
-              int t_current,                    // current time step
-              int t_interval,                   // consumer time interval
-              int t_nsteps,                     // total number of time steps
-              vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-              vector<Dataflow*>* out_dataflows) // all outbound dataflows
+    void prod(void* args,                              // arguments to the callback
+              int t_current,                           // current time step
+              int t_interval,                          // consumer time interval
+              int t_nsteps,                            // total number of time steps
+              shared_ptr<SimpleConstructData> in_data; // inbound data
+              vector<Dataflow*>* out_dataflows)        // all outbound dataflows
     {
         fprintf(stderr, "prod\n");
 
@@ -67,6 +67,7 @@ extern "C"
         }
 
         // final time step, send a terminate flag (user-defined)
+        // TODO: decaf should provide a termination signal
         if (t_current == t_nsteps - 1)
         {
             *pd = -1;                          // assume -1 is not a valid value
@@ -83,67 +84,58 @@ extern "C"
     }
 
     // consumer
-    // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void con(void* args,                       // arguments to the callback
-             int t_current,                    // current time step
-             int t_interval,                   // consumer time interval
-             int t_nsteps,                     // total number of time steps
-             vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-             vector<Dataflow*>* out_dataflows) // all outbound dataflows
+    void con(void* args,                              // arguments to the callback
+             int t_current,                           // current time step
+             int t_interval,                          // consumer time interval
+             int t_nsteps,                            // total number of time steps
+             shared_ptr<SimpleConstructData> in_data; // inbound data
+             vector<Dataflow*>* out_dataflows)        // all outbound dataflows
     {
         fprintf(stderr, "con\n");
-        while (1)
+        // shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        // (*in_dataflows)[0]->get(container, DECAF_CON);
+        shared_ptr<SimpleConstructData<int> > sum =
+            dynamic_pointer_cast<SimpleConstructData<int> >
+            (in_data->getData(string("t_current")));
+        if (sum->getData() > 0)
+            fprintf(stderr, "- consuming time step %d, sum = %d\n", t_current, sum->getData());
+        else        // check for termination
+        // TODO: decaf should provide a termination signal
         {
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            (*in_dataflows)[0]->get(container, DECAF_CON);
-            fprintf(stderr, "con get done\n");
-            shared_ptr<SimpleConstructData<int> > sum =
-                dynamic_pointer_cast<SimpleConstructData<int> >
-                (container->getData(string("t_current")));
-            if (sum->getData() > 0)
-                fprintf(stderr, "- consuming time step %d, sum = %d\n", t_current, sum->getData());
-            else
-            {
-                fprintf(stderr, "con time step %d ending, sum = %d\n", t_current, sum->getData());
-                break;
-            }
+            fprintf(stderr, "con time step %d ending, sum = %d\n", t_current, sum->getData());
+            break;
         }
+
         fprintf(stderr, "con all done\n");
     }
 
     // dataflow just needs to flush on every time step
-    void dflow(void* args,                   // arguments to the callback
-               int t_current,                // current time step
-               int t_interval,               // consumer time interval
-               int t_nsteps,                 // total number of time steps
-               Dataflow* dataflow)           // dataflow
+    void dflow(void* args,                              // arguments to the callback
+               shared_ptr<SimpleConstructData> in_data; // inbound data
+               Dataflow* dataflow)                      // outbound dataflow
     {
         fprintf(stderr, "dflow\n");
 
-        while(1)
+        // getting the data from the producer
+        // shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        // dataflow->get(container, DECAF_DFLOW);
+        shared_ptr<SimpleConstructData<int> > sum =
+            dynamic_pointer_cast<SimpleConstructData<int> >
+            (in_data->getData(string("t_current")));
+
+        // fprintf(stderr, "- dataflowing time step %d, sum = %d\n", t_current, sum->getData());
+
+        // forwarding the data to the consumers
+        shared_ptr<ConstructData> out_data = make_shared<ConstructData>();
+        dataflow->put(out_data, DECAF_DFLOW);
+        fprintf(stderr, "dflow put done\n");
+
+        // check for termination
+        // TODO: decaf should provide a termination signal
+        if (sum->getData() < 0)
         {
-            // getting the data from the producer
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            dataflow->get(container, DECAF_DFLOW);
-            fprintf(stderr, "dflow get done\n");
-            shared_ptr<SimpleConstructData<int> > sum =
-                dynamic_pointer_cast<SimpleConstructData<int> >
-                (container->getData(string("t_current")));
-
-            // fprintf(stderr, "- dataflowing time step %d, sum = %d\n", t_current, sum->getData());
-
-            // forwarding the data to the consumers
-            dataflow->put(container, DECAF_DFLOW);
-            fprintf(stderr, "dflow put done\n");
-
-            // check for termination
-            if (sum->getData() < 0)
-            {
-                // fprintf(stderr, "dflow time step %d ending, sum = %d\n", t_current, sum->getData());
-                break;
-            }
+            break;
         }
-        // fprintf(stderr, "dflow all done\n");
     }
 } // extern "C"
 
