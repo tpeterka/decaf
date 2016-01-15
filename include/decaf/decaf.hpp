@@ -31,15 +31,25 @@
 
 namespace decaf
 {
+    // node or link in routing table
+    struct RoutingNode
+    {
+        int idx;                             // node index in workflow
+        vector<int> in_links;                // links with ready input data items
+        bool done;                           // node is all done
+    };
+    struct RoutingLink
+    {
+        int idx;                             // link index in workflow
+        int nin;                             // number of ready input data items
+        bool done;                           // link is all done
+    };
+
     class Decaf
     {
     public:
         Decaf(CommHandle world_comm,
-              Workflow& workflow,
-              int prod_nsteps) :
-            world_comm_(world_comm),
-            workflow_(workflow),
-            prod_nsteps_(prod_nsteps) { world = new Comm(world_comm); }
+              Workflow& workflow);
         ~Decaf()                      { delete world;                 }
         void err()                    { ::all_err(err_);              }
         void run(void (*pipeliner)(Dataflow*),
@@ -73,6 +83,9 @@ namespace decaf
                                                      decaf_sizes,
                                                      pipeliner,
                                                      checker,
+                                                     prod,
+                                                     dflow,
+                                                     con,
                                                      prod_dflow_redist,
                                                      dflow_con_redist));
                     dataflows[i]->err();
@@ -90,10 +103,8 @@ namespace decaf
                 pair<string, void*> p;                        // (module name, module handle)
                 pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
                 void(*func)(void*,                            // ptr to callback func
-                            int,
-                            int,
                             vector<Dataflow*>*,
-                            shared_ptr<ConstructData>);
+                            vector< shared_ptr<ConstructData> >*);
 
                 if ((it = mods.find(mod_name)) == mods.end())
                 {
@@ -119,10 +130,8 @@ namespace decaf
                 pair<string, void*> p;                        // (module name, module handle)
                 pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
                 void(*func)(void*,                            // ptr to callback func
-                            int,
-                            int,
                             Dataflow*,
-                            shared_ptr<ConstructData>);
+                            shared_ptr<ConstructData>*);
 
                 if ((it = mods.find(mod_name)) == mods.end())
                 {
@@ -146,38 +155,230 @@ namespace decaf
                     dlclose(it->second);
             }
 
-        // routes input data to a callback function
-        void
-        router(vector< shared_ptr<ConstructData> > in_data, // input messages
-               vector<int> node_link_ids,                   // (output) workflow node or link ids
-               vector<int> types)                           // (output) callback types
-                                                            // DECAF_PROD, DECAF_DFLOW, DECAF_CON,
-                                                            // DECAF_BOTH; DECAF_NONE if no match
+        // TODO: make the following 5 functions members of ConstructData?
+
+        // returns the source type (prod, dflow, con) of a message
+        unsigned char
+        src_type(shared_ptr<ConstructData> in_data)   // input message
             {
-                // TODO: tag messages w/ destination id
+                shared_ptr<SimpleConstructData<unsigned char> > type =
+                    dynamic_pointer_cast<SimpleConstructData<unsigned char> >
+                    (in_data->getData(string("src_type")));
+                return type->getData();
+            }
 
-                // TODO: get workflow as input and parse it to create router table
-                // 1st time only in decaf constructor
+        // returns the workflow link id of a message
+        // id is the index in the workflow data structure of the link
+        int
+        link_id(shared_ptr<ConstructData> in_data)   // input message
+            {
+                shared_ptr<SimpleConstructData<int> > link =
+                    dynamic_pointer_cast<SimpleConstructData<int> >
+                    (in_data->getData(string("link_id")));
+                return link->getData();
+            }
 
-                // TODO: hard coded some result for now
-                // need a lookup table of message_types -> funcs
-                node_link_ids.push_back(0);                // node_b in this example
-                types.push_back(DECAF_CON);
+        // returns the workflow destination id of a message
+        // destination could be a node or link depending on the source type
+        // id is the index in the workflow data structure of the destination entity
+        int
+        dest_id(shared_ptr<ConstructData> in_data)   // input message
+            {
+                shared_ptr<SimpleConstructData<int> > dest =
+                    dynamic_pointer_cast<SimpleConstructData<int> >
+                    (in_data->getData(string("dest_id")));
+                return dest->getData();
+            }
 
-                // TODO: check whether this process participates in this function?
-                // should never fail, a message sent to this process should be for one of its funcs
+        // tests whether a message is a quit command
+        bool
+        test_quit(shared_ptr<ConstructData> in_data)   // input message
+            {
+                // TODO: what is the right way to set and test a quit message
+                shared_ptr<SimpleConstructData<int> > quit =
+                    dynamic_pointer_cast<SimpleConstructData<int> >
+                    (in_data->getData(string("decaf_quit")));
+                // TODO: what happens is "decaf_quit" is not present
+                // if not, return false
+                // else
+                return quit->getData();
+            }
 
-                // TODO: return DECAF_NONE if no subscribers
+        // sets a quit message into a container
+        // caller still needs to send the message
+        void
+        set_quit(shared_ptr<ConstructData> out_data)   // output message
+            {
+                // TODO: what is the right way to set and test a quit message
+                shared_ptr<SimpleConstructData<int> > data  =
+                    make_shared<SimpleConstructData<int> >(1);
+                out_data->appendData(string("decaf_quit"), data,
+                                      DECAF_NOFLAG, DECAF_PRIVATE,
+                                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+            }
+
+        // routes input data to a callback function
+        // returns 0 on success, -1 if all my nodes and links are done; ie, shutdown
+        int
+        router(list< shared_ptr<ConstructData> >& in_data,   // input messages
+               vector<int>& node_link_ids,                   // (output) workflow node or link ids
+               vector<int>& types)                           // (output) callback types
+                                                             // DECAF_PROD, DECAF_DFLOW, DECAF_CON,
+                                                             // DECAF_BOTH; DECAF_NONE if no match
+            {
+                for (list< shared_ptr<ConstructData> >::iterator it = in_data.begin();
+                     it != in_data.end(); it++)
+                {
+                    // is destination a workflow node or a link
+                    int dest_node = -1;
+                    int dest_link = -1;
+
+                    if (src_type(*it) & (DECAF_PROD | DECAF_CON))
+                        dest_node = dest_id(*it);
+                    if (src_type(*it) & DECAF_DFLOW)
+                        dest_link = dest_id(*it);
+
+                    if (dest_node >= 0)            // destination is a node
+                    {
+                        if (test_quit(*it))
+                            my_nodes_[dest_node].done = true;
+
+                        else
+                        {
+                            // record sources of input items for each producer/consumer
+                            for (size_t j = 0; j < my_nodes_.size(); j++)
+                            {
+                                if (dest_id(*it) == my_nodes_[j].idx)
+                                    my_nodes_[j].in_links.push_back(link_id(*it));
+                            }
+                        }                          // else (ie, not done)
+                    }                              // node
+
+                    else                           // destination is a link
+                    {
+                        if (test_quit(*it))
+                            my_links_[dest_link].done = true;
+
+                        else
+                        {
+                            // count number of input items for each dataflow
+                            for (size_t j = 0; j < my_links_.size(); j++)
+                            {
+                                if (dest_id(*it) == my_links_[j].idx)
+                                    my_links_[j].nin++;
+                            }
+                        }                          // else (ie, not done)
+                    }                              // link
+                }                                  // in_data iterator
+
+                // check for ready nodes and links having all their inputs
+                ready_nodes_links(node_link_ids, types);
+                return(all_done());
+            }                                      // router
+
+        // Check for producers/consumers with all their inputs
+        // check for dataflows with inputs (each dataflow has only one)
+        // and fill node_link_ids and types with the ready nodes and links
+        void
+        ready_nodes_links(vector<int>& node_link_ids,        // (output) workflow node or link ids
+                          vector<int>& types)                // (output) callback types
+                                                             // DECAF_BOTH or DECAF_DFLOW
+            {
+                for (size_t i = 0; i < my_nodes_.size(); i++)
+                {
+                    if (!my_nodes_[i].done)
+                    {
+                        // sort my_node and workflow in_links for this node
+                        set<int> my_links_(my_nodes_[i].in_links.begin(),
+                                          my_nodes_[i].in_links.end());
+                        set<int> wf_links(workflow_.nodes[my_nodes_[i].idx].in_links.begin(),
+                                          workflow_.nodes[my_nodes_[i].idx].in_links.end());
+                        // if my_node and workflow in_links equal, all input items are ready
+                        if (my_links_ == wf_links)
+                        {
+                            node_link_ids.push_back(my_nodes_[i].idx);
+                            types.push_back(DECAF_PROD | DECAF_CON);
+                            my_nodes_[i].in_links.clear();
+                        }
+                    }
+                }
+                for (size_t i = 0; i < my_links_.size(); i++)
+                {
+                    if (!my_links_[i].done && my_links_[i].nin >= 1)
+                    {
+                        node_link_ids.push_back(my_links_[i].idx);
+                        types.push_back(DECAF_DFLOW);
+                        my_links_[i].nin--;
+                    }
+                }
+            }
+
+        // check if all done
+        // 0: still active entries
+        // -1: all done
+        int all_done()
+            {
+                for (size_t i = 0; i < my_nodes_.size(); i++)
+                {
+                    if (!my_nodes_[i].done)
+                        return 0;
+                }
+                for (size_t i = 0; i < my_links_.size(); i++)
+                {
+                    if (!my_links_[i].done)
+                        return 0;
+                }
+                return -1;
             }
 
         // data members
-        CommHandle world_comm_;     // handle to original world communicator
-        Workflow workflow_;         // workflow
-        int prod_nsteps_;           // total number of producer time steps
-        int err_;                   // last error
-
+        CommHandle world_comm_;                    // handle to original world communicator
+        Workflow workflow_;                        // workflow
+        int err_;                                  // last error
+        vector<RoutingNode> my_nodes_;             // indices of workflow nodes in my process
+        vector<RoutingLink> my_links_;             // indices of workflow links in my process
     };
+
 } // namespace
+
+// constructor
+decaf::
+Decaf::Decaf(CommHandle world_comm,
+             Workflow& workflow) :
+    world_comm_(world_comm),
+    workflow_(workflow)
+{
+    world = new Comm(world_comm);
+
+    // routing table is simply vectors of workflow nodes and links that belong to my process
+
+    // add my nodes
+    for (size_t i = 0; i < workflow_.nodes.size(); i++)
+    {
+        if (workflow_.my_node(world->rank(), i))
+        {
+            // TODO: C++11 initialization of POD?
+            RoutingNode nl;
+            nl.idx  = i;
+            nl.done = false;
+            my_nodes_.push_back(nl);
+        }
+    }
+
+    // add my links
+    for (size_t i = 0; i < workflow_.links.size(); i++)
+    {
+        if (workflow_.my_link(world->rank(), i))
+        {
+            // TODO: C++11 initialization of POD?
+            RoutingLink nl;
+            nl.idx  = i;
+            nl.nin  = 0;
+            nl.done = false;
+            my_links_.push_back(nl);
+        }
+    }
+}
 
 // runs the workflow
 void
@@ -186,6 +387,9 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
            void (*checker)(decaf::Dataflow*),      // custom resilience code
            vector<int>& sources)                   // workflow source nodes
 {
+    // incoming messages
+    list< shared_ptr<ConstructData> > containers;
+
     // collect dataflows
     vector<decaf::Dataflow*> dataflows;            // dataflows for all links in the workflow
     build_dataflows(dataflows, pipeliner, checker);
@@ -193,141 +397,149 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
     vector<decaf::Dataflow*> in_dataflows;         // all inbound dataflows for this process
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (world->rank() >= workflow_.nodes[i].start_proc &&
-            world->rank() <  workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs)
+        if (workflow_.my_link(world->rank(), i))
             in_dataflows.push_back(dataflows[i]);
     }
 
     // dynamically loaded modules (plugins)
     void(*node_func)(void*,                       // ptr to producer or consumer callback func
-                     int,                         // in a module
-                     int,
                      vector<Dataflow*>*,
-                     shared_ptr<ConstructData>);
+                     vector< shared_ptr<ConstructData> >*);
     void(*dflow_func)(void*,                      // ptr to dataflow callback func in a module
-                      int,
-                      int,
                       Dataflow*,
-                      shared_ptr<ConstructData>);
+                      shared_ptr<ConstructData>*);
     map<string, void*> mods;                      // modules dynamically loaded so far
 
-    // main time step loop
-    // TODO: This won't work; user must add time step to data model
-    for (int t = 0; t < prod_nsteps_; t++)
+    // sources, ie, tasks that don't need to wait for input in order to start
+    for (size_t s = 0; s < sources.size(); s++)
     {
-        // sources, ie, tasks that don't need to wait for input on first step
-        // and that run a fixed number of time steps
-        for (size_t s = 0; s < sources.size(); s++)
+        int i = sources[s];
+
+        // check if this process belongs to the node
+        if (!workflow_.my_node(world->rank(), s))
+            continue;
+
+        // fprintf(stderr, "3: world_rank %d start %d end %d\n",
+        //         world->rank(), workflow_.nodes[i].start_proc,
+        //         workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs - 1);
+
+        // fill out_dataflows for this node
+        for (size_t j = 0; j < workflow_.nodes[i].out_links.size(); j++)
+            out_dataflows.push_back(dataflows[workflow_.nodes[i].out_links[j]]);
+
+        node_func = (void(*)(void*,
+                             vector<Dataflow*>*,
+                             vector< shared_ptr<ConstructData> >*))
+            load_node(mods, workflow_.nodes[i].path, workflow_.nodes[i].func);
+
+        node_func(workflow_.nodes[i].args,
+                  &out_dataflows,
+                  NULL);
+    }
+
+    // remaining (nonsource) tasks and dataflows are driven by receiving messages
+    while (1)
+    {
+        // get incoming data
+        for (size_t i = 0; i < in_dataflows.size(); i++)
         {
-            int i = sources[s];
-
-            // check if this process belongs to the node
-            if (world->rank() < workflow_.nodes[i].start_proc ||
-                world->rank() >= workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs)
-                continue;
-
-            // fprintf(stderr, "3: world_rank %d start %d end %d\n",
-            //         world->rank(), workflow_.nodes[i].start_proc,
-            //         workflow_.nodes[i].start_proc + workflow_.nodes[i].nprocs - 1);
-
-            // fill out_dataflows for this node
-            for (size_t j = 0; j < workflow_.nodes[i].out_links.size(); j++)
-                out_dataflows.push_back(dataflows[workflow_.nodes[i].out_links[j]]);
-
-            node_func = (void(*)(void*,
-                                 int,
-                                 int,
-                                 vector<Dataflow*>*,
-                                 shared_ptr<ConstructData>))
-                load_node(mods, workflow_.nodes[i].path, workflow_.nodes[i].func);
-
-            node_func(workflow_.nodes[i].args,
-                      t,
-                      prod_nsteps_,
-                      &out_dataflows,
-                      NULL);
+            shared_ptr<ConstructData> container;
+            // TODO: need a nonblocking get or probe that returns boolean indicating
+            // whether a message was received
+            if (in_dataflows[i]->get(container, DECAF_PROD | DECAF_CON | DECAF_DFLOW))
+                containers.push_back(container);
         }
 
-        // remaining (nonsource) tasks and dataflows are driven by receiving messages
-        while (1)
+        // route the message: decide what dataflows and tasks should accept it
+        vector<int> nls;                                // index of node or link in workflow
+        vector<int> types;                              // type of node or link
+        if (router(containers, nls, types) == -1)
+            break;
+
+        // check for termination and propagate the quit message
+        for (list< shared_ptr<ConstructData> >::iterator it = containers.begin();
+             it != containers.end(); it++)
         {
-            // get incoming data
-            // TODO: need a nonblocking get or probe
-            vector< shared_ptr<ConstructData> > containers(in_dataflows.size());
-            for (size_t i = 0; i < containers.size(); i++)
-                containers[i] = make_shared<ConstructData>();
-            for (size_t i = 0; i < in_dataflows.size(); i++)
+            // add quit flag to containers object, initialize to false
+            if (test_quit(*it))
             {
-                // TODO DECAF_CON? (need to also get DFLOW)
-                in_dataflows[i]->get(containers[i], DECAF_CON);
-            }
-
-            // decide what dataflows and tasks should accept it
-            // lookup table of subscribers limited to this process
-            // (further filtering on rank unneeded)
-            vector<int> nls;                                // index of node or link in workflow
-            vector<int> types;                              // type of node or link
-            router(containers, nls, types);
-
-            // check for termination
-            // if so, remove the task or dataflow from the list
-            // TODO
-
-            // TODO how to propagate termination through the task or dataflow?
-            // need to call the task or dataflow with a special flag, or should decaf send the
-            // terminate further down?
-
-            for (size_t i = 0; i < nls.size(); i++)
-            {
-                // a workflow node (producer, consumer, or both)
-                if (types[i] == DECAF_CON || types[i] == DECAF_PROD || types[i] == DECAF_BOTH)
+                // send quit to destinations
+                shared_ptr<ConstructData> container = make_shared<ConstructData>();
+                set_quit(container);
+                for (size_t i = 0; i < nls.size(); i++)
                 {
-                    // fill out_dataflows for this node
-                    out_dataflows.clear();
                     for (size_t j = 0; j < workflow_.nodes[nls[i]].out_links.size(); j++)
-                        out_dataflows.push_back(dataflows[workflow_.nodes[nls[i]].out_links[j]]);
-
-                    node_func = (void(*)(void*,             // load the function
-                                         int,
-                                         int,
-                                         vector<Dataflow*>*,
-                                         shared_ptr<ConstructData>))
-                        load_node(mods,
-                                  workflow_.nodes[nls[i]].path,
-                                  workflow_.nodes[nls[i]].func);
-
-                    node_func(workflow_.nodes[nls[i]].args, // call it
-                              t,
-                              prod_nsteps_,
-                              &out_dataflows,
-                              containers[i]);
-                }
-
-                // a workflow link (dataflow)
-                else if (types[i] == DECAF_DFLOW)
-                {
-                    dflow_func = (void(*)(void*,            // load the function
-                                          int,
-                                          int,
-                                          Dataflow*,
-                                          shared_ptr<ConstructData>))
-                        load_dflow(mods,
-                                   workflow_.links[nls[i]].path,
-                                   workflow_.links[nls[i]].func);
-
-                    dflow_func(workflow_.links[nls[i]].args, // call it
-                               t,
-                               prod_nsteps_,
-                               dataflows[nls[i]],
-                               containers[i]);
+                        dataflows[workflow_.nodes[nls[i]].out_links[j]]->
+                            put(container, DECAF_PROD | DECAF_CON);
                 }
             }
+        }
 
-            // TODO: will terminate too early
-            if (!nls.size())
-                break;
-        }                                                   // while (1)
-    }                                                       // main time step loop
+        for (size_t i = 0; i < nls.size(); i++)
+        {
+            // a workflow node (producer, consumer, or both)
+            if (types[i] &(DECAF_PROD | DECAF_CON))
+            {
+                // fill out_dataflows for this node
+                out_dataflows.clear();
+                for (size_t j = 0; j < workflow_.nodes[nls[i]].out_links.size(); j++)
+                    out_dataflows.push_back(dataflows[workflow_.nodes[nls[i]].out_links[j]]);
+
+                // fill node_containers for this node
+                vector< shared_ptr<ConstructData> > node_containers; // input messages for 1 node
+                for (size_t j = 0; j < workflow_.nodes[nls[i]].in_links.size(); j++)
+                {
+                    for (list< shared_ptr<ConstructData> >::iterator it = containers.begin();
+                         it != containers.end(); it++)
+                    {
+                        if (link_id(*it) == workflow_.nodes[nls[i]].in_links[j])
+                        {
+                            node_containers.push_back(*it);
+                            containers.erase(it);
+                        }
+                    }
+                }
+
+                node_func = (void(*)(void*,             // load the function
+                                     vector<Dataflow*>*,
+                                     vector< shared_ptr<ConstructData> >*))
+                    load_node(mods,
+                              workflow_.nodes[nls[i]].path,
+                              workflow_.nodes[nls[i]].func);
+
+                node_func(workflow_.nodes[nls[i]].args, // call it
+                          &out_dataflows,
+                          &node_containers);
+            }
+
+            // a workflow link (dataflow)
+            else if (types[i] & DECAF_DFLOW)
+            {
+                // assign link_container for this dataflow
+                shared_ptr<ConstructData> link_container; // input messages for 1 link
+                for (list< shared_ptr<ConstructData> >::iterator it = containers.begin();
+                     it != containers.end(); it++)
+                {
+                    if (link_id(*it) == nls[i])
+                    {
+                        link_container = *it;
+                        containers.erase(it);
+                    }
+                }
+
+                dflow_func = (void(*)(void*,            // load the function
+                                      Dataflow*,
+                                      shared_ptr<ConstructData>*))
+                    load_dflow(mods,
+                               workflow_.links[nls[i]].path,
+                               workflow_.links[nls[i]].func);
+
+                dflow_func(workflow_.links[nls[i]].args, // call it
+                           dataflows[nls[i]],
+                           &link_container);
+            }
+        }                                               // for i = 0; i < nls.size()
+    }                                                   // while (1)
 
     // cleanup
     unload_mods(mods);

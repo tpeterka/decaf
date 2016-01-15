@@ -41,12 +41,13 @@ namespace decaf
         int world_rank(int rank) { return(rank + min_rank);  }// world rank of any rank in this comm
         int world_rank()         { return(rank_ + min_rank); }// my world rank
         CommTypeDecaf type()     { return type_;             }
-        void put(Data* data,
-                 int dest,
-                 TaskType task_type);
-        void get(Data* data,
-                 TaskType task_type);
-        void flush();
+        // DEPRECATED
+        // void put(Data* data,
+        //          int dest,
+        //          TaskType task_type);
+        // void get(Data* data,
+        //          TaskType task_type);
+        // void flush();
         int num_inputs();
         int start_input();
         int num_outputs();

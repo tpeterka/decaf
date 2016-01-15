@@ -20,6 +20,7 @@
 //--------------------------------------------------------------------------
 #include <decaf/decaf.hpp>
 #include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/simpleconstructdata.hpp>
 
 #include <assert.h>
 #include <math.h>
@@ -44,79 +45,57 @@ void checker(Dataflow* dataflow)
 // node and link callback functions
 extern "C"
 {
-    void node_a(void* args,                       // arguments to the callback
-                int t_current,                    // current time step
-                int t_nsteps,                     // total number of time steps
-                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-                vector<Dataflow*>* out_dataflows, // all outbound dataflows
-                void* in_data)                    // input data
+    void node_a(void* args,                                   // arguments to the callback
+                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+                                                              // inbound dataflows
     {
         fprintf(stderr, "node_a\n");
 
-        if (t_current == 0)                        // first time step
-        {
-        }
-
-        if (t_current == t_nsteps - 1)              // last time step
-            ;
+        shared_ptr<SimpleConstructData<int> > data  =
+            make_shared<SimpleConstructData<int> >(NULL);
+        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        container->appendData(string("var"), data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+        for (size_t i = 0; i < out_dataflows->size(); i++)
+            (*out_dataflows)[i]->put(container, DECAF_PROD);
     }
 
-    void node_b(void* args,                         // arguments to the callback
-                int t_current,                      // current time step
-                int t_nsteps,                       // total number of time steps
-                vector<Dataflow*>* out_dataflows,   // all outbound dataflows
-                shared_ptr<ConstructData>* in_data) // input data
+    void node_b(void* args,                                   // arguments to the callback
+                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+                                                              // inbound dataflows
     {
         fprintf(stderr, "node_b\n");
-
-        int t_interval = 1;                        // for example
-        if (!((t_current + 1) % t_interval))
-        {
-        }
     }
 
-    void node_c(void* args,                         // arguments to the callback
-                int t_current,                      // current time step
-                int t_nsteps,                       // total number of time steps
-                vector<Dataflow*>* out_dataflows,   // all outbound dataflows
-                shared_ptr<ConstructData>* in_data) // input data
+    void node_c(void* args,                                   // arguments to the callback
+                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+                                                              // inbound dataflows
     {
         fprintf(stderr, "node_c\n");
-
-        int t_interval = 1;                         // for example
-        if (!((t_current + 1) % t_interval))
-        {
-        }
     }
 
-    void node_d(void* args,                         // arguments to the callback
-                int t_current,                      // current time step
-                int t_nsteps,                       // total number of time steps
-                vector<Dataflow*>* out_dataflows,   // all outbound dataflows
-                shared_ptr<ConstructData>* in_data) // input data
+    void node_d(void* args,                                   // arguments to the callback
+                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+                                                              // inbound dataflows
     {
         fprintf(stderr, "node_d\n");
-
-        int t_interval = 1;                         // for example
-        if (!((t_current + 1) % t_interval))
-        {
-        }
     }
 
     // dataflow just needs to flush on every time step
     void dflow(void* args,                          // arguments to the callback
-               int t_current,                       // current time step
-               int t_nsteps,                        // total number of time steps
                Dataflow* dataflow,                  // dataflow
-               void* in_data)                       // input data
+               shared_ptr<ConstructData>* in_data)  // input data
     {
         fprintf(stderr, "dflow\n");
-
     }
 } // extern "C"
 
 void run(Workflow&   workflow,                      // workflow
-         int         prod_nsteps,                   // number of producer time steps
          vector<int> sources)                       // source workflow nodes
 {
     // callback args
@@ -135,7 +114,7 @@ void run(Workflow&   workflow,                      // workflow
     MPI_Init(NULL, NULL);
 
     // create and run decaf
-    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps);
+    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
     decaf->run(&pipeliner, &checker, sources);
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -151,7 +130,6 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    int prod_nsteps = 1;
     char * prefix = getenv("DECAF_PREFIX");
     if (prefix == NULL)
     {
@@ -257,7 +235,7 @@ int main(int argc,
     sources.push_back(3);                           // node_a
 
     // run decaf
-    run(workflow, prod_nsteps, sources);
+    run(workflow, sources);
 
     return 0;
 }

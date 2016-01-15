@@ -49,11 +49,10 @@ enum Decomposition
 
 // task types
 typedef unsigned char TaskType;
-#define DECAF_PROD      0x00
-#define DECAF_DFLOW     0x01
-#define DECAF_CON       0x02
-#define DECAF_BOTH      0x04
-#define DECAF_NONE      0x08
+#define DECAF_NONE      0x00
+#define DECAF_PROD      0x01
+#define DECAF_DFLOW     0x02
+#define DECAF_CON       0x04
 
 // communicator types
 typedef unsigned char CommTypeDecaf;
@@ -110,6 +109,16 @@ struct Workflow                 // an entire workflow
 {
     vector<WorkflowNode> nodes; // all the workflow nodes
     vector<WorkflowLink> links; // all the workflow links
+    bool my_node(int proc, int node)         // whether my process is part of this node
+        {
+            return(proc >= nodes[node].start_proc &&
+                   proc <  nodes[node].start_proc + nodes[node].nprocs);
+        }
+    bool my_link(int proc, int link)         // whether my process is part of this link
+        {
+            return(proc >=links[link].start_proc &&
+                   proc < links[link].start_proc + links[link].nprocs);
+        }
 };
 
 void

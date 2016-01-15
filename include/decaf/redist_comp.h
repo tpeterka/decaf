@@ -48,9 +48,9 @@ namespace decaf
       virtual ~RedistComp(){}
 
       // Run the pipeline of operations to redistribute the data.
-      // This fonction is the only one zhich should be called from
+      // This function is the only one that should be called from
       // the main programm
-      virtual void process(std::shared_ptr<BaseData> data, RedistRole role);
+      virtual int process(std::shared_ptr<BaseData> data, RedistRole role);
 
       int getRankSource();
       int getNbSources();
@@ -69,9 +69,9 @@ namespace decaf
       // component and fill the splitChunks vector
       virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role)=0;
 
-      // Transfert the chunks from the sources to the destination. The data
+      // Transfer the chunks from the sources to the destination. The data
       // should be stored in the vector receivedChunks
-      virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role)=0;
+      virtual int redistribute(std::shared_ptr<BaseData> data, RedistRole role)=0;
 
       // Merge the chunks from the vector receivedChunks into one single Data.
       virtual std::shared_ptr<BaseData> merge(RedistRole role)=0;

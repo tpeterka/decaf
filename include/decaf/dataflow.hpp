@@ -14,6 +14,9 @@
 
 #include <map>
 
+#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/simpleconstructdata.hpp>
+
 // transport layer specific types
 #ifdef TRANSPORT_MPI
 #include "transport/mpi/types.h"
@@ -34,12 +37,17 @@ namespace decaf
     class Dataflow
     {
     public:
-        Dataflow(CommHandle world_comm,
-                 DecafSizes& decaf_sizes,
-                 void (*pipeliner)(Dataflow*),
-                 void (*checker)(Dataflow*),
-                 Decomposition prod_dflow_redist = DECAF_CONTIG_DECOMP,
-                 Decomposition dflow_cons_redist = DECAF_CONTIG_DECOMP);
+        Dataflow(CommHandle world_comm,          // world communicator
+                 DecafSizes& decaf_sizes,        // sizes of producer, dataflow, consumer
+                 void (*pipeliner)(Dataflow*),   // not used
+                 void (*checker)(Dataflow*),     // not used
+                 int prod,                       // id in workflow structure of producer node
+                 int dflow,                      // id in workflow structure of dataflow link
+                 int con,                        // id in workflow structure of consumer node
+                 Decomposition prod_dflow_redist // decompositon between producer and dataflow
+                 = DECAF_CONTIG_DECOMP,
+                 Decomposition dflow_cons_redist // decomposition between dataflow and consumer
+                 = DECAF_CONTIG_DECOMP);
         ~Dataflow();
         void put(std::shared_ptr<BaseData> data, TaskType role);
         void get(std::shared_ptr<BaseData> data, TaskType role);
@@ -68,6 +76,9 @@ namespace decaf
         int err_;                        // last error
         CommTypeDecaf type_;             // whether this instance is producer, consumer,
                                          // dataflow, or other
+        int wflow_prod_id_;              // index of corresponding producer in the workflow
+        int wflow_con_id_;               // index of corresponding consumer in the workflow
+        int wflow_dflow_id_;             // index of corresponding link in the workflow
     };
 
 } // namespace
@@ -77,15 +88,21 @@ Dataflow::Dataflow(CommHandle world_comm,
                    DecafSizes& decaf_sizes,
                    void (*pipeliner)(Dataflow*),
                    void (*checker)(Dataflow*),
+                   int prod,
+                   int dflow,
+                   int con,
                    Decomposition prod_dflow_redist,
-                   Decomposition dflow_cons_redist):
+                   Decomposition dflow_cons_redist) :
     world_comm_(world_comm),
-    redist_prod_dflow_(NULL),
-    redist_dflow_con_(NULL),
+    sizes_(decaf_sizes),
     pipeliner_(pipeliner),
     checker_(checker),
-    type_(DECAF_OTHER_COMM),
-    sizes_(decaf_sizes)
+    wflow_prod_id_(prod),
+    wflow_dflow_id_(dflow),
+    wflow_con_id_(con),
+    redist_prod_dflow_(NULL),
+    redist_dflow_con_(NULL),
+    type_(DECAF_OTHER_COMM)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -270,12 +287,39 @@ Dataflow::~Dataflow()
         delete redist_prod_dflow_;
 }
 
+// puts data into the dataflow
+// tags the data with the:
+// - source type (producer/consumer or dataflow)
+// - workflow link id corresponding to this dataflow
+// - destination workflow node id or link id, depending on type of destination
+// NB: source is *link* id while destination is *either node or link* id
 void
 decaf::
 Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
 {
+    // encode type into message (producer/consumer or dataflow)
+    shared_ptr<SimpleConstructData<int> > value  =
+        make_shared<SimpleConstructData<int> >(role);
+    data->appendData(string("src_type"), value,
+                     DECAF_NOFLAG, DECAF_PRIVATE,
+                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
+    // encode dataflow link id into message
+    shared_ptr<SimpleConstructData<int> > value1  =
+        make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
+    data->appendData(string("link_id"), value1,
+                     DECAF_NOFLAG, DECAF_PRIVATE,
+                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
     if(role == DECAF_PROD)
     {
+        // encode destination link id into message
+        shared_ptr<SimpleConstructData<int> > value2  =
+            make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
+        data->appendData(string("dest_id"), value2,
+                         DECAF_NOFLAG, DECAF_PRIVATE,
+                         DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
         if(redist_prod_dflow_ == NULL)
             fprintf(stderr, "Trying to access a null communicator\n");
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
@@ -283,6 +327,13 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
     }
     else if(role == DECAF_DFLOW)
     {
+        // encode destination node id into message
+        shared_ptr<SimpleConstructData<int> > value2  =
+            make_shared<SimpleConstructData<int> >(wflow_con_id_);
+        data->appendData(string("dest_id"), value2,
+                         DECAF_NOFLAG, DECAF_PRIVATE,
+                         DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
         if(redist_dflow_con_ == NULL)
             fprintf(stderr, "Trying to access a null communicator\n");
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
