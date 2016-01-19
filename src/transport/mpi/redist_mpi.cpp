@@ -99,28 +99,6 @@ RedistMPI::~RedistMPI()
     delete[] sum_;
 }
 
-bool
-decaf::
-RedistMPI::isSource()
-{
-    // debug
-    // fprintf(stderr, "isSource() %d: rank_ %d local_source_rank_ %d nbSources_ %d\n",
-    //         rank_ >= local_source_rank_ && rank_ < local_source_rank_ + nbSources_,
-    //         rank_, local_source_rank_, nbSources_);
-    return rank_ >= local_source_rank_ && rank_ < local_source_rank_ + nbSources_;
-}
-
-bool
-decaf::
-RedistMPI::isDest()
-{
-    // debug
-    // fprintf(stderr, "isDest()%d: rank_ %d local_dest_rank_ %d nbDests_ %d\n",
-    //         rank_ >= local_dest_rank_ && rank_ < local_dest_rank_ + nbDests_,
-    //         rank_, local_dest_rank_, nbDests_);
-    return rank_ >= local_dest_rank_ && rank_ < local_dest_rank_ + nbDests_;
-}
-
 int
 decaf::
 RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
@@ -223,14 +201,6 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     }
 
     return retval;
-}
-
-// merge the chunks from the vector receivedChunks into one single data object.
-std::shared_ptr<decaf::BaseData>
-decaf::
-RedistMPI::merge(RedistRole role)
-{
-    return std::shared_ptr<BaseData>();
 }
 
 void

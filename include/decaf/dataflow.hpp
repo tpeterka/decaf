@@ -50,7 +50,7 @@ namespace decaf
                  = DECAF_CONTIG_DECOMP);
         ~Dataflow();
         void put(std::shared_ptr<BaseData> data, TaskType role);
-        void get(std::shared_ptr<BaseData> data, TaskType role);
+        int get(std::shared_ptr<BaseData> data, TaskType role);
         DecafSizes* sizes()    { return &sizes_; }
         void flush();
         void err()             { ::all_err(err_); }
@@ -300,14 +300,16 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
     // encode type into message (producer/consumer or dataflow)
     shared_ptr<SimpleConstructData<int> > value  =
         make_shared<SimpleConstructData<int> >(role);
-    data->appendData(string("src_type"), value,
-                     DECAF_NOFLAG, DECAF_PRIVATE,
-                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+    std::shared_ptr<ConstructData> map =
+        std::dynamic_pointer_cast<ConstructData>(data);
+    map->appendData(string("src_type"), value,
+                    DECAF_NOFLAG, DECAF_PRIVATE,
+                    DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
     // encode dataflow link id into message
     shared_ptr<SimpleConstructData<int> > value1  =
         make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-    data->appendData(string("link_id"), value1,
+    map->appendData(string("link_id"), value1,
                      DECAF_NOFLAG, DECAF_PRIVATE,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -316,7 +318,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         // encode destination link id into message
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-        data->appendData(string("dest_id"), value2,
+        map->appendData(string("dest_id"), value2,
                          DECAF_NOFLAG, DECAF_PRIVATE,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -330,7 +332,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         // encode destination node id into message
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_con_id_);
-        data->appendData(string("dest_id"), value2,
+        map->appendData(string("dest_id"), value2,
                          DECAF_NOFLAG, DECAF_PRIVATE,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -341,24 +343,26 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
     }
 }
 
-void
+int
 decaf::
 Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
 {
-    if(role == DECAF_DFLOW)
+    int retval;
+    if (role == DECAF_DFLOW)
     {
-        if(redist_prod_dflow_ == NULL)
+        if (redist_prod_dflow_ == NULL)
             fprintf(stderr, "Trying to access a null communicator\n");
-        redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+        retval = redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
     }
-    else if(role == DECAF_CON)
+    else if (role == DECAF_CON)
     {
-        if(redist_dflow_con_ == NULL)
+        if (redist_dflow_con_ == NULL)
             fprintf(stderr, "Trying to access a null communicator\n");
-        redist_dflow_con_->process(data, DECAF_REDIST_DEST);
+        retval = redist_dflow_con_->process(data, DECAF_REDIST_DEST);
         redist_dflow_con_->flush();
     }
+    return retval;
 }
 
 // cleanup after each time step

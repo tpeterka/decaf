@@ -980,6 +980,18 @@ ConstructData::setData(std::shared_ptr<void> data)
 
 }
 
+bool
+decaf::
+ConstructData::hasData(std::string key)
+{
+    std::map<std::string, datafield>::iterator it;
+    it = container_->find(key);
+    if(it == container_->end())
+        return false;
+    else
+        return true;
+}
+
 std::shared_ptr<BaseConstructData>
 decaf::
 ConstructData::getData(std::string key)

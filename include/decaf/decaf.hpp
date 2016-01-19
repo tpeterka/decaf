@@ -194,14 +194,7 @@ namespace decaf
         bool
         test_quit(shared_ptr<ConstructData> in_data)   // input message
             {
-                // TODO: what is the right way to set and test a quit message
-                shared_ptr<SimpleConstructData<int> > quit =
-                    dynamic_pointer_cast<SimpleConstructData<int> >
-                    (in_data->getData(string("decaf_quit")));
-                // TODO: what happens is "decaf_quit" is not present
-                // if not, return false
-                // else
-                return quit->getData();
+                return in_data->hasData(string("decaf_quit"));
             }
 
         // sets a quit message into a container
@@ -209,7 +202,6 @@ namespace decaf
         void
         set_quit(shared_ptr<ConstructData> out_data)   // output message
             {
-                // TODO: what is the right way to set and test a quit message
                 shared_ptr<SimpleConstructData<int> > data  =
                     make_shared<SimpleConstructData<int> >(1);
                 out_data->appendData(string("decaf_quit"), data,
@@ -444,8 +436,6 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
         for (size_t i = 0; i < in_dataflows.size(); i++)
         {
             shared_ptr<ConstructData> container;
-            // TODO: need a nonblocking get or probe that returns boolean indicating
-            // whether a message was received
             if (in_dataflows[i]->get(container, DECAF_PROD | DECAF_CON | DECAF_DFLOW))
                 containers.push_back(container);
         }

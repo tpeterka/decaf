@@ -14,6 +14,8 @@
 #ifndef DECAF_BASEDATA_H
 #define DECAF_BASEDATA_H
 
+#include "baseconstructdata.hpp"
+
 #include <vector>
 #include <memory>
 
