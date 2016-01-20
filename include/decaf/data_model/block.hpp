@@ -4,7 +4,6 @@
 #include <vector>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/serialization.hpp>
-#include <boost/serialization/export.hpp>
 
 namespace decaf {
 
@@ -320,11 +319,5 @@ namespace decaf {
     };
 
 }// namespace
-
-// BOOST_CLASS_EXPORT_GUID(decaf::Block<1>,"decaf::Block<1>")
-//     BOOST_CLASS_EXPORT_GUID(decaf::Block<2>,"decaf::Block<2>")
-//     BOOST_CLASS_EXPORT_GUID(decaf::Block<3>,"decaf::Block<3>")
-//     BOOST_CLASS_EXPORT_GUID(decaf::Block<4>,"decaf::Block<4>")
-//     BOOST_CLASS_EXPORT_GUID(decaf::Block<5>,"decaf::Block<5>")
 
 #endif

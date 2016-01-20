@@ -21,6 +21,7 @@
 #include <decaf/decaf.hpp>
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
 #include <math.h>
