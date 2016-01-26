@@ -34,6 +34,10 @@
 #include <memory>
 
 
+extern double timeGlobalSerialization;
+extern double timeGlobalSplit;
+extern double timeGlobalMorton;
+
 namespace decaf {
 
 class ConstructData  : public BaseData {

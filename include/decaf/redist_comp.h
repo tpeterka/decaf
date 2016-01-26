@@ -18,6 +18,11 @@
 #include <memory>
 #include <iostream>
 
+extern double timeGlobalRedist;
+extern double timeGlobalRecep;
+extern double timeGlobalScatter;
+extern double timeGlobalReduce;
+
 namespace decaf
 {
 

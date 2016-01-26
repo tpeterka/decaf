@@ -45,6 +45,7 @@ enum ConstructTypeSplitPolicy {
     DECAF_SPLIT_DEFAULT = 0x0,      // Call the split fonction of the data object
     DECAF_SPLIT_KEEP_VALUE = 0x1,   // Keep the same values for each split
     DECAF_SPLIT_MINUS_NBITEM = 0x2, // Withdraw the number of items to the current value
+    DECAF_SPLIT_SEGMENTED = 0x4,
 };
 
 enum ConstructTypeMergePolicy {

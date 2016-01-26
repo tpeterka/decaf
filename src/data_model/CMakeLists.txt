@@ -4,7 +4,8 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 message("Boost : ${Boost_LIBRARIES}")
 
-add_library             (decaf_datamodel SHARED     constructtype.cpp)
+add_library             (decaf_datamodel SHARED     constructtype.cpp
+morton.cpp)
 target_link_libraries   (decaf_datamodel            ${libraries} ${Boost_LIBRARIES} decaf_transport)
 
 install(TARGETS decaf_datamodel

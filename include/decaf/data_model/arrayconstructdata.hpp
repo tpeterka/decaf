@@ -15,7 +15,17 @@ public:
 
     ArrayConstructData(T* array, int size, int element_per_items, bool owner = false, mapConstruct map = mapConstruct()) :
                         value_(array), element_per_items_(element_per_items),
-                        size_(size), owner_(owner), BaseConstructData(map){}
+                        size_(size), owner_(owner), BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
+    ArrayConstructData(std::vector<std::pair<T*, unsigned int> > segments, int element_per_items, mapConstruct map = mapConstruct()) :
+                        value_(nullptr), element_per_items_(element_per_items),
+                        size_(0), owner_(false), BaseConstructData(map), isSegmented_(true),
+                        segments_(segments)
+    {
+        totalSegmentsSize_ = 0;
+        for(unsigned int i = 0; i < segments_.size(); i++)
+            totalSegmentsSize_ += segments_.at(i).second;
+        size_ = totalSegmentsSize_;
+    }
 
     virtual ~ArrayConstructData()
     {
@@ -30,20 +40,63 @@ public:
         ar & BOOST_SERIALIZATION_NVP(size_);
         ar & BOOST_SERIALIZATION_NVP(owner_);
         //ar & BOOST_SERIALIZATION_NVP(value_);
-        if(Archive::is_loading::value)
+        ar & BOOST_SERIALIZATION_NVP(isSegmented_);
+        int nbSegment = segments_.size();
+        ar & BOOST_SERIALIZATION_NVP(nbSegment);
+        ar & BOOST_SERIALIZATION_NVP(totalSegmentsSize_);
+
+        if(!isSegmented_)
         {
-            assert(value_ == nullptr);
-            owner_ = true;
-            value_ = new T[size_];
+            if(Archive::is_loading::value)
+            {
+                assert(value_ == nullptr);
+                owner_ = true;
+                value_ = new T[size_];
+            }
+            ar & boost::serialization::make_array<T>(value_, size_);
         }
-        ar & boost::serialization::make_array<T>(value_, size_);
+        else
+        {
+            if(Archive::is_saving::value)
+            {
+                for(int i = 0; i < nbSegment; i++)
+                {
+                    ar & segments_.at(i).second;
+                    ar & boost::serialization::make_array<T>(segments_.at(i).first, segments_.at(i).second);
+                    //for(int j = 0; j < segments_.at(i).second; j++)
+                    //    ar & segments_.at(i).first[j];
+                }
+            }
+
+            if(Archive::is_loading::value)
+            {
+                //We deserialize in a way that we remove the segments
+                owner_ = true;
+                value_ = new T[totalSegmentsSize_];
+
+                int offset = 0;
+                for(int i = 0; i < nbSegment; i++)
+                {
+                    int sizeSegment;
+                    ar & sizeSegment;
+                    ar & boost::serialization::make_array<T>(value_ + offset, sizeSegment);
+                    offset += sizeSegment;
+                    //for(int j = 0; j < sizeSegment; j++)
+                    //{
+                    //    ar & value_[offset];
+                    //    offset++;
+                    //}
+                }
+		isSegmented_ = false;
+            }
+        }
 
 
     }
 
     virtual bool isBlockSplitable(){ return false; }
 
-    virtual T* getArray(){ return value_; }
+    virtual T* getArray(){ segmentsToArray(); return value_; }
 
     virtual int getNbItems(){ return size_ / element_per_items_; }
 
@@ -126,8 +179,10 @@ public:
                 //unsigned int offset = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
                 {
-                    T* array = new T[range.at(i).size() * element_per_items_];
-                    unsigned int offset = 0;
+                    //T* array = new T[range.at(i).size() * element_per_items_];
+                    T* array = new T[range.at(i).back() * element_per_items_];
+                    
+		    /*unsigned int offset = 0;
                     for(unsigned int j = 0; j< range.at(i).size(); j++)
                     {
                         //temp.insert( temp.end(),
@@ -138,11 +193,107 @@ public:
                                value_ + range.at(i).at(j)*element_per_items_,
                                element_per_items_ * sizeof(T));
                         offset += element_per_items_;
-                    }
+                    }*/
+
+		    //Working version with segmented copy
+                    /*unsigned int offsetDestArray = 0;
+                    unsigned int nbCopy = 0;
+                    
+                    while(offsetDestArray < range.at(i).size())
+                    {
+                        int currentTransationSize =  1;
+
+                        //Computing how many consecutive items are in the range
+                        while(offsetDestArray + currentTransationSize < range.at(i).size() - 1 && range.at(i).at(offsetDestArray+currentTransationSize-1)+1 == range.at(i).at(offsetDestArray+currentTransationSize))
+                        {
+                            currentTransationSize++;
+                        }
+
+                        //Now we can copy a chunk
+                        memcpy(array + offsetDestArray * element_per_items_,
+                               value_ + range.at(i).at(offsetDestArray)*element_per_items_,
+                               currentTransationSize * element_per_items_ * sizeof(T));
+                        offsetDestArray += currentTransationSize;
+                        nbCopy++;
+			//break;
+                    }*/
+
+		    //Test version with the vector 
+		    unsigned int nbCopy = 0;
+		    unsigned int offsetDestArray = 0;
+
+		    for(unsigned int j = 0; j < range.at(i).size() - 1; j++)
+	            {
+			memcpy(array + offsetDestArray * element_per_items_,
+			value_ + range.at(i).at(j) * element_per_items_,
+			range.at(i).at(j+1) * element_per_items_ * sizeof(T));
+			offsetDestArray+= range.at(i).at(j+1);
+			j++; // The second j contains the number of items of this segment
+			nbCopy++;
+		    }
+
+                    //printf("We did %u copies instead of %u\n", nbCopy, range.at(i).size());
 
                     std::shared_ptr<ArrayConstructData<T> > sub =
-                            std::make_shared<ArrayConstructData<T> >(array, range.at(i).size() * element_per_items_,
-                                                                     element_per_items_, true);
+                    //        std::make_shared<ArrayConstructData<T> >(array, range.at(i).size() * element_per_items_,
+                    //                                                 element_per_items_, true);
+                    	    std::make_shared<ArrayConstructData<T> >(array, range.at(i).back() * element_per_items_,
+								     element_per_items_, true);
+		    //        std::make_shared<ArrayConstructData<T> >(array, currentTransationSize * element_per_items_,
+                    //                                                 element_per_items_, true);
+                    result.push_back(sub);
+                }
+                break;
+            }
+            case DECAF_SPLIT_SEGMENTED:
+            {
+                //Sanity check
+
+
+                //typename std::vector<T>::iterator it = value_.begin();
+                //unsigned int offset = 0;
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    //T* array = new T[range.at(i).size() * element_per_items_];
+
+                    unsigned int offsetDestArray = 0;
+                    unsigned int nbCopy = 0;
+                    std::vector<std::pair<T*, unsigned int> > segments;
+                    unsigned int totalSegmentsSize_;
+
+                    while(offsetDestArray < range.at(i).size())
+                    {
+                        int currentTransationSize =  1;
+
+                        //Computing how many consecutive items are in the range
+                        while(offsetDestArray + currentTransationSize < range.at(i).size() - 1 && range.at(i).at(offsetDestArray+currentTransationSize-1)+1 == range.at(i).at(offsetDestArray+currentTransationSize))
+                        {
+                            currentTransationSize++;
+                        }
+
+                        //Now we can copy a chunk
+                        //memcpy(array + offsetDestArray * element_per_items_,
+                        //       value_ + range.at(i).at(offsetDestArray)*element_per_items_,
+                        //       currentTransationSize * element_per_items_ * sizeof(T));
+                        //offsetDestArray += currentTransationSize;
+                        //nbCopy++;
+                        std::pair<T*, unsigned int> segment(
+                                    value_ + range.at(i).at(offsetDestArray)*element_per_items_,
+                                    currentTransationSize * element_per_items_);
+                        totalSegmentsSize_ += currentTransationSize * element_per_items_;
+                        offsetDestArray += currentTransationSize;
+                        nbCopy++;
+                        segments.push_back(segment);
+                        //break;
+                    }
+
+                    //printf("We did %u segments instead of %u\n", nbCopy, range.at(i).size());
+
+                    std::shared_ptr<ArrayConstructData<T> > sub =
+                            std::make_shared<ArrayConstructData<T> >(segments,
+                                                                     element_per_items_);
+                    //        std::make_shared<ArrayConstructData<T> >(array, currentTransationSize * element_per_items_,
+                    //                                                 element_per_items_, true);
                     result.push_back(sub);
                 }
                 break;
@@ -248,6 +399,32 @@ protected:
     int element_per_items_; //One semantic item is composed of element_per_items_ items in the vector
     int size_;
     bool owner_;
+
+    bool isSegmented_;
+    std::vector<std::pair<T*, unsigned int> > segments_;
+    unsigned int totalSegmentsSize_;
+
+    void segmentsToArray()
+    {
+        if(!segments_.empty())
+        {
+            if(value_ && owner_)
+                delete [] value_;
+            value_ = new T[totalSegmentsSize_];
+            size_ = totalSegmentsSize_;
+
+            unsigned int offset = 0;
+            for(unsigned int i = 0; i < segments_.size(); i++)
+            {
+                memcpy(value_ + offset,
+                       segments_.at(i).first,
+                       segments_.at(i).second * sizeof(T));
+                offset+= segments_.at(i).second;
+            }
+
+
+        }
+    }
 };
 
 } //namespace
@@ -257,6 +434,12 @@ BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<int>,"ArrayConstructData<int>"
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<unsigned int>,"ArrayConstructData<unsigned int>")
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<double>,"ArrayConstructData<double>")
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<char>,"ArrayConstructData<char>")
+BOOST_CLASS_TRACKING(decaf::ArrayConstructData<float>, boost::serialization::track_never)
+BOOST_CLASS_TRACKING(decaf::ArrayConstructData<int>, boost::serialization::track_never)
+BOOST_CLASS_TRACKING(decaf::ArrayConstructData<unsigned int>, boost::serialization::track_never)
+BOOST_CLASS_TRACKING(decaf::ArrayConstructData<double>, boost::serialization::track_never)
+BOOST_CLASS_TRACKING(decaf::ArrayConstructData<char>, boost::serialization::track_never)
+
 
 #endif
 
