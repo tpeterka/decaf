@@ -140,13 +140,7 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         }
     }
 
-    // scattering the sum across all the destinations
-    int nbRecep;
-    if(role == DECAF_REDIST_DEST)
-        MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
-
     // At this point, each source knows where they have to send data
-    // and each destination knows how many message it should receive
 
     // processing the data exchange
     if (role == DECAF_REDIST_SOURCE)
@@ -167,21 +161,41 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         }
     }
 
+    // check if we have something in transit to/from self
+    if (role == DECAF_REDIST_DEST)
+    {
+        if (transit)                         // transit means send/recv to/from self
+        {
+            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            transit.reset();              // we don't need it anymore, clean for the next iteration
+            return 1;
+        }
+    }
+
+    if (!retval)
+        return retval;
+
+    // the remainder of the messaging is blocking
+    // once the control information is sent/received, the payload must follow; wait for it
+
+    // scatter the sum across all the destinations
+    int nbRecep;
+    if (role == DECAF_REDIST_DEST)
+        MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
+
+    // At this point, each destination knows how many message it should receive
     if (role == DECAF_REDIST_DEST)
     {
         for (int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
-            MPI_Iprobe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &flag, &status);
-            if (flag && status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
+            MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
+            if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
             {
-                retval = 1;
-                int nitems; // number of items (of type dtype) in the message
-                MPI_Get_count(&status, MPI_BYTE, &nitems);
-
-                //Allocating the space necessary
-                data->allocate_serial_buffer(nitems);
-                MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
+                int nbytes; // number of bytes in the message
+                MPI_Get_count(&status, MPI_BYTE, &nbytes);
+                data->allocate_serial_buffer(nbytes); // allocate necessary space
+                MPI_Recv(data->getInSerialBuffer(), nbytes, MPI_BYTE, status.MPI_SOURCE,
                          status.MPI_TAG, communicator_, &status);
 
                 // The dynamic type of merge is given by the user
@@ -190,17 +204,11 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                 // aggregate the allocations etc
                 data->merge();
             }
-        }
 
-        // checking if we have something in transit from self
-        if (transit)
-        {
-            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
-            transit.reset();              // we don't need it anymore, clean for the next iteration
         }
     }
 
-    return retval;
+    return 1;                                // at this point, we're sure we received everything
 }
 
 void

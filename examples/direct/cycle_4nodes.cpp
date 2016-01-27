@@ -51,15 +51,18 @@ extern "C"
                 vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                               // inbound dataflows
     {
-        fprintf(stderr, "node_a\n");
+        fprintf(stderr, "node_a out_dataflows size %ld\n", out_dataflows->size());
 
+        int val = 0;                         // a toy value to send
         shared_ptr<SimpleConstructData<int> > data  =
-            make_shared<SimpleConstructData<int> >(NULL);
+            make_shared<SimpleConstructData<int> >(val);
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
         container->appendData(string("var"), data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+
         for (size_t i = 0; i < out_dataflows->size(); i++)
+        // for (size_t i = 0; i < 1; i++)       // debug, send only to one destination
             (*out_dataflows)[i]->put(container, DECAF_PROD);
     }
 
@@ -96,8 +99,8 @@ extern "C"
     }
 } // extern "C"
 
-void run(Workflow&   workflow,                      // workflow
-         vector<int> sources)                       // source workflow nodes
+void run(Workflow&    workflow,                     // workflow
+         vector<int>& sources)                      // source workflow nodes
 {
     // callback args
     for (size_t i = 0; i < workflow.nodes.size(); i++)
@@ -163,6 +166,7 @@ int main(int argc,
     node.in_links.clear();
     node.out_links.push_back(0);                    // node_c
     node.in_links.push_back(2);
+    node.in_links.push_back(3);
     node.start_proc = 7;
     node.nprocs = 1;
     node.func = "node_c";
@@ -173,6 +177,7 @@ int main(int argc,
     node.in_links.clear();
     node.out_links.push_back(1);                    // node_a
     node.out_links.push_back(2);
+    node.in_links.push_back(4);
     node.start_proc = 0;
     node.nprocs = 4;
     node.func = "node_a";

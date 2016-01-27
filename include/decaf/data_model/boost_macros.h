@@ -15,6 +15,13 @@
 
 BOOST_CLASS_EXPORT_GUID(decaf::BaseConstructData,"BaseConstructData")
 
+BOOST_CLASS_EXPORT_GUID(decaf::ConstructData,"ConstructData")
+
+BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<float>,"VectorConstructData<float>")
+BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<int>,"VectorConstructData<int>")
+BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<double>,"VectorConstructData<double>")
+BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<char>,"VectorConstructData<char>")
+
 BOOST_CLASS_EXPORT_GUID(decaf::Block<1>,"decaf::Block<1>")
 BOOST_CLASS_EXPORT_GUID(decaf::Block<2>,"decaf::Block<2>")
 BOOST_CLASS_EXPORT_GUID(decaf::Block<3>,"decaf::Block<3>")

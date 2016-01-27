@@ -171,5 +171,8 @@ ConstructData::getTypedData(std::string key)
 }
 
 } //namespace
-BOOST_CLASS_EXPORT_GUID(decaf::ConstructData,"ConstructData")
+
+/* DEPRECATED; moved to boost_macros.h */
+/* BOOST_CLASS_EXPORT_GUID(decaf::ConstructData,"ConstructData") */
+
 #endif

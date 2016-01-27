@@ -119,6 +119,22 @@ struct Workflow                 // an entire workflow
             return(proc >=links[link].start_proc &&
                    proc < links[link].start_proc + links[link].nprocs);
         }
+    bool my_in_link(int proc, int link)      // whether my process gets input data from this link
+        {
+            for (size_t i = 0; i< nodes.size(); i++)
+            {
+                if (proc >= nodes[i].start_proc && // proc is mine
+                    proc <  nodes[i].start_proc + nodes[i].nprocs)
+                {
+                    for (size_t j = 0; j < nodes[i].in_links.size(); j++)
+                    {
+                        if (nodes[i].in_links[j] == link)
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
 };
 
 void

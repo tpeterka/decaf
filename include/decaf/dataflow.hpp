@@ -177,7 +177,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         case DECAF_CONTIG_DECOMP:
         {
-            // fprintf(stderr, "Using Count for prod -> dflow\n:");
+            // fprintf(stderr, "Using Count for prod -> dflow prod\n");
             redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
