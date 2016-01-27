@@ -131,7 +131,7 @@ namespace decaf
                 pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
                 void(*func)(void*,                            // ptr to callback func
                             Dataflow*,
-                            shared_ptr<ConstructData>*);
+                            shared_ptr<ConstructData>);
 
                 if ((it = mods.find(mod_name)) == mods.end())
                 {
@@ -221,10 +221,6 @@ namespace decaf
                 for (list< shared_ptr<ConstructData> >::iterator it = in_data.begin();
                      it != in_data.end(); it++)
                 {
-                    // TODO: remove this test once I figure out how to remove a pointer from a list
-                    if (*it == NULL)
-                        continue;
-
                     // is destination a workflow node or a link
                     int dest_node = -1;
                     int dest_link = -1;
@@ -396,16 +392,16 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
     vector<decaf::Dataflow*> out_dataflows;        // outbound dataflows for one node
 
     // inbound dataflows for this process
-    vector< pair<decaf::Dataflow*, int> > link_in_dataflows; // dataflows for my links
-    vector< pair<decaf::Dataflow*, int> > node_in_dataflows; // dataflows that ar inputs to my nodes
+    vector<Dataflow*> link_in_dataflows;           // dataflows for my links
+    vector<Dataflow*> node_in_dataflows;           // dataflows that ar inputs to my nodes
 
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
         // the input dataflows on which I should listen for messages
         if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
-            link_in_dataflows.push_back(make_pair(dataflows[i], i));
+            link_in_dataflows.push_back(dataflows[i]);
         if (workflow_.my_in_link(world->rank(), i))     // I am a node and this dataflow is an input
-            node_in_dataflows.push_back(make_pair(dataflows[i], i));
+            node_in_dataflows.push_back(dataflows[i]);
     }
 
     // dynamically loaded modules (plugins)
@@ -414,7 +410,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                      vector< shared_ptr<ConstructData> >*);
     void(*dflow_func)(void*,                      // ptr to dataflow callback func in a module
                       Dataflow*,
-                      shared_ptr<ConstructData>*);
+                      shared_ptr<ConstructData>);
     map<string, void*> mods;                      // modules dynamically loaded so far
 
     // sources, ie, tasks that don't need to wait for input in order to start
@@ -440,8 +436,6 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                   NULL);
     }
 
-    // TODO: do link_in_dataflows and node_in_dataflows need to be pairs (is second ever used)?
-
     // remaining (nonsource) tasks and dataflows are driven by receiving messages
     while (1)
     {
@@ -454,7 +448,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                 shared_ptr<ConstructData> container = make_shared<ConstructData>();
                 // if (world->rank() == 6)
                 //     fprintf(stderr, "0: link_in_dataflows size %ld\n", link_in_dataflows.size());
-                if (link_in_dataflows[i].first->get(container, DECAF_DFLOW))
+                if (link_in_dataflows[i]->get(container, DECAF_DFLOW))
                 {
                     // fprintf(stderr, "2: dataflow got all messages\n");
                     containers.push_back(container);
@@ -464,9 +458,9 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
             {
                 // fprintf(stderr, "1: node_in_dataflows size %ld\n", node_in_dataflows.size());
                 shared_ptr<ConstructData> container = make_shared<ConstructData>();
-                if (node_in_dataflows[i].first->get(container, DECAF_CON))
+                if (node_in_dataflows[i]->get(container, DECAF_CON))
                 {
-                    // fprintf(stderr, "3: node got all messages\n");
+                    fprintf(stderr, "3: node got all messages\n");
                     containers.push_back(container);
                 }
             }
@@ -477,15 +471,14 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
             if (containers.size() && router(containers, nls, types) == -1)
                 break;
 
+            // TODO: 1 message in the containers but nls is empty
+            if ((world->rank() == 5 || world->rank() == 7) && containers.size())
+                fprintf(stderr, "1: containers size %ld nls size %ld\n", containers.size(), nls.size());
+
             // check for termination and propagate the quit message
             for (list< shared_ptr<ConstructData> >::iterator it = containers.begin();
                  it != containers.end(); it++)
             {
-                // TODO: remove this test once I figure out how to
-                // remove a smart pointer from a list
-                if (*it == NULL)
-                    continue;
-
                 // add quit flag to containers object, initialize to false
                 if (test_quit(*it))
                 {
@@ -518,15 +511,8 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                         for (list< shared_ptr<ConstructData> >::iterator it = containers.begin();
                              it != containers.end(); it++)
                         {
-                            // TODO: remove test for  NULL once I figure out how to
-                            // remove a smart pointer from a list
-                            if (*it != NULL && link_id(*it) == workflow_.nodes[nls[i]].in_links[j])
-                            {
+                            if (link_id(*it) == workflow_.nodes[nls[i]].in_links[j])
                                 node_containers.push_back(*it);
-                                // TODO: figure out how to remove a smart pointer from a list
-                                *it = NULL;
-                                // containers.erase(it);
-                            }
                         }
                     }
 
@@ -540,41 +526,52 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                     node_func(workflow_.nodes[nls[i]].args, // call it
                               &out_dataflows,
                               &node_containers);
+
+                    // remove used messages only after the callback has been called
+                    for (size_t j = 0; j < workflow_.nodes[nls[i]].in_links.size(); j++)
+                    {
+                        list< shared_ptr<ConstructData> >::iterator it = containers.begin();
+                        // using while instead of for: erase inside loop disrupts the iteration
+                        while (it != containers.end())
+                        {
+                            if (link_id(*it) == workflow_.nodes[nls[i]].in_links[j])
+                                // erase kills the std iterator but returns the next one
+                                it = containers.erase(it);
+                            else
+                                it++;
+                        }
+                    }
                 }
 
                 // a workflow link (dataflow)
                 else if (types[i] & DECAF_DFLOW)
                 {
-                    // assign link_container for this dataflow
-                    shared_ptr<ConstructData> link_container; // input messages for 1 link
-                    for (list< shared_ptr<ConstructData> >::iterator it = containers.begin();
-                         it != containers.end(); it++)
+                    list< shared_ptr<ConstructData> >::iterator it = containers.begin();
+                    // using while instead of for: erase inside loop disrupts the iteration
+                    while (it != containers.end())
                     {
-                        // TODO: remove test for  NULL once I figure out how to remove
-                        // a smart pointer from a list
-                        if (*it != NULL && link_id(*it) == nls[i])
+                        if (link_id(*it) == nls[i])
                         {
-                            link_container = *it;
-                            // TODO: figure out how to remove a smart pointer from a list
-                            *it = NULL;
-                            // containers.erase(it);
+                            dflow_func = (void(*)(void*,            // load the function
+                                                  Dataflow*,
+                                                  shared_ptr<ConstructData>))
+                                load_dflow(mods,
+                                           workflow_.links[nls[i]].path,
+                                           workflow_.links[nls[i]].func);
+
+                            dflow_func(workflow_.links[nls[i]].args, // call it
+                                       dataflows[nls[i]],
+                                       *it);
+                            // erase kills the std iterator but returns the next one
+                            it = containers.erase(it);
                         }
+                        else
+                            it++;
                     }
-
-                    dflow_func = (void(*)(void*,            // load the function
-                                          Dataflow*,
-                                          shared_ptr<ConstructData>*))
-                        load_dflow(mods,
-                                   workflow_.links[nls[i]].path,
-                                   workflow_.links[nls[i]].func);
-
-                    dflow_func(workflow_.links[nls[i]].args, // call it
-                               dataflows[nls[i]],
-                               &link_container);
-                }
+                }                                           // workflow link
             }                                               // for i = 0; i < nls.size()
-        }                                               // debug
-    }                                                   // while (1)
+        }                                                   // debug
+    }                                                       // while (1)
 
     // cleanup
     unload_mods(mods);

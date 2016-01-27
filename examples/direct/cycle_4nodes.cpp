@@ -62,7 +62,6 @@ extern "C"
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
         for (size_t i = 0; i < out_dataflows->size(); i++)
-        // for (size_t i = 0; i < 1; i++)       // debug, send only to one destination
             (*out_dataflows)[i]->put(container, DECAF_PROD);
     }
 
@@ -90,12 +89,13 @@ extern "C"
         fprintf(stderr, "node_d\n");
     }
 
-    // dataflow just needs to flush on every time step
+    // dataflow just forwards everything that comes its way in this example
     void dflow(void* args,                          // arguments to the callback
                Dataflow* dataflow,                  // dataflow
-               shared_ptr<ConstructData>* in_data)  // input data
+               shared_ptr<ConstructData> in_data)  // input data
     {
         fprintf(stderr, "dflow\n");
+        dataflow->put(in_data, DECAF_DFLOW);
     }
 } // extern "C"
 
