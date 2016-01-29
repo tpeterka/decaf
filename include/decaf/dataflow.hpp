@@ -298,8 +298,8 @@ decaf::
 Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
 {
     // encode type into message (producer/consumer or dataflow)
-    shared_ptr<SimpleConstructData<int> > value  =
-        make_shared<SimpleConstructData<int> >(role);
+    shared_ptr<SimpleConstructData<TaskType> > value  =
+        make_shared<SimpleConstructData<TaskType> >(role);
     std::shared_ptr<ConstructData> map =
         std::dynamic_pointer_cast<ConstructData>(data);
     map->appendData(string("src_type"), value,
@@ -313,7 +313,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                      DECAF_NOFLAG, DECAF_PRIVATE,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
-    if(role == DECAF_PROD)
+    if (role == DECAF_PROD)
     {
         // encode destination link id into message
         shared_ptr<SimpleConstructData<int> > value2  =
@@ -323,11 +323,11 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
         if(redist_prod_dflow_ == NULL)
-            fprintf(stderr, "Trying to access a null communicator\n");
+            fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
         redist_prod_dflow_->flush();
     }
-    else if(role == DECAF_DFLOW)
+    else if (role == DECAF_DFLOW)
     {
         // encode destination node id into message
         shared_ptr<SimpleConstructData<int> > value2  =
@@ -337,7 +337,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
         if(redist_dflow_con_ == NULL)
-            fprintf(stderr, "Trying to access a null communicator\n");
+            fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
     }
@@ -351,14 +351,14 @@ Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
     if (role == DECAF_DFLOW)
     {
         if (redist_prod_dflow_ == NULL)
-            fprintf(stderr, "Trying to access a null communicator\n");
+            fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
         retval = redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
     }
     else if (role == DECAF_CON)
     {
         if (redist_dflow_con_ == NULL)
-            fprintf(stderr, "Trying to access a null communicator\n");
+            fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
         retval = redist_dflow_con_->process(data, DECAF_REDIST_DEST);
         redist_dflow_con_->flush();
     }

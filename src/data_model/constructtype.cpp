@@ -1000,7 +1000,7 @@ ConstructData::getData(std::string key)
     it = container_->find(key);
     if(it == container_->end())
     {
-        std::cout<<"ERROR : key "<<key<<" not found."<<std::endl;
+        fprintf(stderr, "ERROR: key %s not found.\n", key.c_str());
         return std::shared_ptr<BaseConstructData>();
     }
     else

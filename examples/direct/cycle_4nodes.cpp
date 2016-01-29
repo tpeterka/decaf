@@ -21,6 +21,7 @@
 #include <decaf/decaf.hpp>
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -51,16 +52,51 @@ extern "C"
                 vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                               // inbound dataflows
     {
-        fprintf(stderr, "node_a out_dataflows size %ld\n", out_dataflows->size());
+        static bool first_time = true;
+        static int sum = 0;
+        shared_ptr<ConstructData> container;
 
-        int val = 0;                         // a toy value to send
-        shared_ptr<SimpleConstructData<int> > data  =
-            make_shared<SimpleConstructData<int> >(val);
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
-        container->appendData(string("var"), data,
-                              DECAF_NOFLAG, DECAF_PRIVATE,
-                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+        if (first_time)
+        {
+            // starting with sum = 0
+            shared_ptr<SimpleConstructData<int> > data  =
+                make_shared<SimpleConstructData<int> >(sum);
+            fprintf(stderr, "node_a starting up value = %d\n", sum);
 
+            // package it
+            container = make_shared<ConstructData>();
+            container->appendData(string("var"), data,
+                                  DECAF_NOFLAG, DECAF_PRIVATE,
+                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+            first_time = false;
+        }
+        else
+        {
+            fprintf(stderr, "a: in_data size %ld\n", in_data->size());
+
+            // get the values and add them
+            for (size_t i = 0; i < in_data->size(); i++)
+            {
+                shared_ptr<BaseConstructData> ptr = (*in_data)[i]->getData(string("var"));
+                if (ptr)
+                {
+                    shared_ptr<SimpleConstructData<int> > val =
+                        dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+                    sum += val->getData();
+                    fprintf(stderr, "node_a: got value %d sum = %d\n", val->getData(), sum);
+                }
+            }
+
+            // package the sum
+            shared_ptr<SimpleConstructData<int> > data  =
+                make_shared<SimpleConstructData<int> >(sum);
+            container = make_shared<ConstructData>();
+            container->appendData(string("var"), data,
+                                  DECAF_NOFLAG, DECAF_PRIVATE,
+                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+        }
+
+        // send the sum
         for (size_t i = 0; i < out_dataflows->size(); i++)
             (*out_dataflows)[i]->put(container, DECAF_PROD);
     }
@@ -70,7 +106,32 @@ extern "C"
                 vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                               // inbound dataflows
     {
-        fprintf(stderr, "node_b\n");
+        int static sum = 0;
+
+        // get the values and add them
+        for (size_t i = 0; i < in_data->size(); i++)
+        {
+            shared_ptr<BaseConstructData> ptr = (*in_data)[i]->getData(string("var"));
+            if (ptr)
+            {
+                shared_ptr<SimpleConstructData<int> > val =
+                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+                sum += val->getData();
+                fprintf(stderr, "node_b: got value %d sum = %d\n", val->getData(), sum);
+            }
+        }
+
+        // send the sum
+        int sums[4] = {0, 0, 0, 0};
+        shared_ptr<ArrayConstructData<int> > data  =
+            make_shared<ArrayConstructData<int> >(sums, 4, 1, false);
+        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        container->appendData(string("var"), data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+
+        for (size_t i = 0; i < out_dataflows->size(); i++)
+            (*out_dataflows)[i]->put(container, DECAF_PROD);
     }
 
     void node_c(void* args,                                   // arguments to the callback
@@ -78,7 +139,33 @@ extern "C"
                 vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                               // inbound dataflows
     {
-        fprintf(stderr, "node_c\n");
+        int static sum = 0;
+
+        // get the values and add them
+        for (size_t i = 0; i < in_data->size(); i++)
+        {
+            shared_ptr<BaseConstructData> ptr = (*in_data)[i]->getData(string("var"));
+            if (ptr)
+            {
+                shared_ptr<SimpleConstructData<int> > val =
+                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+                sum += val->getData();
+                fprintf(stderr, "node_c: got value %d sum = %d\n", val->getData(), sum);
+                // debug
+                (*in_data)[i]->printKeys();
+            }
+        }
+
+        // send the sum
+        shared_ptr<SimpleConstructData<int> > data  =
+            make_shared<SimpleConstructData<int> >(sum);
+        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        container->appendData(string("var"), data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+
+        for (size_t i = 0; i < out_dataflows->size(); i++)
+            (*out_dataflows)[i]->put(container, DECAF_PROD);
     }
 
     void node_d(void* args,                                   // arguments to the callback
@@ -86,7 +173,34 @@ extern "C"
                 vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                               // inbound dataflows
     {
-        fprintf(stderr, "node_d\n");
+        int static sum = 0;
+
+        // get the values and add them
+        for (size_t i = 0; i < in_data->size(); i++)
+        {
+            shared_ptr<BaseConstructData> ptr = (*in_data)[i]->getData(string("var"));
+            if (ptr)
+            {
+                shared_ptr<SimpleConstructData<int> > val =
+                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+                sum += val->getData();
+                fprintf(stderr, "node_d: got value %d sum = %d\n", val->getData(), sum);
+            }
+        }
+
+        // send the sum if less than some amount (for example)
+        if (sum < 100)
+        {
+            shared_ptr<SimpleConstructData<int> > data  =
+                make_shared<SimpleConstructData<int> >(sum);
+            shared_ptr<ConstructData> container = make_shared<ConstructData>();
+            container->appendData(string("var"), data,
+                                  DECAF_NOFLAG, DECAF_PRIVATE,
+                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+
+            for (size_t i = 0; i < out_dataflows->size(); i++)
+                (*out_dataflows)[i]->put(container, DECAF_PROD);
+        }
     }
 
     // dataflow just forwards everything that comes its way in this example
@@ -94,7 +208,14 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                shared_ptr<ConstructData> in_data)  // input data
     {
-        fprintf(stderr, "dflow\n");
+        fprintf(stderr, "dflow:\n");
+
+        // need to remove routing info from containter that put() inserted
+        // TODO: fix dataflow->put() so that the user doesn't need to do this
+        in_data->removeData("src_type");
+        in_data->removeData("link_id");
+        in_data->removeData("dest_id");
+
         dataflow->put(in_data, DECAF_DFLOW);
     }
 } // extern "C"
@@ -147,24 +268,26 @@ int main(int argc,
     // fill workflow nodes
     WorkflowNode node;
     node.in_links.push_back(1);                     // node_b
+    node.out_links.push_back(4);
     node.start_proc = 5;
     node.nprocs = 1;
     node.func = "node_b";
     node.path = path;
     workflow.nodes.push_back(node);
 
-    node.out_links.clear();
+    node.out_links.clear();                         // node_d
     node.in_links.clear();
-    node.in_links.push_back(0);                     // node_d
+    node.in_links.push_back(0);
+    node.out_links.push_back(3);
     node.start_proc = 9;
     node.nprocs = 1;
     node.func = "node_d";
     node.path = path;
     workflow.nodes.push_back(node);
 
-    node.out_links.clear();
+    node.out_links.clear();                         // node_c
     node.in_links.clear();
-    node.out_links.push_back(0);                    // node_c
+    node.out_links.push_back(0);
     node.in_links.push_back(2);
     node.in_links.push_back(3);
     node.start_proc = 7;
@@ -173,9 +296,9 @@ int main(int argc,
     node.path = path;
     workflow.nodes.push_back(node);
 
-    node.out_links.clear();
+    node.out_links.clear();                         // node_a
     node.in_links.clear();
-    node.out_links.push_back(1);                    // node_a
+    node.out_links.push_back(1);
     node.out_links.push_back(2);
     node.in_links.push_back(4);
     node.start_proc = 0;

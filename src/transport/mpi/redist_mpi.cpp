@@ -152,6 +152,11 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                 transit = splitChunks_.at(i);
             else if (destList_.at(i) != -1)
             {
+                // // debug
+                // int rank;
+                // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+                // if (rank < 4)
+                //     fprintf(stderr, "g0:\n");
                 MPI_Request req;
                 reqs.push_back(req);
                 MPI_Isend(splitChunks_.at(i)->getOutSerialBuffer(),
@@ -162,14 +167,11 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     }
 
     // check if we have something in transit to/from self
-    if (role == DECAF_REDIST_DEST)
+    if (role == DECAF_REDIST_DEST && transit)
     {
-        if (transit)                         // transit means send/recv to/from self
-        {
-            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
-            transit.reset();              // we don't need it anymore, clean for the next iteration
-            return 1;
-        }
+        data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+        transit.reset();              // we don't need it anymore, clean for the next iteration
+        return 1;
     }
 
     if (!retval)
@@ -186,12 +188,20 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     // At this point, each destination knows how many message it should receive
     if (role == DECAF_REDIST_DEST)
     {
+        // debug
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank < 4)
+            fprintf(stderr, "g1: nbRecep %d\n", nbRecep);
+
         for (int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
             MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
             if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
             {
+                if (rank < 4)
+                    fprintf(stderr, "g2:\n");
                 int nbytes; // number of bytes in the message
                 MPI_Get_count(&status, MPI_BYTE, &nbytes);
                 data->allocate_serial_buffer(nbytes); // allocate necessary space

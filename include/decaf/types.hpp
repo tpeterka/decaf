@@ -167,15 +167,4 @@ Decomposition stringToDecomposition(std::string name)
     }
 }
 
-// DEPRECATED
-// #define DECAF_DEBUG_MAX 256
-
-// void 
-// all_dbg( FILE* channel, char* msg)
-// {
-// #ifdef DECAF_DEBUG_ON
-//     fprintf(channel, "[DECAF-DEBUG] %s", msg);
-// #endif
-// }
-
 #endif
