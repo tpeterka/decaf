@@ -31,6 +31,20 @@ public:
 
     T& getData(){ return value_; }
 
+    virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+	std::cout<<"AppendItem not implemented yet for simpleConstructData."<<std::endl;
+	return false;
+    }
+
+    virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result)
+    {
+	for(unsigned int i = 0; i < nbCopies; i++)
+	{
+		result.push_back(std::make_shared<SimpleConstructData>());
+	}
+    }
+
     virtual std::vector< std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
             std::vector< mapConstruct >& partial_map,
@@ -155,6 +169,14 @@ public:
             }
 
         }
+    }
+
+    virtual bool merge(std::vector<std::shared_ptr<BaseConstructData> >& others,
+                       mapConstruct partial_map,
+                       ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+	std::cout<<"Merge multiple partial parts is not implemented yet for simple data type."<<std::endl;
+	return false;
     }
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)

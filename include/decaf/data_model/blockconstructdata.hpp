@@ -27,6 +27,20 @@ public:
 
     Block<3>& getData(){ return value_; }
 
+    virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy = DECAF_MERGE_DEFAULT)
+    {
+	return true;
+    }
+
+    virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result)
+    {
+	for(unsigned int i = 0; i < nbCopies; i++)
+        {
+                result.push_back(std::make_shared<BlockConstructData>());
+        }	
+    }
+
+
     virtual std::vector< std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
             std::vector< mapConstruct >& partial_map,
@@ -121,6 +135,32 @@ public:
         }
 
         switch(policy)
+        {
+            case DECAF_MERGE_DEFAULT:
+            {
+                return true;
+                break;
+            }
+            case DECAF_MERGE_FIRST_VALUE: //We don't have to do anything here
+            {
+                return true;
+                break;
+            }
+            default:
+            {
+                std::cout<<"ERROR : policy "<<policy<<" not available for block data."<<std::endl;
+                return false;
+                break;
+            }
+
+        }
+    }
+
+    virtual bool merge(std::vector<std::shared_ptr<BaseConstructData> >& others,
+                       mapConstruct partial_map,
+                       ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+	switch(policy)
         {
             case DECAF_MERGE_DEFAULT:
             {

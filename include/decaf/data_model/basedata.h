@@ -83,6 +83,12 @@ namespace  decaf {
     // Merge a data previously put in the serial buffer of the data object
     virtual bool merge() = 0;
 
+    // Merge all the parts we have deserialized so far
+    virtual bool mergeStoredData() = 0;
+
+    // Deserialize the buffer and store the result locally for a later global merge
+    virtual void unserializeAndStore() = 0;
+
     // Convert the Map into a MPI compatible structure
     //virtual CommDatatype getMPIDatatype() const = 0;
 

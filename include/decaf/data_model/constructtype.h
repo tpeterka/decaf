@@ -53,6 +53,10 @@ public:
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
                     ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+    
+    bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
+
+    void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<ConstructData> >& result);
 
     bool removeData(std::string name);
 
@@ -89,6 +93,10 @@ public:
     virtual bool merge(char* buffer, int size);
 
     virtual bool merge();
+
+    virtual bool mergeStoredData();
+    
+    virtual void unserializeAndStore();
 
     virtual bool serialize();
 
@@ -148,7 +156,7 @@ protected:
     std::vector<std::string> merge_order_;
     std::vector<std::string> split_order_;
 
-
+    std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
 
 };
 

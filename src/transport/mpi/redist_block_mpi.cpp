@@ -330,9 +330,9 @@ RedistBlockMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 {
 
     // The user has to provide the global block structure.
-    // Checking we have all the informations
+    // Checking we have all the informations. We only compute the blocks once.
 
-    if(role == DECAF_REDIST_SOURCE)
+    if(role == DECAF_REDIST_SOURCE && subblocks_.empty())
     {
 
         std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
@@ -409,16 +409,19 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         }
 	
 	gettimeofday(&begin, NULL);
+	std::cout<<"[";
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
+	    std::cout<<splitChunks_.at(i)->getNbItems()<<",";
             //if(splitChunks_.at(i)->getNbItems() > 0)
             //{
                 // TODO : Check the rank for the destination.
                 // Not necessary to serialize if overlapping
-                if(!splitChunks_.at(i)->serialize())
-                    std::cout<<"ERROR : unable to serialize one object"<<std::endl;
+                //if(!splitChunks_.at(i)->serialize())
+                //    std::cout<<"ERROR : unable to serialize one object"<<std::endl;
             //}
         }
+	std::cout<<"]"<<std::endl;
 	gettimeofday(&end, NULL);
 	computeSerialize = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 	if(role == DECAF_REDIST_SOURCE)
@@ -427,7 +430,7 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         // Data might be rewriten if producers and consummers are overlapping
         data->purgeData();
 
-        subblocks_.clear();
+        //subblocks_.clear();
 
     }
 }
@@ -619,11 +622,12 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 		  // NOTE : examin if it's not more efficient to receive everything
 		  // and then merge. Memory footprint more important but allows to
 		  // aggregate the allocations etc
-		  data->merge();
+		  //data->merge();
+		  data->unserializeAndStore();
                 }
             }
         }
-
+      data->mergeStoredData();
       // Checking if we have something in transit
       if(transit)
         {

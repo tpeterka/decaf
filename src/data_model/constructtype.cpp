@@ -89,6 +89,63 @@ ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false),
     data_ = static_pointer_cast<void>(container_);
 }
 
+void 
+decaf::
+ConstructData::preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<ConstructData> >& result)
+{
+    // Creating all the empty container
+    for(int i = 0; i < nbCopies; i++)
+    {  
+	result.push_back(std::make_shared<ConstructData>());
+    }
+
+    // Going through all the field and preallocating them for the new container
+    for(std::map<std::string, datafield>::iterator it = container_->begin(); it != container_->end(); it++)
+    {
+	std::vector<std::shared_ptr<BaseConstructData> > emptyFields;
+	getBaseData(it->second)->preallocMultiple(nbCopies, nbItems, emptyFields);
+
+	for(int i = 0; i < nbCopies; i++)
+	{
+	     result.at(i)->appendData(it->first,
+				     emptyFields.at(i), 
+				     getFlag(it->second), 
+				     getScope(it->second),
+				     getSplitPolicy(it->second),
+				     getMergePolicy(it->second));
+	}
+    }
+}
+
+bool 
+decaf::
+ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int index)
+{
+    if(index >= nbItems_)
+    {
+	std::cout<<"ERROR : Trying to extract an item out of range (requesting "<<index<<", "<<nbItems_<<" in the container)."<<std::endl;
+	return false;
+    }
+
+    bool result;
+    for(std::map<std::string, datafield>::iterator it = container_->begin(); it != container_->end(); it++)
+    {
+	std::map<std::string, datafield>::iterator itDest = dest->container_->find(it->first);
+	if(itDest == dest->container_->end())
+	{
+		std::cout<<"ERROR : The field "<<it->first<<" is not available in the destination container."<<std::endl;
+		return false;
+	}	
+	std::shared_ptr<BaseConstructData> fieldDest = getBaseData(itDest->second);
+	result = getBaseData(it->second)->appendItem(fieldDest, index, getMergePolicy(it->second));
+	
+	if(!result)
+	    return false;
+	getNbItemsField(itDest->second) = getNbItemsField(itDest->second) + 1;
+    }
+
+    return true;
+}
 
 bool
 decaf::
@@ -565,6 +622,53 @@ std::vector< std::shared_ptr<BaseData> >
 decaf::
 ConstructData::split(const std::vector<Block<3> >& range)
 {
+    struct timeval begin;
+    struct timeval end;
+
+    gettimeofday(&begin, NULL);
+    std::vector< std::shared_ptr<ConstructData> > container;
+    std::vector< std::shared_ptr<BaseData> >result;
+
+    preallocMultiple( range.size() , 220000, container);
+    for(unsigned int i = 0; i < container.size(); i++)
+        result.push_back(container.at(i));
+
+    if(bZCurveIndex_)
+    {
+        std::shared_ptr<ArrayConstructData<unsigned int> > posData =
+            std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
+   
+	int nbMortons = posData->getNbItems(); 
+	unsigned int* morton = posData->getArray();    
+        //Going through all the morton codes and pushing the items
+	for(int i = 0; i < nbMortons; i++)
+        {
+            unsigned int x,y,z;
+            Morton_3D_Decode_10bit(morton[i], x, y, z);
+            bool particlesInBlock = false;
+            for(unsigned int b = 0; b < range.size(); b++)
+            {
+                if(range.at(b).isInLocalBlock(x, y, z))
+                {
+		    this->appendItem(container.at(b),i);
+		}
+	    }
+	}
+    }
+    else
+    {
+        std::cout<<"ERROR : split by block not implemented when the morton code are not in the data model."<<std::endl;
+    }
+
+    for(unsigned int i = 0; i < container.size(); i++)
+	container.at(i)->updateMetaData();
+    return result;
+}
+
+/*std::vector< std::shared_ptr<BaseData> >
+decaf::
+ConstructData::split(const std::vector<Block<3> >& range)
+{
 
     struct timeval begin;
     struct timeval end;
@@ -733,6 +837,7 @@ ConstructData::split(const std::vector<Block<3> >& range)
     timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
     return result;
 }
+*/
 
 //Todo : remove the code redundancy
 bool
@@ -945,6 +1050,137 @@ decaf::
 ConstructData::merge()
 {
     return merge(&in_serial_buffer_[0], in_serial_buffer_.size());
+}
+
+bool
+decaf::
+ConstructData::mergeStoredData()
+{
+    	//We have stored all the part, now we can merge in one time all the partial parts
+    	if(merge_order_.size() > 0) //We have a priority list
+        {
+            for(unsigned int i = 0; i < merge_order_.size(); i++)
+            {
+                std::map<std::string, datafield>::iterator dataLocal
+                        = container_->find(merge_order_.at(i));
+
+		if(dataLocal == container_->end())
+                {
+                    std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
+                        <<"merge the data not found in the map."<<std::endl;
+                    return false;
+                }
+
+		std::vector<std::shared_ptr<BaseConstructData> > partialFields;
+		for(unsigned int i = 0; i < partialData.size(); i++)
+		{
+                    std::map<std::string, datafield>::iterator dataOther
+                        = partialData.at(i)->find(merge_order_.at(i));
+
+                    if(dataOther == partialData.at(i)->end())
+                    {
+                        std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
+                            <<"merge the data not found in the map."<<std::endl;
+                        return false;
+                    }
+		    partialFields.push_back(getBaseData(dataOther->second));
+		}
+
+                if(! getBaseData(dataLocal->second)->merge(partialFields,
+                                                    container_,
+                                                    getMergePolicy(dataLocal->second)) )
+                {
+                    std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
+                    return false;
+                }
+                getBaseData(dataLocal->second)->setMap(container_);
+                getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
+            }
+        }
+	else  // No priority, we merge in the field order
+        {
+            for(std::map<std::string, datafield>::iterator it = container_->begin();
+                it != container_->end(); it++)
+            {
+		std::vector<std::shared_ptr<BaseConstructData> > partialFields;
+                for(unsigned int i = 0; i < partialData.size(); i++)
+                {
+                    std::map<std::string, datafield>::iterator dataOther
+                        = partialData.at(i)->find(it->first);
+
+		    // No need to check the return, we have done it already in unserializeAndStore()
+                    partialFields.push_back(getBaseData(dataOther->second));
+                }
+
+                if(! getBaseData(it->second)->merge(partialFields,
+                                                    container_,
+                                                    getMergePolicy(it->second)) )
+                {
+                    std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has been corrupted."<<std::endl;
+                    return false;
+                }
+                getBaseData(it->second)->setMap(container_);
+                getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+            }
+        }
+
+	return updateMetaData();
+}
+
+void 
+decaf::
+ConstructData::unserializeAndStore()
+{
+    struct timeval begin;
+    struct timeval end;
+
+    gettimeofday(&begin, NULL);
+    in_serial_buffer_ = std::string(&in_serial_buffer_[0], in_serial_buffer_.size());
+    boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
+    boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
+    boost::archive::binary_iarchive ia(sout);
+
+    fflush(stdout);
+    gettimeofday(&end, NULL);
+    timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+
+    // If we don't have data yet, we directly unserialize on the local map
+    if(!data_ || container_->empty())
+    {
+        ia >> container_;
+
+        data_ = std::static_pointer_cast<void>(container_);
+    }
+    // Otherwise unserialize and store the map. To be merged later on
+    else
+    { 
+        std::shared_ptr<std::map<std::string, datafield> > other;
+        ia >> other;
+
+        //We check that we can merge all the fields before merging
+        if(container_->size() != other->size())
+        {
+            std::cout<<"Error : the map don't have the same number of field. Merge aborted."<<std::endl;
+            return;
+        }
+
+        for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
+        {
+            std::map<std::string, datafield>::iterator otherIt = other->find(it->first);
+            if( otherIt == other->end())
+            {
+                std::cout<<"Error : The field \""<<it->first<<"\" is present in the"
+                         <<"In the original map but not in the other one. Merge aborted."<<std::endl;
+                return ;
+            }
+            if( !getBaseData(otherIt->second)->canMerge(getBaseData(it->second)))
+                return ;
+        }
+
+	// Storing for future merge. 
+	partialData.push_back(other);
+    }
 }
 
 bool

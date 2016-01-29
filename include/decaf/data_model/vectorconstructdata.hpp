@@ -39,6 +39,56 @@ public:
         ar & BOOST_SERIALIZATION_NVP(element_per_items_);
     }
 
+    virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+	std::shared_ptr<VectorConstructData<T> > destT = std::dynamic_pointer_cast<VectorConstructData<T> >(dest);
+        if(!destT)
+        {
+            std::cout<<"ERROR : trying to merge to objects with different types"<<std::endl;
+            return false;
+        }
+	
+	switch(policy)
+        {
+            case DECAF_MERGE_DEFAULT:
+            {
+		destT->value_.insert(destT->value_.end(),
+				     value_.begin() + (index * element_per_items_), 
+				     value_.begin() + ((index + 1 ) * element_per_items_));
+                return true;
+                break;
+            }
+            case DECAF_MERGE_FIRST_VALUE: //We don't have to do anything here
+            {
+                return true;
+                break;
+            }
+            case DECAF_MERGE_APPEND_VALUES:
+            {
+		destT->value_.insert(destT->value_.end(), 
+                                     value_.begin() + (index * element_per_items_), 
+                                     value_.begin() + ((index + 1) * element_per_items_));
+                return true;
+                break;
+            }
+            default:
+            {
+                std::cout<<"ERROR : policy "<<policy<<" not available for vector data."<<std::endl;
+                return false;
+                break;
+            }
+        }
+        return false;
+    }
+
+    virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result)
+    {
+        for(unsigned int i = 0; i < nbCopies; i++)
+        {
+                result.push_back(std::make_shared<VectorConstructData>());
+        }
+    }
+
     virtual std::vector<T>& getVector(){ return value_; }
 
     virtual int getNbItems(){ return value_.size() / element_per_items_; }
@@ -185,11 +235,20 @@ public:
             }
             default:
             {
-                std::cout<<"ERROR : policy "<<policy<<" not available for simple data."<<std::endl;
+                std::cout<<"ERROR : policy "<<policy<<" not available for vector data."<<std::endl;
                 return false;
                 break;
             }
         }
+    }
+
+    virtual bool merge(std::vector<std::shared_ptr<BaseConstructData> >& others,
+                       mapConstruct partial_map,
+                       ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+	// TO BE IMPLEMENTED
+	std::cout<<"Merge multiple partial data not implemented yet for vector data."<<std::endl;
+	return false;
     }
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)

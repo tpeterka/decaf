@@ -84,6 +84,18 @@ public:
 
     virtual int getNbItems(){ return value_->shape()[0] * value_->shape()[1] * value_->shape()[2]; }
 
+    virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy = DECAF_MERGE_DEFAULT)
+    {
+	std::cout<<"ERROR : appendItem not implemented yet for 3d arrays."<<std::endl;
+	return false;
+    }
+
+    virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result)
+    {
+	std::cout<<"ERROR : prealloc multiple not available for 3d arrays."<<std::endl;
+	return;
+    }
+
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
             std::vector< mapConstruct >& partial_map,
@@ -322,6 +334,14 @@ public:
         }
 
         return true;
+    }
+
+    virtual bool merge(std::vector<std::shared_ptr<BaseConstructData> >& others,
+                       mapConstruct partial_map,
+                       ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+	std::cout<<"ERROR : merge multiples partial data is not implemented in array3d."<<std::endl;
+	return false;
     }
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)

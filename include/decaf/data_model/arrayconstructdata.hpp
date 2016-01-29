@@ -11,20 +11,28 @@ class ArrayConstructData : public BaseConstructData {
 public:
 
     ArrayConstructData(mapConstruct map = mapConstruct()) :
-        value_(nullptr), size_(0), element_per_items_(0), owner_(false), BaseConstructData(map){}
+        value_(nullptr), size_(0), element_per_items_(0), owner_(false), BaseConstructData(map), capacity_(0){}
 
     ArrayConstructData(T* array, int size, int element_per_items, bool owner = false, mapConstruct map = mapConstruct()) :
                         value_(array), element_per_items_(element_per_items),
-                        size_(size), owner_(owner), BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
+                        size_(size), capacity_(size), owner_(owner),
+			BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
+
+    ArrayConstructData(T* array, int size, int element_per_items, int capacity, bool owner = false, mapConstruct map = mapConstruct()) :
+                        value_(array), element_per_items_(element_per_items),
+                        size_(size), capacity_(capacity), owner_(owner),
+                        BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
+
     ArrayConstructData(std::vector<std::pair<T*, unsigned int> > segments, int element_per_items, mapConstruct map = mapConstruct()) :
                         value_(nullptr), element_per_items_(element_per_items),
-                        size_(0), owner_(false), BaseConstructData(map), isSegmented_(true),
+                        size_(0), capacity_(0), owner_(false), BaseConstructData(map), isSegmented_(true),
                         segments_(segments)
     {
         totalSegmentsSize_ = 0;
         for(unsigned int i = 0; i < segments_.size(); i++)
             totalSegmentsSize_ += segments_.at(i).second;
         size_ = totalSegmentsSize_;
+	capacity_ = 0;
     }
 
     virtual ~ArrayConstructData()
@@ -90,8 +98,67 @@ public:
 		isSegmented_ = false;
             }
         }
+	if(Archive::is_loading::value)
+	    capacity_ = size_;
+    }
 
+    virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+        std::shared_ptr<ArrayConstructData<T> > destT = std::dynamic_pointer_cast<ArrayConstructData<T> >(dest);
+        if(!destT)
+        {
+            std::cout<<"ERROR : trying to append objects with different types"<<std::endl;
+            return false;
+        }
 
+	switch(policy)
+        {
+            case DECAF_MERGE_DEFAULT:
+            {
+		if(destT->size_ + element_per_items_ > destT->capacity_)
+		{
+		    std::cout<<"ERROR : not enough memory available to append a new item"<<std::endl;
+		    return false;
+		}
+		memcpy(destT->value_ + destT->size_, value_ + index * element_per_items_, element_per_items_ * sizeof(T));
+		destT->size_ += element_per_items_;
+                return true;
+                break;
+            }
+	    case DECAF_MERGE_APPEND_VALUES:
+	    {
+		if(destT->size_ + element_per_items_ > destT->capacity_)
+                {
+                    std::cout<<"ERROR : not enough memory available to append a new item"<<std::endl;
+                    return false;
+                }
+                memcpy(destT->value_ + destT->size_, value_ + index * element_per_items_, element_per_items_ * sizeof(T));
+                destT->size_ += element_per_items_;
+                return true;
+                break;
+	    }
+	    default:
+            {
+                std::cout<<"ERROR : policy "<<policy<<" not available for vector data."<<std::endl;
+                return false;
+                break;
+            }
+	}	
+        return false;
+    }
+
+    virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result)
+    {
+        for(unsigned int i = 0; i < nbCopies; i++)
+        {
+	    T* newArray = new T[nbItems * element_per_items_];	
+            result.push_back(std::make_shared<ArrayConstructData>(
+					newArray,
+					0, // size
+					element_per_items_, 
+					nbItems * element_per_items_, // capacity
+					true));
+        }
     }
 
     virtual bool isBlockSplitable(){ return false; }
@@ -381,6 +448,55 @@ public:
         }
     }
 
+    virtual bool merge(std::vector<std::shared_ptr<BaseConstructData> >& others,
+                       mapConstruct partial_map,
+                       ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
+    {
+	// First we cast all the arrays and some all the size
+	unsigned int totalSize = size_;
+	std::vector<std::shared_ptr<ArrayConstructData<T> > > partials;
+	for(unsigned int i = 0; i < others.size(); i++)
+	{
+		std::shared_ptr<ArrayConstructData<T> >other = std::dynamic_pointer_cast<ArrayConstructData<T> >(others.at(i));
+		if(!other) std::cerr<<"ERROR : the conversion failed."<<std::endl;
+		totalSize += other->size_;
+		partials.push_back(other);
+	}	
+
+	std::cerr<<"Total size after merge : "<<totalSize<<std::endl;
+	switch(policy)
+        {
+            case DECAF_MERGE_FIRST_VALUE: //We don't have to do anything here
+            {
+                return true;
+                break;
+            }
+            case DECAF_MERGE_APPEND_VALUES:
+            {
+		T* newArray = new T[totalSize];
+                memcpy(newArray, value_, size_ * sizeof(T));
+		unsigned int offset = size_;
+		for(unsigned int i = 0; i < partials.size(); i++)
+		{
+                    memcpy(newArray + offset, partials.at(i)->value_, partials.at(i)->size_ * sizeof(T));
+		    offset += partials.at(i)->size_;
+		}
+
+                if(owner_) delete[] value_;
+                value_ = newArray;
+                size_ = totalSize;
+		return true;
+		break;
+	    }
+	    default:
+            {
+                std::cout<<"ERROR : policy "<<policy<<" not available for array data with multiple merges."<<std::endl;
+                return false;
+                break;
+            }
+        }
+    }
+
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)
     {
         std::shared_ptr<ArrayConstructData<T> >other_ = std::dynamic_pointer_cast<ArrayConstructData<T> >(other);
@@ -398,6 +514,7 @@ protected:
     T* value_;
     int element_per_items_; //One semantic item is composed of element_per_items_ items in the vector
     int size_;
+    unsigned int capacity_;
     bool owner_;
 
     bool isSegmented_;

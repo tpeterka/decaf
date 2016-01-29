@@ -121,6 +121,10 @@ public:
 
     virtual bool isBlockSplitable() = 0;
 
+    virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy = DECAF_MERGE_DEFAULT) = 0;
+
+    virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result) = 0;
+
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
             std::vector< mapConstruct >& partial_map,
@@ -137,6 +141,10 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 
     virtual bool merge(std::shared_ptr<BaseConstructData> other,
+                       mapConstruct partial_map,
+                       ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT) = 0;
+
+    virtual bool merge(std::vector<std::shared_ptr<BaseConstructData> >& others,
                        mapConstruct partial_map,
                        ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT) = 0;
 
