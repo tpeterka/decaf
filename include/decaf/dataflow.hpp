@@ -64,6 +64,26 @@ namespace decaf
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
+        // sets a quit message into a container; caller still needs to send the message
+        static
+        void
+        set_quit(shared_ptr<ConstructData> out_data)   // output message
+            {
+                shared_ptr<SimpleConstructData<int> > data  =
+                    make_shared<SimpleConstructData<int> >(1);
+                out_data->appendData(string("decaf_quit"), data,
+                                     DECAF_NOFLAG, DECAF_PRIVATE,
+                                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+            }
+
+        // tests whether a message is a quit command
+        static
+        bool
+        test_quit(shared_ptr<ConstructData> in_data)   // input message
+            {
+                return in_data->hasData(string("decaf_quit"));
+            }
+
     private:
         CommHandle world_comm_;          // handle to original world communicator
         Comm* prod_comm_;                // producer communicator
@@ -341,6 +361,10 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
     }
+
+    map->removeData("src_type");
+    map->removeData("link_id");
+    map->removeData("dest_id");
 }
 
 int

@@ -166,13 +166,11 @@ void
 decaf::
 ConstructData::printKeys()
 {
-    std::cout<<"Current state of the map : "<<std::endl;
+    fprintf(stderr, "Current state of the map: \n");
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
-    {
-        std::cout<<"Key : "<<it->first<<", nbItems : "<<getNbItemsField(it->second)<<std::endl;
-    }
-    std::cout<<"End of display of the map"<<std::endl;
+        fprintf(stderr, "Key: %s; nbItems: %d\n", it->first.c_str(), getNbItemsField(it->second));
+    fprintf(stderr, "End of display of the map\n");
 
 }
 

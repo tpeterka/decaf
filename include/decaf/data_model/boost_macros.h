@@ -12,6 +12,7 @@
 //--------------------------------------------------------------------------
 
 #include <boost/serialization/export.hpp>
+#include "blockconstructdata.hpp"
 
 BOOST_CLASS_EXPORT_GUID(decaf::BaseConstructData,"BaseConstructData")
 
@@ -34,6 +35,8 @@ BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<int>,"ArrayConstructData<int>"
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<unsigned int>,"ArrayConstructData<unsigned int>")
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<double>,"ArrayConstructData<double>")
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<char>,"ArrayConstructData<char>")
+
+BOOST_CLASS_EXPORT_GUID(decaf::BlockConstructData,"BlockConstructData")
 
 BOOST_CLASS_EXPORT_GUID(decaf::Block<1>,"decaf::Block<1>")
 BOOST_CLASS_EXPORT_GUID(decaf::Block<2>,"decaf::Block<2>")

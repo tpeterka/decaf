@@ -103,10 +103,14 @@ int
 decaf::
 RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
-    int retval = 0;                          // return value
+    int retval = 1;                          // return value
     int flag;                                // result of MPI_Iprobe
 
-    // sum the number of emissions for each destination
+    // debug
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // producer root collects the number of messages for each source destination
     if (role == DECAF_REDIST_SOURCE)
         MPI_Reduce(summerizeDest_, sum_, nbDests_, MPI_INT, MPI_SUM,
                    local_source_rank_, commSources_);
@@ -116,7 +120,7 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         memcpy(destBuffer_, sum_, nbDests_ * sizeof(int));
     else
     {
-        // sending to the rank 0 of the destinations
+        // producer root sends the number of messages to the root of the consumer
         if (role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
         {
             MPI_Request req;
@@ -126,23 +130,20 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         }
 
 
-        // getting the accumulated buffer on the destination side
+        // consumer root receives the number of messages
         if (role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) //Root of destination
         {
             MPI_Status status;
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &flag, &status);
             if (flag && status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
-            {
-                retval = 1;
                 MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG,
                          communicator_, MPI_STATUS_IGNORE);
-            }
+            else
+                retval = 0;
         }
     }
 
-    // At this point, each source knows where they have to send data
-
-    // processing the data exchange
+    // producer ranks send payload
     if (role == DECAF_REDIST_SOURCE)
     {
         for (unsigned int i = 0; i <  destList_.size(); i++)
@@ -152,11 +153,6 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                 transit = splitChunks_.at(i);
             else if (destList_.at(i) != -1)
             {
-                // // debug
-                // int rank;
-                // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-                // if (rank < 4)
-                //     fprintf(stderr, "g0:\n");
                 MPI_Request req;
                 reqs.push_back(req);
                 MPI_Isend(splitChunks_.at(i)->getOutSerialBuffer(),
@@ -174,34 +170,31 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         return 1;
     }
 
+    // TODO: only the consumer root can possibly have retval 0, everyone else will block below
     if (!retval)
-        return retval;
+        return 0;
 
-    // the remainder of the messaging is blocking
-    // once the control information is sent/received, the payload must follow; wait for it
-
-    // scatter the sum across all the destinations
+    // scatter the number of messages to receive across all the destinations of the consumer
+    // TODO: ranks that are not the root of the producer or consumer will block here
+    // because scatter is a collective
+    // this means that other workflow links trying to send to the same node will also be
+    // blocked (could deadlock)
     int nbRecep;
     if (role == DECAF_REDIST_DEST)
         MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
 
-    // At this point, each destination knows how many message it should receive
+    // consumer destination ranks receive payload
     if (role == DECAF_REDIST_DEST)
     {
         // debug
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        if (rank < 4)
-            fprintf(stderr, "g1: nbRecep %d\n", nbRecep);
-
+        // if (rank == 1)
+        //     fprintf(stderr, "g1: nbRecep %d\n", nbRecep);
         for (int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
             MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
             if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
             {
-                if (rank < 4)
-                    fprintf(stderr, "g2:\n");
                 int nbytes; // number of bytes in the message
                 MPI_Get_count(&status, MPI_BYTE, &nbytes);
                 data->allocate_serial_buffer(nbytes); // allocate necessary space
