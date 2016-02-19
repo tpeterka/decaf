@@ -47,10 +47,10 @@ void checker(Dataflow* dataflow)
 // node and link callback functions
 extern "C"
 {
-    void node_a(void* args,                                   // arguments to the callback
-                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
-                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
-                                                              // inbound dataflows
+    int node_a(void* args,                                   // arguments to the callback
+               vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+               vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+                                                             // inbound dataflows
     {
         static bool first_time = true;
         static int sum = 1;
@@ -93,6 +93,8 @@ extern "C"
                                       DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
             }
+            timestep++;
+            return 0;
         }
         else                 // otherwise send a quit message
         {
@@ -106,15 +108,14 @@ extern "C"
                 (*out_dataflows)[i]->set_quit(quit_container);
                 (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
             }
+            return 1;
         }
-
-        timestep++;
     }
 
-    void node_b(void* args,                                   // arguments to the callback
-                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
-                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
-                                                              // inbound dataflows
+    int node_b(void* args,                                   // arguments to the callback
+               vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+               vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+                                                             // inbound dataflows
     {
         int static sum = 1;                                   // add 1 each time
 
@@ -151,11 +152,12 @@ extern "C"
         }
 
         delete sums;
+        return 0;
     }
 
-    void node_c(void* args,                                   // arguments to the callback
-                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
-                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+    int node_c(void* args,                                   // arguments to the callback
+               vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+               vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                               // inbound dataflows
     {
         int static sum = 1;
@@ -188,11 +190,12 @@ extern "C"
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             (*out_dataflows)[i]->put(container, DECAF_PROD);
         }
+        return 0;
     }
 
-    void node_d(void* args,                                   // arguments to the callback
-                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
-                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+    int node_d(void* args,                                   // arguments to the callback
+               vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+               vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                               // inbound dataflows
     {
         int static sum = 1;
@@ -223,12 +226,13 @@ extern "C"
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             (*out_dataflows)[i]->put(container, DECAF_PROD);
         }
+        return 0;
     }
 
     // dataflow just forwards everything that comes its way in this example
-    void dflow(void* args,                          // arguments to the callback
-               Dataflow* dataflow,                  // dataflow
-               shared_ptr<ConstructData> in_data)  // input data
+    int dflow(void* args,                          // arguments to the callback
+              Dataflow* dataflow,                  // dataflow
+              shared_ptr<ConstructData> in_data)   // input data
     {
         // need to remove routing info from containter that put() inserted
         // TODO: fix dataflow->put() so that the user doesn't need to do this
@@ -237,6 +241,7 @@ extern "C"
         in_data->removeData("dest_id");
 
         dataflow->put(in_data, DECAF_DFLOW);
+        return 0;
     }
 } // extern "C"
 

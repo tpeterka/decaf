@@ -1,6 +1,10 @@
 //---------------------------------------------------------------------------
 //
-// Direct coupling example with the new data model API
+// 2-node producer-consumer coupling example
+//
+// prod (4 procs) - con (2 procs)
+//
+// entire workflow takes 8 procs (2 dataflow procs between prod and con)
 //
 // Matthieu Dreher
 // Argonne National Laboratory
@@ -13,6 +17,8 @@
 #include <decaf/decaf.hpp>
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/arrayconstructdata.hpp>
+#include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
 #include <math.h>
@@ -37,111 +43,91 @@ void checker(Dataflow* decaf)
 extern "C"
 {
     // producer
-    // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void prod(void* args,                              // arguments to the callback
-              int t_current,                           // current time step
-              int t_interval,                          // consumer time interval
-              int t_nsteps,                            // total number of time steps
-              shared_ptr<SimpleConstructData> in_data; // inbound data
-              vector<Dataflow*>* out_dataflows)        // all outbound dataflows
+    // return value: 0 = success, 1 = quit (don't call me anymore)
+    int prod(void* args,                                   // arguments to the callback
+             vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+             vector< shared_ptr<ConstructData> >* in_data) // input data in order of
     {
-        fprintf(stderr, "prod\n");
-
-        int* pd = (int*)args;                 // producer data
-        *pd = t_current;                      // just assign something, current time step eg
-
-        shared_ptr<SimpleConstructData<int> > data  =
-            make_shared<SimpleConstructData<int> >( *pd );
-
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
-        container->appendData(string("t_current"), data,
-                              DECAF_NOFLAG, DECAF_PRIVATE,
-                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
-
-        // production time step
-        if (!((t_current + 1) % t_interval))
+        // produce data for some number of timesteps
+        for (int timestep = 0; timestep < 10; timestep++)
         {
-            fprintf(stderr, "+ producing time step %d\n", t_current);
-            (*out_dataflows)[0]->put(container, DECAF_PROD);
-            fprintf(stderr, "prod put done\n");
-        }
+            fprintf(stderr, "producer timestep %d\n", timestep);
 
-        // final time step, send a terminate flag (user-defined)
-        // TODO: decaf should provide a termination signal
-        if (t_current == t_nsteps - 1)
-        {
-            *pd = -1;                          // assume -1 is not a valid value
-            shared_ptr<SimpleConstructData<int> > data  =
-                make_shared<SimpleConstructData<int> >( *pd );
+            // the data in this example is just the timestep; put it in a container
+            shared_ptr<SimpleConstructData<int> > data =
+                make_shared<SimpleConstructData<int> >(timestep);
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            container->appendData(string("t_current"), data,
-                                  DECAF_NOFLAG, DECAF_PRIVATE,
-                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
-            fprintf(stderr, "+ producing -1 at time step %d\n", t_current);
-            (*out_dataflows)[0]->put(container, DECAF_PROD);
-            fprintf(stderr, "prod put done\n");
+
+            // send the data to the destinations
+            for (size_t i = 0; i < out_dataflows->size(); i++)
+            {
+                // TODO: should we have to append data for each destination?
+                // decaf apparently clears the container after the send
+                container->appendData(string("var"), data,
+                                      DECAF_NOFLAG, DECAF_PRIVATE,
+                                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+                (*out_dataflows)[i]->put(container, DECAF_PROD);
+            }
         }
+
+        // send a quit message
+        fprintf(stderr, "producer sending quit\n");
+        // TODO: can reuse old container? I started a new one to be safe
+        shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+        for (size_t i = 0; i < out_dataflows->size(); i++)
+        {
+            // TODO: should we have to append data for each destination?
+            // decaf apparently clears the container after the send
+            (*out_dataflows)[i]->set_quit(quit_container);
+            (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
+        }
+        return 1;                            // I quit, don't call me anymore
     }
 
     // consumer
-    void con(void* args,                              // arguments to the callback
-             int t_current,                           // current time step
-             int t_interval,                          // consumer time interval
-             int t_nsteps,                            // total number of time steps
-             shared_ptr<SimpleConstructData> in_data; // inbound data
-             vector<Dataflow*>* out_dataflows)        // all outbound dataflows
+    // return value: 0 = success, 1 = quit (don't call me anymore)
+    int con(void* args,                                   // arguments to the callback
+            vector<Dataflow*>* out_dataflows,             // all outbound dataflows
+            vector< shared_ptr<ConstructData> >* in_data) // input data in order of
     {
-        fprintf(stderr, "con\n");
-        // shared_ptr<ConstructData> container = make_shared<ConstructData>();
-        // (*in_dataflows)[0]->get(container, DECAF_CON);
-        shared_ptr<SimpleConstructData<int> > sum =
-            dynamic_pointer_cast<SimpleConstructData<int> >
-            (in_data->getData(string("t_current")));
-        if (sum->getData() > 0)
-            fprintf(stderr, "- consuming time step %d, sum = %d\n", t_current, sum->getData());
-        else        // check for termination
-        // TODO: decaf should provide a termination signal
-        {
-            fprintf(stderr, "con time step %d ending, sum = %d\n", t_current, sum->getData());
-            break;
-        }
+        int sum = 0;
 
-        fprintf(stderr, "con all done\n");
+        // get the values and add them
+        for (size_t i = 0; i < in_data->size(); i++)
+        {
+            shared_ptr<BaseConstructData> ptr = (*in_data)[i]->getData(string("var"));
+            if (ptr)
+            {
+                shared_ptr<SimpleConstructData<int> > val =
+                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+                sum += val->getData();
+            }
+        }
+        fprintf(stderr, "consumer sum = %d\n", sum);
+        return 0;                                         // ok to call me again
     }
 
-    // dataflow just needs to flush on every time step
-    void dflow(void* args,                              // arguments to the callback
-               shared_ptr<SimpleConstructData> in_data; // inbound data
-               Dataflow* dataflow)                      // outbound dataflow
+    // dataflow just forwards everything that comes its way in this example
+    // return value: 0 = success, 1 = quit (don't call me anymore)
+    int dflow(void* args,                          // arguments to the callback
+              Dataflow* dataflow,                  // dataflow
+              shared_ptr<ConstructData> in_data)   // input data
     {
-        fprintf(stderr, "dflow\n");
+        fprintf(stderr, "dataflow\n");
 
-        // getting the data from the producer
-        // shared_ptr<ConstructData> container = make_shared<ConstructData>();
-        // dataflow->get(container, DECAF_DFLOW);
-        shared_ptr<SimpleConstructData<int> > sum =
-            dynamic_pointer_cast<SimpleConstructData<int> >
-            (in_data->getData(string("t_current")));
+        // need to remove routing info from containter that put() inserted
+        // TODO: fix dataflow->put() so that the user doesn't need to do this
+        in_data->removeData("src_type");
+        in_data->removeData("link_id");
+        in_data->removeData("dest_id");
 
-        // fprintf(stderr, "- dataflowing time step %d, sum = %d\n", t_current, sum->getData());
-
-        // forwarding the data to the consumers
-        shared_ptr<ConstructData> out_data = make_shared<ConstructData>();
-        dataflow->put(out_data, DECAF_DFLOW);
-        fprintf(stderr, "dflow put done\n");
-
-        // check for termination
-        // TODO: decaf should provide a termination signal
-        if (sum->getData() < 0)
-        {
-            break;
-        }
+        dataflow->put(in_data, DECAF_DFLOW);
+        return 0;                                         // ok to call me again
     }
 } // extern "C"
 
-void run(Workflow& workflow,             // workflow
-         int prod_nsteps,                // number of producer time steps
-         int con_nsteps)                 // number of consumer time steps
+void run(Workflow&    workflow,                     // workflow
+         vector<int>& sources)                      // source workflow nodes
 {
     // callback args
     int *pd, *cd;
@@ -157,9 +143,8 @@ void run(Workflow& workflow,             // workflow
     MPI_Init(NULL, NULL);
 
     // create and run decaf
-    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps, con_nsteps);
-    Data data(MPI_INT);
-    decaf->run(&data, &pipeliner, &checker);
+    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
+    decaf->run(&pipeliner, &checker, sources);
 
     // cleanup
     delete[] pd;
@@ -174,8 +159,6 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    int prod_nsteps = 4;
-    int con_nsteps = 2;
     char * prefix = getenv("DECAF_PREFIX");
     if(prefix == NULL)
     {
@@ -210,7 +193,7 @@ int main(int argc,
 
     // fill workflow link
     WorkflowLink link;
-    link.prod = 0;                               // dataflow
+    link.prod = 0;                                // dataflow
     link.con = 1;
     link.start_proc = 4;
     link.nprocs = 2;
@@ -220,8 +203,12 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
+    // identify sources
+    vector<int> sources;
+    sources.push_back(0);                           // prod
+
     // run decaf
-    run(workflow, prod_nsteps, con_nsteps);
+    run(workflow, sources);
 
     return 0;
 }
