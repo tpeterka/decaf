@@ -80,6 +80,9 @@ set                         (libraries
 # subdirectories
 add_subdirectory            (src)
 add_subdirectory            (examples)
+if                          (Cython_FOUND AND PYTHONLIBS_FOUND)
+  add_subdirectory          (python)
+endif                       ()
 
 # Install the headers
 file(GLOB DEPLOY_FILES_AND_DIRS "${PROJECT_SOURCE_DIR}/include/*")

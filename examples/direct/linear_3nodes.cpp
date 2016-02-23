@@ -202,7 +202,7 @@ int main(int argc,
     }
 
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/direct/libmod_linear_3nodes.so"));
+    path.append(string("/examples/direct/mod_linear_3nodes.so"));
 
     // fill workflow nodes
     WorkflowNode node;
@@ -265,3 +265,33 @@ int main(int argc,
 
     return 0;
 }
+
+// pybind11 python bindings
+#ifdef PYBIND11
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+namespace py = pybind11;
+
+PYBIND11_PLUGIN(py_linear_3nodes)
+{
+    py::module m("py_linear_3nodes", "pybind11 driver");
+
+    py::class_<WorkflowNode>(m, "WorkflowNode")
+        // .def(py::init<vector<int>&, vector<int>&, int, int, string, string>())
+        .def(py::init<int, int, string, string>())
+        .def_readwrite("out_links", &WorkflowNode::out_links)
+        .def_readwrite("in_links",  &WorkflowNode::in_links);
+
+    py::class_<WorkflowLink>(m, "WorkflowLink")
+        .def(py::init<int, int, int, int, string, string, string, string>());
+
+    py::class_<Workflow>(m, "Workflow")
+        .def(py::init<vector<WorkflowNode>&, vector<WorkflowLink>&>());
+
+    m.def("run", &run, "Run the workflow");
+    return m.ptr();
+}
+
+#endif

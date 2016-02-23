@@ -6,10 +6,10 @@ import os
 # --- set your options here ---
 
 # path to .so for driver
-driver_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/libpy_linear_3nodes.so'
+driver_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/py_linear_3nodes.so'
 
 # path to .so module for callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/libmod_linear_3nodes.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_3nodes.so'
 
 # define workflow graph
 # 3-node linear workflow

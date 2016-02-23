@@ -6,10 +6,10 @@ import os
 # --- set your options here ---
 
 # path to .so driver
-driver_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/libpy_linear_2nodes.so'
+driver_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/py_linear_2nodes.so'
 
 # path to .so module for callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/libmod_linear_2nodes.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_2nodes.so'
 
 # define workflow graph
 # 2-node workflow
