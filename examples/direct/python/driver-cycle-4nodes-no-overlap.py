@@ -1,4 +1,4 @@
-# a small 2-node example, just a producer and consumer
+# a small 4-node example that contains cycles
 
 import networkx as nx
 import os
@@ -6,29 +6,45 @@ import os
 # --- set your options here ---
 
 # path to .so for driver
-driver_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/libpy_linear_2nodes.so'
+driver_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/libpy_cycle_4nodes.so'
 
 # path to .so module for callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/libmod_linear_2nodes.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/libmod_cycle_4nodes.so'
 
 # define workflow graph
-# 2-node workflow
+# 4-node graph with 2 cycles
 #
-#    lammps (4 procs) - print (2 procs)
+#      __  node_b (1 proc)
+#     /   /
+#    node_a (4 procs)
+#         \
+#          node_c (1 proc) - node_d (1 proc)
+#             \ ______________ /
 #
-#  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
-#  dataflow can be overlapped, but currently all disjoint procs (simplest case)
+#  entire workflow takes 12 procs (1 dataflow proc between each producer consumer pair)
+#  all graph nodes and links are on disjoint processes in this example
 
 w = nx.DiGraph()
-w.add_node("prod", start_proc=0, nprocs=4, func='prod', path=mod_path)
-w.add_node("con",  start_proc=6, nprocs=2, func='con' , path=mod_path)
-w.add_edge("prod", "con", start_proc=4, nprocs=2, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
+w.add_node("node_b", start_proc=5, nprocs=1, func='node_b', path=mod_path)
+w.add_node("node_d", start_proc=9, nprocs=1, func='node_d' , path=mod_path)
+w.add_node("node_c", start_proc=7, nprocs=1, func='node_c' , path=mod_path)
+w.add_node("node_a", start_proc=0, nprocs=4, func='node_a' , path=mod_path)
+w.add_edge("node_c", "node_d", start_proc=8,  nprocs=1, func='dflow', path=mod_path,
+           prod_dflow_redist='count', dflow_con_redist='count')
+w.add_edge("node_a", "node_b", start_proc=4,  nprocs=1, func='dflow', path=mod_path,
+           prod_dflow_redist='count', dflow_con_redist='count')
+w.add_edge("node_a", "node_c", start_proc=6,  nprocs=1, func='dflow', path=mod_path,
+           prod_dflow_redist='count', dflow_con_redist='count')
+w.add_edge("node_d", "node_c", start_proc=10, nprocs=1, func='dflow', path=mod_path,
+           prod_dflow_redist='count', dflow_con_redist='count')
+w.add_edge("node_b", "node_a", start_proc=11, nprocs=1, func='dflow', path=mod_path,
+           prod_dflow_redist='count', dflow_con_redist='count')
 
 # sources
-sources = [0]
+sources = [3]
 
 # --- do not edit below this point --
 
 import imp
-driver = imp.load_dynamic('driver_linear_2nodes', driver_path)
+driver = imp.load_dynamic('driver_cycle_4nodes', driver_path)
 driver.pyrun(w, sources)

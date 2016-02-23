@@ -1,5 +1,6 @@
 if                          (python_examples)
     add_subdirectory          (python)
+    add_subdirectory          (pybind11)
 endif                       (python_examples)
 
 find_package(Boost COMPONENTS serialization)
