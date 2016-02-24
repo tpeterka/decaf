@@ -279,10 +279,11 @@ PYBIND11_PLUGIN(py_linear_3nodes)
     py::module m("py_linear_3nodes", "pybind11 driver");
 
     py::class_<WorkflowNode>(m, "WorkflowNode")
-        // .def(py::init<vector<int>&, vector<int>&, int, int, string, string>())
         .def(py::init<int, int, string, string>())
         .def_readwrite("out_links", &WorkflowNode::out_links)
-        .def_readwrite("in_links",  &WorkflowNode::in_links);
+        .def_readwrite("in_links",  &WorkflowNode::in_links)
+        .def("add_out_link", &WorkflowNode::add_out_link)
+        .def("add_in_link",  &WorkflowNode::add_in_link);
 
     py::class_<WorkflowLink>(m, "WorkflowLink")
         .def(py::init<int, int, int, int, string, string, string, string>());

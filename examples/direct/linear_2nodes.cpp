@@ -142,6 +142,36 @@ void run(Workflow&    workflow,                     // workflow
 
     MPI_Init(NULL, NULL);
 
+    // debug
+    // int rank;
+    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // if (rank == 0)
+    // {
+    //     fprintf(stderr, "%ld nodes:\n", workflow.nodes.size());
+    //     for (size_t i = 0; i < workflow.nodes.size(); i++)
+    //     {
+    //         fprintf(stderr, "i %ld out_links.size %ld in_links.size %ld\n",i,
+    //                 workflow.nodes[i].out_links.size(), workflow.nodes[i].in_links.size());
+    //         fprintf(stderr, "out_links:\n");
+    //         for (size_t j = 0; j < workflow.nodes[i].out_links.size(); j++)
+    //             fprintf(stderr, "%d\n", workflow.nodes[i].out_links[j]);
+    //         fprintf(stderr, "in_links:\n");
+    //         for (size_t j = 0; j < workflow.nodes[i].in_links.size(); j++)
+    //             fprintf(stderr, "%d\n", workflow.nodes[i].in_links[j]);
+    //         fprintf(stderr, "node:\n");
+    //         fprintf(stderr, "%d %d\n", workflow.nodes[i].start_proc, workflow.nodes[i].nprocs);
+    //     }
+
+    //     fprintf(stderr, "%ld links:\n", workflow.links.size());
+    //     for (size_t i = 0; i < workflow.links.size(); i++)
+    //         fprintf(stderr, "%d %d %d %d\n", workflow.links[i].prod, workflow.links[i].con,
+    //                 workflow.links[i].start_proc, workflow.links[i].nprocs);
+
+    //     fprintf(stderr, "%ld sources:\n", sources.size());
+    //     for (size_t i = 0; i < sources.size(); i++)
+    //         fprintf(stderr, "%d\n", sources[i]);
+    // }
+
     // create and run decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
     decaf->run(&pipeliner, &checker, sources);
@@ -226,10 +256,11 @@ PYBIND11_PLUGIN(py_linear_2nodes)
     py::module m("py_linear_2nodes", "pybind11 driver");
 
     py::class_<WorkflowNode>(m, "WorkflowNode")
-        // .def(py::init<vector<int>&, vector<int>&, int, int, string, string>())
         .def(py::init<int, int, string, string>())
         .def_readwrite("out_links", &WorkflowNode::out_links)
-        .def_readwrite("in_links",  &WorkflowNode::in_links);
+        .def_readwrite("in_links",  &WorkflowNode::in_links)
+        .def("add_out_link", &WorkflowNode::add_out_link)
+        .def("add_in_link",  &WorkflowNode::add_in_link);
 
     py::class_<WorkflowLink>(m, "WorkflowLink")
         .def(py::init<int, int, int, int, string, string, string, string>());
@@ -240,5 +271,4 @@ PYBIND11_PLUGIN(py_linear_2nodes)
     m.def("run", &run, "Run the workflow");
     return m.ptr();
 }
-
 #endif

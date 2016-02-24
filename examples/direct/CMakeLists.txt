@@ -1,6 +1,5 @@
 if                          (python_examples)
-  # add_subdirectory          (python)
-  add_subdirectory          (pybind11)
+  add_subdirectory          (python)
 endif                       (python_examples)
 
 find_package(Boost COMPONENTS serialization)
@@ -34,6 +33,7 @@ if(Boost_FOUND)
   set_target_properties(mod_linear_2nodes PROPERTIES SUFFIX ".so")
   set_target_properties(mod_linear_3nodes PROPERTIES SUFFIX ".so")
   set_target_properties(mod_cycle_4nodes  PROPERTIES SUFFIX ".so")
+
   # Don't add a 'lib' prefix to the shared library
   set_target_properties(mod_linear_2nodes PROPERTIES PREFIX "")
   set_target_properties(mod_linear_3nodes PROPERTIES PREFIX "")

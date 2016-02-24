@@ -84,19 +84,6 @@ struct DecafSizes
 struct WorkflowNode        // a producer or consumer
 {
     WorkflowNode()                                {}
-    // WorkflowNode(vector<int>& out_links_,
-    //              vector<int>& in_links_,
-    //              int start_proc_,
-    //              int nprocs_,
-    //              string func_,
-    //              string path_) :
-    //     out_links(out_links_),
-    //     in_links(in_links_),
-    //     start_proc(start_proc_),
-    //     nprocs(nprocs_),
-    //     func(func_),
-    //     args(NULL),
-    //     path(path_)                               {}
     WorkflowNode(int start_proc_,
                  int nprocs_,
                  string func_,
@@ -113,6 +100,8 @@ struct WorkflowNode        // a producer or consumer
     string func;           // name of node callback
     void* args;            // callback arguments
     string path;           // path to producer and consumer callback function module
+    void add_out_link(int link) { out_links.push_back(link); }
+    void add_in_link(int link) { in_links.push_back(link); }
 };
 
 struct WorkflowLink        // a dataflow

@@ -14,11 +14,7 @@ def workflow(graph,
 
     # iterate over nodes
     i = 0
-    # out_links = []
-    # in_links  = []
     for node in graph.nodes_iter(data=True):
-        # wnode = mod.WorkflowNode(out_links,
-        #                          in_links,
         wnode = mod.WorkflowNode(node[1]['start_proc'],
                                  node[1]['nprocs'],
                                  node[1]['func'],
@@ -43,9 +39,9 @@ def workflow(graph,
                                  edge[2]['prod_dflow_redist'],
                                  edge[2]['dflow_con_redist'])
 
-        # add edge to corresponding nodes
-        nodes[prod].out_links.append(i)
-        nodes[con].in_links.append(i)
+        # add link to producer and consumer nodes
+        nodes[prod].add_out_link(i)
+        nodes[con].add_in_link(i)
         i += 1
 
         links.append(wlink)
