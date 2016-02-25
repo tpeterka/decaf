@@ -7,7 +7,7 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 - Boost
 - Optionally, if you want the python version of the examples to be built,
     - python
-    - cython
+    - pybind11
     - networkx
 
 # Building decaf:
@@ -154,54 +154,49 @@ void checker(Dataflow* decaf) {}
 
 # Wrapping your project in python
 
-A short python script (eg. driver.py) can be used to set workflow parameters, import the precompiled module for the project, and run it. An example script [examples/lammps/python/driver-4-nodes.py](https://bitbucket.org/tpeterka1/decaf/raw/master/examples/lammps/python/driver-4nodes.py) appears below:
+A short python script (eg. example.py) can be used to set workflow parameters and run the workflow.
 ```{python}
+# a small 2-node example, just a producer and consumer
+
+# --- include the following 4 lines each time ---
+
 import networkx as nx
+import os
+import imp
+wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
 # --- set your options here ---
 
-# path to .so module
-path = '/Users/tpeterka/software/decaf/install/examples/lammps/python/libpy_lammps.so'
+# path to python run .so
+run_path = os.environ['DECAF_PREFIX'] + '/examples/direct/pybind11/py_linear_2nodes.so'
+
+# path to .so module for callback functions
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_2nodes.so'
 
 # define workflow graph
-# 4-node workflow
+# 2-node workflow
 #
-#          print1 (1 proc)
-#        /
-#    lammps (4 procs)
-#        \
-#          print2 (1 proc) - print3 (1 proc)
+#    lammps (4 procs) - print (2 procs)
 #
-#  entire workflow takes 10 procs (1 dataflow proc between each producer consumer pair)
+#  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
 
 w = nx.DiGraph()
-
-# example of 4 nodes and 3 edges (single source)
-# this is the example diagrammed above, and for which driver.pyx is made
-w.add_node("lammps", start_proc=0, nprocs=4, prod_func='lammps'     , con_func=''          )
-w.add_node("print1", start_proc=5, nprocs=1, prod_func= ''          , con_func='print'     )
-w.add_node("print2", start_proc=7, nprocs=1, prod_func='print2_prod', con_func='print2_con')
-w.add_node("print3", start_proc=9, nprocs=1, prod_func=''           , con_func='print'     )
-w.add_edge("lammps", "print1", start_proc=4, nprocs=1, dflow_func='dflow'                  )
-w.add_edge("lammps", "print2", start_proc=6, nprocs=1, dflow_func='dflow'                  )
-w.add_edge("print2", "print3", start_proc=8, nprocs=1, dflow_func='dflow'                  )
+w.add_node("prod", start_proc=0, nprocs=4, func='prod', path=mod_path)
+w.add_node("con",  start_proc=6, nprocs=2, func='con' , path=mod_path)
+w.add_edge("prod", "con", start_proc=4, nprocs=2, func='dflow', path=mod_path,
+           prod_dflow_redist='count', dflow_con_redist='count')
 
 # sources
-sources = [0]
+source_nodes = ['prod']
 
-# lammps input file
-infile = "/Users/tpeterka/software/decaf/examples/lammps/in.melt"
+# --- convert the nx graph into a workflow data structure and run the workflow ---
 
-# --- do not edit below this point --
-
-# call driver
-
-import imp
-driver = imp.load_dynamic('driver', path)
-driver.pyrun(w, sources, infile)
+wf.workflow(w,                               # nx workflow graph
+            source_nodes,                    # source nodes in the workflow
+            'py_linear_2nodes',              # run module name
+            run_path)                        # run path
 ```
-[More information on the steps to generate a python interface for a project](https://bitbucket.org/tpeterka1/decaf/raw/master/doc/python.md)
 
 # Executing the python-wrapped project
 
