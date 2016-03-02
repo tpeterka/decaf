@@ -53,7 +53,7 @@ extern "C"
                                                              // inbound dataflows
     {
         static bool first_time = true;
-        static int sum = 1;
+        int sum = 0;
         static int timestep = 0;                   // counter of how many times node_a executes
 
         if (first_time)
@@ -68,46 +68,43 @@ extern "C"
                 {
                     shared_ptr<ArrayConstructData<int> > vals =
                         dynamic_pointer_cast<ArrayConstructData<int> >(ptr);
-                    // TODO: how to get data from an array?
-                    // sum += vals->getData();
-                    // fprintf(stderr, "node_a: got value %d sum = %d\n", vals->getData(), sum);
-                    fprintf(stderr, "node_a: timestep %d got value (need help reading) sum = %d\n",
-                            timestep, sum);
+                    sum += vals->getArray()[0];
+                    fprintf(stderr, "node_a: got value %d sum = %d\n", vals->getArray()[0], sum);
                 }
             }
         }
 
         first_time = false;
 
-        shared_ptr<SimpleConstructData<int> > data  = make_shared<SimpleConstructData<int> >(sum);
+        shared_ptr<SimpleConstructData<int> > data  =
+            make_shared<SimpleConstructData<int> >(timestep);
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
 
         if (timestep < 3)        // send the sum for some number of timesteps
         {
+            container->appendData(string("var"), data,
+                                  DECAF_NOFLAG, DECAF_PRIVATE,
+                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
             {
-                // TODO: should we have to append data for each destination?
-                // decaf apparently clears the container after the send
-                container->appendData(string("var"), data,
-                                      DECAF_NOFLAG, DECAF_PRIVATE,
-                                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
+                (*out_dataflows)[i]->flush();
             }
+
             timestep++;
             return 0;
         }
-        else                 // otherwise send a quit message
+        else                     // otherwise send a quit message
         {
             fprintf(stderr, "node_a sending quit timestep %d\n", timestep);
-            // TODO: can reuse old container? I started a new one to be safe
             shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+            Dataflow::set_quit(quit_container);
             for (size_t i = 0; i < out_dataflows->size(); i++)
             {
-                // TODO: should we have to append data for each destination?
-                // decaf apparently clears the container after the send
-                (*out_dataflows)[i]->set_quit(quit_container);
                 (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
+                (*out_dataflows)[i]->flush();
             }
+
             return 1;
         }
     }
@@ -117,7 +114,7 @@ extern "C"
                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                              // inbound dataflows
     {
-        int static sum = 1;                                   // add 1 each time
+        int sum = 0;                                   // add 1 each time
 
         // get the values and add them
         for (size_t i = 0; i < in_data->size(); i++)
@@ -134,8 +131,8 @@ extern "C"
             }
         }
 
-        int* sums = new int[out_dataflows->size()];
-        for (size_t i = 0; i < out_dataflows->size(); i++)
+        int* sums = new int[(*out_dataflows)[0]->sizes()->con_size];
+        for (size_t i = 0; i < (*out_dataflows)[0]->sizes()->con_size; i++)
             sums[i] = sum;
 
         shared_ptr<ArrayConstructData<int> > data  =
@@ -143,12 +140,13 @@ extern "C"
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
 
         // send the sum
+        container->appendData(string("vars"), data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         for (size_t i = 0; i < out_dataflows->size(); i++)
         {
-            container->appendData(string("vars"), data,
-                                  DECAF_NOFLAG, DECAF_PRIVATE,
-                                  DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
             (*out_dataflows)[i]->put(container, DECAF_PROD);
+            (*out_dataflows)[i]->flush();
         }
 
         delete sums;
@@ -158,9 +156,9 @@ extern "C"
     int node_c(void* args,                                   // arguments to the callback
                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
-                                                              // inbound dataflows
+                                                             // inbound dataflows
     {
-        int static sum = 1;
+        int sum = 0;
 
         // get the values and add them
         for (size_t i = 0; i < in_data->size(); i++)
@@ -180,25 +178,28 @@ extern "C"
         shared_ptr<SimpleConstructData<int> > data  = make_shared<SimpleConstructData<int> >(sum);
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
 
-        // send the sum
-        for (size_t i = 0; i < out_dataflows->size(); i++)
+        // send the sum if > 0 (for example)
+        if (sum)
         {
-            // TODO: should we have to append data for each destination?
-            // decaf apparently clears the container after the send
             container->appendData(string("var"), data,
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
-            (*out_dataflows)[i]->put(container, DECAF_PROD);
+            for (size_t i = 0; i < out_dataflows->size(); i++)
+            {
+                (*out_dataflows)[i]->put(container, DECAF_PROD);
+                (*out_dataflows)[i]->flush();
+            }
         }
+
         return 0;
     }
 
     int node_d(void* args,                                   // arguments to the callback
                vector<Dataflow*>* out_dataflows,             // all outbound dataflows
                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
-                                                              // inbound dataflows
+                                                             // inbound dataflows
     {
-        int static sum = 1;
+        int sum = 0;
 
         // get the values and add them
         for (size_t i = 0; i < in_data->size(); i++)
@@ -213,19 +214,19 @@ extern "C"
             }
         }
 
+        // add 1 to the sum and send it back (for example)
+        sum++;
         shared_ptr<SimpleConstructData<int> > data  = make_shared<SimpleConstructData<int> >(sum);
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
-
-        // send the sum
+        container->appendData(string("var"), data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
         for (size_t i = 0; i < out_dataflows->size(); i++)
         {
-            // TODO: should we have to append data for each destination?
-            // decaf apparently clears the container after the send
-            container->appendData(string("var"), data,
-                                  DECAF_NOFLAG, DECAF_PRIVATE,
-                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             (*out_dataflows)[i]->put(container, DECAF_PROD);
+            (*out_dataflows)[i]->flush();
         }
+
         return 0;
     }
 
@@ -234,13 +235,8 @@ extern "C"
               Dataflow* dataflow,                  // dataflow
               shared_ptr<ConstructData> in_data)   // input data
     {
-        // need to remove routing info from containter that put() inserted
-        // TODO: fix dataflow->put() so that the user doesn't need to do this
-        in_data->removeData("src_type");
-        in_data->removeData("link_id");
-        in_data->removeData("dest_id");
-
         dataflow->put(in_data, DECAF_DFLOW);
+        dataflow->flush();
         return 0;
     }
 } // extern "C"

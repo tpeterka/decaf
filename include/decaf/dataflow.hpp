@@ -322,6 +322,12 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         make_shared<SimpleConstructData<TaskType> >(role);
     std::shared_ptr<ConstructData> map =
         std::dynamic_pointer_cast<ConstructData>(data);
+
+    // clear old identifiers
+    map->removeData("src_type");
+    map->removeData("link_id");
+    map->removeData("dest_id");
+
     map->appendData(string("src_type"), value,
                     DECAF_NOFLAG, DECAF_PRIVATE,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);

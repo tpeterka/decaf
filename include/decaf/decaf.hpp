@@ -518,6 +518,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                     fprintf(stderr, "1: got quit\n");
 
                     // a workflow node (producer, consumer, or both)
+                    Dataflow::set_quit(quit_container);
                     if (ready_types[i] & (DECAF_PROD | DECAF_CON))
                     {
                         for (size_t j = 0; j < workflow_.nodes[ready_ids[i]].out_links.size(); j++)
@@ -525,10 +526,6 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                             // debug
                             fprintf(stderr, "2: prod putting quit on out link %d\n",
                                     workflow_.nodes[ready_ids[i]].out_links[j]);
-
-                            // TODO: should we have to append data for each destination?
-                            // decaf apparently clears the container after the send
-                            Dataflow::set_quit(quit_container);
                             dataflows[workflow_.nodes[ready_ids[i]].out_links[j]]->
                                 put(quit_container, DECAF_PROD);
                         }
@@ -538,10 +535,6 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                     {
                         // debug
                         fprintf(stderr, "3: dflow forwarding quit on link %d\n", ready_ids[i]);
-
-                        // TODO: should we have to append data for each destination?
-                        // decaf apparently clears the container after the send
-                        Dataflow::set_quit(quit_container);
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_DFLOW);
                     }
                 }

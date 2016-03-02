@@ -18,7 +18,7 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_3nodes.so'
 # define workflow graph
 # 3-node linear workflow
 #
-#    node1 (4 procs) - node2 (3 procs) - node3 (2 procs)
+#    node0 (4 procs) -> node1 (3 procs) -> node2 (2 procs)
 #
 #  entire workflow takes 12 procs because of no overlap
 

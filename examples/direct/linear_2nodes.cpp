@@ -59,28 +59,23 @@ extern "C"
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
 
             // send the data to the destinations
+            container->appendData(string("var"), data,
+                                  DECAF_NOFLAG, DECAF_PRIVATE,
+                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
             {
-                // TODO: should we have to append data for each destination?
-                // decaf apparently clears the container after the send
-                container->appendData(string("var"), data,
-                                      DECAF_NOFLAG, DECAF_PRIVATE,
-                                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
+                (*out_dataflows)[i]->flush();
             }
         }
 
         // send a quit message
         fprintf(stderr, "producer sending quit\n");
-        // TODO: can reuse old container? I started a new one to be safe
         shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+        Dataflow::set_quit(quit_container);
         for (size_t i = 0; i < out_dataflows->size(); i++)
-        {
-            // TODO: should we have to append data for each destination?
-            // decaf apparently clears the container after the send
-            (*out_dataflows)[i]->set_quit(quit_container);
             (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
-        }
+
         return 1;                            // I quit, don't call me anymore
     }
 
@@ -113,15 +108,8 @@ extern "C"
               Dataflow* dataflow,                  // dataflow
               shared_ptr<ConstructData> in_data)   // input data
     {
-        fprintf(stderr, "dataflow\n");
-
-        // need to remove routing info from containter that put() inserted
-        // TODO: fix dataflow->put() so that the user doesn't need to do this
-        in_data->removeData("src_type");
-        in_data->removeData("link_id");
-        in_data->removeData("dest_id");
-
         dataflow->put(in_data, DECAF_DFLOW);
+        dataflow->flush();
         return 0;                                         // ok to call me again
     }
 } // extern "C"

@@ -18,14 +18,15 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_2nodes.so'
 # define workflow graph
 # 2-node workflow
 #
-#    lammps (4 procs) - print (2 procs)
+#    prod (4 procs) -> con (2 procs)
 #
 #  entire workflow takes 4 procs because of the overlap
 
 w = nx.DiGraph()
 w.add_node("prod", start_proc=0, nprocs=4, func='prod', path=mod_path)
 w.add_node("con",  start_proc=2, nprocs=2, func='con' , path=mod_path)
-w.add_edge("prod", "con", start_proc=1, nprocs=2, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
+w.add_edge("prod", "con", start_proc=1, nprocs=2, func='dflow',
+           path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # sources
 source_nodes = ['prod']

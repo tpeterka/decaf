@@ -71,8 +71,9 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
                 std::cout<<"ERROR : unable to serialize one object"<<std::endl;
         }
 
+        // DEPRECATED
         // Everything is done, now we can clean the data.
         // Data might be rewriten if producers and consummers are overlapping
-        data->purgeData();
+        // data->purgeData();
     }
 }

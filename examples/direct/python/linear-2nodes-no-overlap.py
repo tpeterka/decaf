@@ -18,7 +18,7 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_2nodes.so'
 # define workflow graph
 # 2-node workflow
 #
-#    lammps (4 procs) - print (2 procs)
+#    prod (4 procs) -> con (2 procs)
 #
 #  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
