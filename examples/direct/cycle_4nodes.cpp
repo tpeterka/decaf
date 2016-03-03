@@ -86,10 +86,7 @@ extern "C"
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
-            {
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
-                (*out_dataflows)[i]->flush();
-            }
 
             timestep++;
             return 0;
@@ -100,10 +97,7 @@ extern "C"
             shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
             Dataflow::set_quit(quit_container);
             for (size_t i = 0; i < out_dataflows->size(); i++)
-            {
                 (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
-                (*out_dataflows)[i]->flush();
-            }
 
             return 1;
         }
@@ -144,10 +138,7 @@ extern "C"
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         for (size_t i = 0; i < out_dataflows->size(); i++)
-        {
             (*out_dataflows)[i]->put(container, DECAF_PROD);
-            (*out_dataflows)[i]->flush();
-        }
 
         delete sums;
         return 0;
@@ -185,10 +176,7 @@ extern "C"
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
-            {
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
-                (*out_dataflows)[i]->flush();
-            }
         }
 
         return 0;
@@ -222,10 +210,7 @@ extern "C"
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
         for (size_t i = 0; i < out_dataflows->size(); i++)
-        {
             (*out_dataflows)[i]->put(container, DECAF_PROD);
-            (*out_dataflows)[i]->flush();
-        }
 
         return 0;
     }
@@ -236,7 +221,6 @@ extern "C"
               shared_ptr<ConstructData> in_data)   // input data
     {
         dataflow->put(in_data, DECAF_DFLOW);
-        dataflow->flush();
         return 0;
     }
 } // extern "C"

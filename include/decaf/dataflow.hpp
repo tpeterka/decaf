@@ -21,7 +21,6 @@
 #ifdef TRANSPORT_MPI
 #include "transport/mpi/types.h"
 #include "transport/mpi/comm.hpp"
-#include "transport/mpi/data.hpp"
 #include "transport/mpi/redist_count_mpi.h"
 #include "transport/mpi/redist_round_mpi.h"
 #include "transport/mpi/redist_zcurve_mpi.h"
@@ -52,7 +51,7 @@ namespace decaf
         void put(std::shared_ptr<BaseData> data, TaskType role);
         int get(std::shared_ptr<BaseData> data, TaskType role);
         DecafSizes* sizes()    { return &sizes_; }
-        void flush();
+        void shutdown();
         void err()             { ::all_err(err_); }
         // whether this rank is producer, dataflow, or consumer (may have multiple roles)
         bool is_prod()         { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
@@ -89,7 +88,7 @@ namespace decaf
         Comm* prod_comm_;                // producer communicator
         Comm* con_comm_;                 // consumer communicator
         RedistComp* redist_prod_dflow_;  // Redistribution component between producer and dataflow
-        RedistComp* redist_dflow_con_;   // Redestribution component between a dataflow and consummer
+        RedistComp* redist_dflow_con_;   // Redestribution component between a dataflow and consumer
         DecafSizes sizes_;               // sizes of communicators, time steps
         void (*pipeliner_)(Dataflow*);   // user-defined pipeliner code
         void (*checker_)(Dataflow*);     // user-defined resilience code
@@ -348,6 +347,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                          DECAF_NOFLAG, DECAF_PRIVATE,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
+        // send the message
         if(redist_prod_dflow_ == NULL)
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
@@ -362,6 +362,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                          DECAF_NOFLAG, DECAF_PRIVATE,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
+        // send the message
         if(redist_dflow_con_ == NULL)
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
         redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
@@ -395,14 +396,14 @@ Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
     return retval;
 }
 
-// cleanup after each time step
+// cleanup
 void
 decaf::
-Dataflow::flush()
+Dataflow::shutdown()
 {
-    if (is_prod())
+    if (redist_prod_dflow_)
         redist_prod_dflow_->flush();
-    if (is_dflow())
+    if (redist_dflow_con_)
         redist_dflow_con_->flush();
 }
 

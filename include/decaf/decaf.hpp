@@ -23,7 +23,6 @@
 #ifdef TRANSPORT_MPI
 #include "transport/mpi/types.h"
 #include "transport/mpi/comm.hpp"
-#include "transport/mpi/data.hpp"
 #endif
 
 #include "types.hpp"
@@ -514,36 +513,31 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                 shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
                 for (size_t i = 0; i < ready_ids.size(); i++)
                 {
-                    // debug
-                    fprintf(stderr, "1: got quit\n");
-
                     // a workflow node (producer, consumer, or both)
                     Dataflow::set_quit(quit_container);
                     if (ready_types[i] & (DECAF_PROD | DECAF_CON))
                     {
                         for (size_t j = 0; j < workflow_.nodes[ready_ids[i]].out_links.size(); j++)
-                        {
-                            // debug
-                            fprintf(stderr, "2: prod putting quit on out link %d\n",
-                                    workflow_.nodes[ready_ids[i]].out_links[j]);
                             dataflows[workflow_.nodes[ready_ids[i]].out_links[j]]->
                                 put(quit_container, DECAF_PROD);
-                        }
                     }
                     // a workflow link (dataflow)
                     else if (ready_types[i] & DECAF_DFLOW)
-                    {
-                        // debug
-                        fprintf(stderr, "3: dflow forwarding quit on link %d\n", ready_ids[i]);
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_DFLOW);
-                    }
                 }
             }
         }
 
         // all done
         if (done)
+        {
+            for (size_t i = 0; i < dataflows.size(); i++)
+            {
+                if (my_link(i))
+                    dataflows[i]->shutdown();
+            }
             break;
+        }
 
         // otherwise, act on the messages
         for (size_t i = 0; i < ready_ids.size(); i++)
@@ -580,7 +574,8 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                                       &node_containers);
                 if (done)
                 {
-                    int my_id = my_node(i);
+                    int my_id = my_node(ready_ids[i]);
+                    fprintf(stderr, "*** node my_id %d done\n", my_id);
                     if (my_id >= 0)
                         my_nodes_[my_id].done = true;
                 }
@@ -622,7 +617,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                                               *it);
                         if (done)
                         {
-                            int my_id = my_link(i);
+                            int my_id = my_link(ready_ids[i]);
                             if (my_id >= 0)
                                 my_links_[my_id].done = true;
                         }

@@ -126,7 +126,7 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             MPI_Request req;
             reqs.push_back(req);
             MPI_Isend(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
-                      communicator_,&reqs.back());
+                      communicator_, &reqs.back());
         }
 
 
