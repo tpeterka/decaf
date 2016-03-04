@@ -10,7 +10,7 @@ wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.
 # --- set your options here ---
 
 # path to python run .so
-run_path = os.environ['DECAF_PREFIX'] + '/examples/direct/pybind11/py_linear_3nodes.so'
+run_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/py_linear_3nodes.so'
 
 # path to .so module for callback functions
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_3nodes.so'
@@ -31,12 +31,7 @@ w.add_edge('node0', 'node1', start_proc=0, nprocs=3, func='dflow',
 w.add_edge('node1', 'node2', start_proc=4, nprocs=2, func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
-# sources
-source_nodes = ['node0']
-
 # --- convert the nx graph into a workflow data structure and run the workflow ---
 
 wf.workflow(w,                               # nx workflow graph
-            source_nodes,                    # source nodes in the workflow
-            'py_linear_3nodes',              # run module name
             run_path)                        # run path

@@ -3,14 +3,19 @@
 import imp
 
 def workflow(graph,
-             source_nodes,
-             run_mod,
-             run_path):
+             run_path,
+             source_nodes=None):
+
+    if source_nodes is None:
+        source_nodes = []
+
     nodes   = []
     links   = []
     sources = []                                 # indices of source nodes
 
-    mod = imp.load_dynamic(run_mod, run_path)
+    # load the module
+    # hard-coded name 'pymod' must match name of module in PYBIND11_PLUGIN in decaf.hpp
+    mod = imp.load_dynamic('pymod', run_path)
 
     # iterate over nodes
     i = 0

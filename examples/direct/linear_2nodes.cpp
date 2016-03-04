@@ -46,10 +46,12 @@ extern "C"
     // return value: 0 = success, 1 = quit (don't call me anymore)
     int prod(void* args,                                   // arguments to the callback
              vector<Dataflow*>* out_dataflows,             // all outbound dataflows
-             vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+             vector< shared_ptr<ConstructData> >* in_data) // input data in order of workflow links
     {
+        static int timestep = 0;
+
         // produce data for some number of timesteps
-        for (int timestep = 0; timestep < 10; timestep++)
+        if (timestep < 10)
         {
             fprintf(stderr, "producer timestep %d\n", timestep);
 
@@ -64,16 +66,21 @@ extern "C"
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
+
+            timestep++;
+            return 0;                        // ok to call me again
         }
+        else
+        {
+            // send a quit message
+            fprintf(stderr, "producer sending quit\n");
+            shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+            Dataflow::set_quit(quit_container);
+            for (size_t i = 0; i < out_dataflows->size(); i++)
+                (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
 
-        // send a quit message
-        fprintf(stderr, "producer sending quit\n");
-        shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
-        Dataflow::set_quit(quit_container);
-        for (size_t i = 0; i < out_dataflows->size(); i++)
-            (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
-
-        return 1;                            // I quit, don't call me anymore
+            return 1;                        // I quit, don't call me anymore
+        }
     }
 
     // consumer
@@ -110,59 +117,50 @@ extern "C"
     }
 } // extern "C"
 
-void run(Workflow&    workflow,                     // workflow
-         vector<int>& sources)                      // source workflow nodes
+void run(Workflow&          workflow,                // workflow
+         // const vector<int>& sources = vector<int>()) // optional source workflow nodes
+         const vector<int>& sources)                 // optional source workflow nodes
 {
-    // callback args
-    int *pd, *cd;
-    pd = new int[1];
+    // optional callback args, can leave uninitialized if not being used
     for (size_t i = 0; i < workflow.nodes.size(); i++)
-    {
-        if (workflow.nodes[i].func == "prod")
-            workflow.nodes[i].args = pd;
-        if (workflow.nodes[i].func == "con")
-            workflow.nodes[i].args = cd;
-    }
+        workflow.nodes[i].args = NULL;              // define any callback args here
 
     MPI_Init(NULL, NULL);
 
     // debug
-    // int rank;
-    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // if (rank == 0)
-    // {
-    //     fprintf(stderr, "%ld nodes:\n", workflow.nodes.size());
-    //     for (size_t i = 0; i < workflow.nodes.size(); i++)
-    //     {
-    //         fprintf(stderr, "i %ld out_links.size %ld in_links.size %ld\n",i,
-    //                 workflow.nodes[i].out_links.size(), workflow.nodes[i].in_links.size());
-    //         fprintf(stderr, "out_links:\n");
-    //         for (size_t j = 0; j < workflow.nodes[i].out_links.size(); j++)
-    //             fprintf(stderr, "%d\n", workflow.nodes[i].out_links[j]);
-    //         fprintf(stderr, "in_links:\n");
-    //         for (size_t j = 0; j < workflow.nodes[i].in_links.size(); j++)
-    //             fprintf(stderr, "%d\n", workflow.nodes[i].in_links[j]);
-    //         fprintf(stderr, "node:\n");
-    //         fprintf(stderr, "%d %d\n", workflow.nodes[i].start_proc, workflow.nodes[i].nprocs);
-    //     }
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0)
+    {
+        fprintf(stderr, "%ld nodes:\n", workflow.nodes.size());
+        for (size_t i = 0; i < workflow.nodes.size(); i++)
+        {
+            fprintf(stderr, "i %ld out_links.size %ld in_links.size %ld\n",i,
+                    workflow.nodes[i].out_links.size(), workflow.nodes[i].in_links.size());
+            fprintf(stderr, "out_links:\n");
+            for (size_t j = 0; j < workflow.nodes[i].out_links.size(); j++)
+                fprintf(stderr, "%d\n", workflow.nodes[i].out_links[j]);
+            fprintf(stderr, "in_links:\n");
+            for (size_t j = 0; j < workflow.nodes[i].in_links.size(); j++)
+                fprintf(stderr, "%d\n", workflow.nodes[i].in_links[j]);
+            fprintf(stderr, "node:\n");
+            fprintf(stderr, "%d %d\n", workflow.nodes[i].start_proc, workflow.nodes[i].nprocs);
+        }
 
-    //     fprintf(stderr, "%ld links:\n", workflow.links.size());
-    //     for (size_t i = 0; i < workflow.links.size(); i++)
-    //         fprintf(stderr, "%d %d %d %d\n", workflow.links[i].prod, workflow.links[i].con,
-    //                 workflow.links[i].start_proc, workflow.links[i].nprocs);
+        fprintf(stderr, "%ld links:\n", workflow.links.size());
+        for (size_t i = 0; i < workflow.links.size(); i++)
+            fprintf(stderr, "%d %d %d %d\n", workflow.links[i].prod, workflow.links[i].con,
+                    workflow.links[i].start_proc, workflow.links[i].nprocs);
 
-    //     fprintf(stderr, "%ld sources:\n", sources.size());
-    //     for (size_t i = 0; i < sources.size(); i++)
-    //         fprintf(stderr, "%d\n", sources[i]);
-    // }
+        fprintf(stderr, "%ld sources:\n", sources.size());
+        for (size_t i = 0; i < sources.size(); i++)
+            fprintf(stderr, "%d\n", sources[i]);
+    }
 
     // create and run decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
     decaf->run(&pipeliner, &checker, sources);
 
-    // cleanup
-    delete[] pd;
-    delete decaf;
     MPI_Finalize();
 }
 
@@ -217,42 +215,8 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
-    // identify sources
-    vector<int> sources;
-    sources.push_back(0);                           // prod
-
     // run decaf
-    run(workflow, sources);
+    run(workflow);
 
     return 0;
 }
-
-// pybind11 python bindings
-#ifdef PYBIND11
-
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
-PYBIND11_PLUGIN(py_linear_2nodes)
-{
-    py::module m("py_linear_2nodes", "pybind11 driver");
-
-    py::class_<WorkflowNode>(m, "WorkflowNode")
-        .def(py::init<int, int, string, string>())
-        .def_readwrite("out_links", &WorkflowNode::out_links)
-        .def_readwrite("in_links",  &WorkflowNode::in_links)
-        .def("add_out_link", &WorkflowNode::add_out_link)
-        .def("add_in_link",  &WorkflowNode::add_in_link);
-
-    py::class_<WorkflowLink>(m, "WorkflowLink")
-        .def(py::init<int, int, int, int, string, string, string, string>());
-
-    py::class_<Workflow>(m, "Workflow")
-        .def(py::init<vector<WorkflowNode>&, vector<WorkflowLink>&>());
-
-    m.def("run", &run, "Run the workflow");
-    return m.ptr();
-}
-#endif

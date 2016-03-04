@@ -225,8 +225,8 @@ extern "C"
     }
 } // extern "C"
 
-void run(Workflow&    workflow,                     // workflow
-         vector<int>& sources)                      // source workflow nodes
+void run(Workflow&          workflow,                     // workflow
+         const vector<int>& sources)                      // source workflow nodes
 {
     // callback args
     for (size_t i = 0; i < workflow.nodes.size(); i++)
@@ -373,34 +373,3 @@ int main(int argc,
 
     return 0;
 }
-
-// pybind11 python bindings
-#ifdef PYBIND11
-
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
-PYBIND11_PLUGIN(py_cycle_4nodes)
-{
-    py::module m("py_cycle_4nodes", "pybind11 driver");
-
-    py::class_<WorkflowNode>(m, "WorkflowNode")
-        .def(py::init<int, int, string, string>())
-        .def_readwrite("out_links", &WorkflowNode::out_links)
-        .def_readwrite("in_links",  &WorkflowNode::in_links)
-        .def("add_out_link", &WorkflowNode::add_out_link)
-        .def("add_in_link",  &WorkflowNode::add_in_link);
-
-    py::class_<WorkflowLink>(m, "WorkflowLink")
-        .def(py::init<int, int, int, int, string, string, string, string>());
-
-    py::class_<Workflow>(m, "Workflow")
-        .def(py::init<vector<WorkflowNode>&, vector<WorkflowLink>&>());
-
-    m.def("run", &run, "Run the workflow");
-    return m.ptr();
-}
-
-#endif

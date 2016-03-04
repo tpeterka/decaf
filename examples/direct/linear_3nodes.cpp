@@ -49,8 +49,10 @@ extern "C"
               vector<Dataflow*>* out_dataflows,             // all outbound dataflows
               vector< shared_ptr<ConstructData> >* in_data) // input data in order of
     {
+        static int timestep = 0;
+
         // produce data for some number of timesteps
-        for (int timestep = 0; timestep < 10; timestep++)
+        if (timestep < 10)
         {
             fprintf(stderr, "producer timestep %d\n", timestep);
 
@@ -65,16 +67,21 @@ extern "C"
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
                 (*out_dataflows)[i]->put(container, DECAF_PROD);
+
+            timestep++;
+            return 0;                        // ok to call me again
         }
+        else
+        {
+            // send a quit message
+            fprintf(stderr, "producer sending quit\n");
+            shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+            Dataflow::set_quit(quit_container);
+            for (size_t i = 0; i < out_dataflows->size(); i++)
+                (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
 
-        // send a quit message
-        fprintf(stderr, "producer sending quit\n");
-        shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
-        Dataflow::set_quit(quit_container);
-        for (size_t i = 0; i < out_dataflows->size(); i++)
-            (*out_dataflows)[i]->put(quit_container, DECAF_PROD);
-
-        return 1;                            // I quit, don't call me anymore
+            return 1;                            // I quit, don't call me anymore
+        }
     }
 
     // intermediate node is both a consumer and producer
@@ -142,19 +149,13 @@ extern "C"
     }
 } // extern "C"
 
-void run(Workflow&    workflow,                     // workflow
-         vector<int>& sources)                      // source workflow nodes
+void run(Workflow&          workflow,                // workflow
+         // const vector<int>& sources = vector<int>()) // optional source workflow nodes
+         const vector<int>& sources)                 // optional source workflow nodes
 {
-    // callback args
-    int *pd;                                 // args for producer, consumer, both
-    pd = new int[1];
+    // optional callback args, can leave uninitialized if not being used
     for (size_t i = 0; i < workflow.nodes.size(); i++)
-    {
-        if (!workflow.nodes[i].in_links.size())
-            workflow.nodes[i].args = pd;
-        else
-            workflow.nodes[i].args = NULL;
-    }
+        workflow.nodes[i].args = NULL;              // define any callback args here
 
     MPI_Init(NULL, NULL);
 
@@ -162,9 +163,6 @@ void run(Workflow&    workflow,                     // workflow
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
     decaf->run(&pipeliner, &checker, sources);
 
-    // cleanup
-    delete[] pd;
-    delete decaf;
     MPI_Finalize();
 }
 
@@ -238,43 +236,8 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
-    // identify sources
-    vector<int> sources;
-    sources.push_back(0);                           // node0
-
     // run decaf
-    run(workflow, sources);
+    run(workflow);
 
     return 0;
 }
-
-// pybind11 python bindings
-#ifdef PYBIND11
-
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
-PYBIND11_PLUGIN(py_linear_3nodes)
-{
-    py::module m("py_linear_3nodes", "pybind11 driver");
-
-    py::class_<WorkflowNode>(m, "WorkflowNode")
-        .def(py::init<int, int, string, string>())
-        .def_readwrite("out_links", &WorkflowNode::out_links)
-        .def_readwrite("in_links",  &WorkflowNode::in_links)
-        .def("add_out_link", &WorkflowNode::add_out_link)
-        .def("add_in_link",  &WorkflowNode::add_in_link);
-
-    py::class_<WorkflowLink>(m, "WorkflowLink")
-        .def(py::init<int, int, int, int, string, string, string, string>());
-
-    py::class_<Workflow>(m, "Workflow")
-        .def(py::init<vector<WorkflowNode>&, vector<WorkflowLink>&>());
-
-    m.def("run", &run, "Run the workflow");
-    return m.ptr();
-}
-
-#endif

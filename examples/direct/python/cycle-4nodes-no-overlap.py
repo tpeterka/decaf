@@ -10,7 +10,7 @@ wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.
 # --- set your options here ---
 
 # path to python run .so
-run_path = os.environ['DECAF_PREFIX'] + '/examples/direct/pybind11/py_cycle_4nodes.so'
+run_path = os.environ['DECAF_PREFIX'] + '/examples/direct/python/py_cycle_4nodes.so'
 
 # path to .so module for callback functions
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_cycle_4nodes.so'
@@ -47,11 +47,12 @@ w.add_edge("node_b", "node_a", start_proc=11, nprocs=1, func='dflow', path=mod_p
            prod_dflow_redist='count', dflow_con_redist='count')
 
 # sources
+# when the sources cannot be determined automatically (nodes with no in-links) by decaf,
+# they can be named this way
 source_nodes = ['node_a']                    # names of source nodes
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
 
 wf.workflow(w,                               # nx workflow graph
-            source_nodes,                    # source nodes in the workflow
-            'py_cycle_4nodes',               # run module name
-            run_path)                        # run path
+            run_path,                        # run path
+            source_nodes)                    # source nodes in the workflow (default is none)

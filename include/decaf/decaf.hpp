@@ -34,7 +34,8 @@ namespace decaf
     struct RoutingNode
     {
         int idx;                             // node index in workflow
-        vector<int> in_links;                // links with ready input data items
+        set<int> wflow_in_links;             // input links in workflow for this node
+        set<int> ready_in_links;             // input links with ready data items
         bool done;                           // node is all done
     };
     struct RoutingLink
@@ -53,7 +54,7 @@ namespace decaf
         void err()                    { ::all_err(err_);              }
         void run(void (*pipeliner)(Dataflow*),
                  void (*checker)(Dataflow*),
-                 vector<int>& sources);
+                 const vector<int>& sources);
         Comm* world;
 
     private:
@@ -244,7 +245,7 @@ namespace decaf
                             for (size_t j = 0; j < my_nodes_.size(); j++)
                             {
                                 if (dest_id(*it) == my_nodes_[j].idx)
-                                    my_nodes_[j].in_links.push_back(link_id(*it));
+                                    my_nodes_[j].ready_in_links.insert(link_id(*it));
                             }
                         }                             // not done
                     }                                 // node
@@ -279,8 +280,7 @@ namespace decaf
                 }                                     // in_data iterator
 
                 // check for ready nodes and links having all their inputs
-                if (in_data.size())
-                    ready_nodes_links(ready_ids, ready_types);
+                ready_nodes_links(ready_ids, ready_types);
 
                 return(all_done());
             }                                      // router
@@ -295,23 +295,30 @@ namespace decaf
             {
                 for (size_t i = 0; i < my_nodes_.size(); i++) // my nodes
                 {
-                    if (!my_nodes_[i].done && my_nodes_[i].in_links.size())
+                    // some of the in links for this node are ready
+                    if (!my_nodes_[i].done && my_nodes_[i].ready_in_links.size())
                     {
-                        // sort my_node and workflow in_links for this node
-                        set<int> my_links_(my_nodes_[i].in_links.begin(),
-                                          my_nodes_[i].in_links.end());
-                        set<int> wf_links(workflow_.nodes[my_nodes_[i].idx].in_links.begin(),
-                                          workflow_.nodes[my_nodes_[i].idx].in_links.end());
-
-                        // my_links_ is a subset of wf_links
-                        if (includes(wf_links.begin(), wf_links.end(),
-                                     my_links_.begin(), my_links_.end()))
+                        // are the workflow links a subset of the ready input links
+                        // ie, are all the workflow links ready (have data)
+                        if (includes(my_nodes_[i].ready_in_links.begin(),
+                                     my_nodes_[i].ready_in_links.end(),
+                                     my_nodes_[i].wflow_in_links.begin(),
+                                     my_nodes_[i].wflow_in_links.end()))
                         {
                             ready_ids.push_back(my_nodes_[i].idx);
                             ready_types.push_back(DECAF_PROD | DECAF_CON);
+                            my_nodes_[i].ready_in_links.clear();
                         }
                     }
+
+                    // this node does not have any workflow in links
+                    if (!my_nodes_[i].done && !my_nodes_[i].wflow_in_links.size())
+                    {
+                        ready_ids.push_back(my_nodes_[i].idx);
+                        ready_types.push_back(DECAF_PROD | DECAF_CON);
+                    }
                 }                                             // my nodes
+
                 for (size_t i = 0; i < my_links_.size(); i++) // my links
                 {
                     if (!my_links_[i].done && my_links_[i].nin >= 1)
@@ -391,10 +398,11 @@ Decaf::Decaf(CommHandle world_comm,
     {
         if (workflow_.my_node(world->rank(), i))
         {
-            // TODO: C++11 initialization of POD?
             RoutingNode nl;
             nl.idx  = i;
             nl.done = false;
+            nl.wflow_in_links =  set<int>(workflow_.nodes[i].in_links.begin(),
+                                          workflow_.nodes[i].in_links.end());
             my_nodes_.push_back(nl);
         }
     }
@@ -404,7 +412,6 @@ Decaf::Decaf(CommHandle world_comm,
     {
         if (workflow_.my_link(world->rank(), i))
         {
-            // TODO: C++11 initialization of POD?
             RoutingLink nl;
             nl.idx  = i;
             nl.nin  = 0;
@@ -419,7 +426,7 @@ void
 decaf::
 Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
            void (*checker)(decaf::Dataflow*),      // custom resilience code
-           vector<int>& sources)                   // workflow source nodes
+           const vector<int>& sources = vector<int>())   // workflow source nodes
 {
     // incoming messages
     list< shared_ptr<ConstructData> > containers;
@@ -575,7 +582,6 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                 if (done)
                 {
                     int my_id = my_node(ready_ids[i]);
-                    fprintf(stderr, "*** node my_id %d done\n", my_id);
                     if (my_id >= 0)
                         my_nodes_[my_id].done = true;
                 }
@@ -638,4 +644,42 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
         delete dataflows[i];
 }
 
-#endif
+// every user application needs to implement the following run function
+void run(Workflow&          workflow,
+         const vector<int>& sources = vector<int>());
+
+// pybind11 python bindings
+#ifdef PYBIND11
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+namespace py = pybind11;
+
+// PYBIND11_PLUGIN(py_linear_2nodes)
+PYBIND11_PLUGIN(pymod)
+{
+    py::module m("pymod", "pybind11 module");
+
+    py::class_<WorkflowNode>(m, "WorkflowNode")
+        .def(py::init<int, int, string, string>())
+        .def_readwrite("out_links", &WorkflowNode::out_links)
+        .def_readwrite("in_links",  &WorkflowNode::in_links)
+        .def("add_out_link", &WorkflowNode::add_out_link)
+        .def("add_in_link",  &WorkflowNode::add_in_link);
+
+    py::class_<WorkflowLink>(m, "WorkflowLink")
+        .def(py::init<int, int, int, int, string, string, string, string>());
+
+    py::class_<Workflow>(m, "Workflow")
+        .def(py::init<vector<WorkflowNode>&, vector<WorkflowLink>&>());
+
+    m.def("run", &run, "Run the workflow",
+          py::arg("workflow"), py::arg("sources") = vector<int>());
+
+    return m.ptr();
+}
+
+#endif  // PYBIND11
+
+#endif  // DECAF_HPP
