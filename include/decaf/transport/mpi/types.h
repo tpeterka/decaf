@@ -15,9 +15,10 @@
 
 #include<mpi.h>
 
-typedef MPI_Comm CommHandle;
-typedef MPI_Datatype CommDatatype;
-typedef MPI_Request CommRequest;
-typedef MPI_Aint Address;
+typedef MPI_Comm        CommHandle;
+typedef MPI_Datatype    CommDatatype;
+typedef MPI_Request     CommRequest;
+typedef MPI_Aint        Address;
+typedef MPI_Request     Request;
 
 #endif

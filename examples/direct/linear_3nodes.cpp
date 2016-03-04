@@ -149,8 +149,10 @@ extern "C"
     }
 } // extern "C"
 
+// every user application needs to implement the following run function with this signature
+// run(Workflow&, const vector<int>&)
+// in the global namespace
 void run(Workflow&          workflow,                // workflow
-         // const vector<int>& sources = vector<int>()) // optional source workflow nodes
          const vector<int>& sources)                 // optional source workflow nodes
 {
     // optional callback args, can leave uninitialized if not being used

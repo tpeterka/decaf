@@ -117,8 +117,10 @@ extern "C"
     }
 } // extern "C"
 
+// every user application needs to implement the following run function with this signature
+// run(Workflow&, const vector<int>&)
+// in the global namespace
 void run(Workflow&          workflow,                // workflow
-         // const vector<int>& sources = vector<int>()) // optional source workflow nodes
          const vector<int>& sources)                 // optional source workflow nodes
 {
     // optional callback args, can leave uninitialized if not being used
@@ -128,34 +130,34 @@ void run(Workflow&          workflow,                // workflow
     MPI_Init(NULL, NULL);
 
     // debug
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == 0)
-    {
-        fprintf(stderr, "%ld nodes:\n", workflow.nodes.size());
-        for (size_t i = 0; i < workflow.nodes.size(); i++)
-        {
-            fprintf(stderr, "i %ld out_links.size %ld in_links.size %ld\n",i,
-                    workflow.nodes[i].out_links.size(), workflow.nodes[i].in_links.size());
-            fprintf(stderr, "out_links:\n");
-            for (size_t j = 0; j < workflow.nodes[i].out_links.size(); j++)
-                fprintf(stderr, "%d\n", workflow.nodes[i].out_links[j]);
-            fprintf(stderr, "in_links:\n");
-            for (size_t j = 0; j < workflow.nodes[i].in_links.size(); j++)
-                fprintf(stderr, "%d\n", workflow.nodes[i].in_links[j]);
-            fprintf(stderr, "node:\n");
-            fprintf(stderr, "%d %d\n", workflow.nodes[i].start_proc, workflow.nodes[i].nprocs);
-        }
+    // int rank;
+    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // if (rank == 0)
+    // {
+    //     fprintf(stderr, "%ld nodes:\n", workflow.nodes.size());
+    //     for (size_t i = 0; i < workflow.nodes.size(); i++)
+    //     {
+    //         fprintf(stderr, "i %ld out_links.size %ld in_links.size %ld\n",i,
+    //                 workflow.nodes[i].out_links.size(), workflow.nodes[i].in_links.size());
+    //         fprintf(stderr, "out_links:\n");
+    //         for (size_t j = 0; j < workflow.nodes[i].out_links.size(); j++)
+    //             fprintf(stderr, "%d\n", workflow.nodes[i].out_links[j]);
+    //         fprintf(stderr, "in_links:\n");
+    //         for (size_t j = 0; j < workflow.nodes[i].in_links.size(); j++)
+    //             fprintf(stderr, "%d\n", workflow.nodes[i].in_links[j]);
+    //         fprintf(stderr, "node:\n");
+    //         fprintf(stderr, "%d %d\n", workflow.nodes[i].start_proc, workflow.nodes[i].nprocs);
+    //     }
 
-        fprintf(stderr, "%ld links:\n", workflow.links.size());
-        for (size_t i = 0; i < workflow.links.size(); i++)
-            fprintf(stderr, "%d %d %d %d\n", workflow.links[i].prod, workflow.links[i].con,
-                    workflow.links[i].start_proc, workflow.links[i].nprocs);
+    //     fprintf(stderr, "%ld links:\n", workflow.links.size());
+    //     for (size_t i = 0; i < workflow.links.size(); i++)
+    //         fprintf(stderr, "%d %d %d %d\n", workflow.links[i].prod, workflow.links[i].con,
+    //                 workflow.links[i].start_proc, workflow.links[i].nprocs);
 
-        fprintf(stderr, "%ld sources:\n", sources.size());
-        for (size_t i = 0; i < sources.size(); i++)
-            fprintf(stderr, "%d\n", sources[i]);
-    }
+    //     fprintf(stderr, "%ld sources:\n", sources.size());
+    //     for (size_t i = 0; i < sources.size(); i++)
+    //         fprintf(stderr, "%d\n", sources[i]);
+    // }
 
     // create and run decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);

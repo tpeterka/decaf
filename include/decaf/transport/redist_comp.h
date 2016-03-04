@@ -40,15 +40,16 @@ namespace decaf
     {
     public:
         RedistComp(){}
-        RedistComp(int rankSource,
-                   int nbSources,
-                   int rankDest,
-                   int nbDests) :
-            rankSource_(rankSource),
+    RedistComp(int rankSource,
+               int nbSources,
+               int rankDest,
+               int nbDests) :
+        rankSource_(rankSource),
             nbSources_(nbSources),
             rankDest_(rankDest),
             nbDests_(nbDests),
-            summerizeDest_(NULL) {}
+            summerizeDest_(NULL),
+            scattered_(false) {}
 
         virtual ~RedistComp(){}
 
@@ -67,7 +68,8 @@ namespace decaf
         bool isSource();
         bool isDest();
 
-        virtual void flush() = 0;
+        virtual void flush()    = 0;
+        virtual void shutdown() = 0;
 
     protected:
 
@@ -86,16 +88,18 @@ namespace decaf
         // Merge the chunks from the vector receivedChunks into one single Data.
         std::shared_ptr<BaseData> merge(RedistRole role);
 
-        int rankSource_; // Rank of the first source (=sender)
-        int nbSources_;  // Number of sources, supposed to be consecutives
-        int rankDest_;   // Rank of the first destination (=receiver)
-        int nbDests_;     // Number of destinations
+        int rankSource_;                   // Rank of the first source (=sender)
+        int nbSources_;                    // Number of sources, supposed to be consecutive
+        int rankDest_;                     // Rank of the first destination (=receiver)
+        int nbDests_;                      // Number of destinations
 
         // TODO: check for redundancy from above members
-        int rank_;                // Rank in the group communicator
-        int size_;                // Size of the group communicator
-        int local_source_rank_;   // Rank of the first source in communicator_
-        int local_dest_rank_;     // Rank of the first destination in communicator_
+        int rank_;                         // Rank in the group communicator
+        int size_;                         // Size of the group communicator
+        int local_source_rank_;            // Rank of the first source in communicator_
+        int local_dest_rank_;              // Rank of the first destination in communicator_
+
+        bool scattered_;                   // there is a pending scatter
 
         std::vector<std::shared_ptr<BaseData> > splitChunks_;
         std::vector<std::shared_ptr<char> > receivedChunks_;

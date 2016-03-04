@@ -118,20 +118,26 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     // overlapping source and destination
     if (rank_ == local_source_rank_ && rank_ == local_dest_rank_)
         memcpy(destBuffer_, sum_, nbDests_ * sizeof(int));
+
+    // disjoint source and destination
     else
     {
         // producer root sends the number of messages to the root of the consumer
         if (role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
         {
-            MPI_Request req;
-            reqs.push_back(req);
-            MPI_Isend(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
-                      communicator_, &reqs.back());
+            // assume the  metadata are small; send in blocking mode
+            MPI_Send(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
+                      communicator_);
+
+            // MPI_Request req;
+            // reqs.push_back(req);
+            // MPI_Isend(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
+            //           communicator_, &reqs.back());
         }
 
 
         // consumer root receives the number of messages
-        if (role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) //Root of destination
+        if (role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) // root of destination
         {
             MPI_Status status;
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &flag, &status);
@@ -170,25 +176,38 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         return 1;
     }
 
-    // TODO: only the consumer root can possibly have retval 0, everyone else will block below
+    // only the consumer root can possibly have retval 0 so far
+    // other consumer ranks will set retval below when they test the result of the iscatter
     if (!retval)
         return 0;
 
-    // scatter the number of messages to receive across all the destinations of the consumer
-    // TODO: ranks that are not the root of the producer or consumer will block here
-    // because scatter is a collective
-    // this means that other workflow links trying to send to the same node will also be
-    // blocked (could deadlock)
-    int nbRecep;
-    if (role == DECAF_REDIST_DEST)
-        MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
-
-    // consumer destination ranks receive payload
+    // consumer ranks
     if (role == DECAF_REDIST_DEST)
     {
-        // debug
-        // if (rank == 1)
-        //     fprintf(stderr, "g1: nbRecep %d\n", nbRecep);
+        int nbRecep;
+
+        // scatter the number of messages to receive across all the destinations of the consumer
+        if (!scattered_)
+        {
+            MPI_Iscatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_,
+                         &scatter_req_);
+            scattered_ = true;
+        }
+
+        // test the result of a previous scatter (only one scatter is pending at a time)
+        if (scattered_)
+        {
+            int flag;
+            MPI_Test(&scatter_req_, &flag, MPI_STATUS_IGNORE);
+            if (flag)
+                scattered_ = false;
+            else
+                return 0;
+        }
+
+        // MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
+
+        // if the scatter completed, receive the payload (blocking)
         for (int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
@@ -221,6 +240,24 @@ RedistMPI::flush()
     if (reqs.size())
         MPI_Waitall(reqs.size(), &reqs[0], MPI_STATUSES_IGNORE);
     reqs.clear();
+
+    // data have been received, we can clean it now
+    // Cleaning the data here because synchronous send.
+    // TODO: move to flush when switching to asynchronous send
+    splitChunks_.clear();
+    destList_.clear();
+}
+
+void
+decaf::
+RedistMPI::shutdown()
+{
+    for (size_t i = 0; i < reqs.size(); i++)
+        MPI_Request_free(&reqs[i]);
+    reqs.clear();
+
+    if (scattered_)
+        MPI_Wait(&scatter_req_, MPI_STATUS_IGNORE);
 
     // data have been received, we can clean it now
     // Cleaning the data here because synchronous send.

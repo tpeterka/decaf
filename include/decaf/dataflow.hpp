@@ -402,9 +402,9 @@ decaf::
 Dataflow::shutdown()
 {
     if (redist_prod_dflow_)
-        redist_prod_dflow_->flush();
+        redist_prod_dflow_->shutdown();
     if (redist_dflow_con_)
-        redist_dflow_con_->flush();
+        redist_dflow_con_->shutdown();
 }
 
 #endif
