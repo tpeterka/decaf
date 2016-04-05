@@ -47,16 +47,17 @@ enum Decomposition
     DECAF_NUM_DECOMPS,
 };
 
-
-// task types
-typedef unsigned char TaskType;
-#define DECAF_NONE      0x00
-#define DECAF_PROD      0x01
-#define DECAF_DFLOW     0x02
-#define DECAF_CON       0x04
+// DEPRECATED
+// // task types
+// typedef unsigned char TaskType;
+// #define DECAF_NONE      0x00
+// #define DECAF_PROD      0x01
+// #define DECAF_DFLOW     0x02
+// #define DECAF_CON       0x04
 
 // workflow entity types
 typedef unsigned char TaskType;
+#define DECAF_NONE      0x00
 #define DECAF_NODE      0x01
 #define DECAF_LINK      0x02
 

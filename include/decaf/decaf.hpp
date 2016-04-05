@@ -157,7 +157,7 @@ namespace decaf
 
         // TODO: make the following 5 functions members of ConstructData?
 
-        // returns the source type (prod, dflow, con) of a message
+        // returns the source type (node, link) of a message
         TaskType
         src_type(shared_ptr<ConstructData> in_data)   // input message
             {
@@ -208,7 +208,7 @@ namespace decaf
         router(list< shared_ptr<ConstructData> >& in_data, // input messages
                vector<int>& ready_ids,                  // (output) ready workflow node or link ids
                vector<int>& ready_types)                // (output) ready node or link types
-                                                        // DECAF_PROD | DECAF_CON or DECAF_DFLOW
+                                                        // DECAF_NODE | DECAF_LINK
             {
                 for (list< shared_ptr<ConstructData> >::iterator it = in_data.begin();
                      it != in_data.end(); it++)
@@ -217,10 +217,9 @@ namespace decaf
                     int dest_node = -1;
                     int dest_link = -1;
 
-                    if (src_type(*it) & DECAF_PROD || src_type(*it) & DECAF_CON ||
-                        src_type(*it) & (DECAF_PROD | DECAF_CON))
+                    if (src_type(*it) & DECAF_NODE)
                         dest_link = dest_id(*it);
-                    if (src_type(*it) & DECAF_DFLOW)
+                    if (src_type(*it) & DECAF_LINK)
                         dest_node = dest_id(*it);
 
                     if (dest_node >= 0)               // destination is a node
@@ -237,7 +236,7 @@ namespace decaf
                             {
                                 my_nodes_[j].done = true;
                                 ready_ids.push_back(dest_node);
-                                ready_types.push_back(DECAF_PROD | DECAF_CON);
+                                ready_types.push_back(DECAF_NODE);
                             }
                         }
                         else                          // not done
@@ -264,7 +263,7 @@ namespace decaf
                             {
                                 my_links_[j].done = true;
                                 ready_ids.push_back(dest_link);
-                                ready_types.push_back(DECAF_DFLOW);
+                                ready_types.push_back(DECAF_LINK);
                             }
                         }
                         else                          // not done
@@ -291,7 +290,7 @@ namespace decaf
         void
         ready_nodes_links(vector<int>& ready_ids,      // (output) ready workflow node or link ids
                           vector<int>& ready_types)    // (output) ready workflow types
-                                                       // DECAF_PROD | DECAF_CON or DECAF_DFLOW
+                                                       // DECAF_NODE | DECAF_LINK
             {
                 for (size_t i = 0; i < my_nodes_.size(); i++) // my nodes
                 {
@@ -306,7 +305,7 @@ namespace decaf
                                      my_nodes_[i].wflow_in_links.end()))
                         {
                             ready_ids.push_back(my_nodes_[i].idx);
-                            ready_types.push_back(DECAF_PROD | DECAF_CON);
+                            ready_types.push_back(DECAF_NODE);
                             my_nodes_[i].ready_in_links.clear();
                         }
                     }
@@ -315,7 +314,7 @@ namespace decaf
                     if (!my_nodes_[i].done && !my_nodes_[i].wflow_in_links.size())
                     {
                         ready_ids.push_back(my_nodes_[i].idx);
-                        ready_types.push_back(DECAF_PROD | DECAF_CON);
+                        ready_types.push_back(DECAF_NODE);
                     }
                 }                                             // my nodes
 
@@ -324,7 +323,7 @@ namespace decaf
                     if (!my_links_[i].done && my_links_[i].nin >= 1)
                     {
                         ready_ids.push_back(my_links_[i].idx);
-                        ready_types.push_back(DECAF_DFLOW);
+                        ready_types.push_back(DECAF_LINK);
                         my_links_[i].nin--;
                     }
                 }                                             // my links
@@ -494,13 +493,13 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
         for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
         {
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            if (link_in_dataflows[i]->get(container, DECAF_DFLOW))
+            if (link_in_dataflows[i]->get(container, DECAF_LINK))
                 containers.push_back(container);
         }
         for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
         {
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            if (node_in_dataflows[i]->get(container, DECAF_CON))
+            if (node_in_dataflows[i]->get(container, DECAF_NODE))
                 containers.push_back(container);
         }
 
@@ -522,15 +521,15 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                 {
                     // a workflow node (producer, consumer, or both)
                     Dataflow::set_quit(quit_container);
-                    if (ready_types[i] & (DECAF_PROD | DECAF_CON))
+                    if (ready_types[i] & DECAF_NODE)
                     {
                         for (size_t j = 0; j < workflow_.nodes[ready_ids[i]].out_links.size(); j++)
                             dataflows[workflow_.nodes[ready_ids[i]].out_links[j]]->
-                                put(quit_container, DECAF_PROD);
+                                put(quit_container, DECAF_NODE);
                     }
                     // a workflow link (dataflow)
-                    else if (ready_types[i] & DECAF_DFLOW)
-                        dataflows[ready_ids[i]]->put(quit_container, DECAF_DFLOW);
+                    else if (ready_types[i] & DECAF_LINK)
+                        dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
                 }
             }
         }
@@ -550,7 +549,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
         for (size_t i = 0; i < ready_ids.size(); i++)
         {
             // a workflow node (producer, consumer, or both)
-            if (ready_types[i] & (DECAF_PROD | DECAF_CON))
+            if (ready_types[i] & DECAF_NODE)
             {
                 // fill out_dataflows for this node
                 out_dataflows.clear();
@@ -603,7 +602,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
             }
 
             // a workflow link (dataflow)
-            else if (ready_types[i] & DECAF_DFLOW)
+            else if (ready_types[i] & DECAF_LINK)
             {
                 list< shared_ptr<ConstructData> >::iterator it = containers.begin();
                 // using while instead of for: erase inside loop disrupts the iteration

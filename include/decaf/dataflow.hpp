@@ -24,11 +24,12 @@
 #include "transport/mpi/redist_count_mpi.h"
 #include "transport/mpi/redist_round_mpi.h"
 #include "transport/mpi/redist_zcurve_mpi.h"
+#include "decaf/transport/mpi/tools.hpp"
 #include <memory>
 #endif
 
 #include "types.hpp"
-#include "data.hpp"
+// #include "data.hpp"
 
 namespace decaf
 {
@@ -338,7 +339,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                      DECAF_NOFLAG, DECAF_PRIVATE,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
-    if (role == DECAF_PROD)
+    if (role == DECAF_NODE)
     {
         // encode destination link id into message
         shared_ptr<SimpleConstructData<int> > value2  =
@@ -353,7 +354,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
         redist_prod_dflow_->flush();
     }
-    else if (role == DECAF_DFLOW)
+    else if (role == DECAF_LINK)
     {
         // encode destination node id into message
         shared_ptr<SimpleConstructData<int> > value2  =
@@ -379,14 +380,14 @@ decaf::
 Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
 {
     int retval;
-    if (role == DECAF_DFLOW)
+    if (role == DECAF_LINK)
     {
         if (redist_prod_dflow_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
         retval = redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
     }
-    else if (role == DECAF_CON)
+    else if (role == DECAF_NODE)
     {
         if (redist_dflow_con_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
