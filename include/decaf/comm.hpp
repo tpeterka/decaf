@@ -14,7 +14,6 @@
 #define DECAF_COMM_HPP
 
 #include "types.hpp"
-#include "data.hpp"
 #include <vector>
 #include <math.h>
 

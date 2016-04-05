@@ -24,12 +24,11 @@
 #include "transport/mpi/redist_count_mpi.h"
 #include "transport/mpi/redist_round_mpi.h"
 #include "transport/mpi/redist_zcurve_mpi.h"
-#include "decaf/transport/mpi/tools.hpp"
+#include "transport/mpi/tools.hpp"
 #include <memory>
 #endif
 
 #include "types.hpp"
-// #include "data.hpp"
 
 namespace decaf
 {

@@ -26,7 +26,6 @@
 #endif
 
 #include "types.hpp"
-#include "data.hpp"
 
 namespace decaf
 {
