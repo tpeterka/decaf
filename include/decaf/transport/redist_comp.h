@@ -48,8 +48,7 @@ namespace decaf
             nbSources_(nbSources),
             rankDest_(rankDest),
             nbDests_(nbDests),
-            summerizeDest_(NULL),
-            scattered_(false) {}
+            summerizeDest_(NULL) {}
 
         virtual ~RedistComp(){}
 
@@ -98,8 +97,6 @@ namespace decaf
         int size_;                         // Size of the group communicator
         int local_source_rank_;            // Rank of the first source in communicator_
         int local_dest_rank_;              // Rank of the first destination in communicator_
-
-        bool scattered_;                   // there is a pending scatter
 
         std::vector<std::shared_ptr<BaseData> > splitChunks_;
         std::vector<std::shared_ptr<char> > receivedChunks_;

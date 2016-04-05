@@ -61,7 +61,6 @@ namespace decaf
         std::shared_ptr<BaseData> transit; // used when a source and destination are overlapping
         int *sum_;                         // used by the producer
         int *destBuffer_;                  // used by the consumer
-        Request scatter_req_;              // pending request of nonblocking scatter (consumer)
     };
 
 } // namespace

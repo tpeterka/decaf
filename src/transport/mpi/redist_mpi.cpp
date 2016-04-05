@@ -99,11 +99,13 @@ RedistMPI::~RedistMPI()
     delete[] sum_;
 }
 
+// redistributes data
+// return value: 0 = no received data; 1 = received data
 int
 decaf::
 RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
-    int retval = 1;                          // return value
+    int retval = 0;                          // return value
     int flag;                                // result of MPI_Iprobe
 
     // debug
@@ -124,17 +126,9 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     {
         // producer root sends the number of messages to the root of the consumer
         if (role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
-        {
             // assume the  metadata are small; send in blocking mode
             MPI_Send(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
                       communicator_);
-
-            // MPI_Request req;
-            // reqs.push_back(req);
-            // MPI_Isend(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
-            //           communicator_, &reqs.back());
-        }
-
 
         // consumer root receives the number of messages
         if (role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) // root of destination
@@ -142,10 +136,11 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             MPI_Status status;
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &flag, &status);
             if (flag && status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
+            {
                 MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG,
                          communicator_, MPI_STATUS_IGNORE);
-            else
-                retval = 0;
+                retval = 1;
+            }
         }
     }
 
@@ -176,58 +171,39 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         return 1;
     }
 
-    // only the consumer root can possibly have retval 0 so far
-    // other consumer ranks will set retval below when they test the result of the iscatter
+    // only the consumer root has the correct value of retval; share it with other consumer ranks
+    if (role == DECAF_REDIST_DEST)           // consumer ranks
+        MPI_Bcast(&retval, 1, MPI_INT, 0, commDests_);
+
+    // source is done and consumers are done if no message arrived
     if (!retval)
         return 0;
 
-    // consumer ranks
-    if (role == DECAF_REDIST_DEST)
+    // only consumer ranks are left
+    // scatter the number of messages to receive at each rank
+    int nbRecep;
+    MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
+
+    // receive the payload (blocking)
+    for (int i = 0; i < nbRecep; i++)
     {
-        int nbRecep;
-
-        // scatter the number of messages to receive across all the destinations of the consumer
-        if (!scattered_)
+        MPI_Status status;
+        MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
+        if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
         {
-            MPI_Iscatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_,
-                         &scatter_req_);
-            scattered_ = true;
+            int nbytes; // number of bytes in the message
+            MPI_Get_count(&status, MPI_BYTE, &nbytes);
+            data->allocate_serial_buffer(nbytes); // allocate necessary space
+            MPI_Recv(data->getInSerialBuffer(), nbytes, MPI_BYTE, status.MPI_SOURCE,
+                     status.MPI_TAG, communicator_, &status);
+
+            // The dynamic type of merge is given by the user
+            // NOTE: examine if it's not more efficient to receive everything
+            // and then merge. Memory footprint more important but allows to
+            // aggregate the allocations etc
+            data->merge();
         }
 
-        // test the result of a previous scatter (only one scatter is pending at a time)
-        if (scattered_)
-        {
-            int flag;
-            MPI_Test(&scatter_req_, &flag, MPI_STATUS_IGNORE);
-            if (flag)
-                scattered_ = false;
-            else
-                return 0;
-        }
-
-        // MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
-
-        // if the scatter completed, receive the payload (blocking)
-        for (int i = 0; i < nbRecep; i++)
-        {
-            MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
-            if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
-            {
-                int nbytes; // number of bytes in the message
-                MPI_Get_count(&status, MPI_BYTE, &nbytes);
-                data->allocate_serial_buffer(nbytes); // allocate necessary space
-                MPI_Recv(data->getInSerialBuffer(), nbytes, MPI_BYTE, status.MPI_SOURCE,
-                         status.MPI_TAG, communicator_, &status);
-
-                // The dynamic type of merge is given by the user
-                // NOTE: examine if it's not more efficient to receive everything
-                // and then merge. Memory footprint more important but allows to
-                // aggregate the allocations etc
-                data->merge();
-            }
-
-        }
     }
 
     return 1;                                // at this point, we're sure we received everything
@@ -255,9 +231,6 @@ RedistMPI::shutdown()
     for (size_t i = 0; i < reqs.size(); i++)
         MPI_Request_free(&reqs[i]);
     reqs.clear();
-
-    if (scattered_)
-        MPI_Wait(&scatter_req_, MPI_STATUS_IGNORE);
 
     // data have been received, we can clean it now
     // Cleaning the data here because synchronous send.
