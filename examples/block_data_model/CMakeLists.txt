@@ -8,15 +8,14 @@ if(Boost_FOUND AND DIY_INCLUDE_DIRS AND TESS_LIBRARY AND TESS_INCLUDE_DIRS)
     message("Building block data model example")
     include_directories(${Boost_INCLUDE_DIRS})
     include_directories(${DIY_INCLUDE_DIRS} ${TESS_INCLUDE_DIRS})
-
     add_executable              (block_data_model block_data_model.cpp)
     target_link_libraries       (block_data_model     ${libraries} ${Boost_LIBRARIES} ${TESS_LIBRARY} decaf_transport decaf_datamodel)
 
-    install(TARGETS block_data_model 
+    install(TARGETS block_data_model
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/block_data_model/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )
-    install(FILES BLOCKDATAMODEL 
+    install(FILES BLOCKDATAMODEL_TEST
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/block_data_model/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )

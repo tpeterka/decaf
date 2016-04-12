@@ -2,11 +2,9 @@ find_package(Boost COMPONENTS serialization REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
-message("Boost : ${Boost_LIBRARIES}")
-
 add_library             (decaf_datamodel SHARED     constructtype.cpp
 morton.cpp)
-target_link_libraries   (decaf_datamodel            ${libraries} ${Boost_LIBRARIES} decaf_transport)
+target_link_libraries   (decaf_datamodel            ${libraries} ${Boost_LIBRARIES})
 
 install(TARGETS decaf_datamodel
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/

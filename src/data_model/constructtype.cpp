@@ -1549,8 +1549,6 @@ ConstructData::updateMetaData()
         nbFields_++;
     }
 
-    //std::cout<<"Number of items after insertion : "<<nbItems_<<std::endl;
-
     return true;
 }
 

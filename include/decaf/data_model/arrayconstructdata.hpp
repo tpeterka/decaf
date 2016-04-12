@@ -232,7 +232,7 @@ public:
             case DECAF_SPLIT_DEFAULT:
             {
                 //Sanity check
-                /*int totalRange = 0;
+                int totalRange = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
                     totalRange+= range[i].size();
                 if(totalRange != getNbItems()){
@@ -240,7 +240,7 @@ public:
                              <<") does not match the number of items of the object ("
                              <<getNbItems()<<")"<<std::endl;
                     return result;
-                }*/
+                }
 
                 //typename std::vector<T>::iterator it = value_.begin();
                 //unsigned int offset = 0;
