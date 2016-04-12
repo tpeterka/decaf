@@ -40,19 +40,34 @@ RedistRoundMPI::RedistRoundMPI(int rankSource,
 {
     MPI_Group group, groupRedist, groupSource, groupDest;
     MPI_Comm_group(world_comm, &group);
-    local_source_rank_ = 0;                     // rank of first source in communicator_
-    local_dest_rank_   = nbSources;             // rank of first destination in communicator_
+    //local_source_rank_ = 0;                     // rank of first source in communicator_
+    //local_dest_rank_   = nbSources;             // rank of first destination in communicator_
+    local_source_rank_ = rankSource;
+    local_dest_rank_ = rankDest;
 
     // group covering both the sources and destinations
     // destination ranks need not be higher than source ranks
-    int range_both[2][3];
-    range_both[0][0] = rankSource;
-    range_both[0][1] = rankSource + nbSources - 1;
-    range_both[0][2] = 1;
-    range_both[1][0] = rankDest;
-    range_both[1][1] = rankDest + nbDests - 1;
-    range_both[1][2] = 1;
-    MPI_Group_range_incl(group, 2, range_both, &groupRedist);
+
+    // Testing if sources and receivers are disjoints
+    if(rankDest >= rankSource + nbSources || rankSource >= rankDest + nbDests)
+    {
+        int range_both[2][3];
+        range_both[0][0] = rankSource;
+        range_both[0][1] = rankSource + nbSources - 1;
+        range_both[0][2] = 1;
+        range_both[1][0] = rankDest;
+        range_both[1][1] = rankDest + nbDests - 1;
+        range_both[1][2] = 1;
+        MPI_Group_range_incl(group, 2, range_both, &groupRedist);
+    }
+    else //Sources and Receivers are overlapping
+    {
+        int range[3];
+        range[0] = std::min(rankSource, rankDest);
+        range[1] = std::max(rankSource + nbSources - 1, rankDest + nbDests - 1);
+        range[2] = 1;
+        MPI_Group_range_incl(group, 1, &range, &groupRedist);
+    }
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Group_free(&groupRedist);
     MPI_Comm_rank(communicator_, &rank_);
