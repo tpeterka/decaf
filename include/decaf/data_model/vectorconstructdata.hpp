@@ -93,6 +93,15 @@ public:
 
     virtual int getNbItems(){ return value_.size() / element_per_items_; }
 
+    virtual void split(
+            const std::vector< std::vector<int> >& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        return;
+    }
+
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
             std::vector< mapConstruct >& partial_map,
@@ -262,7 +271,10 @@ public:
         return true;
     }
 
-
+    virtual void softClean()
+    {
+	value_.clear();
+    }
 
 protected:
 

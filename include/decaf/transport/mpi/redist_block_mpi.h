@@ -19,7 +19,7 @@
 #include <decaf/redist_comp.h>
 #include <decaf/transport/mpi/types.h>
 #include <decaf/data_model/block.hpp>
-
+#include <decaf/data_model/constructtype.h>
 
 namespace decaf
 {
@@ -88,7 +88,7 @@ namespace decaf
       int *sum_;                // Used by the producer
       int *destBuffer_;         // Used by the consumer
 
-
+      std::vector< std::shared_ptr<ConstructData> > splitBuffer_;	// Buffer of container to avoid reallocation
   };
 
 } // namespace

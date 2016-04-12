@@ -125,6 +125,8 @@ public:
 
     virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result) = 0;
 
+    virtual void softClean() = 0;
+
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,
             std::vector< mapConstruct >& partial_map,
@@ -138,6 +140,12 @@ public:
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector< Block<3> >& range,
             std::vector< mapConstruct >& partial_map,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
+
+    virtual void split(
+            const std::vector< std::vector<int> >& range,
+	    std::vector< mapConstruct >& partial_map,
+	    std::vector<std::shared_ptr<BaseConstructData> >& fields,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 
     virtual bool merge(std::shared_ptr<BaseConstructData> other,

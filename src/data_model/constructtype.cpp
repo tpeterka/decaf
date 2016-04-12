@@ -6,9 +6,11 @@
 using namespace decaf;
 using namespace std;
 
-double timeGlobalSerialization = 0.0;
 double timeGlobalSplit = 0.0;
-double timeGlobalMorton = 0.0;
+double timeGlobalBuild = 0.0;
+double timeGlobalMerge = 0.0;
+double timeGlobalRedist = 0.0;
+double timeGlobalReceiv = 0.0;
 
 ConstructTypeFlag& getFlag(datafield& field)
 {
@@ -528,9 +530,9 @@ computeIndexesFromBlocks(
         bool particlesInBlock = false;
         for(unsigned int b = 0; b < blocks.size(); b++)
         {
-            if(blocks.at(b).isInLocalBlock(pos[3*i], pos[3*i+1], pos[3*i+2]) )
+            if(blocks[b].isInLocalBlock(pos[3*i], pos[3*i+1], pos[3*i+2]) )
             {
-                result.at(b).push_back(i);
+                result[b].push_back(i);
                 particlesInBlock = true;
             }
         }
@@ -569,25 +571,25 @@ computeIndexesFromBlocks(
         bool particlesInBlock = false;
         for(unsigned int b = 0; b < blocks.size(); b++)
         {
-            if(blocks.at(b).isInLocalBlock(x, y, z))
+            if(blocks[b].isInLocalBlock(x, y, z))
             {
-//                result.at(b).push_back(i);
+//                result[b].push_back(i);
 //                particlesInBlock = true;
 		// Case for the first element
-		if(result.at(b).empty())
+		if(result[b].empty())
 		{
-		    result.at(b).push_back(i);
-		    result.at(b).push_back(1);
+		    result[b].push_back(i);
+		    result[b].push_back(1);
 		}
 		// Case where the current position is following the previous one
-		else if(result.at(b).back() + result.at(b).at(result.at(b).size()-2) == i )
+		else if(result[b].back() + (result[b])[result[b].size()-2] == i )
 		{
-			result.at(b).back() = result.at(b).back() + 1;
+			result[b].back() = result[b].back() + 1;
 		}
 		else
 		{
-		    result.at(b).push_back(i);
-                    result.at(b).push_back(1);
+		    result[b].push_back(i);
+                    result[b].push_back(1);
 		}
 
 		sumPos[b] = sumPos[b] + 1;
@@ -605,20 +607,20 @@ computeIndexesFromBlocks(
     int total = 0;
     for(unsigned int i = 0; i < blocks.size(); i++)
     {
-	result.at(i).push_back(sumPos[i]);
+	result[i].push_back(sumPos[i]);
 	total += sumPos[i];
     }
-    printf("Somme des particules reparties : %u\n", total);
+    //printf("Somme des particules reparties : %u\n", total);
 
     gettimeofday(&end, NULL);
     double computeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
     //printf("Computation of the particule attribution (morton): %f\n", computeSplit);
-    timeGlobalMorton += computeSplit;
+    //timeGlobalMorton += computeSplit;
     return;
 }
 
-std::vector< std::shared_ptr<BaseData> >
+/*std::vector< std::shared_ptr<BaseData> >
 decaf::
 ConstructData::split(const std::vector<Block<3> >& range)
 {
@@ -629,7 +631,7 @@ ConstructData::split(const std::vector<Block<3> >& range)
     std::vector< std::shared_ptr<ConstructData> > container;
     std::vector< std::shared_ptr<BaseData> >result;
 
-    preallocMultiple( range.size() , 220000, container);
+    preallocMultiple( range.size() , 30000, container);
     for(unsigned int i = 0; i < container.size(); i++)
         result.push_back(container.at(i));
 
@@ -648,9 +650,9 @@ ConstructData::split(const std::vector<Block<3> >& range)
             bool particlesInBlock = false;
             for(unsigned int b = 0; b < range.size(); b++)
             {
-                if(range.at(b).isInLocalBlock(x, y, z))
+                if(range[b].isInLocalBlock(x, y, z))
                 {
-		    this->appendItem(container.at(b),i);
+		    this->appendItem(container[b],i);
 		}
 	    }
 	}
@@ -664,8 +666,9 @@ ConstructData::split(const std::vector<Block<3> >& range)
 	container.at(i)->updateMetaData();
     return result;
 }
+*/
 
-/*std::vector< std::shared_ptr<BaseData> >
+std::vector< std::shared_ptr<BaseData> >
 decaf::
 ConstructData::split(const std::vector<Block<3> >& range)
 {
@@ -834,10 +837,143 @@ ConstructData::split(const std::vector<Block<3> >& range)
 
     assert(result.size() == range.size());
     gettimeofday(&end, NULL);
-    timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    //timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
     return result;
 }
-*/
+
+void
+decaf::
+ConstructData::split(
+            const std::vector<Block<3> >& range, std::vector<std::shared_ptr<ConstructData> >& buffers)
+{
+    struct timeval begin;
+    struct timeval end;
+
+    gettimeofday(&begin, NULL);
+    std::vector< mapConstruct > result_maps;
+    for(unsigned int i = 0; i < range.size(); i++)
+    {
+        result_maps.push_back(buffers.at(i)->getMap());
+    }
+
+    //Preparing the ranges if some fields are not splitable with a block
+    bool computeRanges = false;
+    //std::vector<std::vector<int> > rangeItems;
+    if(rangeItems_.empty())
+    {
+    	for(unsigned int i = 0; i < range.size(); i++)
+	{
+	    rangeItems_.push_back(std::vector<int>());
+	    rangeItems_[i].reserve(873);	//Valeur pour les benchs Article Cluster. A retirer
+	}
+    }
+    else
+    {
+        for(unsigned int i = 0; i < range.size(); i++)
+	{
+	    std::cout<<"Capacity before clear : "<<rangeItems_[i].capacity()<<std::endl;
+	    rangeItems_[i].clear();
+	    std::cout<<"Capacity after clear : "<<rangeItems_[i].capacity()<<std::endl;
+	}
+    }   
+
+   for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
+   {
+	//Building a temp vector with all the fields
+	std::vector<std::shared_ptr<BaseConstructData> > fields;
+	for(unsigned int i = 0; i < buffers.size(); i++)
+	{
+	    std::shared_ptr<BaseConstructData> field = buffers[i]->getData(it->first);
+	    if(field)
+		fields.push_back(field);
+	    else
+	    {
+		std::cout<<"ERROR : the field "<<it->first<<" is not present in the preallocated container."<<std::endl;
+		//result.clear();
+		//return result;
+		return;
+	    }
+	}
+	// Splitting the current field
+	// WARNING : should not be called, just for test
+	std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+            if(getBaseData(it->second)->isBlockSplitable())
+                splitFields = getBaseData(it->second)->split(range, result_maps, getSplitPolicy(it->second));
+                //getBaseData(it->second)->split(range, result_maps, fields, getSplitPolicy(it->second));
+            else
+            {
+                	if(!computeRanges)
+                	{
+			    //The ranges by items have not been computed yet
+			    //We need the Morton key to compute them
+			    if(bZCurveIndex_)
+                    	    {
+                      			std::shared_ptr<ArrayConstructData<unsigned int> > posData =
+                        		     std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
+                      			computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems_);
+                      			computeRanges = true;
+                    	    }
+                  	    else if(bZCurveKey_)
+                    	    {
+                      		std::shared_ptr<ArrayConstructData<float> > posData =
+                        	    std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
+                      		computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems_);
+                      		computeRanges = true;
+                    	    }
+                  	    else
+                    	    {
+                      		std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
+                               	<<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
+
+                      		//return result;
+                      		return;
+                    	    }
+                	}
+
+                	//splitFields = getBaseData(it->second)->split(rangeItems, result_maps, getSplitPolicy(it->second));
+                	getBaseData(it->second)->split(rangeItems_, result_maps, fields, getSplitPolicy(it->second));
+            	    }
+
+		    // Inserting the splitted field into the splitted results
+		    if(fields.size() != range.size())
+            	    {
+                	std::cout<<"ERROR : A field was not splited properly."
+                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                	// Cleaning the result to avoid corrupt data
+                        //result.clear();
+                        //return result;
+                        return;
+                    }
+                
+		    //Adding the splitted results into the splitted maps
+		    /*for(unsigned int j = 0; j < fields.size(); j++)
+            {
+                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
+                construct->appendData(it->first,
+                                         fields.at(j),
+                                         getFlag(it->second),
+                                         std::get<1>(it->second),
+                                         getSplitPolicy(it->second),
+                                         getMergePolicy(it->second)
+                                         );
+		
+            }*/
+	}
+
+	for(unsigned int i = 0; i < range.size(); i++)
+	{
+	    buffers[i]->updateNbItems();
+	    buffers[i]->updateMetaData();
+	    //std::cout<<"Nombre d'item apres update : "<<buffers.at(i)->getNbItems()<<std::endl;
+	}
+	assert(buffers.size() == range.size());
+    	gettimeofday(&end, NULL);
+    	//timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    	//return result;
+    	return;
+}
+
 
 //Todo : remove the code redundancy
 bool
@@ -957,7 +1093,7 @@ ConstructData::merge(char* buffer, int size)
 
     fflush(stdout);
     gettimeofday(&end, NULL);
-    timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    //timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
     if(!data_ || container_->empty())
     {
@@ -1111,7 +1247,9 @@ ConstructData::mergeStoredData()
 		    // No need to check the return, we have done it already in unserializeAndStore()
                     partialFields.push_back(getBaseData(dataOther->second));
                 }
-
+//		unsigned int totalItems = getBaseData(it->second)->getNbItems();
+//		if(it->first == "pos")
+//			std::cout<<"Nombre d'items dans le moule de base : "<<totalItems<<", nombre de fields : "<<partialFields.size()<<std::endl;
                 if(! getBaseData(it->second)->merge(partialFields,
                                                     container_,
                                                     getMergePolicy(it->second)) )
@@ -1121,6 +1259,15 @@ ConstructData::mergeStoredData()
                 }
                 getBaseData(it->second)->setMap(container_);
                 getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+/*		if(it->first == "pos")
+		{
+			std::cout<<"Merging "<<it->first<<" with "<<partialFields[0]->getNbItems()<<" items."<<std::endl;
+			for(unsigned int i = 0 ; i < partialFields.size(); i++)
+				totalItems += partialFields[i]->getNbItems();
+			std::cout<<"Somme theorique apres merge : "<<totalItems<<std::endl;
+			std::cout<<"Somme effective apres merge : "<<getBaseData(it->second)->getNbItems()<<std::endl;
+		}
+*/		
             }
         }
 
@@ -1129,20 +1276,20 @@ ConstructData::mergeStoredData()
 
 void 
 decaf::
-ConstructData::unserializeAndStore()
+ConstructData::unserializeAndStore(char* buffer, int bufferSize)
 {
     struct timeval begin;
     struct timeval end;
 
     gettimeofday(&begin, NULL);
-    in_serial_buffer_ = std::string(&in_serial_buffer_[0], in_serial_buffer_.size());
-    boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
+    //in_serial_buffer_ = std::string(&in_serial_buffer_[0], in_serial_buffer_.size());
+    boost::iostreams::basic_array_source<char> device(buffer, bufferSize);
     boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
     boost::archive::binary_iarchive ia(sout);
 
     fflush(stdout);
     gettimeofday(&end, NULL);
-    timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    //timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
     // If we don't have data yet, we directly unserialize on the local map
     if(!data_ || container_->empty())
@@ -1191,15 +1338,25 @@ ConstructData::serialize()
     struct timeval end;
 
     gettimeofday(&begin, NULL);
-  
+    out_serial_buffer_.resize(0);  
     boost::iostreams::back_insert_device<std::string> inserter(out_serial_buffer_);
     boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
     boost::archive::binary_oarchive oa(s);
 
     oa << container_;
     s.flush();
+    
+    /*out_serial_buffer_.resize(nbItems_ * (3*sizeof(float) + sizeof(unsigned int)));
+    std::shared_ptr<ArrayConstructData<float> > pos = getTypedData<ArrayConstructData<float> >("pos");
+    std::shared_ptr<ArrayConstructData<unsigned int> > morton = getTypedData<ArrayConstructData<unsigned int> >("morton");
+
+    float* posArray = pos->getArray();
+    unsigned int* mortonArray = morton->getArray();
+
+    memcpy(&out_serial_buffer_[0], posArray, nbItems_ * 3 * sizeof(float));
+    memcpy(((char*)(&out_serial_buffer_[0]))+nbItems_ * 3 * sizeof(float), mortonArray, nbItems_ * sizeof(unsigned int));*/
     gettimeofday(&end, NULL);
-    timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    //timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
     return true;
 }
 
@@ -1395,4 +1552,29 @@ ConstructData::updateMetaData()
     //std::cout<<"Number of items after insertion : "<<nbItems_<<std::endl;
 
     return true;
+}
+
+void 
+decaf::
+ConstructData::updateNbItems()
+{
+    for(std::map<std::string, datafield>::iterator it = container_->begin();
+        it != container_->end(); it++)
+    {
+	getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+    }
+}
+
+void
+decaf::
+ConstructData::softClean()
+{
+    for(std::map<std::string, datafield>::iterator it = container_->begin();
+        it != container_->end(); it++)
+    {
+	getBaseData(it->second)->softClean();
+	getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+    }
+
+    updateMetaData();
 }

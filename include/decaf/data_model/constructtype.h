@@ -34,9 +34,15 @@
 #include <memory>
 
 
-extern double timeGlobalSerialization;
+//extern double timeGlobalSerialization;
+//extern double timeGlobalSplit;
+//extern double timeGlobalMorton;
+
 extern double timeGlobalSplit;
-extern double timeGlobalMorton;
+extern double timeGlobalBuild;
+extern double timeGlobalMerge;
+extern double timeGlobalRedist;
+extern double timeGlobalReceiv;
 
 namespace decaf {
 
@@ -88,6 +94,9 @@ public:
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<Block<3> >& range);
 
+    virtual void split(
+            const std::vector<Block<3> >& range, std::vector<std::shared_ptr<ConstructData> >& buffers);
+
     virtual bool merge(std::shared_ptr<BaseData> other);
 
     virtual bool merge(char* buffer, int size);
@@ -96,7 +105,7 @@ public:
 
     virtual bool mergeStoredData();
     
-    virtual void unserializeAndStore();
+    virtual void unserializeAndStore(char* buffer, int bufferSize);
 
     virtual bool serialize();
 
@@ -121,6 +130,8 @@ public:
 
     virtual bool setData(std::shared_ptr<void> data);
 
+    void softClean();
+
     std::shared_ptr<BaseConstructData> getData(std::string key);
 
     bool setMergeOrder(std::vector<std::string>& merge_order);
@@ -131,6 +142,8 @@ public:
 
     template<typename T>
     std::shared_ptr<T> getTypedData(std::string key);
+
+    void updateNbItems();
 
 protected:
     mapConstruct container_;
@@ -157,7 +170,7 @@ protected:
     std::vector<std::string> split_order_;
 
     std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
-
+    std::vector<std::vector<int> > rangeItems_;
 };
 
 //Have to define it here because of the template

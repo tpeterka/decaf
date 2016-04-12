@@ -54,17 +54,17 @@ void decaf::RedistComp::process(std::shared_ptr<BaseData> data, RedistRole role)
     gettimeofday(&begin, NULL);
     splitData(data, role);
     gettimeofday(&end, NULL);
-    timeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    //timeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
     gettimeofday(&begin, NULL);
-    //redistribute(data, role);
+    redistribute(data, role);
     gettimeofday(&end, NULL);
-    timeRedist = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    //timeRedist = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
     //if(role == DECAF_REDIST_SOURCE)
     //    printf(" [SOURCE] Global : %f, Split : %f, Redist : %f\n", timeGlobal, timeSplit, timeRedist);
     //if(role == DECAF_REDIST_DEST)
     //    printf(" [DEST] Global : %f, Split : %f, Redist : %f\n", timeGlobal, timeSplit, timeRedist);
-    timeGlobalRedist += timeRedist;
+    //timeGlobalRedist += timeRedist;
 
 }
 

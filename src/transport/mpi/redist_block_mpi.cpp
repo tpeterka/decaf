@@ -284,12 +284,12 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
         newBlock.setGridspace(base.gridspace_);
         newBlock.setGlobalBBox(base.globalBBox_);
         newBlock.setGlobalExtends(base.globalExtends_);
-        newBlock.setLocalExtends(subBlocks.at(i));
+        newBlock.setLocalExtends(subBlocks[i]);
         std::vector<float> localBBox;
         for(unsigned int j = 0; j < 3; j++)
-            localBBox.push_back(newBlock.globalBBox_[j] + (float)subBlocks.at(i)[j] * base.gridspace_);
+            localBBox.push_back(newBlock.globalBBox_[j] + (float)subBlocks[i][j] * base.gridspace_);
         for(unsigned int j = 3; j < 6; j++)
-            localBBox.push_back((float)(subBlocks.at(i)[j]) * base.gridspace_);
+            localBBox.push_back((float)(subBlocks[i][j]) * base.gridspace_);
         newBlock.setLocalBBox(localBBox);
 
         if(base.hasGhostRegions())
@@ -314,12 +314,12 @@ void
 decaf::
 RedistBlockMPI::updateBlockDomainFields()
 {
-    assert(subblocks_.size() == splitChunks_.size());
+    assert(subblocks_.size() == splitBuffer_.size());
 
     for(unsigned int i = 0; i < subblocks_.size(); i++)
     {
-        std::shared_ptr<BlockConstructData> newBlock = std::make_shared<BlockConstructData>(subblocks_.at(i));
-        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(splitChunks_.at(i));
+        std::shared_ptr<BlockConstructData> newBlock = std::make_shared<BlockConstructData>(subblocks_[i]);
+        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(splitBuffer_[i]);
         container->updateData("domain_block", newBlock);
     }
 }
@@ -364,7 +364,11 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 {
 
     double computeSplit = 0.0, computeSerialize = 0.0;
+    struct timeval begin;
+    struct timeval end;
+    
     if(role == DECAF_REDIST_SOURCE){
+        gettimeofday(&begin, NULL);
 
         std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
 
@@ -375,19 +379,22 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
+	if(splitBuffer_.empty())
+	    container->preallocMultiple(nbDests_, 34000, splitBuffer_);
+	else
+	{
+	    for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+		splitBuffer_[i]->softClean();
+        }
+
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
         if( summerizeDest_) delete  summerizeDest_;
          summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 	
-	struct timeval begin;
-    	struct timeval end;
 
-    	gettimeofday(&begin, NULL);
-        splitChunks_ =  container->split( subblocks_ );
-	gettimeofday(&end, NULL);
-        computeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+        container->split( subblocks_, splitBuffer_ );
 
 	//Pushing the subdomain block into each split chunk.
         //The field domain_block is updated
@@ -396,7 +403,7 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         //Updating the informations about messages to send
         for(unsigned int i = 0; i < subblocks_.size(); i++)
         {
-            if(splitChunks_.at(i)->getNbItems() > 0)
+            if(splitBuffer_[i]->getNbItems() > 0)
             {
                 destList_.push_back(i + local_dest_rank_);
 
@@ -407,28 +414,31 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             else //No data for this split
                 destList_.push_back(-1);
         }
+	gettimeofday(&end, NULL);
+        timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 	
 	gettimeofday(&begin, NULL);
-	std::cout<<"[";
-        for(unsigned int i = 0; i < splitChunks_.size(); i++)
+	//std::cout<<"[";
+        for(unsigned int i = 0; i < splitBuffer_.size(); i++)
         {
-	    std::cout<<splitChunks_.at(i)->getNbItems()<<",";
-            //if(splitChunks_.at(i)->getNbItems() > 0)
-            //{
+	    //int nbItems = splitBuffer_[i]->getNbItems();
+	    //std::cout<<splitBuffer_[i]->getNbItems()<<",";
+            if(splitBuffer_[i]->getNbItems() > 0)
+            {
                 // TODO : Check the rank for the destination.
                 // Not necessary to serialize if overlapping
-                //if(!splitChunks_.at(i)->serialize())
-                //    std::cout<<"ERROR : unable to serialize one object"<<std::endl;
-            //}
+                if(!splitBuffer_[i]->serialize())
+                    std::cout<<"ERROR : unable to serialize one object"<<std::endl;
+            }
         }
-	std::cout<<"]"<<std::endl;
+	//std::cout<<"]"<<std::endl;
 	gettimeofday(&end, NULL);
-	computeSerialize = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-	if(role == DECAF_REDIST_SOURCE)
-	    printf("Compute split : %f, compute serialize : %f\n", computeSplit, computeSerialize);
+	timeGlobalBuild += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+	//if(role == DECAF_REDIST_SOURCE)
+	//    printf("Compute split : %f, compute serialize : %f\n", computeSplit, computeSerialize);
         // Everything is done, now we can clean the data.
         // Data might be rewriten if producers and consummers are overlapping
-        data->purgeData();
+        //data->purgeData();
 
         //subblocks_.clear();
 
@@ -503,18 +513,18 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         for(unsigned int i = 0; i <  destList_.size(); i++)
         {
             //Sending to self, we simply copy the string from the out to in
-            if(destList_.at(i) == rank_)
+            if(destList_[i] == rank_)
             {
-                transit = splitChunks_.at(i);
+                transit = splitBuffer_[i];
             }
-            else if(destList_.at(i) != -1)
+            else if(destList_[i] != -1)
             {
                 MPI_Request req;
                 reqs.push_back(req);
 
-                MPI_Isend( splitChunks_.at(i)->getOutSerialBuffer(),
-                          splitChunks_.at(i)->getOutSerialBufferSize(),
-                          MPI_BYTE, destList_.at(i), MPI_DATA_TAG, communicator_, &reqs.back());
+                MPI_Isend( splitBuffer_[i]->getOutSerialBuffer(),
+                          splitBuffer_[i]->getOutSerialBufferSize(),
+                          MPI_BYTE, destList_[i], MPI_DATA_TAG, communicator_, &reqs.back());
             }
         }
     }
@@ -543,7 +553,8 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                 // NOTE : examin if it's not more efficient to receive everything
                 // and then merge. Memory footprint more important but allows to
                 // aggregate the allocations etc
-                data->merge();
+                //data->merge();
+                data->unserializeAndStore(data->getInSerialBuffer(), nitems);
             }
 
         }
@@ -551,7 +562,8 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         // Checking if we have something in transit
         if(transit)
         {
-            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            //data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
 
             //We don't need it anymore. Cleaning for the next iteration
             transit.reset();
@@ -559,6 +571,8 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 
 	gettimeofday(&end, NULL);
         timeGlobalRecep += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+
+        data->mergeStoredData();
     }
 }
 */
@@ -567,24 +581,29 @@ void
 decaf::
 RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
+  struct timeval beginRedist;
+  struct timeval endRedist;
+  struct timeval beginMerge;
+  struct timeval endMerge;
+
+  gettimeofday(&beginRedist,NULL);
   //Processing the data exchange
   if(role == DECAF_REDIST_SOURCE)
     {
       for(unsigned int i = 0; i <  destList_.size(); i++)
         {
 	  //Sending to self, we simply copy the string from the out to in
-	  if(destList_.at(i) == rank_)
+	  if(destList_[i] == rank_)
             {
-	      transit = splitChunks_.at(i);
+	      transit = splitBuffer_[i];
             }
-	  else if(destList_.at(i) != -1)
+	  else if(destList_[i] != -1)
             {
 	      MPI_Request req;
 	      reqs.push_back(req);
-
-	      MPI_Isend( splitChunks_.at(i)->getOutSerialBuffer(),
-			 splitChunks_.at(i)->getOutSerialBufferSize(),
-			 MPI_BYTE, destList_.at(i), MPI_DATA_TAG, communicator_, &reqs.back());
+	      MPI_Isend( splitBuffer_[i]->getOutSerialBuffer(),
+			 splitBuffer_[i]->getOutSerialBufferSize(),
+			 MPI_BYTE, destList_[i], MPI_DATA_TAG, communicator_, &reqs.back());
             }
 	  else
             {
@@ -597,12 +616,17 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 
             }
         }
+	gettimeofday(&endRedist, NULL);
+        timeGlobalRedist += endRedist.tv_sec+(endRedist.tv_usec/1000000.0) - beginRedist.tv_sec - (beginRedist.tv_usec/1000000.0);
+        
     }
 
   int nbRecep = nbSources_-1;
   if(role == DECAF_REDIST_DEST)
     {
-      for(int i = 0; i < nbRecep; i++)
+	struct timeval beginReceiv;
+	struct timeval endReceiv;
+        for(int i = 0; i < nbRecep; i++)
         {
 	  MPI_Status status;
 	  MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
@@ -623,21 +647,37 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 		  // and then merge. Memory footprint more important but allows to
 		  // aggregate the allocations etc
 		  //data->merge();
-		  data->unserializeAndStore();
+		  //data->unserializeAndStore();
+		  gettimeofday(&beginReceiv, NULL);
+		  data->unserializeAndStore(data->getInSerialBuffer(), nitems);
+		  gettimeofday(&endReceiv, NULL);
+		  timeGlobalReceiv += endReceiv.tv_sec+(endReceiv.tv_usec/1000000.0) - beginReceiv.tv_sec - (beginReceiv.tv_usec/1000000.0);
+
                 }
             }
         }
-      data->mergeStoredData();
-      // Checking if we have something in transit
-      if(transit)
+        // Checking if we have something in transit
+        if(transit)
         {
-	  data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+	  gettimeofday(&beginReceiv, NULL);
+  	  //data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+  	  data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+  	  gettimeofday(&endReceiv, NULL);
+          timeGlobalReceiv += endReceiv.tv_sec+(endReceiv.tv_usec/1000000.0) - beginReceiv.tv_sec - (beginReceiv.tv_usec/1000000.0);
+
 
 	  //We don't need it anymore. Cleaning for the next iteration
 	  transit.reset();
         }
+	gettimeofday(&endRedist, NULL);
+	timeGlobalRedist += endRedist.tv_sec+(endRedist.tv_usec/1000000.0) - beginRedist.tv_sec - (beginRedist.tv_usec/1000000.0);
+	gettimeofday(&beginMerge, NULL);
+	data->mergeStoredData();
+	gettimeofday(&endMerge, NULL);
+	timeGlobalMerge += endMerge.tv_sec+(endMerge.tv_usec/1000000.0) - beginMerge.tv_sec - (beginMerge.tv_usec/1000000.0);
     }
 }
+
 
 // Merge the chunks from the vector receivedChunks into one single Data.
 std::shared_ptr<decaf::BaseData>
@@ -657,7 +697,7 @@ RedistBlockMPI::flush()
 
     // Cleaning the data here because synchronous send.
     // TODO :  move to flush when switching to asynchronous send
-    splitChunks_.clear();
+    //splitBuffer_.clear(); //We keep the chunks and soft clean them at each iteration
     destList_.clear();
 }
 

@@ -125,6 +125,15 @@ public:
         return result;
     }
 
+    virtual void split(
+	    const std::vector< std::vector<int> >& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+	return;
+    }
+
     virtual bool merge( std::shared_ptr<BaseConstructData> other,
                         mapConstruct partial_map,
                         ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
@@ -190,6 +199,10 @@ public:
         return true;
     }
 
+    virtual void softClean()
+    {
+	return; //Nothing to do here
+    }
 protected:
     T value_;
 };

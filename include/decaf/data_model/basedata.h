@@ -87,7 +87,7 @@ namespace  decaf {
     virtual bool mergeStoredData() = 0;
 
     // Deserialize the buffer and store the result locally for a later global merge
-    virtual void unserializeAndStore() = 0;
+    virtual void unserializeAndStore(char* buffer, int bufferSize) = 0;
 
     // Convert the Map into a MPI compatible structure
     //virtual CommDatatype getMPIDatatype() const = 0;

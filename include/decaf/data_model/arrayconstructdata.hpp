@@ -30,7 +30,7 @@ public:
     {
         totalSegmentsSize_ = 0;
         for(unsigned int i = 0; i < segments_.size(); i++)
-            totalSegmentsSize_ += segments_.at(i).second;
+            totalSegmentsSize_ += segments_[i].second;
         size_ = totalSegmentsSize_;
 	capacity_ = 0;
     }
@@ -69,10 +69,10 @@ public:
             {
                 for(int i = 0; i < nbSegment; i++)
                 {
-                    ar & segments_.at(i).second;
-                    ar & boost::serialization::make_array<T>(segments_.at(i).first, segments_.at(i).second);
-                    //for(int j = 0; j < segments_.at(i).second; j++)
-                    //    ar & segments_.at(i).first[j];
+                    ar & segments_[i].second;
+                    ar & boost::serialization::make_array<T>(segments_[i].first, segments_[i].second);
+                    //for(int j = 0; j < segments_[i].second; j++)
+                    //    ar & segments_[i].first[j];
                 }
             }
 
@@ -182,7 +182,7 @@ public:
                 //Sanity check
                 int totalRange = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
-                    totalRange+= range.at(i);
+                    totalRange+= range[i];
                 if(totalRange != getNbItems()){
                     std::cout<<"ERROR : The number of items in the ranges ("<<totalRange
                              <<") does not match the number of items of the object ("
@@ -193,11 +193,11 @@ public:
                 unsigned int offset = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
                 {
-                    T* array = new T[range.at(i)*element_per_items_];
-                    memcpy(array, value_ + offset, range.at(i)*element_per_items_ * sizeof(T));
+                    T* array = new T[range[i]*element_per_items_];
+                    memcpy(array, value_ + offset, range[i]*element_per_items_ * sizeof(T));
                     std::shared_ptr<ArrayConstructData<T> > sub =
-                            std::make_shared<ArrayConstructData<T> >(array, range.at(i)*element_per_items_, element_per_items_, true);
-                    offset  += (range.at(i)*element_per_items_);
+                            std::make_shared<ArrayConstructData<T> >(array, range[i]*element_per_items_, element_per_items_, true);
+                    offset  += (range[i]*element_per_items_);
                     result.push_back(sub);
                 }
                 break;
@@ -234,7 +234,7 @@ public:
                 //Sanity check
                 /*int totalRange = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
-                    totalRange+= range.at(i).size();
+                    totalRange+= range[i].size();
                 if(totalRange != getNbItems()){
                     std::cout<<"ERROR : The number of items in the ranges ("<<totalRange
                              <<") does not match the number of items of the object ("
@@ -246,18 +246,18 @@ public:
                 //unsigned int offset = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
                 {
-                    //T* array = new T[range.at(i).size() * element_per_items_];
-                    T* array = new T[range.at(i).back() * element_per_items_];
+                    //T* array = new T[range[i].size() * element_per_items_];
+                    T* array = new T[range[i].back() * element_per_items_];
                     
 		    /*unsigned int offset = 0;
-                    for(unsigned int j = 0; j< range.at(i).size(); j++)
+                    for(unsigned int j = 0; j< range[i].size(); j++)
                     {
                         //temp.insert( temp.end(),
-                        //             it+(range.at(i).at(j)*element_per_items_),
-                        //             it+((range.at(i).at(j)+1)*element_per_items_)
+                        //             it+(range[i][j]*element_per_items_),
+                        //             it+((range[i][j]+1)*element_per_items_)
                         //             );
                         memcpy(array + offset,
-                               value_ + range.at(i).at(j)*element_per_items_,
+                               value_ + range[i][j]*element_per_items_,
                                element_per_items_ * sizeof(T));
                         offset += element_per_items_;
                     }*/
@@ -266,19 +266,19 @@ public:
                     /*unsigned int offsetDestArray = 0;
                     unsigned int nbCopy = 0;
                     
-                    while(offsetDestArray < range.at(i).size())
+                    while(offsetDestArray < range[i].size())
                     {
                         int currentTransationSize =  1;
 
                         //Computing how many consecutive items are in the range
-                        while(offsetDestArray + currentTransationSize < range.at(i).size() - 1 && range.at(i).at(offsetDestArray+currentTransationSize-1)+1 == range.at(i).at(offsetDestArray+currentTransationSize))
+                        while(offsetDestArray + currentTransationSize < range[i].size() - 1 && range[i].at(offsetDestArray+currentTransationSize-1)+1 == range[i].at(offsetDestArray+currentTransationSize))
                         {
                             currentTransationSize++;
                         }
 
                         //Now we can copy a chunk
                         memcpy(array + offsetDestArray * element_per_items_,
-                               value_ + range.at(i).at(offsetDestArray)*element_per_items_,
+                               value_ + range[i].at(offsetDestArray)*element_per_items_,
                                currentTransationSize * element_per_items_ * sizeof(T));
                         offsetDestArray += currentTransationSize;
                         nbCopy++;
@@ -289,22 +289,22 @@ public:
 		    unsigned int nbCopy = 0;
 		    unsigned int offsetDestArray = 0;
 
-		    for(unsigned int j = 0; j < range.at(i).size() - 1; j++)
+		    for(unsigned int j = 0; j < range[i].size() - 1; j++)
 	            {
 			memcpy(array + offsetDestArray * element_per_items_,
-			value_ + range.at(i).at(j) * element_per_items_,
-			range.at(i).at(j+1) * element_per_items_ * sizeof(T));
-			offsetDestArray+= range.at(i).at(j+1);
+			value_ + range[i][j] * element_per_items_,
+			range[i].at(j+1) * element_per_items_ * sizeof(T));
+			offsetDestArray+= range[i].at(j+1);
 			j++; // The second j contains the number of items of this segment
 			nbCopy++;
 		    }
 
-                    //printf("We did %u copies instead of %u\n", nbCopy, range.at(i).size());
+                    //printf("We did %u copies instead of %u\n", nbCopy, range[i].size());
 
                     std::shared_ptr<ArrayConstructData<T> > sub =
-                    //        std::make_shared<ArrayConstructData<T> >(array, range.at(i).size() * element_per_items_,
+                    //        std::make_shared<ArrayConstructData<T> >(array, range[i].size() * element_per_items_,
                     //                                                 element_per_items_, true);
-                    	    std::make_shared<ArrayConstructData<T> >(array, range.at(i).back() * element_per_items_,
+                    	    std::make_shared<ArrayConstructData<T> >(array, range[i].back() * element_per_items_,
 								     element_per_items_, true);
 		    //        std::make_shared<ArrayConstructData<T> >(array, currentTransationSize * element_per_items_,
                     //                                                 element_per_items_, true);
@@ -321,31 +321,31 @@ public:
                 //unsigned int offset = 0;
                 for(unsigned int i = 0; i < range.size(); i++)
                 {
-                    //T* array = new T[range.at(i).size() * element_per_items_];
+                    //T* array = new T[range[i].size() * element_per_items_];
 
                     unsigned int offsetDestArray = 0;
                     unsigned int nbCopy = 0;
                     std::vector<std::pair<T*, unsigned int> > segments;
                     unsigned int totalSegmentsSize_;
 
-                    while(offsetDestArray < range.at(i).size())
+                    while(offsetDestArray < range[i].size())
                     {
                         int currentTransationSize =  1;
 
                         //Computing how many consecutive items are in the range
-                        while(offsetDestArray + currentTransationSize < range.at(i).size() - 1 && range.at(i).at(offsetDestArray+currentTransationSize-1)+1 == range.at(i).at(offsetDestArray+currentTransationSize))
+                        while(offsetDestArray + currentTransationSize < range[i].size() - 1 && range[i].at(offsetDestArray+currentTransationSize-1)+1 == range[i].at(offsetDestArray+currentTransationSize))
                         {
                             currentTransationSize++;
                         }
 
                         //Now we can copy a chunk
                         //memcpy(array + offsetDestArray * element_per_items_,
-                        //       value_ + range.at(i).at(offsetDestArray)*element_per_items_,
+                        //       value_ + range[i].at(offsetDestArray)*element_per_items_,
                         //       currentTransationSize * element_per_items_ * sizeof(T));
                         //offsetDestArray += currentTransationSize;
                         //nbCopy++;
                         std::pair<T*, unsigned int> segment(
-                                    value_ + range.at(i).at(offsetDestArray)*element_per_items_,
+                                    value_ + range[i].at(offsetDestArray)*element_per_items_,
                                     currentTransationSize * element_per_items_);
                         totalSegmentsSize_ += currentTransationSize * element_per_items_;
                         offsetDestArray += currentTransationSize;
@@ -354,7 +354,7 @@ public:
                         //break;
                     }
 
-                    //printf("We did %u segments instead of %u\n", nbCopy, range.at(i).size());
+                    //printf("We did %u segments instead of %u\n", nbCopy, range[i].size());
 
                     std::shared_ptr<ArrayConstructData<T> > sub =
                             std::make_shared<ArrayConstructData<T> >(segments,
@@ -384,6 +384,67 @@ public:
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
         return result;
+    }
+
+    virtual void split(
+	    const std::vector< std::vector<int> >& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+	switch( policy )
+        {
+            case DECAF_SPLIT_DEFAULT:
+            {
+		for(unsigned int i = 0; i < range.size(); i++)
+                {
+		    // TODO : use the fields as memory layer
+                    //T* array = new T[range[i].back() * element_per_items_];
+                    std::shared_ptr<ArrayConstructData<T> > arrayconstruct = std::dynamic_pointer_cast<ArrayConstructData<T> >(fields[i]);
+		    if(!arrayconstruct)
+		    {
+			std::cout<<"ERROR : dynamic cast into an array failed during a split."<<std::endl;
+			return;
+		    } 
+
+		    //Note enough space, we have to reallocate
+		    if(arrayconstruct->capacity_ < range[i].back() * element_per_items_)
+		    {
+			//std::cout<<"ERROR : not enough space preallocated in the buffer for buffer. ("<<range[i].back() * element_per_items_<<" needed, "<<arrayconstruct->capacity_<<" allocated"<<std::endl;
+			//return;
+			if(arrayconstruct->owner_) delete arrayconstruct->value_;
+			arrayconstruct->value_ = new T[range[i].back() * element_per_items_];
+			arrayconstruct->capacity_ = range[i].back() * element_per_items_;
+		    }
+
+                    T* array = arrayconstruct->getArray();
+		    unsigned int nbCopy = 0;
+                    unsigned int offsetDestArray = 0;
+
+                    for(unsigned int j = 0; j < range[i].size() - 1; j++)
+                    {
+                        memcpy(array + offsetDestArray * element_per_items_,
+                        value_ + range[i][j] * element_per_items_,
+                        range[i][j+1] * element_per_items_ * sizeof(T));
+                        offsetDestArray+= range[i][j+1];
+                        j++; // The second j contains the number of items of this segment
+                        nbCopy++;
+                    }
+		    //std::shared_ptr<ArrayConstructData<T> > sub =
+		    //	std::make_shared<ArrayConstructData<T> >(array, range[i].back() * element_per_items_,
+                    //                                             element_per_items_, true);
+		    //result.push_back(sub);
+		    arrayconstruct->size_ = range[i].back() * element_per_items_;
+                }
+                break;
+            }
+	    default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for ArrayConstructData"<<std::endl;
+                break;
+            }
+	}
+	return;
     }
 
     virtual bool merge( std::shared_ptr<BaseConstructData> other,
@@ -457,13 +518,13 @@ public:
 	std::vector<std::shared_ptr<ArrayConstructData<T> > > partials;
 	for(unsigned int i = 0; i < others.size(); i++)
 	{
-		std::shared_ptr<ArrayConstructData<T> >other = std::dynamic_pointer_cast<ArrayConstructData<T> >(others.at(i));
+		std::shared_ptr<ArrayConstructData<T> >other = std::dynamic_pointer_cast<ArrayConstructData<T> >(others[i]);
 		if(!other) std::cerr<<"ERROR : the conversion failed."<<std::endl;
 		totalSize += other->size_;
 		partials.push_back(other);
 	}	
 
-	std::cerr<<"Total size after merge : "<<totalSize<<std::endl;
+	//std::cerr<<"Total size after merge : "<<totalSize<<std::endl;
 	switch(policy)
         {
             case DECAF_MERGE_FIRST_VALUE: //We don't have to do anything here
@@ -478,8 +539,8 @@ public:
 		unsigned int offset = size_;
 		for(unsigned int i = 0; i < partials.size(); i++)
 		{
-                    memcpy(newArray + offset, partials.at(i)->value_, partials.at(i)->size_ * sizeof(T));
-		    offset += partials.at(i)->size_;
+                    memcpy(newArray + offset, partials[i]->value_, partials[i]->size_ * sizeof(T));
+		    offset += partials[i]->size_;
 		}
 
                 if(owner_) delete[] value_;
@@ -534,13 +595,18 @@ protected:
             for(unsigned int i = 0; i < segments_.size(); i++)
             {
                 memcpy(value_ + offset,
-                       segments_.at(i).first,
-                       segments_.at(i).second * sizeof(T));
-                offset+= segments_.at(i).second;
+                       segments_[i].first,
+                       segments_[i].second * sizeof(T));
+                offset+= segments_[i].second;
             }
 
 
         }
+    }
+
+    virtual void softClean()
+    {
+	size_ = 0; // We don't delete the data for now
     }
 };
 
