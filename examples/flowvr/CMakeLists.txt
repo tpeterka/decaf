@@ -1,3 +1,4 @@
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  $ENV{FlowVR_DIR})
 find_package(FlowVR)
 if(FlowVR_FOUND)
     message(status "Building the FlowVR examples")

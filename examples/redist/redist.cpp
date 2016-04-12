@@ -441,6 +441,21 @@ public:
         size_buffer_ = size;
     }
 
+    // Merge all the parts we have deserialized so far
+    virtual bool mergeStoredData()
+    {
+        std::cerr<<"ERROR : trying to use mergeStoredData on ParticuleType. Not implemented!"<<std::endl;
+        return false;
+    }
+
+
+    // Deserialize the buffer and store the result locally for a later global merge
+    virtual void unserializeAndStore(char* buffer, int bufferSize)
+    {
+        std::cerr<<"ERROR : trying to use unserializeAndStore on ParticuleType. Not implemented!"<<std::endl;
+        return ;
+    }
+
 
 
 
