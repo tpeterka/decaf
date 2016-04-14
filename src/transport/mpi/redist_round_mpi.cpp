@@ -72,7 +72,6 @@ RedistRoundMPI::RedistRoundMPI(int rankSource,
     MPI_Group_free(&groupRedist);
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
-
     // group with all the sources
     if(isSource())
     {
@@ -84,7 +83,9 @@ RedistRoundMPI::RedistRoundMPI(int rankSource,
         MPI_Comm_create_group(world_comm, groupSource, 0, &commSources_);
         MPI_Group_free(&groupSource);
         int source_rank;
+        int source_size;
         MPI_Comm_rank(commSources_, &source_rank);
+        MPI_Comm_size(commSources_, &source_size);
     }
 
     // group with all the destinations
@@ -179,6 +180,7 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
                 summerizeDest_[i] = 1;
         }
 
+
         splitChunks_ =  data->split( split_ranges );
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
@@ -203,7 +205,8 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     if(role == DECAF_REDIST_SOURCE)
     {
         MPI_Reduce( summerizeDest_, sum_,  nbDests_, MPI_INT, MPI_SUM,
-                   local_source_rank_, commSources_);
+                    0, commSources_);
+                   //local_source_rank_, commSources_);
     }
 
     //Case with overlapping

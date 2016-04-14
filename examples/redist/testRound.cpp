@@ -55,9 +55,13 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         return;
     }
 
-    if(rank >= max(startSource + nbSource, startReceptors + nbReceptors))
+    if((rank < startSource || rank >= startSource + nbSource) &&
+        (rank < startReceptors || rank >= startReceptors + nbReceptors))
         return;
 
+    std::cout<<"Construction of the redistribution component."<<std::endl;
+    std::cout<<"Rank : "<<rank<<std::endl;
+    std::cout<<"Configuration : "<<startSource<<", "<<nbSource<<", "<<startReceptors<<", "<<nbReceptors<<std::endl;
     RedistRoundMPI *component = new RedistRoundMPI(startSource, nbSource,
                                                      startReceptors, nbReceptors,
                                                      MPI_COMM_WORLD);
@@ -129,9 +133,10 @@ int main(int argc,
 
     runTestParallelRedistOverlap(0, 4, 4, 4);
     runTestParallelRedistOverlap(0, 4, 4, 3);
-    runTestParallelRedistOverlap(0, 4, 2, 4);
+    runTestParallelRedistOverlap(0, 4, 2, 2);
     runTestParallelRedistOverlap(0, 4, 2, 3);
     runTestParallelRedistOverlap(0, 4, 0, 4);
+    runTestParallelRedistOverlap(2, 4, 0, 4);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 
