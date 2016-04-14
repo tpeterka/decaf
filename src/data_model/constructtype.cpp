@@ -3,6 +3,8 @@
 #include <decaf/data_model/morton.h>
 #include <sys/time.h>
 
+#include <decaf/data_model/simpleconstructdata.hpp>
+
 using namespace decaf;
 using namespace std;
 
@@ -231,13 +233,11 @@ void
 decaf::
 ConstructData::printKeys()
 {
-    std::cout<<"Current state of the map : "<<std::endl;
+    fprintf(stderr, "Current state of the map: \n");
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
-    {
-        std::cout<<"Key : "<<it->first<<", nbItems : "<<getNbItemsField(it->second)<<std::endl;
-    }
-    std::cout<<"End of display of the map"<<std::endl;
+        fprintf(stderr, "Key: %s; nbItems: %d\n", it->first.c_str(), getNbItemsField(it->second));
+    fprintf(stderr, "End of display of the map\n");
 
 }
 
@@ -1113,6 +1113,38 @@ ConstructData::merge(char* buffer, int size)
             return false;
         }
 
+        // fprintf(stderr, "hostmap ");
+        // for(std::map<std::string, datafield>::iterator it = container_->begin();
+        //     it != container_->end(); it++)
+        // {
+        //     fprintf(stderr, "%s ", it->first.c_str());
+        // }
+        // fprintf(stderr, "\n");
+        // std::map<std::string, datafield>::iterator it = container_->find("var");
+        // if (it != container_->end())
+        // {
+        //     int val =
+        //         (dynamic_pointer_cast<SimpleConstructData<int> >
+        //          (getBaseData(it->second)))->getData();
+        //     fprintf(stderr, "var = %d\n", val);
+        // }
+
+        // fprintf(stderr, "othermap ");
+        // for(std::map<std::string, datafield>::iterator it = other->begin();
+        //     it != other->end(); it++)
+        // {
+        //     fprintf(stderr, "%s ", it->first.c_str());
+        // }
+        // fprintf(stderr, "\n");
+        // it = other->find("var");
+        // if (it != other->end())
+        // {
+        //     int val =
+        //         (dynamic_pointer_cast<SimpleConstructData<int> >
+        //          (getBaseData(it->second)))->getData();
+        //     fprintf(stderr, "var = %d\n", val);
+        // }
+
         for(std::map<std::string, datafield>::iterator it = container_->begin();
             it != container_->end(); it++)
         {
@@ -1490,6 +1522,18 @@ ConstructData::setData(std::shared_ptr<void> data)
 
 }
 
+bool
+decaf::
+ConstructData::hasData(std::string key)
+{
+    std::map<std::string, datafield>::iterator it;
+    it = container_->find(key);
+    if(it == container_->end())
+        return false;
+    else
+        return true;
+}
+
 std::shared_ptr<BaseConstructData>
 decaf::
 ConstructData::getData(std::string key)
@@ -1498,7 +1542,7 @@ ConstructData::getData(std::string key)
     it = container_->find(key);
     if(it == container_->end())
     {
-        std::cout<<"ERROR : key "<<key<<" not found."<<std::endl;
+        fprintf(stderr, "ERROR: key %s not found.\n", key.c_str());
         return std::shared_ptr<BaseConstructData>();
     }
     else

@@ -380,8 +380,5 @@ protected:
 
 } // namespace
 
-BOOST_CLASS_EXPORT_GUID(decaf::Array3DConstructData<float>,"ArrayNDimConstructData<float3>")
-BOOST_CLASS_EXPORT_GUID(decaf::Array3DConstructData<int>,"ArrayNDimConstructData<int3>")
-BOOST_CLASS_EXPORT_GUID(decaf::Array3DConstructData<double>,"ArrayNDimConstructData<double3>")
 
 #endif

@@ -209,10 +209,4 @@ protected:
 
 }//namespace
 
-BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<float>,"SimpleConstructData<float>")
-BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<int>,"SimpleConstructData<int>")
-BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<double>,"SimpleConstructData<double>")
-BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<char>,"SimpleConstructData<char>")
-
-
 #endif

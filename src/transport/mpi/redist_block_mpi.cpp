@@ -26,195 +26,14 @@ double timeGlobalRecep = 0;
 double timeGlobalScatter = 0;
 double timeGlobalReduce = 0;
 
+
 void printExtends(std::vector<unsigned int>& extend)
 {
     std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
-             <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]<<","<<extend[2]+extend[5]<<"]"<<std::endl;
+             <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]
+             <<","<<extend[2]+extend[5]<<"]"<<std::endl;
 }
 
-
-namespace decaf
-{
-
-bool
-decaf::
-RedistBlockMPI::isSource()
-{
-    return rank_ >= local_source_rank_ && rank_ < local_source_rank_ + nbSources_;
-}
-
-bool
-decaf::
-RedistBlockMPI::isDest()
-{
-    return rank_ >= local_dest_rank_ && rank_ < local_dest_rank_ + nbDests_;
-}
-
-// create communicators for block process assignment
-// ranks within source and destination must be contiguous, but
-// destination ranks need not be higher numbered than source ranks
-decaf::
-RedistBlockMPI::RedistBlockMPI(int rankSource,
-                               int nbSources,
-                               int rankDest,
-                               int nbDests,
-                               CommHandle world_comm) :
-    RedistComp(rankSource, nbSources, rankDest, nbDests),
-    communicator_(MPI_COMM_NULL),
-    commSources_(MPI_COMM_NULL),
-    commDests_(MPI_COMM_NULL)
-{
-    MPI_Group group, groupRedist, groupSource, groupDest;
-    MPI_Comm_group(world_comm, &group);
-    local_source_rank_ = rankSource;
-    local_dest_rank_ = rankDest;
-
-    // group covering both the sources and destinations
-    // destination ranks need not be higher than source ranks
-
-    // Testing if sources and receivers are disjoints
-    if(rankDest >= rankSource + nbSources || rankSource >= rankDest + nbDests)
-    {
-        int range_both[2][3];
-        range_both[0][0] = rankSource;
-        range_both[0][1] = rankSource + nbSources - 1;
-        range_both[0][2] = 1;
-        range_both[1][0] = rankDest;
-        range_both[1][1] = rankDest + nbDests - 1;
-        range_both[1][2] = 1;
-        MPI_Group_range_incl(group, 2, range_both, &groupRedist);
-    }
-    else //Sources and Receivers are overlapping
-    {
-        int range[3];
-        range[0] = std::min(rankSource, rankDest);
-        range[1] = std::max(rankSource + nbSources - 1, rankDest + nbDests - 1);
-        range[2] = 1;
-        MPI_Group_range_incl(group, 1, &range, &groupRedist);
-    }
-    MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
-    MPI_Group_free(&groupRedist);
-    MPI_Comm_rank(communicator_, &rank_);
-    MPI_Comm_size(communicator_, &size_);
-
-    // group with all the sources
-    if(isSource())
-    {
-        int range_src[3];
-        range_src[0] = rankSource;
-        range_src[1] = rankSource + nbSources - 1;
-        range_src[2] = 1;
-        MPI_Group_range_incl(group, 1, &range_src, &groupSource);
-        MPI_Comm_create_group(world_comm, groupSource, 0, &commSources_);
-        MPI_Group_free(&groupSource);
-        int source_rank;
-        MPI_Comm_rank(commSources_, &source_rank);
-    }
-
-    // group with all the destinations
-    if(isDest())
-    {
-        int range_dest[3];
-        range_dest[0] = rankDest;
-        range_dest[1] = rankDest + nbDests - 1;
-        range_dest[2] = 1;
-        MPI_Group_range_incl(group, 1, &range_dest, &groupDest);
-        MPI_Comm_create_group(world_comm, groupDest, 0, &commDests_);
-        MPI_Group_free(&groupDest);
-        int dest_rank;
-        MPI_Comm_rank(commDests_, &dest_rank);
-    }
-
-    MPI_Group_free(&group);
-
-    destBuffer_ = new int[nbDests_];
-    sum_ = new int[nbDests_];
-}
-
-decaf::
-RedistBlockMPI::~RedistBlockMPI()
-{
-  if (communicator_ != MPI_COMM_NULL)
-    MPI_Comm_free(&communicator_);
-  if (commSources_ != MPI_COMM_NULL)
-    MPI_Comm_free(&commSources_);
-  if (commDests_ != MPI_COMM_NULL)
-    MPI_Comm_free(&commDests_);
-
-  delete[] destBuffer_;
-  delete[] sum_;
-}
-
-/*void
-decaf::
-RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
-{
-    // Naive version, we split everything in the same dimension
-    if(!base.hasGlobalExtends_)
-    {
-        std::cerr<<"ERROR : The global domain doesn't have global extends. Abording."<<std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 0);
-    }
-
-    if(!base.hasGlobalBBox_)
-    {
-        std::cerr<<"ERROR : The global domain doesn't have global bbox. Abording."<<std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 0);
-    }
-
-    if(!base.hasGridspace_)
-    {
-        std::cerr<<"ERROR : The global domain doesn't have gridspace. Abording."<<std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 0);
-    }
-
-    if(base.globalExtends_[3] < nbSubblock && base.globalExtends_[4] && base.globalExtends_[5])
-    {
-        std::cerr<<"ERROR : none of the dimension is large enough to cut in "<<nbSubblock<<" parts. Abording."<<std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 0);
-    }
-
-    // Checking which dimension we are using
-    int dim = 0;
-    while(base.globalExtends_[3+dim] < nbSubblock)
-        dim++;
-
-    std::cout<<"Using the dimension "<<dim<<std::endl;
-
-
-    // Building the subblocks
-    unsigned int extendOffset = 0;
-    for(int i = 0; i < nbSubblock; i++)
-    {
-        Block<3> sub;
-        sub.setGridspace(base.gridspace_);
-        sub.setGlobalBBox(base.globalBBox_);
-        sub.setGlobalExtends(base.globalExtends_);
-
-        std::vector<unsigned int> localextends = base.globalExtends_;
-        localextends[dim] = extendOffset;
-        if(i < base.globalExtends_[3+dim] % nbSubblock)
-        {
-            localextends[3+dim] = (base.globalExtends_[3+dim] / nbSubblock) + 1;
-            extendOffset += (base.globalExtends_[3+dim] / nbSubblock) + 1;
-        }
-        else
-        {
-            localextends[3+dim] = base.globalExtends_[3+dim] / nbSubblock;
-            extendOffset += base.globalExtends_[3+dim] / nbSubblock;
-        }
-
-        std::vector<float> localbox;
-        for(int j = 0; j < 6; j++)
-            localbox.push_back((float)localextends[j] * sub.gridspace_);
-
-        sub.setLocalBBox(localbox);
-        sub.setLocalExtends(localextends);
-
-        subblocks_.push_back(sub);
-    }
-
-}*/
 
 // TODO : remove the recursion on this
 void splitExtends(std::vector<unsigned int>& extends, int nbSubblock, std::vector< std::vector<unsigned int> >& subblocks)
@@ -457,6 +276,12 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         // Data might be rewriten if producers and consummers are overlapping
         //data->purgeData();
 
+
+        // DEPRECATED
+        // Everything is done, now we can clean the data.
+        // Data might be rewriten if producers and consummers are overlapping
+        // data->purgeData();
+
         //subblocks_.clear();
 
     }
@@ -594,6 +419,8 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 }
 */
 
+
+// FIXME CAreful with the indexes in case of non overlapping
 void
 decaf::
 RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
@@ -696,14 +523,6 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 }
 
 
-// Merge the chunks from the vector receivedChunks into one single Data.
-std::shared_ptr<decaf::BaseData>
-decaf::
-RedistBlockMPI::merge(RedistRole role)
-{
-    return std::shared_ptr<BaseData>();
-}
-
 void
 decaf::
 RedistBlockMPI::flush()
@@ -718,5 +537,4 @@ RedistBlockMPI::flush()
     destList_.clear();
 }
 
-} // namespace
 

@@ -1,7 +1,7 @@
 add_subdirectory            (direct)
 
 add_subdirectory            (redist)
-add_subdirectory            (flowvr)
+#add_subdirectory            (flowvr)
 if                          (LAMMPS_INCLUDE_DIR AND
                              LAMMPS_LIBRARY     AND
                              FFTW_INCLUDE_DIR   AND
@@ -14,4 +14,4 @@ endif                       ()
 
 #add_subdirectory          (block_data_model)
 
-add_subdirectory            (cfd)
+# add_subdirectory            (cfd)

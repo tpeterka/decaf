@@ -612,17 +612,5 @@ protected:
 
 } //namespace
 
-BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<float>,"ArrayConstructData<float>")
-BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<int>,"ArrayConstructData<int>")
-BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<unsigned int>,"ArrayConstructData<unsigned int>")
-BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<double>,"ArrayConstructData<double>")
-BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<char>,"ArrayConstructData<char>")
-BOOST_CLASS_TRACKING(decaf::ArrayConstructData<float>, boost::serialization::track_never)
-BOOST_CLASS_TRACKING(decaf::ArrayConstructData<int>, boost::serialization::track_never)
-BOOST_CLASS_TRACKING(decaf::ArrayConstructData<unsigned int>, boost::serialization::track_never)
-BOOST_CLASS_TRACKING(decaf::ArrayConstructData<double>, boost::serialization::track_never)
-BOOST_CLASS_TRACKING(decaf::ArrayConstructData<char>, boost::serialization::track_never)
-
-
 #endif
 

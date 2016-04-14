@@ -47,12 +47,19 @@ enum Decomposition
     DECAF_NUM_DECOMPS,
 };
 
-// task types
+// DEPRECATED
+// // task types
+// typedef unsigned char TaskType;
+// #define DECAF_NONE      0x00
+// #define DECAF_PROD      0x01
+// #define DECAF_DFLOW     0x02
+// #define DECAF_CON       0x04
+
+// workflow entity types
 typedef unsigned char TaskType;
-#define DECAF_PROD      0x00
-#define DECAF_DFLOW     0x01
-#define DECAF_CON       0x02
-#define DECAF_BOTH      0x04
+#define DECAF_NONE      0x00
+#define DECAF_NODE      0x01
+#define DECAF_LINK      0x02
 
 // communicator types
 typedef unsigned char CommTypeDecaf;
@@ -83,6 +90,16 @@ struct DecafSizes
 
 struct WorkflowNode        // a producer or consumer
 {
+    WorkflowNode()                                {}
+    WorkflowNode(int start_proc_,
+                 int nprocs_,
+                 string func_,
+                 string path_) :
+        start_proc(start_proc_),
+        nprocs(nprocs_),
+        func(func_),
+        args(NULL),
+        path(path_)                               {}
     vector<int> out_links; // indices of outgoing links
     vector<int> in_links;  // indices of incoming links
     int start_proc;        // starting proc rank in world communicator for this producer or consumer
@@ -90,10 +107,30 @@ struct WorkflowNode        // a producer or consumer
     string func;           // name of node callback
     void* args;            // callback arguments
     string path;           // path to producer and consumer callback function module
+    void add_out_link(int link) { out_links.push_back(link); }
+    void add_in_link(int link) { in_links.push_back(link); }
 };
 
-struct WorkflowLink             // a dataflow
+struct WorkflowLink        // a dataflow
 {
+    WorkflowLink()                                {}
+    WorkflowLink(int prod_,
+                 int con_,
+                 int start_proc_,
+                 int nprocs_,
+                 string func_,
+                 string path_,
+                 string prod_dflow_redist_,
+                 string dflow_con_redist_) :
+        prod(prod_),
+        con(con_),
+        start_proc(start_proc_),
+        nprocs(nprocs_),
+        func(func_),
+        args(NULL),
+        path(path_),
+        prod_dflow_redist(prod_dflow_redist_),
+        dflow_con_redist(dflow_con_redist_)       {}
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -107,8 +144,39 @@ struct WorkflowLink             // a dataflow
 
 struct Workflow                 // an entire workflow
 {
+    Workflow()                                    {}
+    Workflow(vector<WorkflowNode>& nodes_,
+             vector<WorkflowLink>& links_) :
+        nodes(nodes_),
+        links(links_)                             {}
     vector<WorkflowNode> nodes; // all the workflow nodes
     vector<WorkflowLink> links; // all the workflow links
+    bool my_node(int proc, int node)         // whether my process is part of this node
+        {
+            return(proc >= nodes[node].start_proc &&
+                   proc <  nodes[node].start_proc + nodes[node].nprocs);
+        }
+    bool my_link(int proc, int link)         // whether my process is part of this link
+        {
+            return(proc >=links[link].start_proc &&
+                   proc < links[link].start_proc + links[link].nprocs);
+        }
+    bool my_in_link(int proc, int link)      // whether my process gets input data from this link
+        {
+            for (size_t i = 0; i< nodes.size(); i++)
+            {
+                if (proc >= nodes[i].start_proc && // proc is mine
+                    proc <  nodes[i].start_proc + nodes[i].nprocs)
+                {
+                    for (size_t j = 0; j < nodes[i].in_links.size(); j++)
+                    {
+                        if (nodes[i].in_links[j] == link)
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
 };
 
 void
@@ -140,16 +208,5 @@ Decomposition stringToDecomposition(std::string name)
         return DECAF_CONTIG_DECOMP;
     }
 }
-
-// DEPRECATED
-// #define DECAF_DEBUG_MAX 256
-
-// void 
-// all_dbg( FILE* channel, char* msg)
-// {
-// #ifdef DECAF_DEBUG_ON
-//     fprintf(channel, "[DECAF-DEBUG] %s", msg);
-// #endif
-// }
 
 #endif

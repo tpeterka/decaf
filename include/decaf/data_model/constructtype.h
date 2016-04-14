@@ -134,6 +134,8 @@ public:
 
     std::shared_ptr<BaseConstructData> getData(std::string key);
 
+    bool hasData(std::string key);
+
     bool setMergeOrder(std::vector<std::string>& merge_order);
     const std::vector<std::string>& getMergeOrder();
 
@@ -194,5 +196,5 @@ ConstructData::getTypedData(std::string key)
 }
 
 } //namespace
-BOOST_CLASS_EXPORT_GUID(decaf::ConstructData,"ConstructData")
+
 #endif

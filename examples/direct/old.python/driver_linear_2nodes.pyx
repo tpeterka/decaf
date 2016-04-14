@@ -28,10 +28,10 @@ cdef extern from "decaf/types.hpp":
         vector[WorkflowNode] nodes
         vector[WorkflowLink] links
 
-cdef extern from "../examples/direct/linear_3nodes.cpp":
-    void run(Workflow& workflow, int prod_nsteps, int con_nsteps)
+cdef extern from "../examples/direct/linear_2nodes.cpp":
+    void run(Workflow& workflow, vector[int]& sources)
 
-def pyrun(workflow, prod_nsteps, con_nsteps):
+def pyrun(workflow, sources):
     cdef WorkflowNode wnode
     cdef WorkflowLink wlink
     cdef Workflow wflow
@@ -76,4 +76,4 @@ def pyrun(workflow, prod_nsteps, con_nsteps):
 #     print 'wlinks:', wflow.links
 
     # run the workflow
-    run(wflow, prod_nsteps, con_nsteps)
+    run(wflow, sources)

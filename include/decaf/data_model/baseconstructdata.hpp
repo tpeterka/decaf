@@ -166,6 +166,5 @@ protected:
 };
 
 }// namespace
-BOOST_CLASS_EXPORT_GUID(decaf::BaseConstructData,"BaseConstructData")
 
 #endif
