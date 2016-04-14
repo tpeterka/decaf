@@ -1,6 +1,6 @@
-if                          (python_examples)
-  add_subdirectory          (python)
-endif                       (python_examples)
+# if                          (python_examples)
+#   add_subdirectory          (python)
+# endif                       (python_examples)
 
 find_package(Boost COMPONENTS serialization)
 

@@ -52,7 +52,7 @@ namespace decaf
 
         // Transfer the chunks from the sources to the destination. The data should be
         // be stored in the vector receivedChunks
-        int redistribute(std::shared_ptr<BaseData> data, RedistRole role);
+        void redistribute(std::shared_ptr<BaseData> data, RedistRole role);
 
         CommHandle communicator_;          // communicator for all the processes involved in redist
         CommHandle commSources_;           // communicator of the sources

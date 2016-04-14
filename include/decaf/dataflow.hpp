@@ -49,7 +49,7 @@ namespace decaf
                  = DECAF_CONTIG_DECOMP);
         ~Dataflow();
         void put(std::shared_ptr<BaseData> data, TaskType role);
-        int get(std::shared_ptr<BaseData> data, TaskType role);
+        void get(std::shared_ptr<BaseData> data, TaskType role);
         DecafSizes* sizes()    { return &sizes_; }
         void shutdown();
         void err()             { ::all_err(err_); }
@@ -374,26 +374,24 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
     map->removeData("dest_id");
 }
 
-int
+void
 decaf::
 Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
 {
-    int retval;
     if (role == DECAF_LINK)
     {
         if (redist_prod_dflow_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
-        retval = redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+        redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
     }
     else if (role == DECAF_NODE)
     {
         if (redist_dflow_con_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
-        retval = redist_dflow_con_->process(data, DECAF_REDIST_DEST);
+        redist_dflow_con_->process(data, DECAF_REDIST_DEST);
         redist_dflow_con_->flush();
     }
-    return retval;
 }
 
 // cleanup

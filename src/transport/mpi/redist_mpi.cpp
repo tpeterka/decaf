@@ -99,15 +99,13 @@ RedistMPI::~RedistMPI()
     delete[] sum_;
 }
 
-// redistributes data
-// return value: 0 = no received data; 1 = received data
-int
+#if 1  // select collective or point to point protocol
+
+// collective redistribution protocol
+void
 decaf::
 RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
-    int retval = 0;                          // return value
-    int flag;                                // result of MPI_Iprobe
-
     // debug
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -124,27 +122,18 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     // disjoint source and destination
     else
     {
-        // producer root sends the number of messages to the root of the consumer
+        // producer root sends the number of messages to root of consumer
         if (role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
-            // assume the  metadata are small; send in blocking mode
             MPI_Send(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
-                      communicator_);
+                     communicator_);
 
         // consumer root receives the number of messages
-        if (role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) // root of destination
-        {
-            MPI_Status status;
-            MPI_Iprobe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &flag, &status);
-            if (flag && status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
-            {
-                MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG,
-                         communicator_, MPI_STATUS_IGNORE);
-                retval = 1;
-            }
-        }
+        if (role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_)
+            MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG,
+                     communicator_, MPI_STATUS_IGNORE);
     }
 
-    // producer ranks send payload
+    // producer ranks send data payload
     if (role == DECAF_REDIST_SOURCE)
     {
         for (unsigned int i = 0; i <  destList_.size(); i++)
@@ -156,11 +145,13 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             {
                 MPI_Request req;
                 reqs.push_back(req);
+                // nonblocking send in case payload is too big send in immediate mode
                 MPI_Isend(splitChunks_.at(i)->getOutSerialBuffer(),
                           splitChunks_.at(i)->getOutSerialBufferSize(),
-                          MPI_BYTE, destList_.at(i), MPI_DATA_TAG, communicator_, &reqs.back());
+                          MPI_BYTE, destList_.at(i), send_data_tag, communicator_, &reqs.back());
             }
         }
+        send_data_tag = (send_data_tag == INT_MAX ? MPI_DATA_TAG : send_data_tag + 1);
     }
 
     // check if we have something in transit to/from self
@@ -168,34 +159,29 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     {
         data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
         transit.reset();              // we don't need it anymore, clean for the next iteration
-        return 1;
+        return;
     }
 
-    // only the consumer root has the correct value of retval; share it with other consumer ranks
-    if (role == DECAF_REDIST_DEST)           // consumer ranks
-        MPI_Bcast(&retval, 1, MPI_INT, 0, commDests_);
-
-    // source is done and consumers are done if no message arrived
-    if (!retval)
-        return 0;
-
     // only consumer ranks are left
-    // scatter the number of messages to receive at each rank
-    int nbRecep;
-    MPI_Scatter(destBuffer_,  1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
-
-    // receive the payload (blocking)
-    for (int i = 0; i < nbRecep; i++)
+    if (role == DECAF_REDIST_DEST)
     {
-        MPI_Status status;
-        MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
-        if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
+        // scatter the number of messages to receive at each rank
+        int nbRecep;
+        MPI_Scatter(destBuffer_, 1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
+
+        // receive the payload (blocking)
+        // recv_data_tag forces messages from different ranks in the same workflow link
+        // (grouped by communicator) and in the same iteration to stay together
+        // because the tag is incremented with each iteration
+        for (int i = 0; i < nbRecep; i++)
         {
+            MPI_Status status;
+            MPI_Probe(MPI_ANY_SOURCE, recv_data_tag, communicator_, &status);
             int nbytes; // number of bytes in the message
             MPI_Get_count(&status, MPI_BYTE, &nbytes);
             data->allocate_serial_buffer(nbytes); // allocate necessary space
             MPI_Recv(data->getInSerialBuffer(), nbytes, MPI_BYTE, status.MPI_SOURCE,
-                     status.MPI_TAG, communicator_, &status);
+                     recv_data_tag, communicator_, &status);
 
             // The dynamic type of merge is given by the user
             // NOTE: examine if it's not more efficient to receive everything
@@ -203,11 +189,83 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
             // aggregate the allocations etc
             data->merge();
         }
+        recv_data_tag = (recv_data_tag == INT_MAX ? MPI_DATA_TAG : recv_data_tag + 1);
+    }
+}
 
+#else  // collective or point to point protocol
+
+// point to point redistribution protocol
+// TODO: not working yet
+void
+decaf::
+RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
+{
+    if (role == DECAF_REDIST_SOURCE)         // source ranks
+    {
+        fprintf(stderr, "0: destList_ size = %lu\n", destList_.size());
+        for (unsigned int i = 0; i < destList_.size(); i++)
+        {
+            // sending to self, we simply copy the string from the out to in
+            if (destList_[i] == rank_)
+                transit = splitChunks_[i];
+            else if (destList_[i] != -1)
+            {
+                fprintf(stderr, "1: dest = %d\n", destList_[i]);
+                MPI_Request req;
+                reqs.push_back(req);
+                MPI_Isend(splitChunks_[i]->getOutSerialBuffer(),
+                          splitChunks_[i]->getOutSerialBufferSize(),
+                          MPI_BYTE, destList_[i], MPI_DATA_TAG, communicator_, &reqs.back());
+            }
+            else
+            {
+                fprintf(stderr, "2:\n");
+                MPI_Request req;
+                reqs.push_back(req);
+                MPI_Isend(NULL, 0, MPI_BYTE, i + local_dest_rank_, MPI_DATA_TAG,
+                           communicator_, &reqs.back());
+            }
+        }
     }
 
-    return 1;                                // at this point, we're sure we received everything
+    int nbRecep = nbSources_ - 1;
+    if (role == DECAF_REDIST_DEST)           // destination ranks
+    {
+        for (int i = 0; i < nbRecep; i++)
+        {
+            fprintf(stderr, "3: nbRecep = %d\n", nbRecep);
+            MPI_Status status;
+            MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
+            if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
+            {
+                int nitems; // number of items (of type dtype) in the message
+                MPI_Get_count(&status, MPI_BYTE, &nitems);
+
+                if (nitems > 0)
+                {
+                    // allocate the space necessary
+                    data->allocate_serial_buffer(nitems);
+                    MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
+                             status.MPI_TAG, communicator_, &status);
+
+                    // The dynamic type of merge is given by the user
+                    // NOTE : examine if it's not more efficient to receive everything
+                    // and then merge. Memory footprint more important but allows to
+                    // aggregate the allocations etc
+                    data->merge();
+                }
+            }
+        }
+        if (transit)                   // check if we have something in transit
+        {
+            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            transit.reset();           // don't need it anymore; cleanup for the next iteration
+        }
+    }
 }
+
+#endif  // collective or point to point protocol
 
 void
 decaf::

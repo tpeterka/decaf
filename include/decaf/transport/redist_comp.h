@@ -39,7 +39,11 @@ namespace decaf
     class RedistComp
     {
     public:
-        RedistComp(){}
+        RedistComp()
+        {
+            send_data_tag = MPI_DATA_TAG;
+            recv_data_tag = MPI_DATA_TAG;
+        }
     RedistComp(int rankSource,
                int nbSources,
                int rankDest,
@@ -48,16 +52,17 @@ namespace decaf
             nbSources_(nbSources),
             rankDest_(rankDest),
             nbDests_(nbDests),
-            summerizeDest_(NULL) {}
+            summerizeDest_(NULL)
+            {
+                send_data_tag = MPI_DATA_TAG;
+                recv_data_tag = MPI_DATA_TAG;
+            }
 
         virtual ~RedistComp(){}
 
         // Run the pipeline of operations to redistribute the data.
-        // This function is the only one that should be called from
-        // the main programm
-
-        /* virtual int process(std::shared_ptr<BaseData> data, RedistRole role); */
-        int process(std::shared_ptr<BaseData> data, RedistRole role);
+        // This function is the only one that should be called from the main program
+        void process(std::shared_ptr<BaseData> data, RedistRole role);
 
         int getRankSource();
         int getNbSources();
@@ -82,7 +87,7 @@ namespace decaf
 
         // Transfer the chunks from the sources to the destination. The data
         // should be stored in the vector receivedChunks
-        virtual int redistribute(std::shared_ptr<BaseData> data, RedistRole role)=0;
+        virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role)=0;
 
         // Merge the chunks from the vector receivedChunks into one single Data.
         std::shared_ptr<BaseData> merge(RedistRole role);
@@ -97,6 +102,12 @@ namespace decaf
         int size_;                         // Size of the group communicator
         int local_source_rank_;            // Rank of the first source in communicator_
         int local_dest_rank_;              // Rank of the first destination in communicator_
+
+        // send and recv data tags keep messages together from different ranks but otherwise in the
+        // same workflow link and sent in the same iteration
+        // data tags get incremented on each iteration until reaching INT_MAX; then reset
+        int send_data_tag;
+        int recv_data_tag;
 
         std::vector<std::shared_ptr<BaseData> > splitChunks_;
         std::vector<std::shared_ptr<char> > receivedChunks_;

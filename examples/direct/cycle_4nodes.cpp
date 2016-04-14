@@ -7,9 +7,8 @@
 //    node_a (4 procs)
 //         \
 //          node_c (1 proc) - node_d (1 proc)
-//             \ ______________ /
 //
-//  entire workflow takes 12 procs (1 dataflow proc between each producer consumer pair)
+//  entire workflow takes 11 procs (1 dataflow proc between each producer consumer pair)
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -80,7 +79,7 @@ extern "C"
             make_shared<SimpleConstructData<int> >(timestep);
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
 
-        if (timestep < 3)        // send the sum for some number of timesteps
+        if (timestep < 1)        // send the sum for some number of timesteps
         {
             container->appendData(string("var"), data,
                                   DECAF_NOFLAG, DECAF_PRIVATE,
@@ -150,7 +149,6 @@ extern "C"
                                                              // inbound dataflows
     {
         int sum = 0;
-
         // get the values and add them
         for (size_t i = 0; i < in_data->size(); i++)
         {
@@ -220,6 +218,7 @@ extern "C"
               Dataflow* dataflow,                  // dataflow
               shared_ptr<ConstructData> in_data)   // input data
     {
+        fprintf(stderr, "dataflow\n");
         dataflow->put(in_data, DECAF_LINK);
         return 0;
     }
@@ -297,7 +296,6 @@ int main(int argc,
     node.in_links.clear();
     node.out_links.push_back(0);
     node.in_links.push_back(2);
-    node.in_links.push_back(3);
     node.start_proc = 7;
     node.nprocs = 1;
     node.func = "node_c";
@@ -347,19 +345,9 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
-    link.prod = 1;                                  // node_d -> node_c
-    link.con = 2;
-    link.start_proc = 10;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
     link.prod = 0;                                  // node_b -> node_a
     link.con = 3;
-    link.start_proc = 11;
+    link.start_proc = 10;
     link.nprocs = 1;
     link.func = "dflow";
     link.path = path;

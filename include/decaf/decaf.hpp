@@ -426,6 +426,10 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
            void (*checker)(decaf::Dataflow*),      // custom resilience code
            const vector<int>& sources = vector<int>())   // workflow source nodes
 {
+    // debug
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     // incoming messages
     list< shared_ptr<ConstructData> > containers;
 
@@ -492,14 +496,14 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
         for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
         {
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            if (link_in_dataflows[i]->get(container, DECAF_LINK))
-                containers.push_back(container);
+            link_in_dataflows[i]->get(container, DECAF_LINK);
+            containers.push_back(container);
         }
         for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
         {
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            if (node_in_dataflows[i]->get(container, DECAF_NODE))
-                containers.push_back(container);
+            node_in_dataflows[i]->get(container, DECAF_NODE);
+            containers.push_back(container);
         }
 
         // route the message: decide what dataflows and tasks should accept it
@@ -516,10 +520,10 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
             {
                 // send quit to destinations
                 shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+                Dataflow::set_quit(quit_container);
                 for (size_t i = 0; i < ready_ids.size(); i++)
                 {
-                    // a workflow node (producer, consumer, or both)
-                    Dataflow::set_quit(quit_container);
+                    // a workflow node
                     if (ready_types[i] & DECAF_NODE)
                     {
                         for (size_t j = 0; j < workflow_.nodes[ready_ids[i]].out_links.size(); j++)
@@ -634,7 +638,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
             }                                           // workflow link
         }                                               // for i = 0; i < ready_ids.size()
         usleep(10);
-    }                                                       // while (1)
+    }                                                   // while (1)
 
     // cleanup
     unload_mods(mods);

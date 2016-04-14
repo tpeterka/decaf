@@ -101,6 +101,8 @@ extern "C"
                     dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
                 sum += val->getData();
             }
+            else
+                fprintf(stderr, "Error: null pointer in con\n");
         }
         fprintf(stderr, "consumer sum = %d\n", sum);
         return 0;                                         // ok to call me again
@@ -112,6 +114,20 @@ extern "C"
               Dataflow* dataflow,                  // dataflow
               shared_ptr<ConstructData> in_data)   // input data
     {
+        // debug
+        shared_ptr<BaseConstructData> ptr = in_data->getData(string("var"));
+        if (ptr)
+        {
+            shared_ptr<SimpleConstructData<int> > val =
+                dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+            if (val->getData() % 2)
+                fprintf(stderr, "Error: val->getData() should be even but is %d instead\n",
+                        val->getData());
+        }
+        else
+            fprintf(stderr, "Error: null pointer in dflow\n");
+        // end of debug
+
         dataflow->put(in_data, DECAF_LINK);
         return 0;                                         // ok to call me again
     }

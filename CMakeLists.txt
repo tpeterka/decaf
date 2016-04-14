@@ -33,17 +33,13 @@ else                        (debug)
   endif                     (optimize)
 endif                       (debug)
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
-    set                     (CMAKE_EXE_LINKER_FLAGS     "-lc++")
-    set                     (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
-    set                     (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
-    set(cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
-    set                     (CMAKE_EXE_LINKER_FLAGS     "-lc++")
-    set                     (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
-    set                     (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
+    "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
+  set(cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
+  set                     (CMAKE_EXE_LINKER_FLAGS     "-lc++")
+  set                     (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
+  set                     (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
+else()
     set(cxx_flags "${cxx_flags} -std=c++11")
 endif()
 

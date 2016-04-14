@@ -1,6 +1,8 @@
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/arrayconstructdata.hpp>
 
+#include <decaf/data_model/simpleconstructdata.hpp>
+
 using namespace decaf;
 using namespace std;
 
@@ -759,6 +761,38 @@ ConstructData::merge(char* buffer, int size)
             std::cout<<"Error : the map don't have the same number of field. Merge aborted."<<std::endl;
             return false;
         }
+
+        // fprintf(stderr, "hostmap ");
+        // for(std::map<std::string, datafield>::iterator it = container_->begin();
+        //     it != container_->end(); it++)
+        // {
+        //     fprintf(stderr, "%s ", it->first.c_str());
+        // }
+        // fprintf(stderr, "\n");
+        // std::map<std::string, datafield>::iterator it = container_->find("var");
+        // if (it != container_->end())
+        // {
+        //     int val =
+        //         (dynamic_pointer_cast<SimpleConstructData<int> >
+        //          (getBaseData(it->second)))->getData();
+        //     fprintf(stderr, "var = %d\n", val);
+        // }
+
+        // fprintf(stderr, "othermap ");
+        // for(std::map<std::string, datafield>::iterator it = other->begin();
+        //     it != other->end(); it++)
+        // {
+        //     fprintf(stderr, "%s ", it->first.c_str());
+        // }
+        // fprintf(stderr, "\n");
+        // it = other->find("var");
+        // if (it != other->end())
+        // {
+        //     int val =
+        //         (dynamic_pointer_cast<SimpleConstructData<int> >
+        //          (getBaseData(it->second)))->getData();
+        //     fprintf(stderr, "var = %d\n", val);
+        // }
 
         for(std::map<std::string, datafield>::iterator it = container_->begin();
             it != container_->end(); it++)
