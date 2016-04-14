@@ -137,7 +137,28 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     // disjoint source and destination
     else
     {
-        // producer root sends the number of messages to root of consumer
+        // Sending to the rank 0 of the destinations
+        if(role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
+        {
+            MPI_Request req;
+            reqs.push_back(req);
+            MPI_Isend(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
+                      communicator_,&reqs.back());
+        }
+
+
+        // Getting the accumulated buffer on the destination side
+        if(role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) //Root of destination
+        {
+            MPI_Status status;
+            MPI_Probe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &status);
+            if (status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
+            {
+                MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_,
+                         MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
+            }
+        }
+       /* // producer root sends the number of messages to root of consumer
         if (role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
             MPI_Send(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
                      communicator_);
@@ -145,7 +166,7 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         // consumer root receives the number of messages
         if (role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_)
             MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_, MPI_METADATA_TAG,
-                     communicator_, MPI_STATUS_IGNORE);
+                     communicator_, MPI_STATUS_IGNORE);*/
     }
 
     // producer ranks send data payload
@@ -174,7 +195,7 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     {
         data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
         transit.reset();              // we don't need it anymore, clean for the next iteration
-        return;
+        //return;
     }
 
     // only consumer ranks are left
