@@ -285,7 +285,6 @@ int main(int argc,
     node.out_links.clear();                         // node_d
     node.in_links.clear();
     node.in_links.push_back(0);
-    node.out_links.push_back(3);
     node.start_proc = 9;
     node.nprocs = 1;
     node.func = "node_d";
