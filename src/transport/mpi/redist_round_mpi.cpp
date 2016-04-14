@@ -205,7 +205,7 @@ RedistRoundMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     if(role == DECAF_REDIST_SOURCE)
     {
         MPI_Reduce( summerizeDest_, sum_,  nbDests_, MPI_INT, MPI_SUM,
-                    0, commSources_);
+                    0, commSources_); // 0 Because we are in the source comm
                    //local_source_rank_, commSources_);
     }
 

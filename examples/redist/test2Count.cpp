@@ -136,6 +136,13 @@ void initPosition(std::vector<double>& pos, int nbParticle, const std::vector<do
     }
 }
 
+bool isInComponent(int rank, int startSource, int nbSource,
+                   int startRecep, int nbRecep)
+{
+    return (rank >= startSource && rank < startSource + nbSource) ||
+            (rank >= startRecep && rank < startRecep + nbRecep);
+}
+
 void runTestParallel2RedistOverlap(int startSource, int nbSource,
                                    int startReceptors1, int nbReceptors1,
                                    int startReceptors2, int nbReceptors2)
@@ -163,18 +170,24 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
 
     if ((rank >= startSource     && rank < startSource     + nbSource) ||
         (rank >= startReceptors1 && rank < startReceptors1 + nbReceptors1))
+    {
+        std::cout <<"consutrcution for the first component ."<<std::endl;
         component1 = new RedistCountMPI(startSource,
                                         nbSource,
                                         startReceptors1,
                                         nbReceptors1,
                                         MPI_COMM_WORLD);
+    }
     if ((rank >= startSource     && rank < startSource     + nbSource) ||
         (rank >= startReceptors2 && rank < startReceptors2 + nbReceptors2))
+    {
+        std::cout<<"Construction of the second component."<<std::endl;
         component2 = new RedistCountMPI(startSource,
                                         nbSource,
                                         startReceptors2,
                                         nbReceptors2,
                                         MPI_COMM_WORLD);
+    }
 
     fprintf(stderr, "-------------------------------------\n"
             "Test with Redistribution component with overlapping...\n"
@@ -288,7 +301,7 @@ int main(int argc,
 
     srand(time(NULL) + rank * size_world + nameLen);
 
-    runTestParallel2RedistOverlap(0, 4, 4, 1, 5, 1);
+    runTestParallel2RedistOverlap(2, 4, 0, 2, 5, 1);
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();

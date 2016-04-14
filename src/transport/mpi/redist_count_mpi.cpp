@@ -160,6 +160,7 @@ RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
             MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
                           MPI_SUM, commSources_);
         }
+        std::cout<<"Total number of items : "<<global_nb_items_<<std::endl;
     }
 }
 
@@ -281,7 +282,8 @@ RedistCountMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     if(role == DECAF_REDIST_SOURCE)
     {
         MPI_Reduce( summerizeDest_, sum_,  nbDests_, MPI_INT, MPI_SUM,
-                   local_source_rank_, commSources_);
+                    0, commSources_); // 0 Because we are in the source comm
+                   //local_source_rank_, commSources_);
     }
 
     //Case with overlapping
