@@ -140,7 +140,7 @@ int main(int argc,
     runTestParallelRedistOverlap(0, 4, 2, 2);
     runTestParallelRedistOverlap(0, 4, 2, 3);
     runTestParallelRedistOverlap(0, 4, 0, 4);
-    runTestParallelRedistOverlap(2, 4, 0, 4);
+    runTestParallelRedistOverlap(2, 4, 0, 2);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 

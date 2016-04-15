@@ -32,10 +32,10 @@ RedistMPI::RedistMPI(int rankSource,
     sum_(NULL),
     destBuffer_(NULL)
 {
+    std::cout<<"Configuration of the component : ";
+    std::cout<<rankSource<<" "<<nbSources<<" "<<rankDest<<" "<<nbDests<<std::endl;
     MPI_Group group, groupRedist, groupSource, groupDest;
     MPI_Comm_group(world_comm, &group);
-    local_source_rank_ = rankSource;
-    local_dest_rank_ = rankDest;
 
     // group covering both the sources and destinations
     // destination ranks need not be higher than source ranks
@@ -43,31 +43,69 @@ RedistMPI::RedistMPI(int rankSource,
     // Testing if sources and receivers are disjoints
     if(rankDest >= rankSource + nbSources || rankSource >= rankDest + nbDests)
     {
+        std::cout<<"Non overlapping"<<std::endl;
         int range_both[2][3];
-        range_both[0][0] = rankSource;
-        range_both[0][1] = rankSource + nbSources - 1;
-        range_both[0][2] = 1;
-        range_both[1][0] = rankDest;
-        range_both[1][1] = rankDest + nbDests - 1;
-        range_both[1][2] = 1;
+        if(rankDest < rankSource) //Separation to preserve the order of the ranks
+        {
+            range_both[0][0] = rankDest;
+            range_both[0][1] = rankDest + nbDests - 1;
+            range_both[0][2] = 1;
+            range_both[1][0] = rankSource;
+            range_both[1][1] = rankSource + nbSources - 1;
+            range_both[1][2] = 1;
+            local_source_rank_ = nbDests;
+            local_dest_rank_ = 0;
+        }
+        else
+        {
+            range_both[0][0] = rankSource;
+            range_both[0][1] = rankSource + nbSources - 1;
+            range_both[0][2] = 1;
+            range_both[1][0] = rankDest;
+            range_both[1][1] = rankDest + nbDests - 1;
+            range_both[1][2] = 1;
+            local_source_rank_ = 0;
+            local_dest_rank_ = nbSources;
+
+        }
         MPI_Group_range_incl(group, 2, range_both, &groupRedist);
     }
     else //Sources and Receivers are overlapping
     {
+        std::cout<<"Overlapping"<<std::endl;
         int range[3];
         range[0] = std::min(rankSource, rankDest);
         range[1] = std::max(rankSource + nbSources - 1, rankDest + nbDests - 1);
         range[2] = 1;
         MPI_Group_range_incl(group, 1, &range, &groupRedist);
+
+        if(rankDest < rankSource) //Separation to preserve the order of the ranks
+        {
+            local_source_rank_ = rankSource - rankDest;
+            local_dest_rank_ = 0;
+        }
+        else
+        {
+            local_source_rank_ = 0;
+            local_dest_rank_  = rankDest - rankSource;
+        }
     }
+    std::cout<<"Construction of the group done."<<std::endl;
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Group_free(&groupRedist);
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
+    std::cout<<"Rank in the global communicator : "<<rank_;
+    int rank_world;
+    MPI_Comm_rank(world_comm, &rank_world);
+    std::cout<<", Size of the global communicator : "<<size_<<std::endl;
+
+
 
     // group with all the sources
     if(isSource())
     {
+        std::cout<<"Creation of the source groupe..."<<std::endl;
         int range_src[3];
         range_src[0] = rankSource;
         range_src[1] = rankSource + nbSources - 1;
@@ -77,11 +115,13 @@ RedistMPI::RedistMPI(int rankSource,
         MPI_Group_free(&groupSource);
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
+        std::cout<<"Rank in the source group : "<<source_rank<<std::endl;
     }
 
     // group with all the destinations
     if(isDest())
     {
+        std::cout<<"Creation of the destination groupe..."<<std::endl;
         int range_dest[3];
         range_dest[0] = rankDest;
         range_dest[1] = rankDest + nbDests - 1;
@@ -91,6 +131,7 @@ RedistMPI::RedistMPI(int rankSource,
         MPI_Group_free(&groupDest);
         int dest_rank;
         MPI_Comm_rank(commDests_, &dest_rank);
+        std::cout<<"Rank in the destination groupe : "<<dest_rank<<std::endl;
     }
 
     MPI_Group_free(&group);

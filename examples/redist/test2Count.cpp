@@ -14,9 +14,10 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include <decaf/data_model/vectorconstructdata.hpp>
-#include <decaf/data_model/simpleconstructdata.hpp>
 #include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/arrayconstructdata.hpp>
+#include <decaf/data_model/boost_macros.h>
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
@@ -136,11 +137,9 @@ void initPosition(std::vector<double>& pos, int nbParticle, const std::vector<do
     }
 }
 
-bool isInComponent(int rank, int startSource, int nbSource,
-                   int startRecep, int nbRecep)
+bool isBetween(int rank, int start, int nb)
 {
-    return (rank >= startSource && rank < startSource + nbSource) ||
-            (rank >= startRecep && rank < startRecep + nbRecep);
+    return rank >= start && rank < start + nb;
 }
 
 void runTestParallel2RedistOverlap(int startSource, int nbSource,
@@ -150,26 +149,20 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    if (size_world < max( max(startSource + nbSource, startReceptors1 + nbReceptors1),
-                          startReceptors2 + nbReceptors2))
-    {
-        std::cout<<"ERROR : not enough rank for "<<nbSource<<" sources and "<<
-            max(nbReceptors1,nbReceptors2)<<" receivers"<<std::endl;
-        return;
-    }
-
-    if (rank >= max( max(startSource + nbSource, startReceptors1 + nbReceptors1),
-                     startReceptors2 + nbReceptors2))
+    std::cout<<"Current rank : "<<rank<<std::endl;
+    if (!isBetween(rank, startSource, nbSource)
+            && !isBetween(rank, startReceptors1, nbReceptors1)
+            && !isBetween(rank, startReceptors2, nbReceptors2))
         return;
 
     std::vector<double> bbox = {0.0,0.0,0.0,10.0,10.0,10.0};
 
     RedistCountMPI *component1 = NULL;
     RedistCountMPI *component2 = NULL;
+    std::cout<<"Current rank : "<<rank<<std::endl;
 
-    if ((rank >= startSource     && rank < startSource     + nbSource) ||
-        (rank >= startReceptors1 && rank < startReceptors1 + nbReceptors1))
+    if (isBetween(rank, startSource, nbSource)
+            || isBetween(rank, startReceptors1, nbReceptors1))
     {
         std::cout <<"consutrcution for the first component ."<<std::endl;
         component1 = new RedistCountMPI(startSource,
@@ -178,8 +171,8 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                                         nbReceptors1,
                                         MPI_COMM_WORLD);
     }
-    if ((rank >= startSource     && rank < startSource     + nbSource) ||
-        (rank >= startReceptors2 && rank < startReceptors2 + nbReceptors2))
+    if (isBetween(rank, startSource, nbSource)
+            || isBetween(rank, startReceptors2, nbReceptors2))
     {
         std::cout<<"Construction of the second component."<<std::endl;
         component2 = new RedistCountMPI(startSource,
@@ -193,7 +186,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
             "Test with Redistribution component with overlapping...\n"
             "-------------------------------------\n");
 
-    if (rank >= startSource && rank < startSource + nbSource)
+    if (isBetween(rank, startSource, nbSource))
     {
         fprintf(stderr, "Running Redistribution test between %d producers and %d, %d consumers\n",
                 nbSource, nbReceptors1, nbReceptors2);
@@ -241,7 +234,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     }
 
     // receiving at the first destination
-    if (rank >= startReceptors1 && rank < startReceptors1 + nbReceptors1)
+    if (isBetween(rank, startReceptors1, nbReceptors1))
     {
         fprintf(stderr, "Receiving at Receptor1...\n");
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
@@ -260,7 +253,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     }
 
     // receiving at the second destination
-    if (rank >= startReceptors2 && rank < startReceptors2 + nbReceptors2)
+    if (isBetween(rank, startReceptors2, nbReceptors2))
     {
         fprintf(stderr, "Receiving at Receptor2...\n");
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
