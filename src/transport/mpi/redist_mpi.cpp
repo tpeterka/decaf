@@ -153,9 +153,14 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 
     // producer root collects the number of messages for each source destination
     if (role == DECAF_REDIST_SOURCE)
+    {
+        //for(int i = 0; i < nbDests_; i++)
+        //    std::cout<<summerizeDest_[i]<<" ";
+        //std::cout<<std::endl;
         MPI_Reduce(summerizeDest_, sum_, nbDests_, MPI_INT, MPI_SUM,
                    0, commSources_); // 0 Because we are in the source comm
                   //local_source_rank_, commSources_);
+    }
 
     // overlapping source and destination
     if (rank_ == local_source_rank_ && rank_ == local_dest_rank_)

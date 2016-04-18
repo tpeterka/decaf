@@ -429,6 +429,7 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
     // debug
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    std::cout<<"My rank : "<<rank<<std::endl;
 
     // incoming messages
     list< shared_ptr<ConstructData> > containers;
@@ -489,22 +490,29 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
         }
     }
 
+    std::cout<<"End of the treatment of the source, moving to the infinte loop."<<std::endl;
+
     // remaining (nonsource) tasks and dataflows are driven by receiving messages
     while (1)
     {
         // get incoming data
         for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
         {
+            std::cout<<"Getting on link "<<i<<std::endl;
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
             link_in_dataflows[i]->get(container, DECAF_LINK);
             containers.push_back(container);
+            std::cout<<"Get done."<<std::endl;
         }
         for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
         {
+            std::cout<<"Getting on node "<<i<<std::endl;
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
             node_in_dataflows[i]->get(container, DECAF_NODE);
             containers.push_back(container);
+            std::cout<<"Get done"<<std::endl;
         }
+        std::cout<<"end of the gets"<<std::endl;
 
         // route the message: decide what dataflows and tasks should accept it
         vector<int> ready_ids;                                // index of node or link in workflow

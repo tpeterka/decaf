@@ -24,7 +24,25 @@ void
 decaf::
 RedistRoundMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 {
-    //Nothing to do here
+    if(role == DECAF_REDIST_SOURCE)
+    {
+        int nbItems = data->getNbItems();
+
+        if(nbSources_ == 1)
+        {
+            global_item_rank_ = 0;
+        }
+        else
+        {
+            //Computing the index of the local first item in the global array of data
+            MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_INT,
+                     MPI_SUM, commSources_);
+            global_item_rank_ -= nbItems;   // Process rank 0 has the item 0,
+                                            // rank 1 has the item nbItems(rank 0)
+                                            // and so on
+        }
+
+    }
     return;
 }
 
@@ -49,7 +67,7 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         //Distributing the data in a round robin fashion
         for(int i = 0; i < nbItems; i++)
         {
-            split_ranges[i % nbDests_].push_back(i);
+            split_ranges[(global_item_rank_ + i) % nbDests_].push_back(i);
         }
 
         //Updating the informations about messages to send
@@ -65,9 +83,13 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 
 
         splitChunks_ =  data->split( split_ranges );
+        std::cout<<"Number of chunks : "<<splitChunks_.size()<<std::endl;
+        std::cout<<"Number of items in the initial object : "<<data->getNbItems()<<std::endl;
+
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
+            std::cout<<"Number of items : "<<splitChunks_.at(i)->getNbItems()<<std::endl;
             // TODO : Check the rank for the destination.
             // Not necessary to serialize if overlapping
             if(!splitChunks_.at(i)->serialize())

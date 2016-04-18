@@ -42,7 +42,6 @@ RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
             MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
                           MPI_SUM, commSources_);
         }
-        std::cout<<"Total number of items : "<<global_nb_items_<<std::endl;
     }
 }
 

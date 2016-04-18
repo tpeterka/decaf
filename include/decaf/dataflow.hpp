@@ -83,6 +83,7 @@ namespace decaf
                 return in_data->hasData(string("decaf_quit"));
             }
 
+
     private:
         CommHandle world_comm_;          // handle to original world communicator
         Comm* prod_comm_;                // producer communicator
@@ -98,7 +99,7 @@ namespace decaf
         int wflow_prod_id_;              // index of corresponding producer in the workflow
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
-    };
+        };
 
 } // namespace
 

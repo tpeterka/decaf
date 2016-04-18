@@ -65,7 +65,10 @@ extern "C"
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
+            {
                 (*out_dataflows)[i]->put(container, DECAF_NODE);
+                std::cout<<"Con size : "<<(*out_dataflows)[0]->sizes()->con_size<<std::endl;
+            }
 
             timestep++;
             return 0;                        // ok to call me again
@@ -229,8 +232,8 @@ int main(int argc,
     link.nprocs = 2;
     link.func = "dflow";
     link.path = path;
-    link.prod_dflow_redist = "round";
-    link.dflow_con_redist = "round";
+    link.prod_dflow_redist = "count";
+    link.dflow_con_redist = "count";
     workflow.links.push_back(link);
 
     // run decaf

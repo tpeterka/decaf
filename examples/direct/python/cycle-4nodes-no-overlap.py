@@ -41,9 +41,7 @@ w.add_edge("node_a", "node_b", start_proc=4,  nprocs=1, func='dflow', path=mod_p
            prod_dflow_redist='count', dflow_con_redist='count')
 w.add_edge("node_a", "node_c", start_proc=6,  nprocs=1, func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count')
-w.add_edge("node_d", "node_c", start_proc=10, nprocs=1, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count')
-w.add_edge("node_b", "node_a", start_proc=11, nprocs=1, func='dflow', path=mod_path,
+w.add_edge("node_b", "node_a", start_proc=10, nprocs=1, func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count')
 
 # sources

@@ -432,6 +432,8 @@ ConstructData::split(
         return result;
     }
 
+    std::cout<<"Total number of item to split : "<<totalItems<<std::endl;
+
     //Splitting data
     if(split_order_.size() > 0) //Splitting from the user order
     {

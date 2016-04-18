@@ -11,8 +11,8 @@
 # tpeterka@mcs.anl.gov
 #
 #----------------------------------------------------------------------------
-ARCH=MAC_OSX
-#ARCH=LINUX
+#ARCH=MAC_OSX
+ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
 #ARCH=CRAY
@@ -51,9 +51,9 @@ fi
 
 if [ "$ARCH" = "LINUX" ]; then
 
-mpiexec -n $num_procs $exe
+#mpiexec -n $num_procs $exe
 
-#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe
+mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe
 
 #mpiexec -n $num_procs valgrind -q $exe
 

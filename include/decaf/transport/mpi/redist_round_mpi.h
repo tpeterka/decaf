@@ -45,6 +45,8 @@ namespace decaf
         // Seperate the Data into chunks for each destination involve in the component
         // and fill the splitChunks vector
         virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role);
+
+        int global_item_rank_;    // Index of the first item in the global array
     };
 
 } // namespace

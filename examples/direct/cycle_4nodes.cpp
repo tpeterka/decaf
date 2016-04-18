@@ -51,6 +51,7 @@ extern "C"
                vector< shared_ptr<ConstructData> >* in_data) // input data in order of
                                                              // inbound dataflows
     {
+        std::cout<<"Hello Node A "<<std::endl;
         static bool first_time = true;
         int sum = 0;
         static int timestep = 0;                   // counter of how many times node_a executes
@@ -59,9 +60,11 @@ extern "C"
             fprintf(stderr, "node_a timestep %d sum %d\n", timestep, sum);
         else
         {
+            std::cout<<"Second visit"<<std::endl;
             // get the values and add them
             for (size_t i = 0; i < in_data->size(); i++)
             {
+                std::cout<<"Getting the in_data "<<i<<std::endl;
                 shared_ptr<BaseConstructData> ptr = (*in_data)[i]->getData(string("vars"));
                 if (ptr)
                 {
@@ -81,6 +84,7 @@ extern "C"
 
         if (timestep < 1)        // send the sum for some number of timesteps
         {
+            std::cout<<"Pushing the data var"<<std::endl;
             container->appendData(string("var"), data,
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
@@ -168,14 +172,14 @@ extern "C"
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
 
         // send the sum if > 0 (for example)
-        if (sum)
-        {
+        //if (sum)
+        //{
             container->appendData(string("var"), data,
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
             for (size_t i = 0; i < out_dataflows->size(); i++)
                 (*out_dataflows)[i]->put(container, DECAF_NODE);
-        }
+        //}
 
         return 0;
     }
@@ -186,6 +190,7 @@ extern "C"
                                                              // inbound dataflows
     {
         int sum = 0;
+        std::cout<<"Hello D"<<std::endl;
 
         // get the values and add them
         for (size_t i = 0; i < in_data->size(); i++)
@@ -275,7 +280,7 @@ int main(int argc,
     // fill workflow nodes
     WorkflowNode node;
     node.in_links.push_back(1);                     // node_b
-    node.out_links.push_back(4);
+    node.out_links.push_back(3);
     node.start_proc = 5;
     node.nprocs = 1;
     node.func = "node_b";
@@ -305,7 +310,7 @@ int main(int argc,
     node.in_links.clear();
     node.out_links.push_back(1);
     node.out_links.push_back(2);
-    node.in_links.push_back(4);
+    node.in_links.push_back(3);
     node.start_proc = 0;
     node.nprocs = 4;
     node.func = "node_a";
