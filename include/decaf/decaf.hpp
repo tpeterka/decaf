@@ -159,47 +159,47 @@ namespace decaf
         // returns the source type (node, link) of a message
         TaskType
         src_type(shared_ptr<ConstructData> in_data)   // input message
+        {
+            shared_ptr<BaseConstructData> ptr = in_data->getData(string("src_type"));
+            if (ptr)
             {
-                shared_ptr<BaseConstructData> ptr = in_data->getData(string("src_type"));
-                if (ptr)
-                {
-                    shared_ptr<SimpleConstructData<TaskType> > type =
-                        dynamic_pointer_cast<SimpleConstructData<TaskType> >(ptr);
-                    return type->getData();
-                }
-                return DECAF_NONE;
+                shared_ptr<SimpleConstructData<TaskType> > type =
+                    dynamic_pointer_cast<SimpleConstructData<TaskType> >(ptr);
+                return type->getData();
             }
+            return DECAF_NONE;
+        }
 
         // returns the workflow link id of a message
         // id is the index in the workflow data structure of the link
         int
         link_id(shared_ptr<ConstructData> in_data)   // input message
+        {
+            shared_ptr<BaseConstructData> ptr = in_data->getData(string("link_id"));
+            if (ptr)
             {
-                shared_ptr<BaseConstructData> ptr = in_data->getData(string("link_id"));
-                if (ptr)
-                {
-                    shared_ptr<SimpleConstructData<int> > link =
-                        dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-                    return link->getData();
-                }
-                return -1;
+                shared_ptr<SimpleConstructData<int> > link =
+                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+                return link->getData();
             }
+            return -1;
+        }
 
         // returns the workflow destination id of a message
         // destination could be a node or link depending on the source type
         // id is the index in the workflow data structure of the destination entity
         int
         dest_id(shared_ptr<ConstructData> in_data)   // input message
+        {
+            shared_ptr<BaseConstructData> ptr = in_data->getData(string("dest_id"));
+            if (ptr)
             {
-                shared_ptr<BaseConstructData> ptr = in_data->getData(string("dest_id"));
-                if (ptr)
-                {
-                    shared_ptr<SimpleConstructData<int> > dest =
-                        dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-                    return dest->getData();
-                }
-                return -1;
+                shared_ptr<SimpleConstructData<int> > dest =
+                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
+                return dest->getData();
             }
+            return -1;
+        }
 
         // routes input data to a callback function
         // returns 0 on success, -1 if all my nodes and links are done; ie, shutdown
@@ -490,29 +490,22 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
         }
     }
 
-    std::cout<<"End of the treatment of the source, moving to the infinte loop."<<std::endl;
-
     // remaining (nonsource) tasks and dataflows are driven by receiving messages
     while (1)
     {
         // get incoming data
         for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
         {
-            std::cout<<"Getting on link "<<i<<std::endl;
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
             link_in_dataflows[i]->get(container, DECAF_LINK);
             containers.push_back(container);
-            std::cout<<"Get done."<<std::endl;
         }
         for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
         {
-            std::cout<<"Getting on node "<<i<<std::endl;
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
             node_in_dataflows[i]->get(container, DECAF_NODE);
             containers.push_back(container);
-            std::cout<<"Get done"<<std::endl;
         }
-        std::cout<<"end of the gets"<<std::endl;
 
         // route the message: decide what dataflows and tasks should accept it
         vector<int> ready_ids;                                // index of node or link in workflow
@@ -529,14 +522,17 @@ Decaf::run(void (*pipeliner)(decaf::Dataflow*),    // custom pipeliner code
                 // send quit to destinations
                 shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
                 Dataflow::set_quit(quit_container);
+
                 for (size_t i = 0; i < ready_ids.size(); i++)
                 {
                     // a workflow node
                     if (ready_types[i] & DECAF_NODE)
                     {
                         for (size_t j = 0; j < workflow_.nodes[ready_ids[i]].out_links.size(); j++)
+                        {
                             dataflows[workflow_.nodes[ready_ids[i]].out_links[j]]->
                                 put(quit_container, DECAF_NODE);
+                        }
                     }
                     // a workflow link (dataflow)
                     else if (ready_types[i] & DECAF_LINK)

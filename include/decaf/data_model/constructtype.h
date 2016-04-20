@@ -85,6 +85,8 @@ public:
 
     virtual bool isSplitable();
 
+    virtual bool isSystem();
+
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<int>& range);
 
@@ -173,6 +175,7 @@ protected:
 
     std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
     std::vector<std::vector<int> > rangeItems_;
+    bool bSystem_;
 };
 
 //Have to define it here because of the template

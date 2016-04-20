@@ -57,6 +57,9 @@ namespace  decaf {
     // the ZCurve.
     virtual const unsigned int* getZCurveIndex(int *nbItems) = 0;
 
+    // Return true if all the fields within the data model are system fields
+    virtual bool isSystem() = 0;
+
     // Return true if the data contains more than 1 item
     virtual bool isSplitable() = 0;
 

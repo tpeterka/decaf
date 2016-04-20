@@ -71,7 +71,7 @@ namespace decaf
                 shared_ptr<SimpleConstructData<int> > data  =
                     make_shared<SimpleConstructData<int> >(1);
                 out_data->appendData(string("decaf_quit"), data,
-                                     DECAF_NOFLAG, DECAF_PRIVATE,
+                                     DECAF_NOFLAG, DECAF_SYSTEM,
                                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
             }
 
@@ -329,14 +329,14 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
     map->removeData("dest_id");
 
     map->appendData(string("src_type"), value,
-                    DECAF_NOFLAG, DECAF_PRIVATE,
+                    DECAF_NOFLAG, DECAF_SYSTEM,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
     // encode dataflow link id into message
     shared_ptr<SimpleConstructData<int> > value1  =
         make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
     map->appendData(string("link_id"), value1,
-                     DECAF_NOFLAG, DECAF_PRIVATE,
+                     DECAF_NOFLAG, DECAF_SYSTEM,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
     if (role == DECAF_NODE)
@@ -345,7 +345,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
         map->appendData(string("dest_id"), value2,
-                         DECAF_NOFLAG, DECAF_PRIVATE,
+                         DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
         // send the message
@@ -360,7 +360,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_con_id_);
         map->appendData(string("dest_id"), value2,
-                         DECAF_NOFLAG, DECAF_PRIVATE,
+                         DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
         // send the message

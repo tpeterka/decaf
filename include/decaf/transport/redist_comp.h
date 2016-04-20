@@ -81,6 +81,9 @@ namespace decaf
         // splitted and redistributed.
         virtual void computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)=0;
 
+        // Seperate system only data model. The data won't be split but duplicated
+        virtual void splitSystemData(std::shared_ptr<BaseData> data, RedistRole role)=0;
+
         // Seperate the Data into chunks for each destination involve in the
         // component and fill the splitChunks vector
         virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role)=0;

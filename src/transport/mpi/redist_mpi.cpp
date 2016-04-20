@@ -142,6 +142,34 @@ RedistMPI::~RedistMPI()
 
 #if 1  // select collective or point to point protocol
 
+void
+decaf::
+RedistMPI::splitSystemData(std::shared_ptr<BaseData> data, RedistRole role)
+{
+    if(role == DECAF_REDIST_SOURCE)
+    {
+        // For this case we simply duplicate the message for each destination
+        for(unsigned int i = 0; i < nbDests_; i++)
+        {
+            //Creating the ranges for the split function
+            splitChunks_.push_back(data);
+
+            //We send data to everyone except to self
+            if(i + local_dest_rank_ != rank_)
+                summerizeDest_[i] = 1;
+            // rankDest_ - rankSource_ is the rank of the first destination in the
+            // component communicator (communicator_)
+            destList_.push_back(i + local_dest_rank_);
+        }
+
+        // All the data chunks are the same pointer
+        // We just need to serialize one chunk
+        if(!splitChunks_[0]->serialize())
+            std::cout<<"ERROR : unable to serialize one object"<<std::endl;
+
+    }
+}
+
 // collective redistribution protocol
 void
 decaf::

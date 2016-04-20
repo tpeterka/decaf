@@ -75,15 +75,20 @@ RedistComp::process(std::shared_ptr<BaseData> data,
     struct timeval begin;
     struct timeval end;
 
-    gettimeofday(&begin, NULL);
-    computeGlobal(data, role);
-    gettimeofday(&end, NULL);
-    timeGlobal = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    if(data->isSystem())
+        splitSystemData(data, role);
+    else
+    {
+        gettimeofday(&begin, NULL);
+        computeGlobal(data, role);
+        gettimeofday(&end, NULL);
+        timeGlobal = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
-    gettimeofday(&begin, NULL);
-    splitData(data, role);
-    gettimeofday(&end, NULL);
-    //timeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+        gettimeofday(&begin, NULL);
+        splitData(data, role);
+        gettimeofday(&end, NULL);
+        //timeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    }
 
     gettimeofday(&begin, NULL);
     redistribute(data, role);

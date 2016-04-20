@@ -50,6 +50,9 @@ namespace decaf
         // component and fill the splitChunks vector
         virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role) = 0;
 
+        // Seperate system only data model. The data won't be split but duplicated
+        void splitSystemData(std::shared_ptr<BaseData> data, RedistRole role);
+
         // Transfer the chunks from the sources to the destination. The data should be
         // be stored in the vector receivedChunks
         void redistribute(std::shared_ptr<BaseData> data, RedistRole role);

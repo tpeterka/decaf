@@ -39,6 +39,7 @@ enum ConstructTypeFlag {
 enum ConstructTypeScope {
     DECAF_SHARED = 0x0,     // This value is the same for all the items in the collection
     DECAF_PRIVATE = 0x1,    // Different values for each items in the collection
+    DECAF_SYSTEM = 0x2,     // This field is not a user data
 };
 
 enum ConstructTypeSplitPolicy {

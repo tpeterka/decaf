@@ -295,6 +295,14 @@ ConstructData::getZCurveIndex(int *nbItems)
 
 bool
 decaf::
+ConstructData::isSystem()
+{
+    return bSystem_;
+}
+
+
+bool
+decaf::
 ConstructData::isSplitable()
 {
     return nbItems_ > 1;
@@ -1560,6 +1568,7 @@ ConstructData::updateMetaData()
     nbFields_ = 0;
     bZCurveKey_ = false;
     bZCurveIndex_ = false;
+    bSystem_ = true;
 
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
@@ -1591,6 +1600,10 @@ ConstructData::updateMetaData()
             bZCurveIndex_ = true;
             zCurveIndex_ = getBaseData(it->second);
         }
+
+        if(getScope(it->second) != DECAF_SYSTEM)
+            bSystem_ = false;
+
         //The field is already in the map, we don't have to test the insert
         nbFields_++;
     }

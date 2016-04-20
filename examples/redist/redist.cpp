@@ -134,6 +134,8 @@ public:
 
     virtual bool hasZCurveIndex(){ return false; }
 
+    virtual bool isSystem(){ return false; }
+
     virtual const unsigned int* getZCurveIndex(int *nbItems)
     {
         *nbItems = nbItems_;
