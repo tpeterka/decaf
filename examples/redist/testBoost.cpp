@@ -15,7 +15,9 @@
 
 #include <decaf/data_model/simpleconstructdata.hpp>
 #include <decaf/data_model/vectorconstructdata.hpp>
+#include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/boost_macros.h>
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
@@ -596,7 +598,7 @@ int main(int argc,
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    /*if(rank == 0)
+    if(rank == 0)
     {
         simpleSerializeTest();
         testConstructType();
@@ -607,7 +609,7 @@ int main(int argc,
     testConstructTypeSplitMPI();
     MPI_Barrier(MPI_COMM_WORLD);
     runTestParallelRedist(3,2);
-    MPI_Barrier(MPI_COMM_WORLD);*/
+    MPI_Barrier(MPI_COMM_WORLD);
     runTestParallelRedistOverlap(0, 4, 1, 2);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();

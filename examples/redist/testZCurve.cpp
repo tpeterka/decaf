@@ -16,7 +16,9 @@
 
 #include <decaf/data_model/vectorconstructdata.hpp>
 #include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/boost_macros.h>
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
@@ -172,6 +174,11 @@ void initPosition(std::vector<float>& pos, int nbParticule, const std::vector<fl
     }
 }
 
+bool isBetween(int rank, int start, int nb)
+{
+    return rank >= start && rank < start + nb;
+}
+
 void runTestParallelRedistOverlap(int startSource, int nbSource,
                                    int startReceptors, int nbReceptors,
                                    std::string basename)
@@ -186,7 +193,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         return;
     }
 
-    if(rank >= max(startSource + nbSource, startReceptors + nbReceptors))
+    if(!isBetween(rank, startSource, nbSource) && !isBetween(rank, startReceptors, nbReceptors))
         return;
 
     std::vector<float> bbox = {0.0,0.0,0.0,10.0,10.0,10.0};
@@ -204,7 +211,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
     g = rand() % 255;
     b = rand() % 255;
 
-    if(rank >= startSource && rank < startSource + nbSource){
+    if(isBetween(rank, startSource, nbSource)){
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
@@ -219,24 +226,22 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
-        std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
-        std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
+        std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
 
         std::stringstream filename;
         filename<<basename<<rank<<"_before.ply";
         posToFile(array->getVector(), filename.str(),r,g,b);
 
-        object->appendData(std::string("nbParticules"), data,
+        container->appendData(std::string("nbParticules"), data,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
-        object->appendData(std::string("pos"), array,
+        container->appendData(std::string("pos"), array,
                              DECAF_ZCURVEKEY, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component->process(container, decaf::DECAF_REDIST_SOURCE);
-        component->flush();
     }
-    if(rank >= startReceptors && rank < startReceptors + nbReceptors)
+    if(isBetween(rank, startReceptors, nbReceptors))
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
         component->process(result, decaf::DECAF_REDIST_DEST);
@@ -258,6 +263,8 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         filename<<basename<<rank<<".ply";
         posToFile(pos->getVector(), filename.str(),r,g,b);
     }
+
+    component->flush();
 
     delete component;
 
@@ -290,6 +297,8 @@ int main(int argc,
     runTestParallelRedistOverlap(0, 4, 2, 4, std::string("PartialOverlap4-4_"));
     runTestParallelRedistOverlap(0, 4, 2, 3, std::string("PartialOverlap4-3_"));
     runTestParallelRedistOverlap(0, 4, 0, 4, std::string("TotalOverlap4-4_"));
+    runTestParallelRedistOverlap(2, 4, 0, 2, std::string("InverseDest4-2_"));
+
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();

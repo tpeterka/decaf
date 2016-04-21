@@ -202,12 +202,12 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         std::shared_ptr<SimpleConstructData<int> > data1  =
             std::make_shared<SimpleConstructData<int> >( nbParticle );
 
-        std::shared_ptr<BaseData> container1 = std::shared_ptr<ConstructData>(new ConstructData());
-        std::shared_ptr<ConstructData> object1 = dynamic_pointer_cast<ConstructData>(container1);
-        object1->appendData(std::string("nbParticles"), data1,
+        std::shared_ptr<ConstructData> container1 = std::make_shared<ConstructData>();
+
+        container1->appendData(std::string("nbParticles"), data1,
                             DECAF_NOFLAG, DECAF_SHARED,
                             DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
-        object1->appendData(std::string("pos"), array1,
+        container1->appendData(std::string("pos"), array1,
                             DECAF_ZCURVEKEY, DECAF_PRIVATE,
                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
@@ -220,12 +220,13 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         std::shared_ptr<SimpleConstructData<int> > data2  =
             std::make_shared<SimpleConstructData<int> >( nbParticle );
 
-        std::shared_ptr<BaseData> container2 = std::shared_ptr<ConstructData>(new ConstructData());
-        std::shared_ptr<ConstructData> object2 = dynamic_pointer_cast<ConstructData>(container2);
-        object2->appendData(std::string("nbParticles"), data2,
+
+        std::shared_ptr<ConstructData> container2 = std::make_shared<ConstructData>();
+
+        container2->appendData(std::string("nbParticles"), data2,
                             DECAF_NOFLAG, DECAF_SHARED,
                             DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
-        object2->appendData(std::string("pos"), array2,
+        container2->appendData(std::string("pos"), array2,
                             DECAF_ZCURVEKEY, DECAF_PRIVATE,
                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 

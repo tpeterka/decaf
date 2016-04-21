@@ -47,6 +47,11 @@ void printArray(const std::vector<int>& array)
     std::cout<<"]"<<std::endl;
 }
 
+bool isBetween(int rank, int start, int nb)
+{
+    return rank >= start && rank < start + nb;
+}
+
 void runTestParallelRedistOverlap(int startSource, int nbSource, int startReceptors, int nbReceptors)
 {
     int size_world, rank;
@@ -59,8 +64,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         return;
     }
 
-    if((rank < startSource || rank >= startSource + nbSource) &&
-        (rank < startReceptors || rank >= startReceptors + nbReceptors))
+    if(!isBetween(rank, startSource, nbSource) && !isBetween(rank, startReceptors, nbReceptors))
         return;
 
     std::cout<<"Construction of the redistribution component."<<std::endl;
@@ -74,7 +78,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
     std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;
     std::cout<<"-------------------------------------"<<std::endl;
 
-    if(rank >= startSource && rank < startSource + nbSource){
+    if(isBetween(rank, startSource, nbSource)){
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
@@ -94,13 +98,12 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component->process(container, decaf::DECAF_REDIST_SOURCE);
-        component->flush();
+
     }
-    if(rank >= startReceptors && rank < startReceptors + nbReceptors)
+    if(isBetween(rank, startReceptors, nbReceptors))
     {
         std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
         component->process(result, decaf::DECAF_REDIST_DEST);
-        component->flush();
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
@@ -112,6 +115,8 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
     }
+
+    component->flush();
 
     delete component;
 
