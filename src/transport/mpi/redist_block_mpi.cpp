@@ -211,28 +211,28 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         if(!container)
         {
             std::cerr<<"ERROR : Can not convert the data into a ConstructData. ConstructData "
-                     <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
+                    <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
-	if(splitBuffer_.empty())
-	    container->preallocMultiple(nbDests_, 34000, splitBuffer_);
-	else
-	{
-	    for(unsigned int i = 0; i < splitBuffer_.size(); i++)
-		splitBuffer_[i]->softClean();
+        if(splitBuffer_.empty())
+            container->preallocMultiple(nbDests_, 34000, splitBuffer_); // TODO : remove the hard coded value
+        else
+        {
+            for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+                splitBuffer_[i]->softClean();
         }
 
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
         if( summerizeDest_) delete  summerizeDest_;
-         summerizeDest_ = new int[ nbDests_];
+        summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
-	
+
 
         container->split( subblocks_, splitBuffer_ );
 
-	//Pushing the subdomain block into each split chunk.
+        //Pushing the subdomain block into each split chunk.
         //The field domain_block is updated
         updateBlockDomainFields();
 
@@ -250,15 +250,15 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             else //No data for this split
                 destList_.push_back(-1);
         }
-	gettimeofday(&end, NULL);
+        gettimeofday(&end, NULL);
         timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-	
-	gettimeofday(&begin, NULL);
-	//std::cout<<"[";
+
+        gettimeofday(&begin, NULL);
+        //std::cout<<"[";
         for(unsigned int i = 0; i < splitBuffer_.size(); i++)
         {
-	    //int nbItems = splitBuffer_[i]->getNbItems();
-	    //std::cout<<splitBuffer_[i]->getNbItems()<<",";
+            //int nbItems = splitBuffer_[i]->getNbItems();
+            //std::cout<<splitBuffer_[i]->getNbItems()<<",";
             if(splitBuffer_[i]->getNbItems() > 0)
             {
                 // TODO : Check the rank for the destination.
@@ -267,11 +267,11 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
                     std::cout<<"ERROR : unable to serialize one object"<<std::endl;
             }
         }
-	//std::cout<<"]"<<std::endl;
-	gettimeofday(&end, NULL);
-	timeGlobalBuild += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-	//if(role == DECAF_REDIST_SOURCE)
-	//    printf("Compute split : %f, compute serialize : %f\n", computeSplit, computeSerialize);
+        //std::cout<<"]"<<std::endl;
+        gettimeofday(&end, NULL);
+        timeGlobalBuild += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+        //if(role == DECAF_REDIST_SOURCE)
+        //    printf("Compute split : %f, compute serialize : %f\n", computeSplit, computeSerialize);
         // Everything is done, now we can clean the data.
         // Data might be rewriten if producers and consummers are overlapping
         //data->purgeData();
@@ -425,77 +425,86 @@ void
 decaf::
 RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
-  struct timeval beginRedist;
-  struct timeval endRedist;
-  struct timeval beginMerge;
-  struct timeval endMerge;
+    struct timeval beginRedist;
+    struct timeval endRedist;
+    struct timeval beginMerge;
+    struct timeval endMerge;
+    std::cout<<"Redistribution..."<<std::endl;
 
-  gettimeofday(&beginRedist,NULL);
-  //Processing the data exchange
-  if(role == DECAF_REDIST_SOURCE)
+    gettimeofday(&beginRedist,NULL);
+    //Processing the data exchange
+    if(role == DECAF_REDIST_SOURCE)
     {
-      for(unsigned int i = 0; i <  destList_.size(); i++)
+        std::cout<<"Processing as a source."<<std::endl;
+        for(unsigned int i = 0; i <  destList_.size(); i++)
         {
-	  //Sending to self, we simply copy the string from the out to in
-	  if(destList_[i] == rank_)
+            //Sending to self, we simply copy the string from the out to in
+            if(destList_[i] == rank_)
             {
-	      transit = splitBuffer_[i];
+                transit = splitBuffer_[i];
             }
-	  else if(destList_[i] != -1)
+            else if(destList_[i] != -1)
             {
-	      MPI_Request req;
-	      reqs.push_back(req);
-	      MPI_Isend( splitBuffer_[i]->getOutSerialBuffer(),
-			 splitBuffer_[i]->getOutSerialBufferSize(),
-			 MPI_BYTE, destList_[i], MPI_DATA_TAG, communicator_, &reqs.back());
+                MPI_Request req;
+                reqs.push_back(req);
+                MPI_Isend( splitBuffer_[i]->getOutSerialBuffer(),
+                           splitBuffer_[i]->getOutSerialBufferSize(),
+                           MPI_BYTE, destList_[i], MPI_DATA_TAG, communicator_, &reqs.back());
             }
-	  else
+            else
             {
-	      MPI_Request req;
-	      reqs.push_back(req);
+                MPI_Request req;
+                reqs.push_back(req);
 
-	      MPI_Isend( NULL,
-			 0,
-			 MPI_BYTE, i + local_dest_rank_, MPI_DATA_TAG, communicator_, &reqs.back());
+                MPI_Isend( NULL,
+                           0,
+                           MPI_BYTE, i + local_dest_rank_, MPI_DATA_TAG, communicator_, &reqs.back());
 
             }
         }
-	gettimeofday(&endRedist, NULL);
+        gettimeofday(&endRedist, NULL);
         timeGlobalRedist += endRedist.tv_sec+(endRedist.tv_usec/1000000.0) - beginRedist.tv_sec - (beginRedist.tv_usec/1000000.0);
+        std::cout<<"Source processed."<<std::endl;
         
     }
 
-  int nbRecep = nbSources_-1;
-  if(role == DECAF_REDIST_DEST)
+    if(role == DECAF_REDIST_DEST)
     {
-	struct timeval beginReceiv;
-	struct timeval endReceiv;
+        std::cout<<"Processing as a destination."<<std::endl;
+        int nbRecep;
+        if(isSource()) //Overlapping case
+            nbRecep = nbSources_-1;
+        else
+            nbRecep = nbSources_;
+
+        struct timeval beginReceiv;
+        struct timeval endReceiv;
         for(int i = 0; i < nbRecep; i++)
         {
-	  MPI_Status status;
-	  MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
-	  if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
+            MPI_Status status;
+            MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
+            if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
             {
-	      int nitems; // number of items (of type dtype) in the message
-	      MPI_Get_count(&status, MPI_BYTE, &nitems);
+                int nitems; // number of items (of type dtype) in the message
+                MPI_Get_count(&status, MPI_BYTE, &nitems);
 
-	      if(nitems > 0)
+                if(nitems > 0)
                 {
-		  //Allocating the space necessary
-		  data->allocate_serial_buffer(nitems);
-		  MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
-			   status.MPI_TAG, communicator_, &status);
+                    //Allocating the space necessary
+                    data->allocate_serial_buffer(nitems);
+                    MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
+                             status.MPI_TAG, communicator_, &status);
 
-		  // The dynamic type of merge is given by the user
-		  // NOTE : examin if it's not more efficient to receive everything
-		  // and then merge. Memory footprint more important but allows to
-		  // aggregate the allocations etc
-		  //data->merge();
-		  //data->unserializeAndStore();
-		  gettimeofday(&beginReceiv, NULL);
-		  data->unserializeAndStore(data->getInSerialBuffer(), nitems);
-		  gettimeofday(&endReceiv, NULL);
-		  timeGlobalReceiv += endReceiv.tv_sec+(endReceiv.tv_usec/1000000.0) - beginReceiv.tv_sec - (beginReceiv.tv_usec/1000000.0);
+                    // The dynamic type of merge is given by the user
+                    // NOTE : examin if it's not more efficient to receive everything
+                    // and then merge. Memory footprint more important but allows to
+                    // aggregate the allocations etc
+                    //data->merge();
+                    //data->unserializeAndStore();
+                    gettimeofday(&beginReceiv, NULL);
+                    data->unserializeAndStore(data->getInSerialBuffer(), nitems);
+                    gettimeofday(&endReceiv, NULL);
+                    timeGlobalReceiv += endReceiv.tv_sec+(endReceiv.tv_usec/1000000.0) - beginReceiv.tv_sec - (beginReceiv.tv_usec/1000000.0);
 
                 }
             }
@@ -503,23 +512,25 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         // Checking if we have something in transit
         if(transit)
         {
-	  gettimeofday(&beginReceiv, NULL);
-  	  //data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
-  	  data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
-  	  gettimeofday(&endReceiv, NULL);
-          timeGlobalReceiv += endReceiv.tv_sec+(endReceiv.tv_usec/1000000.0) - beginReceiv.tv_sec - (beginReceiv.tv_usec/1000000.0);
+            gettimeofday(&beginReceiv, NULL);
+            //data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            gettimeofday(&endReceiv, NULL);
+            timeGlobalReceiv += endReceiv.tv_sec+(endReceiv.tv_usec/1000000.0) - beginReceiv.tv_sec - (beginReceiv.tv_usec/1000000.0);
 
 
-	  //We don't need it anymore. Cleaning for the next iteration
-	  transit.reset();
+            //We don't need it anymore. Cleaning for the next iteration
+            transit.reset();
         }
-	gettimeofday(&endRedist, NULL);
-	timeGlobalRedist += endRedist.tv_sec+(endRedist.tv_usec/1000000.0) - beginRedist.tv_sec - (beginRedist.tv_usec/1000000.0);
-	gettimeofday(&beginMerge, NULL);
-	data->mergeStoredData();
-	gettimeofday(&endMerge, NULL);
-	timeGlobalMerge += endMerge.tv_sec+(endMerge.tv_usec/1000000.0) - beginMerge.tv_sec - (beginMerge.tv_usec/1000000.0);
+        gettimeofday(&endRedist, NULL);
+        timeGlobalRedist += endRedist.tv_sec+(endRedist.tv_usec/1000000.0) - beginRedist.tv_sec - (beginRedist.tv_usec/1000000.0);
+        gettimeofday(&beginMerge, NULL);
+        data->mergeStoredData();
+        gettimeofday(&endMerge, NULL);
+        timeGlobalMerge += endMerge.tv_sec+(endMerge.tv_usec/1000000.0) - beginMerge.tv_sec - (beginMerge.tv_usec/1000000.0);
+        std::cout<<"Destination processed."<<std::endl;
     }
+    std::cout<<"Redistribution completed."<<std::endl;
 }
 
 

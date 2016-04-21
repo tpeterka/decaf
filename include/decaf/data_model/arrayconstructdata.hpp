@@ -392,15 +392,18 @@ public:
             std::vector<std::shared_ptr<BaseConstructData> >& fields,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
+
 	switch( policy )
         {
             case DECAF_SPLIT_DEFAULT:
             {
 		for(unsigned int i = 0; i < range.size(); i++)
                 {
+
 		    // TODO : use the fields as memory layer
                     //T* array = new T[range[i].back() * element_per_items_];
-                    std::shared_ptr<ArrayConstructData<T> > arrayconstruct = std::dynamic_pointer_cast<ArrayConstructData<T> >(fields[i]);
+                    std::shared_ptr<ArrayConstructData<T> > arrayconstruct =
+                            std::dynamic_pointer_cast<ArrayConstructData<T> >(fields[i]);
 		    if(!arrayconstruct)
 		    {
 			std::cout<<"ERROR : dynamic cast into an array failed during a split."<<std::endl;
@@ -408,20 +411,22 @@ public:
 		    } 
 
 		    //Note enough space, we have to reallocate
-		    if(arrayconstruct->capacity_ < range[i].back() * element_per_items_)
+                    if(arrayconstruct->capacity_ < range[i].back() * element_per_items_)
 		    {
 			//std::cout<<"ERROR : not enough space preallocated in the buffer for buffer. ("<<range[i].back() * element_per_items_<<" needed, "<<arrayconstruct->capacity_<<" allocated"<<std::endl;
 			//return;
-			if(arrayconstruct->owner_) delete arrayconstruct->value_;
+
+                        if(arrayconstruct->owner_) delete [] arrayconstruct->value_;
 			arrayconstruct->value_ = new T[range[i].back() * element_per_items_];
 			arrayconstruct->capacity_ = range[i].back() * element_per_items_;
 		    }
+
 
                     T* array = arrayconstruct->getArray();
 		    unsigned int nbCopy = 0;
                     unsigned int offsetDestArray = 0;
 
-                    for(unsigned int j = 0; j < range[i].size() - 1; j++)
+                    for(unsigned int j = 0; j < range[i].size() - 1; j++) //-1 because the last element of range is the total size of the ranges
                     {
                         memcpy(array + offsetDestArray * element_per_items_,
                         value_ + range[i][j] * element_per_items_,
@@ -434,7 +439,7 @@ public:
 		    //	std::make_shared<ArrayConstructData<T> >(array, range[i].back() * element_per_items_,
                     //                                             element_per_items_, true);
 		    //result.push_back(sub);
-		    arrayconstruct->size_ = range[i].back() * element_per_items_;
+                    arrayconstruct->size_ = range[i].back() * element_per_items_;
                 }
                 break;
             }

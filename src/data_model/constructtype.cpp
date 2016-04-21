@@ -99,25 +99,26 @@ ConstructData::preallocMultiple(int nbCopies , int nbItems, std::vector<std::sha
 {
     // Creating all the empty container
     for(int i = 0; i < nbCopies; i++)
-    {  
-	result.push_back(std::make_shared<ConstructData>());
+    {
+        result.push_back(std::make_shared<ConstructData>());
     }
 
     // Going through all the field and preallocating them for the new container
     for(std::map<std::string, datafield>::iterator it = container_->begin(); it != container_->end(); it++)
     {
-	std::vector<std::shared_ptr<BaseConstructData> > emptyFields;
-	getBaseData(it->second)->preallocMultiple(nbCopies, nbItems, emptyFields);
+        std::vector<std::shared_ptr<BaseConstructData> > emptyFields;
+        getBaseData(it->second)->preallocMultiple(nbCopies, nbItems, emptyFields);
 
-	for(int i = 0; i < nbCopies; i++)
-	{
-	     result.at(i)->appendData(it->first,
-				     emptyFields.at(i), 
-				     getFlag(it->second), 
-				     getScope(it->second),
-				     getSplitPolicy(it->second),
-				     getMergePolicy(it->second));
-	}
+        for(int i = 0; i < nbCopies; i++)
+        {
+
+            result.at(i)->appendData(it->first,
+                                     emptyFields.at(i),
+                                     getFlag(it->second),
+                                     getScope(it->second),
+                                     getSplitPolicy(it->second),
+                                     getMergePolicy(it->second));
+        }
     }
 }
 
@@ -533,29 +534,65 @@ computeIndexesFromBlocks(
     struct timeval begin;
     struct timeval end;
 
-    //gettimeofday(&begin, NULL);
+    gettimeofday(&begin, NULL);
     int notInBlock = 0;
+
+    std::vector<unsigned int> sumPos(result.size(), 0);
     for(int i = 0; i < nbPos; i++)
     {
         bool particlesInBlock = false;
         for(unsigned int b = 0; b < blocks.size(); b++)
         {
-            if(blocks[b].isInLocalBlock(pos[3*i], pos[3*i+1], pos[3*i+2]) )
+            float x = pos[3*i];
+            float y = pos[3*i+1];
+            float z = pos[3*i+2];
+
+            if(blocks[b].isInLocalBlock(x, y, z))
             {
-                result[b].push_back(i);
+                //                result[b].push_back(i);
+                //                particlesInBlock = true;
+                // Case for the first element
+                if(result[b].empty())
+                {
+                    result[b].push_back(i);
+                    result[b].push_back(1);
+                }
+                // Case where the current position is following the previous one
+                else if(result[b].back() + (result[b])[result[b].size()-2] == i )
+                {
+                    result[b].back() = result[b].back() + 1;
+                }
+                else
+                {
+                    result[b].push_back(i);
+                    result[b].push_back(1);
+                }
+
+                sumPos[b] = sumPos[b] + 1;
                 particlesInBlock = true;
             }
         }
         if(!particlesInBlock)
         {
-            std::cout<<"Not attributed : ["<<pos[3*i]<<","<<pos[3*i+1]<<","<<pos[3*i+2]<<"]"<<std::endl;
+            std::cout<<"Not attributed : ["<<pos[i]<<"]"<<std::endl;
             notInBlock++;
         }
     }
-    //gettimeofday(&end, NULL);
-    //double computeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
-    //printf("Computation of the particule attribution (pos): %f\n", computeSplit);
+    //Pushing the total at the end of the vector
+    int total = 0;
+    for(unsigned int i = 0; i < blocks.size(); i++)
+    {
+        result[i].push_back(sumPos[i]);
+        total += sumPos[i];
+    }
+    //printf("Somme des particules reparties : %u\n", total);
+
+    gettimeofday(&end, NULL);
+    double computeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+
+    //printf("Computation of the particule attribution (morton): %f\n", computeSplit);
+    //timeGlobalMorton += computeSplit;
     return;
 }
 
@@ -871,93 +908,96 @@ ConstructData::split(
     //std::vector<std::vector<int> > rangeItems;
     if(rangeItems_.empty())
     {
-    	for(unsigned int i = 0; i < range.size(); i++)
-	{
-	    rangeItems_.push_back(std::vector<int>());
-	    rangeItems_[i].reserve(873);	//Valeur pour les benchs Article Cluster. A retirer
-	}
+        for(unsigned int i = 0; i < range.size(); i++)
+        {
+            rangeItems_.push_back(std::vector<int>());
+            rangeItems_[i].reserve(873);	//Valeur pour les benchs Article Cluster. A retirer
+        }
     }
     else
     {
         for(unsigned int i = 0; i < range.size(); i++)
-	{
-	    std::cout<<"Capacity before clear : "<<rangeItems_[i].capacity()<<std::endl;
-	    rangeItems_[i].clear();
-	    std::cout<<"Capacity after clear : "<<rangeItems_[i].capacity()<<std::endl;
-	}
-    }   
+        {
+            std::cout<<"Capacity before clear : "<<rangeItems_[i].capacity()<<std::endl;
+            rangeItems_[i].clear();
+            std::cout<<"Capacity after clear : "<<rangeItems_[i].capacity()<<std::endl;
+        }
+    }
 
-   for(std::map<std::string, datafield>::iterator it = container_->begin();
-            it != container_->end(); it++)
-   {
-	//Building a temp vector with all the fields
-	std::vector<std::shared_ptr<BaseConstructData> > fields;
-	for(unsigned int i = 0; i < buffers.size(); i++)
-	{
-	    std::shared_ptr<BaseConstructData> field = buffers[i]->getData(it->first);
-	    if(field)
-		fields.push_back(field);
-	    else
-	    {
-		std::cout<<"ERROR : the field "<<it->first<<" is not present in the preallocated container."<<std::endl;
-		//result.clear();
-		//return result;
-		return;
-	    }
-	}
-	// Splitting the current field
-	// WARNING : should not be called, just for test
-	std::vector<std::shared_ptr<BaseConstructData> > splitFields;
-            if(getBaseData(it->second)->isBlockSplitable())
-                splitFields = getBaseData(it->second)->split(range, result_maps, getSplitPolicy(it->second));
-                //getBaseData(it->second)->split(range, result_maps, fields, getSplitPolicy(it->second));
+
+    for(std::map<std::string, datafield>::iterator it = container_->begin();
+        it != container_->end(); it++)
+    {
+        //Building a temp vector with all the fields
+        std::vector<std::shared_ptr<BaseConstructData> > fields;
+        for(unsigned int i = 0; i < buffers.size(); i++)
+        {
+            std::shared_ptr<BaseConstructData> field = buffers[i]->getData(it->first);
+            if(field)
+                fields.push_back(field);
             else
             {
-                	if(!computeRanges)
-                	{
-			    //The ranges by items have not been computed yet
-			    //We need the Morton key to compute them
-			    if(bZCurveIndex_)
-                    	    {
-                      			std::shared_ptr<ArrayConstructData<unsigned int> > posData =
-                        		     std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
-                      			computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems_);
-                      			computeRanges = true;
-                    	    }
-                  	    else if(bZCurveKey_)
-                    	    {
-                      		std::shared_ptr<ArrayConstructData<float> > posData =
-                        	    std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
-                      		computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems_);
-                      		computeRanges = true;
-                    	    }
-                  	    else
-                    	    {
-                      		std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
-                               	<<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
+                std::cout<<"ERROR : the field "<<it->first<<" is not present in the preallocated container."<<std::endl;
+                //result.clear();
+                //return result;
+                return;
+            }
+        }
+        // Splitting the current field
+        // WARNING : should not be called, just for test
+        std::vector<std::shared_ptr<BaseConstructData> > splitFields;
+        if(getBaseData(it->second)->isBlockSplitable())
+            splitFields = getBaseData(it->second)->split(range, result_maps, getSplitPolicy(it->second));
+        //getBaseData(it->second)->split(range, result_maps, fields, getSplitPolicy(it->second));
+        else
+        {
+            if(!computeRanges)
+            {
+                //The ranges by items have not been computed yet
+                //We need the Morton key to compute them
+                if(bZCurveIndex_)
+                {
+                    std::shared_ptr<ArrayConstructData<unsigned int> > posData =
+                            std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
+                    computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems_);
+                    computeRanges = true;
+                }
+                else if(bZCurveKey_)
+                {
+                    std::shared_ptr<ArrayConstructData<float> > posData =
+                            std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
+                    if(!posData) std::cout<<"ERROR : the posData is not castable to a float array."<<std::endl;
+                    computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems_);
+                    computeRanges = true;
+                }
+                else
+                {
+                    std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
+                            <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
 
-                      		//return result;
-                      		return;
-                    	    }
-                	}
+                    //return result;
+                    return;
+                }
+            }
 
-                	//splitFields = getBaseData(it->second)->split(rangeItems, result_maps, getSplitPolicy(it->second));
-                	getBaseData(it->second)->split(rangeItems_, result_maps, fields, getSplitPolicy(it->second));
-            	    }
+            //splitFields = getBaseData(it->second)->split(rangeItems, result_maps, getSplitPolicy(it->second));
+            getBaseData(it->second)->split(rangeItems_, result_maps, fields, getSplitPolicy(it->second));
 
-		    // Inserting the splitted field into the splitted results
-		    if(fields.size() != range.size())
-            	    {
-                	std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
-                	// Cleaning the result to avoid corrupt data
-                        //result.clear();
-                        //return result;
-                        return;
-                    }
-                
-		    //Adding the splitted results into the splitted maps
-		    /*for(unsigned int j = 0; j < fields.size(); j++)
+        }
+
+        // Inserting the splitted field into the splitted results
+        if(fields.size() != range.size())
+        {
+            std::cout<<"ERROR : A field was not splited properly."
+                    <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+            // Cleaning the result to avoid corrupt data
+            //result.clear();
+            //return result;
+            return;
+        }
+
+        //Adding the splitted results into the splitted maps
+        /*for(unsigned int j = 0; j < fields.size(); j++)
             {
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
                 construct->appendData(it->first,
@@ -967,21 +1007,21 @@ ConstructData::split(
                                          getSplitPolicy(it->second),
                                          getMergePolicy(it->second)
                                          );
-		
-            }*/
-	}
 
-	for(unsigned int i = 0; i < range.size(); i++)
-	{
-	    buffers[i]->updateNbItems();
-	    buffers[i]->updateMetaData();
-	    //std::cout<<"Nombre d'item apres update : "<<buffers.at(i)->getNbItems()<<std::endl;
-	}
-	assert(buffers.size() == range.size());
-    	gettimeofday(&end, NULL);
-    	//timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-    	//return result;
-    	return;
+            }*/
+    }
+
+    for(unsigned int i = 0; i < range.size(); i++)
+    {
+        buffers[i]->updateNbItems();
+        buffers[i]->updateMetaData();
+        //std::cout<<"Nombre d'item apres update : "<<buffers.at(i)->getNbItems()<<std::endl;
+    }
+    assert(buffers.size() == range.size());
+    gettimeofday(&end, NULL);
+    //timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
+    //return result;
+    return;
 }
 
 

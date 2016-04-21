@@ -147,15 +147,9 @@ public:
 
         switch(policy)
         {
-            case DECAF_MERGE_DEFAULT:
+            case DECAF_MERGE_DEFAULT: //We just keep the first value
             {
-                if(value_ != other_->value_)
-                {
-                    std::cout<<"ERROR : the original and other data do not have the same data."
-                    <<"Default policy keep one value and check that the 2 marge values are"
-                    <<" the same. Make sure the values are the same or change the merge policy"<<std::endl;
-                    return false;
-                }
+
                 return true;
                 break;
             }
@@ -184,8 +178,36 @@ public:
                        mapConstruct partial_map,
                        ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
-	std::cout<<"Merge multiple partial parts is not implemented yet for simple data type."<<std::endl;
-	return false;
+        for(unsigned int i = 0; i < others.size(); i++)
+        {
+            std::shared_ptr<SimpleConstructData<T> > other_ = std::dynamic_pointer_cast<SimpleConstructData<T> >(others[i]);
+            switch(policy)
+            {
+                case DECAF_MERGE_DEFAULT: //We just keep the first value
+                {
+                    return true;
+                    break;
+                }
+                case DECAF_MERGE_FIRST_VALUE: //We don't have to do anything here
+                {
+                    return true;
+                    break;
+                }
+                case DECAF_MERGE_ADD_VALUE:
+                {
+
+                    value_ = value_ + other_->value_;
+                    return true;
+                    break;
+                }
+                default:
+                {
+                    std::cout<<"ERROR : policy "<<policy<<" not available for simple data."<<std::endl;
+                    return false;
+                    break;
+                }
+            }
+        }
     }
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)

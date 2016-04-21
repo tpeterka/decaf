@@ -39,6 +39,9 @@ namespace decaf
              RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator) {}
         virtual ~RedistBlockMPI() {}
 
+        virtual void flush();
+
+
     protected:
 
         // Compute the values necessary to determine how the data should be splitted
@@ -55,9 +58,6 @@ namespace decaf
         void splitBlock(Block<3> & base, int nbSubblock);
 
         void updateBlockDomainFields();
-
-        virtual void flush();
-
 
         std::vector< std::shared_ptr<ConstructData> > splitBuffer_;	// Buffer of container to avoid reallocation
 
