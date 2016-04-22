@@ -503,6 +503,16 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
                     timeGlobalReceiv += endReceiv.tv_sec+(endReceiv.tv_usec/1000000.0) - beginReceiv.tv_sec - (beginReceiv.tv_usec/1000000.0);
 
                 }
+                else
+                {
+                    MPI_Request req;
+                    reqs.push_back(req);
+
+                    MPI_Isend( NULL,
+                               0,
+                               MPI_BYTE, i + local_dest_rank_, MPI_DATA_TAG, communicator_, &reqs.back());
+
+                }
             }
         }
         // Checking if we have something in transit
