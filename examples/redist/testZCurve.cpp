@@ -200,7 +200,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
     RedistZCurveMPI *component = new RedistZCurveMPI(startSource, nbSource,
                                                      startReceptors, nbReceptors,
-                                                     MPI_COMM_WORLD, bbox);
+                                                     MPI_COMM_WORLD, DECAF_REDIST_COLLECTIVE, bbox);
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;

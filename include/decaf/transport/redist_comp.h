@@ -32,6 +32,12 @@ namespace decaf
         MPI_DATA_TAG,
     };
 
+    enum RedistCommMethod
+    {
+        DECAF_REDIST_COLLECTIVE,
+        DECAF_REDIST_P2P,
+    };
+
     // This class defines the common interface for the redistribution component (MxN)
     // This interface is independant from the datatype or the transport
     // implementation. Specialized components will implement the redistribution
@@ -47,12 +53,14 @@ namespace decaf
     RedistComp(int rankSource,
                int nbSources,
                int rankDest,
-               int nbDests) :
+               int nbDests,
+               RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE) :
         rankSource_(rankSource),
             nbSources_(nbSources),
             rankDest_(rankDest),
             nbDests_(nbDests),
-            summerizeDest_(NULL)
+            summerizeDest_(NULL),
+            commMethod_(commMethod)
             {
                 send_data_tag = MPI_DATA_TAG;
                 recv_data_tag = MPI_DATA_TAG;
@@ -116,6 +124,8 @@ namespace decaf
         std::vector<std::shared_ptr<char> > receivedChunks_;
         int* summerizeDest_;
         std::vector<int> destList_;
+
+        RedistCommMethod commMethod_;        //Strategy to use during redistribute()
     };
 
 } //namespace decaf

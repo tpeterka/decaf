@@ -22,6 +22,7 @@
 namespace decaf
 {
 
+
     class RedistMPI : public RedistComp
     {
     public:
@@ -34,7 +35,8 @@ namespace decaf
                   int nbSources,
                   int rankDest,
                   int nbDests,
-                  CommHandle communicator);
+                  CommHandle communicator,
+                  RedistCommMethod commMethod);
         virtual ~RedistMPI();
 
         virtual void flush();
@@ -56,6 +58,12 @@ namespace decaf
         // Transfer the chunks from the sources to the destination. The data should be
         // be stored in the vector receivedChunks
         void redistribute(std::shared_ptr<BaseData> data, RedistRole role);
+
+        //Redistribution method using only point to point All to All communication
+        void redistributeP2P(std::shared_ptr<BaseData> data, RedistRole role);
+
+        //Redistribution method collective and sending only the necessary messages
+        void redistributeCollective(std::shared_ptr<BaseData> data, RedistRole role);
 
         CommHandle communicator_;          // communicator for all the processes involved in redist
         CommHandle commSources_;           // communicator of the sources

@@ -905,7 +905,6 @@ ConstructData::split(
 
     //Preparing the ranges if some fields are not splitable with a block
     bool computeRanges = false;
-    //std::vector<std::vector<int> > rangeItems;
     if(rangeItems_.empty())
     {
         for(unsigned int i = 0; i < range.size(); i++)
@@ -990,25 +989,9 @@ ConstructData::split(
         {
             std::cout<<"ERROR : A field was not splited properly."
                     <<" The number of chunks does not match the expected number of chunks"<<std::endl;
-            // Cleaning the result to avoid corrupt data
-            //result.clear();
-            //return result;
             return;
         }
 
-        //Adding the splitted results into the splitted maps
-        /*for(unsigned int j = 0; j < fields.size(); j++)
-            {
-                std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
-                construct->appendData(it->first,
-                                         fields.at(j),
-                                         getFlag(it->second),
-                                         std::get<1>(it->second),
-                                         getSplitPolicy(it->second),
-                                         getMergePolicy(it->second)
-                                         );
-
-            }*/
     }
 
     for(unsigned int i = 0; i < range.size(); i++)

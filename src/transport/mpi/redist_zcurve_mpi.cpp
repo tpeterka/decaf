@@ -100,12 +100,13 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource,
                                  int rankDest,
                                  int nbDests,
                                  CommHandle world_comm,
+                                 RedistCommMethod commMethod,
                                  std::vector<float> bBox,
                                  std::vector<int> slices) :
     bBBox_(false),
     bBox_(bBox),
     slices_(slices),
-    RedistMPI(rankSource, nbSources, rankDest, nbDests, world_comm)
+    RedistMPI(rankSource, nbSources, rankDest, nbDests, world_comm, commMethod)
 {
 
     // The slices are the number rows in each dimension for the grid

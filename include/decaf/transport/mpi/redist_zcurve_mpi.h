@@ -33,6 +33,7 @@ namespace decaf
                         int rankDest,
                         int nbDests,
                         CommHandle communicator,
+                        RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
                         std::vector<float> bBox = std::vector<float>(),
                         std::vector<int> slices = std::vector<int>());
         virtual ~RedistZCurveMPI() {}

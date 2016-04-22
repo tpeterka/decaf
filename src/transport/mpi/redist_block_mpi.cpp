@@ -272,10 +272,6 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         timeGlobalBuild += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
         //if(role == DECAF_REDIST_SOURCE)
         //    printf("Compute split : %f, compute serialize : %f\n", computeSplit, computeSerialize);
-        // Everything is done, now we can clean the data.
-        // Data might be rewriten if producers and consummers are overlapping
-        //data->purgeData();
-
 
         // DEPRECATED
         // Everything is done, now we can clean the data.

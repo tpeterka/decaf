@@ -64,7 +64,9 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         //           " items. Ranks from "<<rankOffset<< " to "<<  nbDests_-1<<
         //           " will reiceive" <<items_per_dest<< " items"<< std::endl;
 
+
         //Computing how to split the data
+
 
         //Compute the destination rank of the first item
         int first_rank;
@@ -89,6 +91,17 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         std::vector<int> split_ranges;
         int items_left = data->getNbItems();
         int current_rank = first_rank;
+
+        // For P2P, destList must have the same size as the number of destination.
+        // We fill the destinations with no messages with -1 (= send empty message)
+        if(commMethod_ == DECAF_REDIST_P2P)
+        {
+            while(destList_.size() < first_rank)
+            {
+                destList_.push_back(-1);
+                splitChunks_.push_back(NULL);
+            }
+        }
 
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
@@ -140,14 +153,32 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             current_rank++;
         }
 
-        splitChunks_ =  data->split( split_ranges );
+        if(commMethod_ == DECAF_REDIST_P2P)
+        {
+            std::vector<std::shared_ptr<BaseData> > chunks =  data->split( split_ranges );
+            // TODO : remove this need to copy
+            splitChunks_.insert(splitChunks_.end(), chunks.begin(), chunks.end());
+        }
+        else
+            splitChunks_ =  data->split( split_ranges );
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
             // TODO : Check the rank for the destination.
             // Not necessary to serialize if overlapping
-            if(!splitChunks_.at(i)->serialize())
+            if(splitChunks_.at(i) && !splitChunks_.at(i)->serialize())
                 std::cout<<"ERROR : unable to serialize one object"<<std::endl;
+        }
+
+        // For P2P, destList must have the same size as the number of destination.
+        // We fill the destinations with no messages with -1 (= send empty message)
+        if(commMethod_ == DECAF_REDIST_P2P)
+        {
+            while(destList_.size() < nbDests_)
+            {
+                destList_.push_back(-1);
+                splitChunks_.push_back(NULL);
+            }
         }
 
         // DEPRECATED

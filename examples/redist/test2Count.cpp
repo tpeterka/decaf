@@ -149,7 +149,6 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     int size_world, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    std::cout<<"Current rank : "<<rank<<std::endl;
     if (!isBetween(rank, startSource, nbSource)
             && !isBetween(rank, startReceptors1, nbReceptors1)
             && !isBetween(rank, startReceptors2, nbReceptors2))
@@ -169,7 +168,8 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                                         nbSource,
                                         startReceptors1,
                                         nbReceptors1,
-                                        MPI_COMM_WORLD);
+                                        MPI_COMM_WORLD,
+                                        DECAF_REDIST_P2P);
     }
     if (isBetween(rank, startSource, nbSource)
             || isBetween(rank, startReceptors2, nbReceptors2))
@@ -179,7 +179,8 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                                         nbSource,
                                         startReceptors2,
                                         nbReceptors2,
-                                        MPI_COMM_WORLD);
+                                        MPI_COMM_WORLD,
+                                        DECAF_REDIST_P2P);
     }
 
     fprintf(stderr, "-------------------------------------\n"
@@ -212,7 +213,6 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component1->process(container1, decaf::DECAF_REDIST_SOURCE);
-        component1->flush();    // We still need to flush if not doing a get/put
 
         // sending to the second destination
         std::shared_ptr<VectorConstructData<double> > array2 =
@@ -231,7 +231,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component2->process(container2, decaf::DECAF_REDIST_SOURCE);
-        component2->flush();    // We still need to flush if not doing a get/put
+
     }
 
     // receiving at the first destination
@@ -270,6 +270,11 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         fprintf(stderr, "===========================\n"
                 "Simple test between %d producers and %d consumers completed\n",
                 nbSource, nbReceptors2);
+    }
+    if (isBetween(rank, startSource, nbSource))
+    {
+        component1->flush();
+        component2->flush();
     }
 
     if (component1) delete component1;
