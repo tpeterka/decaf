@@ -67,6 +67,9 @@ namespace decaf
         // whether my rank belongs to this workflow node, identified by the name of its func field
         bool my_node(const char* name);
 
+        // return a pointer to a dataflow, identified by its index in the workflow structure
+        Dataflow* dataflow(int i)  { return dataflows[i]; }
+
         Comm* world;
 
     private:

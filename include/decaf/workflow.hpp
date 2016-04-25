@@ -11,7 +11,7 @@
 //--------------------------------------------------------------------------
 
 #ifndef DECAF_WORKFLOW_HPP
-#define DECAF_WORKLFOW_HPP
+#define DECAF_WORKFLOW_HPP
 
 #include "decaf.hpp"
 
