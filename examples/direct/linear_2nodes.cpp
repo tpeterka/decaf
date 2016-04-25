@@ -98,20 +98,6 @@ extern "C"
               Dataflow* dataflow,                  // dataflow
               shared_ptr<ConstructData> in_data)   // input data
     {
-        // debug
-        shared_ptr<BaseConstructData> ptr = in_data->getData(string("var"));
-        if (ptr)
-        {
-            shared_ptr<SimpleConstructData<int> > val =
-                dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-            if (val->getData() % 2)
-                fprintf(stderr, "Error: val->getData() should be even but is %d instead\n",
-                        val->getData());
-        }
-        else
-            fprintf(stderr, "Error: null pointer in dflow\n");
-        // end of debug
-
         dataflow->put(in_data, DECAF_LINK);
         return 0;                                         // ok to call me again
     }
@@ -121,10 +107,6 @@ extern "C"
 // run(Workflow&) in the global namespace
 void run(Workflow& workflow)                             // workflow
 {
-    // optional callback args, can leave uninitialized if not being used
-    for (size_t i = 0; i < workflow.nodes.size(); i++)
-        workflow.nodes[i].args = NULL;                  // define any callback args here
-
     MPI_Init(NULL, NULL);
 
     // create decaf
