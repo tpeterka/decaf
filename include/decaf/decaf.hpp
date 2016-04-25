@@ -26,6 +26,7 @@
 #endif
 
 #include "types.hpp"
+#include "workflow.hpp"
 
 namespace decaf
 {
