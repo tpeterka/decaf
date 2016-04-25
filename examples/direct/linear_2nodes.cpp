@@ -93,13 +93,11 @@ void con(Decaf* decaf)
 extern "C"
 {
     // dataflow just forwards everything that comes its way in this example
-    // return value: 0 = success, 1 = quit (don't call me anymore)
-    int dflow(void* args,                          // arguments to the callback
-              Dataflow* dataflow,                  // dataflow
-              shared_ptr<ConstructData> in_data)   // input data
+    void dflow(void* args,                          // arguments to the callback
+               Dataflow* dataflow,                  // dataflow
+               shared_ptr<ConstructData> in_data)   // input data
     {
         dataflow->put(in_data, DECAF_LINK);
-        return 0;                                         // ok to call me again
     }
 } // extern "C"
 

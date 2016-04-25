@@ -92,7 +92,6 @@ void node1(Decaf* decaf)
             else
                 fprintf(stderr, "Error: null pointer in node1\n");
         }
-        fprintf(stderr, "node1: sum = %d\n", sum);
 
         if (done)
         {
@@ -103,6 +102,8 @@ void node1(Decaf* decaf)
 
             return;
         }
+
+        fprintf(stderr, "node1: sum = %d\n", sum);
 
         // append the sum to a container
         shared_ptr<SimpleConstructData<int> > data  = make_shared<SimpleConstructData<int> >(sum);
@@ -152,12 +153,11 @@ void node2(Decaf* decaf)
 extern "C"
 {
     // dataflow just forwards everything that comes its way in this example
-    int dflow(void* args,                          // arguments to the callback
-              Dataflow* dataflow,                  // dataflow
-              shared_ptr<ConstructData> in_data)   // input data
+    void dflow(void* args,                          // arguments to the callback
+               Dataflow* dataflow,                  // dataflow
+               shared_ptr<ConstructData> in_data)   // input data
     {
         dataflow->put(in_data, DECAF_LINK);
-        return 0;                            // ok to call me again
     }
 } // extern "C"
 

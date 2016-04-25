@@ -73,13 +73,6 @@ namespace decaf
         // builds a vector of dataflows for all links in the workflow
         void build_dataflows(vector<Dataflow*>& dataflows);
 
-        // loads a node module (if it has not been loaded) containing a callback function name
-        // returns a pointer to the function
-        void* load_node(
-            map<string, void*>& mods,
-            string mod_name,
-            string func_name);
-
         // loads a dataflow module (if it has not been loaded) containing a callback function name
         // returns a pointer to the function
         void* load_dflow(
@@ -293,9 +286,9 @@ Decaf::run_links()
     list< shared_ptr<ConstructData> > containers;
 
     // dynamically loaded modules (plugins)
-    int(*dflow_func)(void*,                      // ptr to dataflow callback func in a module
-                     Dataflow*,
-                     shared_ptr<ConstructData>);
+    void(*dflow_func)(void*,                      // ptr to dataflow callback func in a module
+                      Dataflow*,
+                      shared_ptr<ConstructData>);
     map<string, void*> mods;                      // modules dynamically loaded so far
 
     // links are driven by receiving messages
@@ -353,23 +346,17 @@ Decaf::run_links()
                 {
                     if (link_id(*it) == ready_ids[i])
                     {
-                        dflow_func = (int(*)(void*,            // load the function
-                                             Dataflow*,
-                                             shared_ptr<ConstructData>))
+                        dflow_func = (void(*)(void*,            // load the function
+                                              Dataflow*,
+                                              shared_ptr<ConstructData>))
                             load_dflow(mods,
                                        workflow_.links[ready_ids[i]].path,
                                        workflow_.links[ready_ids[i]].func);
 
-                        int done = dflow_func(workflow_.links[ready_ids[i]].args, // call it
-                                              dataflows[ready_ids[i]],
-                                              *it);
-                        if (done)
-                        {
-                            int my_id = my_link(ready_ids[i]);
-                            if (my_id >= 0)
-                                my_links_[my_id].done = true;
-                        }
-                        // erase kills the std iterator but returns the next one
+                        dflow_func(workflow_.links[ready_ids[i]].args, // call it
+                                   dataflows[ready_ids[i]],
+                                   *it);
+
                         it = containers.erase(it);
                     }
                     else
@@ -445,35 +432,6 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
                                          dflow_con_redist));
         dataflows[i]->err();
     }
-}
-
-// loads a node module (if it has not been loaded) containing a callback function name
-// returns a pointer to the function
-void*
-decaf::
-Decaf::load_node(
-    map<string, void*>& mods,      // (name, handle) of modules dynamically loaded so far
-    string mod_name,               // module name (path) to be loaded
-    string func_name)              // function name to be called
-{
-    map<string, void*>::iterator it;              // iterator into the modules
-    pair<string, void*> p;                        // (module name, module handle)
-    pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
-    int(*func)(void*,                             // ptr to callback func
-               vector<Dataflow*>*,
-               vector< shared_ptr<ConstructData> >*);
-
-    if ((it = mods.find(mod_name)) == mods.end())
-    {
-        void* f = dlopen(mod_name.c_str(), RTLD_LAZY);
-        if (!f)
-            fprintf(stderr, "Error: module %s could not be loaded\n",
-                    mod_name.c_str());
-        p = make_pair(mod_name, f);
-        ret = mods.insert(p);
-        it = ret.first;
-    }
-    return dlsym(it->second, func_name.c_str());
 }
 
 // loads a dataflow module (if it has not been loaded) containing a callback function name
