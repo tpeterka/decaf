@@ -47,14 +47,6 @@ enum Decomposition
     DECAF_NUM_DECOMPS,
 };
 
-// DEPRECATED
-// // task types
-// typedef unsigned char TaskType;
-// #define DECAF_NONE      0x00
-// #define DECAF_PROD      0x01
-// #define DECAF_DFLOW     0x02
-// #define DECAF_CON       0x04
-
 // workflow entity types
 typedef unsigned char TaskType;
 #define DECAF_NONE      0x00
@@ -171,6 +163,22 @@ struct Workflow                 // an entire workflow
                     for (size_t j = 0; j < nodes[i].in_links.size(); j++)
                     {
                         if (nodes[i].in_links[j] == link)
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+    bool my_out_link(int proc, int link)      // whether my process puts output data to this link
+        {
+            for (size_t i = 0; i< nodes.size(); i++)
+            {
+                if (proc >= nodes[i].start_proc && // proc is mine
+                    proc <  nodes[i].start_proc + nodes[i].nprocs)
+                {
+                    for (size_t j = 0; j < nodes[i].out_links.size(); j++)
+                    {
+                        if (nodes[i].out_links[j] == link)
                             return true;
                     }
                 }

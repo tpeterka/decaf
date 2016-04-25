@@ -6,7 +6,7 @@
 //
 // entire workflow takes 8 procs (2 dataflow procs between prod and con)
 //
-// Matthieu Dreher
+// Tom Peterka
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
@@ -29,73 +29,53 @@
 using namespace decaf;
 using namespace std;
 
-// user-defined pipeliner code
-void pipeliner(Dataflow* decaf)
+// producer
+void prod(Decaf* decaf)
 {
-}
-
-// user-defined resilience code
-void checker(Dataflow* decaf)
-{
-}
-
-// node and link callback functions
-extern "C"
-{
-    // producer
-    // return value: 0 = success, 1 = quit (don't call me anymore)
-    int prod(void* args,                                   // arguments to the callback
-             vector<Dataflow*>* out_dataflows,             // all outbound dataflows
-             vector< shared_ptr<ConstructData> >* in_data) // input data in order of workflow links
+    // produce data for some number of timesteps
+    for (int timestep = 0; timestep < 10; timestep++)
     {
-        static int timestep = 0;
+        fprintf(stderr, "producer timestep %d\n", timestep);
 
-        // produce data for some number of timesteps
-        if (timestep < 10)
-        {
-            fprintf(stderr, "producer timestep %d\n", timestep);
+        // the data in this example is just the timestep; add it to a container
+        shared_ptr<SimpleConstructData<int> > data =
+            make_shared<SimpleConstructData<int> >(timestep);
+        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        container->appendData(string("var"), data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
-            // the data in this example is just the timestep; put it in a container
-            shared_ptr<SimpleConstructData<int> > data =
-                make_shared<SimpleConstructData<int> >(timestep);
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-
-            // send the data to the destinations
-            container->appendData(string("var"), data,
-                                  DECAF_NOFLAG, DECAF_PRIVATE,
-                                  DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
-            for (size_t i = 0; i < out_dataflows->size(); i++)
-                (*out_dataflows)[i]->put(container, DECAF_NODE);
-
-
-            timestep++;
-            return 0;                        // ok to call me again
-        }
-        else
-        {
-            // send a quit message
-            fprintf(stderr, "producer sending quit\n");
-            shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
-            Dataflow::set_quit(quit_container);
-            for (size_t i = 0; i < out_dataflows->size(); i++)
-                (*out_dataflows)[i]->put(quit_container, DECAF_NODE);
-
-            return 1;                        // I quit, don't call me anymore
-        }
+        // send the data on all outbound dataflows
+        // in this example there is only one outbound dataflow, but in general there could be more
+        decaf->put(container);
     }
 
-    // consumer
-    // return value: 0 = success, 1 = quit (don't call me anymore)
-    int con(void* args,                                   // arguments to the callback
-            vector<Dataflow*>* out_dataflows,             // all outbound dataflows
-            vector< shared_ptr<ConstructData> >* in_data) // input data in order of
+    // send a quit message
+    fprintf(stderr, "producer sending quit\n");
+    shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+    Dataflow::set_quit(quit_container);
+    decaf->put(quit_container);
+}
+
+// consumer
+void con(Decaf* decaf)
+{
+    while (1)
     {
         int sum = 0;
 
+        // receive data from all inbound dataflows
+        // in this example there is only one inbound dataflow, but in general there could be more
+        vector< shared_ptr<ConstructData> > in_data;
+        decaf->get(in_data);
+
         // get the values and add them
-        for (size_t i = 0; i < in_data->size(); i++)
+        for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<BaseConstructData> ptr = (*in_data)[i]->getData(string("var"));
+            if (Dataflow::test_quit(in_data[i]))
+                return;
+
+            shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
             if (ptr)
             {
                 shared_ptr<SimpleConstructData<int> > val =
@@ -106,9 +86,12 @@ extern "C"
                 fprintf(stderr, "Error: null pointer in con\n");
         }
         fprintf(stderr, "consumer sum = %d\n", sum);
-        return 0;                                         // ok to call me again
     }
+}
 
+// link callback function
+extern "C"
+{
     // dataflow just forwards everything that comes its way in this example
     // return value: 0 = success, 1 = quit (don't call me anymore)
     int dflow(void* args,                          // arguments to the callback
@@ -135,51 +118,31 @@ extern "C"
 } // extern "C"
 
 // every user application needs to implement the following run function with this signature
-// run(Workflow&, const vector<int>&)
-// in the global namespace
-void run(Workflow&          workflow,                // workflow
-         const vector<int>& sources)                 // optional source workflow nodes
+// run(Workflow&) in the global namespace
+void run(Workflow& workflow)                             // workflow
 {
     // optional callback args, can leave uninitialized if not being used
     for (size_t i = 0; i < workflow.nodes.size(); i++)
-        workflow.nodes[i].args = NULL;              // define any callback args here
+        workflow.nodes[i].args = NULL;                  // define any callback args here
 
     MPI_Init(NULL, NULL);
 
-    // debug
-    // int rank;
-    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // if (rank == 0)
-    // {
-    //     fprintf(stderr, "%ld nodes:\n", workflow.nodes.size());
-    //     for (size_t i = 0; i < workflow.nodes.size(); i++)
-    //     {
-    //         fprintf(stderr, "i %ld out_links.size %ld in_links.size %ld\n",i,
-    //                 workflow.nodes[i].out_links.size(), workflow.nodes[i].in_links.size());
-    //         fprintf(stderr, "out_links:\n");
-    //         for (size_t j = 0; j < workflow.nodes[i].out_links.size(); j++)
-    //             fprintf(stderr, "%d\n", workflow.nodes[i].out_links[j]);
-    //         fprintf(stderr, "in_links:\n");
-    //         for (size_t j = 0; j < workflow.nodes[i].in_links.size(); j++)
-    //             fprintf(stderr, "%d\n", workflow.nodes[i].in_links[j]);
-    //         fprintf(stderr, "node:\n");
-    //         fprintf(stderr, "%d %d\n", workflow.nodes[i].start_proc, workflow.nodes[i].nprocs);
-    //     }
-
-    //     fprintf(stderr, "%ld links:\n", workflow.links.size());
-    //     for (size_t i = 0; i < workflow.links.size(); i++)
-    //         fprintf(stderr, "%d %d %d %d\n", workflow.links[i].prod, workflow.links[i].con,
-    //                 workflow.links[i].start_proc, workflow.links[i].nprocs);
-
-    //     fprintf(stderr, "%ld sources:\n", sources.size());
-    //     for (size_t i = 0; i < sources.size(); i++)
-    //         fprintf(stderr, "%d\n", sources[i]);
-    // }
-
-    // create and run decaf
+    // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
-    decaf->run(&pipeliner, &checker, sources);
 
+    // run workflow node tasks
+    // decaf simply tells the user whether this rank belongs to a workflow node
+    // how the tasks are called is entirely up to the user
+    // e.g., if they overlap in rank, it is up to the user to call them in an order that makes
+    // sense (threaded, alternting, etc.)
+    // also, the user can define any function signature she wants
+    if (decaf->my_node("prod"))
+        prod(decaf);
+    if (decaf->my_node("con"))
+        con(decaf);
+
+    // cleanup
+    delete decaf;
     MPI_Finalize();
 }
 

@@ -166,6 +166,8 @@ void run(Workflow&          workflow,                // workflow
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
     decaf->run(&pipeliner, &checker, sources);
 
+    // cleanup
+    delete decaf;
     MPI_Finalize();
 }
 
