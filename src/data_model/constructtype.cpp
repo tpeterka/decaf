@@ -329,9 +329,8 @@ ConstructData::split(
     for(unsigned int i = 0; i < range.size(); i++)
         totalRange+= range.at(i);
     if(totalRange != getNbItems()){
-        std::cout<<"ERROR : The number of items in the ranges ("<<totalRange
-                 <<") does not match the number of items of the object ("
-                 <<getNbItems()<<")"<<std::endl;
+        fprintf(stderr, "ERROR : The number of items in the ranges (%d) does not match the "
+                "number of items of the object (%d)\n", totalRange, getNbItems());
         return result;
     }
 
@@ -355,8 +354,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -389,8 +389,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -463,8 +464,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -497,8 +499,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -784,7 +787,7 @@ ConstructData::split(const std::vector<Block<3> >& range)
 
 		      return result;
                     }
-                   
+
                 }
 
                 splitFields = getBaseData(data->second)->split(rangeItems, result_maps, getSplitPolicy(data->second));
@@ -793,8 +796,9 @@ ConstructData::split(const std::vector<Block<3> >& range)
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -987,9 +991,10 @@ ConstructData::split(
         // Inserting the splitted field into the splitted results
         if(fields.size() != range.size())
         {
-            std::cout<<"ERROR : A field was not splited properly."
-                    <<" The number of chunks does not match the expected number of chunks"<<std::endl;
-            return;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
+                return;
         }
 
     }
