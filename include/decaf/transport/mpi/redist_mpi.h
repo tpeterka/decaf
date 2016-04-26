@@ -36,7 +36,8 @@ namespace decaf
                   int rankDest,
                   int nbDests,
                   CommHandle communicator,
-                  RedistCommMethod commMethod);
+                  RedistCommMethod commMethod,
+                  MergeMethod mergeMethod);
         virtual ~RedistMPI();
 
         virtual void flush();

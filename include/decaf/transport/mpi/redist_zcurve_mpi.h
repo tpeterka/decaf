@@ -34,6 +34,7 @@ namespace decaf
                         int nbDests,
                         CommHandle communicator,
                         RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
+                        MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP,
                         std::vector<float> bBox = std::vector<float>(),
                         std::vector<int> slices = std::vector<int>());
         virtual ~RedistZCurveMPI() {}

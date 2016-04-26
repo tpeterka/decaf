@@ -38,6 +38,12 @@ namespace decaf
         DECAF_REDIST_P2P,
     };
 
+    enum MergeMethod
+    {
+        DECAF_REDIST_MERGE_ONCE,
+        DECAF_REDIST_MERGE_STEP,
+    };
+
     // This class defines the common interface for the redistribution component (MxN)
     // This interface is independant from the datatype or the transport
     // implementation. Specialized components will implement the redistribution
@@ -54,13 +60,15 @@ namespace decaf
                int nbSources,
                int rankDest,
                int nbDests,
-               RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE) :
+               RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
+               MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
         rankSource_(rankSource),
             nbSources_(nbSources),
             rankDest_(rankDest),
             nbDests_(nbDests),
             summerizeDest_(NULL),
-            commMethod_(commMethod)
+            commMethod_(commMethod),
+            mergeMethod_(mergeMethod)
             {
                 send_data_tag = MPI_DATA_TAG;
                 recv_data_tag = MPI_DATA_TAG;
@@ -126,6 +134,8 @@ namespace decaf
         std::vector<int> destList_;
 
         RedistCommMethod commMethod_;        //Strategy to use during redistribute()
+        MergeMethod mergeMethod_;
+
     };
 
 } //namespace decaf

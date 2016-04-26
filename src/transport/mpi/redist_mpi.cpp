@@ -25,8 +25,8 @@ RedistMPI::RedistMPI(int rankSource,
                      int nbSources,
                      int rankDest,
                      int nbDests,
-                     CommHandle world_comm, RedistCommMethod commMethod) :
-    RedistComp(rankSource, nbSources, rankDest, nbDests, commMethod),
+                     CommHandle world_comm, RedistCommMethod commMethod, MergeMethod mergeMethod) :
+    RedistComp(rankSource, nbSources, rankDest, nbDests, commMethod, mergeMethod),
     communicator_(MPI_COMM_NULL),
     commSources_(MPI_COMM_NULL),
     commDests_(MPI_COMM_NULL),
@@ -379,9 +379,16 @@ RedistMPI::redistributeP2P(std::shared_ptr<BaseData> data, RedistRole role)
                     // NOTE : examin if it's not more efficient to receive everything
                     // and then merge. Memory footprint more important but allows to
                     // aggregate the allocations etc
-                    data->merge();
-                    //data->unserializeAndStore();
-                    //data->unserializeAndStore(data->getInSerialBuffer(), nitems);
+                    if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+                        data->merge();
+                    else if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+                        //data->unserializeAndStore();
+                        data->unserializeAndStore(data->getInSerialBuffer(), nitems);
+                    else
+                    {
+                        std::cout<<"ERROR : merge method not specified. Abording."<<std::endl;
+                        MPI_Abort(MPI_COMM_WORLD, 0);
+                    }
 
                 }
                 else
@@ -394,13 +401,17 @@ RedistMPI::redistributeP2P(std::shared_ptr<BaseData> data, RedistRole role)
         // Checking if we have something in transit
         if(transit)
         {
-            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
-            //data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+                data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+                data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
 
             //We don't need it anymore. Cleaning for the next iteration
             transit.reset();
         }
-        //data->mergeStoredData();
+
+        if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+            data->mergeStoredData();
     }
 }
 

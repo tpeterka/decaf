@@ -36,8 +36,9 @@ namespace decaf
                        int rankDest,
                        int nbDests,
                        CommHandle communicator,
-                       RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE) :
-             RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod) {}
+                       RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
+                       MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
+             RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod, mergeMethod) {}
         virtual ~RedistBlockMPI() {}
 
         virtual void flush();
