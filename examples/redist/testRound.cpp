@@ -72,7 +72,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
     std::cout<<"Configuration : "<<startSource<<", "<<nbSource<<", "<<startReceptors<<", "<<nbReceptors<<std::endl;
     RedistRoundMPI *component = new RedistRoundMPI(startSource, nbSource,
                                                      startReceptors, nbReceptors,
-                                                     MPI_COMM_WORLD);
+                                                     MPI_COMM_WORLD, DECAF_REDIST_P2P);
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;
@@ -82,10 +82,10 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         std::cout<<"Running Redistributed test between "<<nbSource<<" producers"
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
-        unsigned int nbParticules = 20;
+        unsigned int nbParticules = 11;
         std::vector<int> index = std::vector<int>(nbParticules);
         for(int i = 0; i< nbParticules; i++)
-            index[i] = i;
+            index[i] = rank*nbParticules + i;
 
 
         std::shared_ptr<VectorConstructData<int> > array = std::make_shared<VectorConstructData<int> >( index, 1 );
@@ -145,7 +145,8 @@ int main(int argc,
     runTestParallelRedistOverlap(0, 4, 2, 2);
     runTestParallelRedistOverlap(0, 4, 2, 3);
     runTestParallelRedistOverlap(0, 4, 0, 4);
-    runTestParallelRedistOverlap(2, 4, 0, 2);
+    runTestParallelRedistOverlap(2, 3, 0, 2);
+
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 

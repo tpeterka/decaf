@@ -425,13 +425,11 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     struct timeval endRedist;
     struct timeval beginMerge;
     struct timeval endMerge;
-    std::cout<<"Redistribution..."<<std::endl;
 
     gettimeofday(&beginRedist,NULL);
     //Processing the data exchange
     if(role == DECAF_REDIST_SOURCE)
     {
-        std::cout<<"Processing as a source."<<std::endl;
         for(unsigned int i = 0; i <  destList_.size(); i++)
         {
             //Sending to self, we simply copy the string from the out to in
@@ -460,13 +458,11 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         }
         gettimeofday(&endRedist, NULL);
         timeGlobalRedist += endRedist.tv_sec+(endRedist.tv_usec/1000000.0) - beginRedist.tv_sec - (beginRedist.tv_usec/1000000.0);
-        std::cout<<"Source processed."<<std::endl;
         
     }
 
     if(role == DECAF_REDIST_DEST)
     {
-        std::cout<<"Processing as a destination."<<std::endl;
         int nbRecep;
         if(isSource()) //Overlapping case
             nbRecep = nbSources_-1;
@@ -534,9 +530,8 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         data->mergeStoredData();
         gettimeofday(&endMerge, NULL);
         timeGlobalMerge += endMerge.tv_sec+(endMerge.tv_usec/1000000.0) - beginMerge.tv_sec - (beginMerge.tv_usec/1000000.0);
-        std::cout<<"Destination processed."<<std::endl;
     }
-    std::cout<<"Redistribution completed."<<std::endl;
+
 }
 
 

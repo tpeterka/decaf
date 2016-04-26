@@ -178,11 +178,13 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
     {
         case DECAF_REDIST_COLLECTIVE:
         {
+            std::cout<<"Collective Redistribution"<<std::endl;
             redistributeCollective(data, role);
             break;
         }
         case DECAF_REDIST_P2P:
         {
+            std::cout<<"P2P Redistribution."<<std::endl;
             redistributeP2P(data, role);
             break;
         }

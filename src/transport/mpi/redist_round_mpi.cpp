@@ -71,10 +71,17 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         }
 
         //Updating the informations about messages to send
+
         for(unsigned int i = 0; i < split_ranges.size(); i++)
         {
             if(split_ranges.at(i).size() > 0)
+            {
                 destList_.push_back(i + local_dest_rank_);
+            }
+
+            // We don't need a special case for P2P because
+            // we create already as many sub data models as
+            // destinations
 
             //We won't send a message if we send to self
             if(i + local_dest_rank_ != rank_)
@@ -83,13 +90,9 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 
 
         splitChunks_ =  data->split( split_ranges );
-        std::cout<<"Number of chunks : "<<splitChunks_.size()<<std::endl;
-        std::cout<<"Number of items in the initial object : "<<data->getNbItems()<<std::endl;
-
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
-            std::cout<<"Number of items : "<<splitChunks_.at(i)->getNbItems()<<std::endl;
             // TODO : Check the rank for the destination.
             // Not necessary to serialize if overlapping
             if(!splitChunks_.at(i)->serialize())
