@@ -31,6 +31,12 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
     target_link_libraries   (mod_lammps
       ${lammps_libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
+    # .SO file extension on Linux/Mac OS
+    set_target_properties(mod_lammps PROPERTIES SUFFIX ".so")
+
+    # Don't add a 'lib' prefix to the shared library
+    set_target_properties(mod_lammps PROPERTIES PREFIX "")
+
     install(TARGETS lammps mod_lammps
       DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/lammps/
       PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE

@@ -1,12 +1,22 @@
 //---------------------------------------------------------------------------
 //
-// lammps example with new data model API
+// lammps example
 //
-// Matthieu Dreher
+// 4-node workflow
+//
+//          print (1 proc)
+//        /
+//    lammps (4 procs)
+//        \
+//          print2 (1 proc) - print (1 proc)
+//
+//  entire workflow takes 10 procs (1 dataflow proc between each producer consumer pair)
+//
+// Tom Peterka
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
-// mdreher@anl.gov
+// tpeterka@mcs.anl.gov
 //
 //--------------------------------------------------------------------------
 #include <decaf/decaf.hpp>
@@ -41,191 +51,168 @@ struct pos_args_t                            // custom args for atom positions
     double* pos;                             // atom positions
 };
 
-// user-defined pipeliner code
-void pipeliner(Dataflow* dataflow)
+// runs lammps and puts the atom positions to the dataflow at the consumer intervals
+void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
 {
-}
+    LAMMPS* lps = new LAMMPS(0, NULL, decaf->prod_comm_handle());
+    lps->input->file(infile.c_str());
 
-// user-defined resilience code
-void checker(Dataflow* dataflow)
-{
-}
-
-// node and link callback functions
-extern "C"
-{
-    // runs lammps and puts the atom positions to the dataflow at the consumer intervals
-    // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void lammps(void* args,                       // arguments to the callback
-                int t_current,                    // current time step
-                int t_interval,                   // consumer time interval
-                int t_nsteps,                     // total number of time steps
-                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-                vector<Dataflow*>* out_dataflows) // all outbound dataflows
+    for (int timestep = 0; timestep < nsteps; timestep++)
     {
         fprintf(stderr, "lammps\n");
 
-        struct lammps_args_t* a = (lammps_args_t*)args; // custom args
-        double* x;                           // atom positions
+        lps->input->one("run 1");
+        int natoms = static_cast<int>(lps->atom->natoms);
+        double* x = new double[3 * natoms];
+        lammps_gather_atoms(lps, (char*)"x", 1, 3, x);
 
-        if (t_current == 0)                  // first time step
+        if (!((timestep + 1) % analysis_interval))
         {
-            // only create lammps for first dataflow instance
-            a->lammps = new LAMMPS(0, NULL, (*out_dataflows)[0]->prod_comm_handle());
-            a->lammps->input->file(a->infile.c_str());
-        }
+            shared_ptr<ConstructData> container = make_shared<ConstructData>();
 
-        a->lammps->input->one("run 1");
-        int natoms = static_cast<int>(a->lammps->atom->natoms);
-        x = new double[3 * natoms];
-        lammps_gather_atoms(a->lammps, (char*)"x", 1, 3, x);
-
-        if (!((t_current + 1) % t_interval))
-        {
-            for (size_t i = 0; i < out_dataflows->size(); i++)
+            // lammps gathered all positions to rank 0
+            if (decaf->prod_comm()->rank() == 0)
             {
-                shared_ptr<ConstructData> container = make_shared<ConstructData>();
+                fprintf(stderr, "lammps producing time step %d with %d atoms\n",
+                        timestep, natoms);
+                // debug
+                //         for (int i = 0; i < 10; i++)         // print first few atoms
+                //           fprintf(stderr, "%.3lf %.3lf %.3lf\n",
+                // x[3 * i], x[3 * i + 1], x[3 * i + 2]);
 
-                // lammps gathered all positions to rank 0
-                if ((*out_dataflows)[i]->prod_comm()->rank() == 0)
-                {
-                    fprintf(stderr, "+ lammps producing time step %d with %d atoms\n",
-                            t_current, natoms);
-                    // debug
-                    //         for (int i = 0; i < 10; i++)         // print first few atoms
-                    //           fprintf(stderr, "%.3lf %.3lf %.3lf\n",
-                    // x[3 * i], x[3 * i + 1], x[3 * i + 2]);
-
-                    shared_ptr<VectorConstructData<double> > data  =
-                            make_shared<VectorConstructData<double> >(x, 3 * natoms, 3);
-                    container->appendData(string("pos"), data,
-                                         DECAF_NOFLAG, DECAF_PRIVATE,
-                                         DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
-                }
-                else
-                {
-                    vector<double> pos;
-                    shared_ptr<VectorConstructData<double> > data  =
-                            make_shared<VectorConstructData<double> >(pos, 3);
-                    container->appendData(string("pos"), data,
-                                         DECAF_NOFLAG, DECAF_PRIVATE,
-                                         DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
-                }
-                (*out_dataflows)[i]->put(container, DECAF_PROD);
+                shared_ptr<VectorConstructData<double> > data  =
+                    make_shared<VectorConstructData<double> >(x, 3 * natoms, 3);
+                container->appendData(string("pos"), data,
+                                      DECAF_NOFLAG, DECAF_PRIVATE,
+                                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
             }
+            else
+            {
+                vector<double> pos;
+                shared_ptr<VectorConstructData<double> > data  =
+                    make_shared<VectorConstructData<double> >(pos, 3);
+                container->appendData(string("pos"), data,
+                                      DECAF_NOFLAG, DECAF_PRIVATE,
+                                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+            }
+            decaf->put(container);
         }
         delete[] x;
-
-        if (t_current == t_nsteps - 1)          // last time step
-            delete a->lammps;
     }
+    delete lps;
+}
 
-    // gets the atom positions and prints them
-    // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void print(void* args,                       // arguments to the callback
-               int t_current,                    // current time step
-               int t_interval,                   // consumer time interval
-               int t_nsteps,                     // total number of time steps
-               vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-               vector<Dataflow*>* out_dataflows) // all outbound dataflows
+// gets the atom positions and prints them
+void print(Decaf* decaf)
+{
+    fprintf(stderr, "print\n");
+
+    while (1)
     {
-        fprintf(stderr, "print\n");
+        // receive data from all inbound dataflows
+        // in this example there is only one inbound dataflow, but in general there could be more
+        vector< shared_ptr<ConstructData> > in_data;
+        decaf->get(in_data);
 
-        if (!((t_current + 1) % t_interval))
+        // get the values
+        for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            (*in_dataflows)[0]->get(container, DECAF_CON);
+            if (Dataflow::test_quit(in_data[i]))
+                return;
 
-            shared_ptr<VectorConstructData<double> > pos =
-                dynamic_pointer_cast<VectorConstructData<double> >
-                (container->getData(string("pos")));
+            shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("pos"));
+            if (ptr)
+            {
+                shared_ptr<VectorConstructData<double> > pos =
+                    dynamic_pointer_cast<VectorConstructData<double> >(ptr);
 
-            // debug
-            fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
-                    pos->getNbItems());
-
-            // debug
-            //     for (int i = 0; i < 10; i++)               // print first few atoms
-            //       fprintf(stderr, "%.3lf %.3lf %.3lf\n",
-            // pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]);
-
+                // debug
+                fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
+                        pos->getNbItems());
+                for (int i = 0; i < 10; i++)               // print first few atoms
+                    fprintf(stderr, "%.3lf %.3lf %.3lf\n",
+                            pos->getVector()[3 * i],
+                            pos->getVector()[3 * i + 1],
+                            pos->getVector()[3 * i + 2]);
+            }
+            else
+                fprintf(stderr, "Error: null pointer in node2\n");
         }
     }
+}
 
-    // puts the atom positions to the dataflow
-    // check your modulo arithmetic to ensure you get exactly con_nsteps times
-    void print2(void* args,                       // arguments to the callback
-                int t_current,                    // current time step
-                int t_interval,                   // consumer time interval
-                int t_nsteps,                     // total number of time steps
-                vector<Dataflow*>* in_dataflows,  // all inbound dataflows
-                vector<Dataflow*>* out_dataflows) // all outbound dataflows
+// forwards the atom positions in this example
+// in a more realistic example, could filter them and only forward some subset of them
+void print2(Decaf* decaf)
+{
+    while (1)
     {
-        fprintf(stderr, "print2\n");
+        int sum = 0;
+        bool done = false;
 
-        if (!((t_current + 1) % t_interval))
+        // receive data from all inbound dataflows
+        // in this example there is only one inbound dataflow, but in general there could be more
+        vector< shared_ptr<ConstructData> > in_data;
+        decaf->get(in_data);
+
+        // get the values and add them
+        for (size_t i = 0; i < in_data.size(); i++)
         {
-            // get
+            if (Dataflow::test_quit(in_data[i]))
+            {
+                done = true;
+                break;
+            }
+            fprintf(stderr, "print2 forwarding positions\n");
+            decaf->put(in_data[i]);
+        }
+
+        if (done)
+        {
+            // create a quit message and send it on all outbound dataflows
             shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            (*in_dataflows)[0]->get(container, DECAF_CON);
+            Dataflow::set_quit(container);
+            decaf->put(container);
 
-
-            // put
-            fprintf(stderr, "+ print2 forwarding time step %d\n", t_current);
-            (*out_dataflows)[0]->put(container, DECAF_PROD);
+            return;
         }
     }
+}
 
-    // dataflow just needs to flush on every time step
-    void dflow(void* args,                   // arguments to the callback
-               int t_current,                // current time step
-               int t_interval,               // consumer time interval
-               int t_nsteps,                 // total number of time steps
-               Dataflow* dataflow)           // dataflow
+extern "C"
+{
+    // dataflow just forwards everything that comes its way in this example
+    void dflow(void* args,                          // arguments to the callback
+               Dataflow* dataflow,                  // dataflow
+               shared_ptr<ConstructData> in_data)   // input data
     {
-        fprintf(stderr, "dflow\n");
-
-        // getting the data from the producer
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
-        dataflow->get(container, DECAF_DFLOW);
-        shared_ptr<VectorConstructData<double> > pos =
-            dynamic_pointer_cast<VectorConstructData<double> >
-            (container->getData(string("pos")));
-
-        fprintf(stderr, "- dataflowing time step %d, nbAtoms = %d\n",
-                t_current, pos->getNbItems());
-
-        // forwarding the data to the consumers
-        dataflow->put(container, DECAF_DFLOW);
+        dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"
 
 void run(Workflow& workflow,                 // workflow
-         int prod_nsteps,                    // number of producer time steps
-         int con_nsteps,                     // number of consumer time steps
+         int lammps_nsteps,                  // number of lammps timesteps to execute
+         int analysis_interval,              // number of lammps timesteps to skip analyzing
          string infile)                      // lammps input config file
 {
-    // callback args
-    lammps_args_t lammps_args;               // custom args for lammps
-    lammps_args.infile = infile;
-    pos_args_t pos_args;                     // custom args for atom positions
-    pos_args.pos = NULL;
-    for (size_t i = 0; i < workflow.nodes.size(); i++)
-    {
-        if (workflow.nodes[i].func == "lammps")
-            workflow.nodes[i].args = &lammps_args;
-        if (workflow.nodes[i].func == "print2" || workflow.nodes[i].func  == "print")
-            workflow.nodes[i].args = &pos_args;
-    }
-
     MPI_Init(NULL, NULL);
+    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
-    // create and run decaf
-    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow, prod_nsteps, con_nsteps);
-    Data data(MPI_DOUBLE);
-    decaf->run(&data, &pipeliner, &checker);
+    // run workflow node tasks
+    // decaf simply tells the user whether this rank belongs to a workflow node
+    // how the tasks are called is entirely up to the user
+    // e.g., if they overlap in rank, it is up to the user to call them in an order that makes
+    // sense (threaded, alternting, etc.)
+    // also, the user can define any function signature she wants
+    if (decaf->my_node("lammps"))
+        lammps(decaf, lammps_nsteps, analysis_interval, infile);
+    if (decaf->my_node("print"))
+        print(decaf);
+    if (decaf->my_node("print2"))
+        print2(decaf);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
+
     // cleanup
     delete decaf;
     MPI_Finalize();
@@ -237,17 +224,17 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    int prod_nsteps = 1;
-    int con_nsteps = 1;
-    char * prefix = getenv("DECAF_PREFIX");
-    if(prefix == NULL)
+    int lammps_nsteps     = 1;
+    int analysis_interval = 1;
+    char * prefix         = getenv("DECAF_PREFIX");
+    if (prefix == NULL)
     {
-        cout<<"ERROR : environment variable DECAF_PREFIX not defined."
-                <<" Please export DECAF_PREFIX to point to the root of you decaf install directory."<<endl;
+        fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
+                "DECAF_PREFIX to point to the root of your decaf install directory.\n");
         exit(1);
     }
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/lammps/libmod_lammps.so"));
+    path.append(string("/examples/lammps/mod_lammps.so"));
     string infile = argv[1];
 
 
@@ -322,7 +309,7 @@ int main(int argc,
     workflow.links.push_back(link);
 
     // run decaf
-    run(workflow, prod_nsteps, con_nsteps, infile);
+    run(workflow, lammps_nsteps, analysis_interval, infile);
 
     return 0;
 }

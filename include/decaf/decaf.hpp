@@ -70,6 +70,14 @@ namespace decaf
         // return a pointer to a dataflow, identified by its index in the workflow structure
         Dataflow* dataflow(int i)  { return dataflows[i]; }
 
+        // return a handle for this node's producer or consumer communicator
+        CommHandle prod_comm_handle() { return out_dataflows[0]->prod_comm_handle();    }
+        CommHandle con_comm_handle()  { return node_in_dataflows[0]->con_comm_handle(); }
+
+        // return a pointer to this node's producer or consumer communicator
+        Comm* prod_comm() { return out_dataflows[0]->prod_comm();    }
+        Comm* con_comm()  { return node_in_dataflows[0]->con_comm(); }
+
         Comm* world;
 
     private:
