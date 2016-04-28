@@ -324,12 +324,14 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                     DECAF_NOFLAG, DECAF_SYSTEM,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
+
     // encode dataflow link id into message
     shared_ptr<SimpleConstructData<int> > value1  =
         make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
     map->appendData(string("link_id"), value1,
                      DECAF_NOFLAG, DECAF_SYSTEM,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
 
     if (role == DECAF_NODE)
     {
