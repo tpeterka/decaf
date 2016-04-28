@@ -104,10 +104,9 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
         delete[] x;
     }
 
-    fprintf(stderr, "Lammps sending quit\n");
-    shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
-    Dataflow::set_quit(quit_container);
-    decaf->put(quit_container);
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "lammps terminating\n");
+    decaf->terminate();
 
     delete lps;
 }
@@ -115,21 +114,13 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
 // gets the atom positions and prints them
 void print(Decaf* decaf)
 {
-    fprintf(stderr, "print\n");
+    vector< shared_ptr<ConstructData> > in_data;
 
-    while (1)
+    while (decaf->get(in_data))
     {
-        // receive data from all inbound dataflows
-        // in this example there is only one inbound dataflow, but in general there could be more
-        vector< shared_ptr<ConstructData> > in_data;
-        decaf->get(in_data);
-
         // get the values
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            if (Dataflow::test_quit(in_data[i]))
-                return;
-
             shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("pos"));
             if (ptr)
             {
@@ -149,44 +140,33 @@ void print(Decaf* decaf)
                 fprintf(stderr, "Error: null pointer in node2\n");
         }
     }
+
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "print terminating\n");
+    decaf->terminate();
 }
 
 // forwards the atom positions in this example
 // in a more realistic example, could filter them and only forward some subset of them
 void print2(Decaf* decaf)
 {
-    while (1)
+    vector< shared_ptr<ConstructData> > in_data;
+
+    while (decaf->get(in_data))
     {
         int sum = 0;
-        bool done = false;
-
-        // receive data from all inbound dataflows
-        // in this example there is only one inbound dataflow, but in general there could be more
-        vector< shared_ptr<ConstructData> > in_data;
-        decaf->get(in_data);
 
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            if (Dataflow::test_quit(in_data[i]))
-            {
-                done = true;
-                break;
-            }
             fprintf(stderr, "print2 forwarding positions\n");
             decaf->put(in_data[i]);
         }
-
-        if (done)
-        {
-            // create a quit message and send it on all outbound dataflows
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            Dataflow::set_quit(container);
-            decaf->put(container);
-
-            return;
-        }
     }
+
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "print2 terminating\n");
+    decaf->terminate();
 }
 
 extern "C"
