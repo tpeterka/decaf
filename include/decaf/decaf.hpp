@@ -244,7 +244,9 @@ decaf::
 Decaf::put(shared_ptr<ConstructData> container)
 {
     for (size_t i = 0; i < out_dataflows.size(); i++)
+    {
         out_dataflows[i]->put(container, DECAF_NODE);
+    }
 }
 
 // put a message on a particular outbound links

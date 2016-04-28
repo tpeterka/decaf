@@ -185,19 +185,18 @@ public:
             {
                 case DECAF_MERGE_DEFAULT: //We just keep the first value
                 {
-                    return true;
                     break;
                 }
                 case DECAF_MERGE_FIRST_VALUE: //We don't have to do anything here
                 {
-                    return true;
+
                     break;
                 }
                 case DECAF_MERGE_ADD_VALUE:
                 {
 
                     value_ = value_ + other_->value_;
-                    return true;
+
                     break;
                 }
                 default:
@@ -208,6 +207,7 @@ public:
                 }
             }
         }
+        return true;
     }
 
     virtual bool canMerge(std::shared_ptr<BaseConstructData> other)

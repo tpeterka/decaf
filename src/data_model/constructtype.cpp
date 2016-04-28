@@ -87,7 +87,7 @@ const std::vector<string> &decaf::ConstructData::getSplitOrder()
 
 decaf::
 ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false), zCurveIndex_(NULL),
-        bZCurveKey_(false), zCurveKey_(NULL)
+        bZCurveKey_(false), zCurveKey_(NULL), bSystem_(false)
 {
     container_ = std::make_shared<std::map<std::string, datafield> >();
     data_ = static_pointer_cast<void>(container_);
@@ -1614,7 +1614,7 @@ ConstructData::updateMetaData()
                     <<"of the new field should be 1 or "<<nbItems_<<std::endl;
             return false;
         }
-        else if(getNbItemsField(it->second) > 0)// We still update the number of items
+        else if(getScope(it->second) != DECAF_SYSTEM && getNbItemsField(it->second) > 0)// We still update the number of items
             nbItems_ = getNbItemsField(it->second);
 
         if(getFlag(it->second) == DECAF_ZCURVEKEY)

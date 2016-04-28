@@ -21,6 +21,9 @@
 //--------------------------------------------------------------------------
 #include <decaf/decaf.hpp>
 #include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/vectorconstructdata.hpp>
+#include <decaf/data_model/arrayconstructdata.hpp>
+#include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
 #include <math.h>
@@ -95,10 +98,17 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
                                       DECAF_NOFLAG, DECAF_PRIVATE,
                                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
             }
+
             decaf->put(container);
         }
         delete[] x;
     }
+
+    fprintf(stderr, "Lammps sending quit\n");
+    shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+    Dataflow::set_quit(quit_container);
+    decaf->put(quit_container);
+
     delete lps;
 }
 
