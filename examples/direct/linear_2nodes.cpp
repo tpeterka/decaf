@@ -49,31 +49,23 @@ void prod(Decaf* decaf)
         decaf->put(container);
     }
 
-    // send a quit message
-    fprintf(stderr, "producer sending quit\n");
-    shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
-    Dataflow::set_quit(quit_container);
-    decaf->put(quit_container);
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "producer terminating\n");
+    decaf->terminate();
 }
 
 // consumer
 void con(Decaf* decaf)
 {
-    while (1)
+    vector< shared_ptr<ConstructData> > in_data;
+
+    while (decaf->get(in_data))
     {
         int sum = 0;
-
-        // receive data from all inbound dataflows
-        // in this example there is only one inbound dataflow, but in general there could be more
-        vector< shared_ptr<ConstructData> > in_data;
-        decaf->get(in_data);
 
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            if (Dataflow::test_quit(in_data[i]))
-                return;
-
             shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
             if (ptr)
             {
@@ -86,6 +78,10 @@ void con(Decaf* decaf)
         }
         fprintf(stderr, "consumer sum = %d\n", sum);
     }
+
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "consumer terminating\n");
+    decaf->terminate();
 }
 
 // link callback function
