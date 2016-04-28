@@ -84,34 +84,22 @@ void node_a(Decaf* decaf)
         decaf->put(container);
     }
 
-    // send a quit message
-    fprintf(stderr, "producer sending quit\n");
-    shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
-    Dataflow::set_quit(quit_container);
-    decaf->put(quit_container);
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "node_a terminating\n");
+    decaf->terminate();
 }
 
 void node_b(Decaf* decaf)
 {
-    while (1)
+    vector< shared_ptr<ConstructData> > in_data;
+
+    while (decaf->get(in_data))
     {
         int sum = 0;
-        bool done = false;
-
-        // receive data from all inbound dataflows
-        // in this example there is only one inbound dataflow, but in general there could be more
-        vector< shared_ptr<ConstructData> > in_data;
-        decaf->get(in_data);
 
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            if (Dataflow::test_quit(in_data[i]))
-            {
-                done = true;
-                break;
-            }
-
             shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
             if (ptr)
             {
@@ -121,16 +109,6 @@ void node_b(Decaf* decaf)
             }
             else
                 fprintf(stderr, "Error: null pointer in node1\n");
-        }
-
-        if (done)
-        {
-            // create a quit message and send it on all outbound dataflows
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            Dataflow::set_quit(container);
-            decaf->put(container);
-
-            return;
         }
 
         fprintf(stderr, "node_b: sum = %d\n", sum);
@@ -155,29 +133,23 @@ void node_b(Decaf* decaf)
 
         delete sums;
     }
+
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "node_b terminating\n");
+    decaf->terminate();
 }
 
 void node_c(Decaf* decaf)
 {
-    while (1)
+    vector< shared_ptr<ConstructData> > in_data;
+
+    while (decaf->get(in_data))
     {
         int sum = 0;
-        bool done = false;
-
-        // receive data from all inbound dataflows
-        // in this example there is only one inbound dataflow, but in general there could be more
-        vector< shared_ptr<ConstructData> > in_data;
-        decaf->get(in_data);
 
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            if (Dataflow::test_quit(in_data[i]))
-            {
-                done = true;
-                break;
-            }
-
             shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
             if (ptr)
             {
@@ -187,16 +159,6 @@ void node_c(Decaf* decaf)
             }
             else
                 fprintf(stderr, "Error: null pointer in node1\n");
-        }
-
-        if (done)
-        {
-            // create a quit message and send it on all outbound dataflows
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            Dataflow::set_quit(container);
-            decaf->put(container);
-
-            return;
         }
 
         fprintf(stderr, "node_c: sum = %d\n", sum);
@@ -212,29 +174,23 @@ void node_c(Decaf* decaf)
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
     }
+
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "node_c terminating\n");
+    decaf->terminate();
 }
 
 void node_d(Decaf* decaf)
 {
-    while(1)
+    vector< shared_ptr<ConstructData> > in_data;
+
+    while (decaf->get(in_data))
     {
         int sum = 0;
-        bool done = false;
-
-        // receive data from all inbound dataflows
-        // in this example there is only one inbound dataflow, but in general there could be more
-        vector< shared_ptr<ConstructData> > in_data;
-        decaf->get(in_data);
 
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            if (Dataflow::test_quit(in_data[i]))
-            {
-                done = true;
-                break;
-            }
-
             shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
             if (ptr)
             {
@@ -244,16 +200,6 @@ void node_d(Decaf* decaf)
             }
             else
                 fprintf(stderr, "Error: null pointer in node_d\n");
-        }
-
-        if (done)
-        {
-            // create a quit message and send it on all outbound dataflows
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
-            Dataflow::set_quit(container);
-            decaf->put(container);
-
-            return;
         }
 
         fprintf(stderr, "node_d: sum = %d\n", sum);
@@ -269,6 +215,10 @@ void node_d(Decaf* decaf)
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
     }
+
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "node_d terminating\n");
+    decaf->terminate();
 }
 
 // node and link callback functions

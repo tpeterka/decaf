@@ -87,7 +87,7 @@ const std::vector<string> &decaf::ConstructData::getSplitOrder()
 
 decaf::
 ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false), zCurveIndex_(NULL),
-        bZCurveKey_(false), zCurveKey_(NULL)
+                                 bZCurveKey_(false), zCurveKey_(NULL), bSystem_(false)
 {
     container_ = std::make_shared<std::map<std::string, datafield> >();
     data_ = static_pointer_cast<void>(container_);

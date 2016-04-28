@@ -62,7 +62,14 @@ namespace decaf
         void put(shared_ptr<ConstructData> container, int i);
 
         // get messages from all inbound links
-        void get(vector< shared_ptr<ConstructData> >& containers);
+        // returns true = process messages, false = break (quit received)
+        bool get(vector< shared_ptr<ConstructData> >& containers);
+
+        // determine whether to continue processing a node task by checking for a quit message
+        bool iterate();
+
+        // terminate a node task by sending a quit message to the rest of the workflow
+        void terminate();
 
         // whether my rank belongs to this workflow node, identified by the name of its func field
         bool my_node(const char* name);
@@ -256,10 +263,13 @@ Decaf::put(shared_ptr<ConstructData> container, int i)
 }
 
 // get messages from all inbound links
-void
+// returns true = process messages, false = break (quit received)
+bool
 decaf::
 Decaf::get(vector< shared_ptr<ConstructData> >& containers)
 {
+    containers.clear();
+
     for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
     {
         shared_ptr<ConstructData> container = make_shared<ConstructData>();
@@ -272,6 +282,33 @@ Decaf::get(vector< shared_ptr<ConstructData> >& containers)
         node_in_dataflows[i]->get(container, DECAF_NODE);
         containers.push_back(container);
     }
+    for (size_t i = 0; i < containers.size(); i++)
+        if (Dataflow::test_quit(containers[i]))
+            return false;
+    return true;
+}
+
+// determine whether to continue processing a node task by checking for a quit message
+bool
+decaf::
+Decaf::iterate()
+{
+    vector< shared_ptr<ConstructData> > in_data;
+    get(in_data);
+    for (size_t i = 0; i < in_data.size(); i++)
+        if (Dataflow::test_quit(in_data[i]))
+            return false;
+    return true;
+}
+
+// terminate a node task by sending a quit message to the rest of the workflow
+void
+decaf::
+Decaf::terminate()
+{
+    shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+    Dataflow::set_quit(quit_container);
+    put(quit_container);
 }
 
 // whether my rank belongs to this workflow node, identified by the name of its func field
