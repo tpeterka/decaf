@@ -1,10 +1,7 @@
 project                     (Decaf)
 cmake_minimum_required      (VERSION 2.8)
 
-option                      (debug              "Build Decaf with debugging on"                ON)
-option                      (optimize           "Build Decaf with optimization"                OFF)
 option                      (transport_mpi      "Build Decaf with MPI transport layer"         ON)
-option                      (CYTHON_PREFIX      "Path to Cython directory"                       )
 
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -16,22 +13,6 @@ if                          (transport_mpi)
   set                       (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
   add_definitions           (-DTRANSPORT_MPI)
 endif                       (transport_mpi)
-
-# Debugging
-#if                          (debug)
-#  if                        (optimize)
-#    set                     (cxx_flags                  ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
-#  else                      (optimize)
-#    set                     (cxx_flags                  ${CMAKE_CXX_FLAGS_DEBUG})
-#  endif                     (optimize)
-#  add_definitions           (-DDEBUG -DDECAF_DEBUG_ON)
-#else                        (debug)
-#  if                        (optimize)
-#    set                     (cxx_flags                  ${CMAKE_CXX_FLAGS_RELEASE})
-#  else                      (optimize)
-#    set                     (cxx_flags                  ${CMAKE_CXX_FLAGS})
-#  endif                     (optimize)
-#endif                       (debug)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
     "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
@@ -46,19 +27,20 @@ endif()
 add_definitions             (${cxx_flags})
 
 # Python
-find_package                (Cython)
 find_package                (PythonLibs)
-if                          (Cython_FOUND AND PYTHONLIBS_FOUND)
-    message                 (STATUS "Found Cython and PythonLibs; building python examples")
-    set                     (python_examples             ON)
-else                        (Cython_FOUND AND PYTHONLIBS_FOUND)
-  if                        (Cython_FOUND)
-    message                 (STATUS "PythonLibs not found; not building python examples")
-  else                      (Cython_FOUND)
-    message                 (STATUS "Cython not found; not building python examples")
-  endif                     (Cython_FOUND)
-    set                     (python_examples             OFF)
-endif                       (Cython_FOUND AND PYTHONLIBS_FOUND)
+if                          (PYBIND11_INCLUDE_DIR AND PYTHONLIBS_FOUND)
+  message                   (STATUS "Found PythonLibs and user provided PYBIND11_INCLUDE_DIR")
+  message                   (STATUS "Building python examples")
+  set                       (python_examples             ON)
+else                        ()
+  if                        (PythonLibs_FOUND)
+    message                 (STATUS "PYBIND11_INCLUDE_DIR must be manually provided")
+  else                      ()
+    message                 (STATUS "PythonLibs not found")
+  endif                     ()
+  message                   (STATUS "Not building python examples")
+  set                       (python_examples             OFF)
+endif                       ()
 
 # Set includes
 set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")

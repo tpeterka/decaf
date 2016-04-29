@@ -15,7 +15,7 @@
 
 #include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
-#include <decaf/data_model/arrayconstructdata.hpp>
+#include <decaf/data_model/vectorconstructdata.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <boost/serialization/serialization.hpp>

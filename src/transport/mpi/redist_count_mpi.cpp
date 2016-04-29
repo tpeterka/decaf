@@ -41,8 +41,10 @@ RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
             //Compute the number of items in the global array
             MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
                           MPI_SUM, commSources_);
+
         }
     }
+
 }
 
 void
@@ -151,7 +153,9 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             destList_.push_back(current_rank + local_dest_rank_);
             items_left -= currentNbItems;
             current_rank++;
+
         }
+
 
         if(commMethod_ == DECAF_REDIST_P2P)
         {

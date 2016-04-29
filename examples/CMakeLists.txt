@@ -6,7 +6,7 @@ if                          (LAMMPS_INCLUDE_DIR AND
                              LAMMPS_LIBRARY     AND
                              FFTW_INCLUDE_DIR   AND
                              FFTW_LIBRARY)
-#  add_subdirectory          (lammps)
+  add_subdirectory          (lammps)
   message                   ("Building lammps example")
 else                        ()
   message                   ("Don't have LAMMPS_INCLUDE_DIR, LAMMPS_LIBRARY, FFTW_INCLUDE_DIR, and FFTW_LIBRARY; not building lammps example")

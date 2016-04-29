@@ -57,9 +57,9 @@ fi
 
 if [ "$ARCH" = "LINUX" ]; then
 
-#mpiexec -n $num_procs $exe $args
+mpiexec -n $num_procs $exe $args
 
-mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
+#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe $args
 
 #mpiexec -n $num_procs valgrind -q $exe $args
 

@@ -87,7 +87,7 @@ const std::vector<string> &decaf::ConstructData::getSplitOrder()
 
 decaf::
 ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false), zCurveIndex_(NULL),
-        bZCurveKey_(false), zCurveKey_(NULL)
+                                 bZCurveKey_(false), zCurveKey_(NULL), bSystem_(false)
 {
     container_ = std::make_shared<std::map<std::string, datafield> >();
     data_ = static_pointer_cast<void>(container_);
@@ -329,9 +329,8 @@ ConstructData::split(
     for(unsigned int i = 0; i < range.size(); i++)
         totalRange+= range.at(i);
     if(totalRange != getNbItems()){
-        std::cout<<"ERROR : The number of items in the ranges ("<<totalRange
-                 <<") does not match the number of items of the object ("
-                 <<getNbItems()<<")"<<std::endl;
+        fprintf(stderr, "ERROR : The number of items in the ranges (%d) does not match the "
+                "number of items of the object (%d)\n", totalRange, getNbItems());
         return result;
     }
 
@@ -355,8 +354,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -389,8 +389,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -463,8 +464,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -497,8 +499,9 @@ ConstructData::split(
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -784,7 +787,7 @@ ConstructData::split(const std::vector<Block<3> >& range)
 
 		      return result;
                     }
-                   
+
                 }
 
                 splitFields = getBaseData(data->second)->split(rangeItems, result_maps, getSplitPolicy(data->second));
@@ -793,8 +796,9 @@ ConstructData::split(const std::vector<Block<3> >& range)
             // Inserting the splitted field into the splitted results
             if(splitFields.size() != result.size())
             {
-                std::cout<<"ERROR : A field was not splited properly."
-                        <<" The number of chunks does not match the expected number of chunks"<<std::endl;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
                 // Cleaning the result to avoid corrupt data
                 result.clear();
 
@@ -987,9 +991,10 @@ ConstructData::split(
         // Inserting the splitted field into the splitted results
         if(fields.size() != range.size())
         {
-            std::cout<<"ERROR : A field was not splited properly."
-                    <<" The number of chunks does not match the expected number of chunks"<<std::endl;
-            return;
+                fprintf(stderr, "ERROR : A field was not split properly."
+                        " The number of chunks does not match the expected number of chunks\n");
+
+                return;
         }
 
     }
@@ -1609,7 +1614,7 @@ ConstructData::updateMetaData()
                     <<"of the new field should be 1 or "<<nbItems_<<std::endl;
             return false;
         }
-        else if(getNbItemsField(it->second) > 0)// We still update the number of items
+        else if(getScope(it->second) != DECAF_SYSTEM && getNbItemsField(it->second) > 0)// We still update the number of items
             nbItems_ = getNbItemsField(it->second);
 
         if(getFlag(it->second) == DECAF_ZCURVEKEY)

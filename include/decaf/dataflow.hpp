@@ -38,8 +38,6 @@ namespace decaf
     public:
         Dataflow(CommHandle world_comm,          // world communicator
                  DecafSizes& decaf_sizes,        // sizes of producer, dataflow, consumer
-                 void (*pipeliner)(Dataflow*),   // not used
-                 void (*checker)(Dataflow*),     // not used
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
                  int con,                        // id in workflow structure of consumer node
@@ -91,8 +89,6 @@ namespace decaf
         RedistComp* redist_prod_dflow_;  // Redistribution component between producer and dataflow
         RedistComp* redist_dflow_con_;   // Redestribution component between a dataflow and consumer
         DecafSizes sizes_;               // sizes of communicators, time steps
-        void (*pipeliner_)(Dataflow*);   // user-defined pipeliner code
-        void (*checker_)(Dataflow*);     // user-defined resilience code
         int err_;                        // last error
         CommTypeDecaf type_;             // whether this instance is producer, consumer,
                                          // dataflow, or other
@@ -106,8 +102,6 @@ namespace decaf
 decaf::
 Dataflow::Dataflow(CommHandle world_comm,
                    DecafSizes& decaf_sizes,
-                   void (*pipeliner)(Dataflow*),
-                   void (*checker)(Dataflow*),
                    int prod,
                    int dflow,
                    int con,
@@ -115,8 +109,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                    Decomposition dflow_cons_redist) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
-    pipeliner_(pipeliner),
-    checker_(checker),
     wflow_prod_id_(prod),
     wflow_dflow_id_(dflow),
     wflow_con_id_(con),
@@ -332,12 +324,14 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
                     DECAF_NOFLAG, DECAF_SYSTEM,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
+
     // encode dataflow link id into message
     shared_ptr<SimpleConstructData<int> > value1  =
         make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
     map->appendData(string("link_id"), value1,
                      DECAF_NOFLAG, DECAF_SYSTEM,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
 
     if (role == DECAF_NODE)
     {

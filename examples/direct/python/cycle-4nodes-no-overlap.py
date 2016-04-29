@@ -23,9 +23,9 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_cycle_4nodes.so'
 #    node_a (4 procs)
 #         \
 #          node_c (1 proc) - node_d (1 proc)
-#             \ ______________ /
 #
-#  entire workflow takes 12 procs (1 dataflow proc between each producer consumer pair)
+#
+#  entire workflow takes 11 procs (1 dataflow proc between each producer consumer pair)
 #  all graph nodes and links are on disjoint processes in this example
 
 w = nx.DiGraph()
