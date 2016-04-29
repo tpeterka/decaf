@@ -52,7 +52,7 @@ namespace decaf
               Workflow& workflow);
         ~Decaf();
         void err()                    { ::all_err(err_);              }
-        void run_links();                    // run the link dataflows
+        void run_links(bool run_once);       // run the link dataflows
         void print_workflow();               // debug: print the workflow
 
         // put a message on all outbound links
@@ -232,8 +232,8 @@ Decaf::Decaf(CommHandle world_comm,
         if (workflow_.my_node(world->rank(), i))
             return;
 
-    // if I don't belong to a node, I must be part of nonoverlapping link; run me
-    run_links();
+    // if I don't belong to a node, I must be part of nonoverlapping link; run me in spin mode
+    run_links(false);
 }
 
 // destructor
@@ -251,9 +251,15 @@ decaf::
 Decaf::put(shared_ptr<ConstructData> container)
 {
     for (size_t i = 0; i < out_dataflows.size(); i++)
-    {
         out_dataflows[i]->put(container, DECAF_NODE);
-    }
+
+    // link ranks that do overlap this node need to be run in one-time mode
+    for (size_t i = 0; i < workflow_.links.size(); i++)
+        if (workflow_.my_link(world->rank(), i))
+        {
+            run_links(true);
+            break;
+        }
 }
 
 // put a message on a particular outbound links
@@ -270,6 +276,16 @@ bool
 decaf::
 Decaf::get(vector< shared_ptr<ConstructData> >& containers)
 {
+    // link ranks that do overlap this node need to be run in one-time mode, unless
+    // the same rank also was a producer node for this link, in which case
+    // the link was already run by the producer node during Decaf::put()
+    for (size_t i = 0; i < workflow_.links.size(); i++)
+        if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+        {
+            run_links(true);
+            break;
+        }
+
     containers.clear();
 
     for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
@@ -327,10 +343,10 @@ Decaf::my_node(const char* name)
     return false;
 }
 
-// run any link ranks that do not overlap nodes
+// run any link ranks
 void
 decaf::
-Decaf::run_links()
+Decaf::run_links(bool run_once)              // spin continuously or run once only
 {
     // incoming messages
     list< shared_ptr<ConstructData> > containers;
@@ -414,6 +430,8 @@ Decaf::run_links()
                 }
             }                                           // workflow link
         }                                               // for i = 0; i < ready_ids.size()
+        if (run_once)
+            break;
         usleep(10);
     }                                                   // while (1)
 
