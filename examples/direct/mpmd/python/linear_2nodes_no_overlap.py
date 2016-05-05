@@ -15,8 +15,8 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mpmd/mod_dflow.so'
 # define the workflow graph
 def make_graph() :
     w = nx.DiGraph()
-    w.add_node("prod", start_proc=0, nprocs=4, func='prod', path='')
-    w.add_node("con",  start_proc=6, nprocs=2, func='con' , path='')
+    w.add_node("prod", start_proc=0, nprocs=4, func='prod')
+    w.add_node("con",  start_proc=6, nprocs=2, func='con')
     w.add_edge("prod", "con", start_proc=4, nprocs=2, func='dflow', path=mod_path,
                prod_dflow_redist='count', dflow_con_redist='count')
     return w
