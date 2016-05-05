@@ -28,20 +28,17 @@ struct WorkflowNode                          // a producer or consumer
     WorkflowNode()                                {}
     WorkflowNode(int start_proc_,
                  int nprocs_,
-                 string func_,
-                 string path_) :
+                 string func_) :
         start_proc(start_proc_),
         nprocs(nprocs_),
         func(func_),
-        args(NULL),
-        path(path_)                               {}
+        args(NULL)                                {}
     vector<int> out_links; // indices of outgoing links
     vector<int> in_links;  // indices of incoming links
     int start_proc;        // starting proc rank in world communicator for this producer or consumer
     int nprocs;            // number of processes for this producer or consumer
     string func;           // name of node callback
     void* args;            // callback arguments
-    string path;           // path to producer and consumer callback function module
     void add_out_link(int link) { out_links.push_back(link); }
     void add_in_link(int link) { in_links.push_back(link); }
 };

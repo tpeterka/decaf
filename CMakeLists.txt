@@ -58,7 +58,8 @@ set                         (libraries
 # subdirectories
 add_subdirectory            (src)
 add_subdirectory            (examples)
-if                          (Cython_FOUND AND PYTHONLIBS_FOUND)
+message                     (STATUS "Examples configured")
+if                          (PythonLibs_FOUND)
   add_subdirectory          (python)
 endif                       ()
 

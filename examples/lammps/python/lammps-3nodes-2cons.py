@@ -1,4 +1,5 @@
-# a small 2-node example, just a producer and consumer
+# a 4-node workflow example
+# TODO: update per direct example
 
 import networkx as nx
 import os
@@ -12,20 +13,27 @@ driver_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/python/libpy_lammps
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/libmod_lammps.so'
 
 # define workflow graph
-# 2-node workflow
+# 4-node workflow
 #
-#    lammps (4 procs) - print (2 procs)
+#          print1 (1 proc)
+#        /
+#    lammps (4 procs)
+#        \
+#          print2 (1 proc)
 #
-#  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
+#  entire workflow takes 8 procs (1 dataflow proc between each producer consumer pair)
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
 
 w = nx.DiGraph()
 
-# example of 4 nodes and 3 edges (single source)
+# example of 3 nodes and 2 edges (single source)
 # this is the example diagrammed above, and for which driver.pyx is made
 w.add_node("lammps", start_proc=0, nprocs=4, func='lammps', path=mod_path)
-w.add_node("print",  start_proc=6, nprocs=2, func='print' , path=mod_path)
-w.add_edge("lammps", "print", start_proc=4, nprocs=2 , func='dflow',
+w.add_node("print1", start_proc=5, nprocs=1, func='print' , path=mod_path)
+w.add_node("print2", start_proc=7, nprocs=1, func='print2', path=mod_path)
+w.add_edge("lammps", "print1", start_proc=4, nprocs=1, func='dflow',
+           path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
+w.add_edge("lammps", "print2", start_proc=6, nprocs=1, func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # total number of time steps
@@ -36,6 +44,8 @@ con_nsteps   = 1
 infile = os.environ['DECAF_PREFIX'] + "/examples/lammps/in.melt"
 
 # --- do not edit below this point --
+
+# call driver
 
 import imp
 driver = imp.load_dynamic('driver', driver_path)

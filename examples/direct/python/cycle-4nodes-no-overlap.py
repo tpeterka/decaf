@@ -44,13 +44,7 @@ w.add_edge("node_a", "node_c", start_proc=6,  nprocs=1, func='dflow', path=mod_p
 w.add_edge("node_b", "node_a", start_proc=10, nprocs=1, func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count')
 
-# sources
-# when the sources cannot be determined automatically (nodes with no in-links) by decaf,
-# they can be named this way
-source_nodes = ['node_a']                    # names of source nodes
-
 # --- convert the nx graph into a workflow data structure and run the workflow ---
 
 wf.workflow(w,                               # nx workflow graph
-            run_path,                        # run path
-            source_nodes)                    # source nodes in the workflow (default is none)
+            run_path)                        # run path

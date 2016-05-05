@@ -782,7 +782,7 @@ PYBIND11_PLUGIN(pymod)
     py::module m("pymod", "pybind11 module");
 
     py::class_<WorkflowNode>(m, "WorkflowNode")
-        .def(py::init<int, int, string, string>())
+        .def(py::init<int, int, string>())
         .def_readwrite("out_links", &WorkflowNode::out_links)
         .def_readwrite("in_links",  &WorkflowNode::in_links)
         .def("add_out_link", &WorkflowNode::add_out_link)
