@@ -1,0 +1,85 @@
+//---------------------------------------------------------------------------
+//
+// temporary producer to be replaced by hacc
+//
+// Tom Peterka
+// Argonne National Laboratory
+// 9700 S. Cass Ave.
+// Argonne, IL 60439
+// tpeterka@mcs.anl.gov
+//
+//--------------------------------------------------------------------------
+
+#include <decaf/decaf.hpp>
+#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/boost_macros.h>
+
+#include <assert.h>
+#include <math.h>
+#include <mpi.h>
+#include <map>
+#include <cstdlib>
+
+#include "wflow.hpp"                         // defines the workflow for this example
+
+using namespace decaf;
+using namespace std;
+
+// producer
+void prod(Decaf* decaf)
+{
+    // produce data for some number of timesteps
+    for (int timestep = 0; timestep < 10; timestep++)
+    {
+        fprintf(stderr, "producer timestep %d\n", timestep);
+
+        // the data in this example is just the timestep; add it to a container
+        shared_ptr<SimpleConstructData<int> > data =
+            make_shared<SimpleConstructData<int> >(timestep);
+        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        container->appendData(string("var"), data,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+
+        // send the data on all outbound dataflows
+        // in this example there is only one outbound dataflow, but in general there could be more
+        decaf->put(container);
+    }
+
+    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
+    fprintf(stderr, "producer terminating\n");
+    decaf->terminate();
+}
+
+// every user application needs to implement the following run function with this signature
+// run(Workflow&) in the global namespace
+void run(Workflow& workflow)                             // workflow
+{
+    MPI_Init(NULL, NULL);
+
+    // create decaf
+    Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
+
+    // start the task
+    prod(decaf);
+
+    // cleanup
+    delete decaf;
+    MPI_Finalize();
+}
+
+// test driver for debugging purposes
+// normal entry point is run(), called by python
+int main(int argc,
+         char** argv)
+{
+    // define the workflow
+    Workflow workflow;
+    make_wflow(workflow);
+
+    // run decaf
+    run(workflow);
+
+    return 0;
+}

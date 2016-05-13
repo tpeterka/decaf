@@ -12,6 +12,10 @@ else                        ()
   message                   ("Don't have LAMMPS_INCLUDE_DIR, LAMMPS_LIBRARY, FFTW_INCLUDE_DIR, and FFTW_LIBRARY; not building lammps example")
 endif                       ()
 
+if                          (hacc)
+  add_subdirectory          (hacc)
+endif                       ()
+
 #add_subdirectory          (block_data_model)
 
 # add_subdirectory            (cfd)
