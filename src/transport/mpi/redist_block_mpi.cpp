@@ -416,7 +416,6 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 */
 
 
-// FIXME CAreful with the indexes in case of non overlapping
 void
 decaf::
 RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)

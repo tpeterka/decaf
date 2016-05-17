@@ -70,6 +70,45 @@ public:
         return result;
     }
 
+    virtual void split(
+            const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
+        switch(policy)
+        {
+            case DECAF_SPLIT_DEFAULT :
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<BlockConstructData> block = std::dynamic_pointer_cast<BlockConstructData>(fields[i]);
+                    assert(block);
+                    block->value_ = value_;
+                    block->map_ = map_;
+                }
+                break;
+            }
+            case DECAF_SPLIT_KEEP_VALUE:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<BlockConstructData> block = std::dynamic_pointer_cast<BlockConstructData>(fields[i]);
+                    assert(block);
+                    block->value_ = value_;
+                    block->map_ = map_;
+                }
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for BlockConstructData"<<std::endl;
+                break;
+            }
+        }
+        return;
+    }
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector< std::vector<int> >& range,
             std::vector< mapConstruct >& partial_map,

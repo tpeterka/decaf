@@ -18,6 +18,7 @@
 
 #include <decaf/transport/mpi/types.h>
 #include <decaf/transport/mpi/redist_mpi.h>
+#include <decaf/data_model/constructtype.h>
 
 namespace decaf
 {
@@ -51,6 +52,9 @@ namespace decaf
         // We keep these values so we can reuse them between 2 iterations
         int global_item_rank_;    // Index of the first item in the global array
         int global_nb_items_;     // Number of items in the global array
+
+        std::vector< std::shared_ptr<ConstructData> > splitBuffer_;	// Buffer of container to avoid reallocation
+
 
     };
 

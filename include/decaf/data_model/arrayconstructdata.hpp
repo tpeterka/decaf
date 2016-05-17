@@ -102,6 +102,13 @@ public:
 	    capacity_ = size_;
     }
 
+    void reallocate(unsigned int size)
+    {
+        if(owner_) delete [] value_;
+        value_ = new T[size];
+        capacity_ = size;
+    }
+
     virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
         std::shared_ptr<ArrayConstructData<T> > destT = std::dynamic_pointer_cast<ArrayConstructData<T> >(dest);
@@ -219,6 +226,66 @@ public:
             }
         }
         return result;
+    }
+
+    virtual void split(
+          const std::vector<int>& range,
+          std::vector< mapConstruct >& partial_map,
+          std::vector<std::shared_ptr<BaseConstructData> >& fields,
+          ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT )
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
+        switch( policy )
+        {
+            case DECAF_SPLIT_DEFAULT:
+            {
+                //Sanity check
+                int totalRange = 0;
+                for(unsigned int i = 0; i < range.size(); i++)
+                    totalRange+= range[i];
+                if(totalRange > getNbItems()){
+                    std::cout<<"ERROR : The number of items in the ranges ("<<totalRange
+                             <<") does not match the number of items of the object ("
+                             <<getNbItems()<<")"<<std::endl;
+                    return ;
+                }
+
+                unsigned int offset = 0;
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+
+                    // TODO : use the fields as memory layer
+                    //T* array = new T[range[i].back() * element_per_items_];
+                    std::shared_ptr<ArrayConstructData<T> > arrayconstruct =
+                            std::dynamic_pointer_cast<ArrayConstructData<T> >(fields[i]);
+                    if(!arrayconstruct)
+                    {
+                        std::cout<<"ERROR : dynamic cast into an array failed during a split."<<std::endl;
+                        return;
+                    }
+
+                    //Note enough space, we have to reallocate
+                    if(arrayconstruct->capacity_ < range[i] * element_per_items_)
+                        arrayconstruct->reallocate(range[i] * element_per_items_);
+
+
+                    T* array = arrayconstruct->getArray();
+
+                    memcpy(array, value_ + offset, range[i] * element_per_items_ * sizeof(T));
+                    offset  += (range[i]*element_per_items_);
+
+                    arrayconstruct->size_ = range[i] * element_per_items_;
+                }
+                break;
+            }
+
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for ArrayConstructData"<<std::endl;
+                break;
+            }
+        }
+        return ;
     }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
@@ -383,7 +450,8 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
         std::vector<std::shared_ptr<BaseConstructData> > result;
-        return result;
+        std::cout<<"ERROR : Method split by block is not implemented in ArrayConstruct class."<<std::endl;
+        exit(0);
     }
 
     virtual void split(
@@ -412,14 +480,7 @@ public:
 
 		    //Note enough space, we have to reallocate
                     if(arrayconstruct->capacity_ < range[i].back() * element_per_items_)
-		    {
-			//std::cout<<"ERROR : not enough space preallocated in the buffer for buffer. ("<<range[i].back() * element_per_items_<<" needed, "<<arrayconstruct->capacity_<<" allocated"<<std::endl;
-			//return;
-
-                        if(arrayconstruct->owner_) delete [] arrayconstruct->value_;
-			arrayconstruct->value_ = new T[range[i].back() * element_per_items_];
-			arrayconstruct->capacity_ = range[i].back() * element_per_items_;
-		    }
+                        arrayconstruct->reallocate(range[i].back() * element_per_items_);
 
 
                     T* array = arrayconstruct->getArray();

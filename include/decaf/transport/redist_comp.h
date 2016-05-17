@@ -56,13 +56,14 @@ namespace decaf
             send_data_tag = MPI_DATA_TAG;
             recv_data_tag = MPI_DATA_TAG;
         }
-    RedistComp(int rankSource,
+
+        RedistComp(int rankSource,
                int nbSources,
                int rankDest,
                int nbDests,
                RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
                MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
-        rankSource_(rankSource),
+            rankSource_(rankSource),
             nbSources_(nbSources),
             rankDest_(rankDest),
             nbDests_(nbDests),
@@ -72,6 +73,7 @@ namespace decaf
             {
                 send_data_tag = MPI_DATA_TAG;
                 recv_data_tag = MPI_DATA_TAG;
+                useBuffer_ = true;
             }
 
         virtual ~RedistComp(){}
@@ -135,6 +137,8 @@ namespace decaf
 
         RedistCommMethod commMethod_;        //Strategy to use during redistribute()
         MergeMethod mergeMethod_;
+
+        bool useBuffer_;
 
     };
 

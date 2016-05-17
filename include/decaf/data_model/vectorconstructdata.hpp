@@ -107,6 +107,59 @@ public:
             std::vector<std::shared_ptr<BaseConstructData> >& fields,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
+        std::cout<<"ERROR : method split method by individual items with buffer is not implemented in VectorConstruct class."<<std::endl;
+        exit(0);
+    }
+
+    virtual void split(
+            const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+
+        switch(policy)
+        {
+            case DECAF_SPLIT_DEFAULT:
+            {
+                //Sanity check
+                int totalRange = 0;
+                for(unsigned int i = 0; i < range.size(); i++)
+                    totalRange+= range.at(i);
+                if(totalRange > getNbItems()){
+                    std::cout<<"ERROR : The number of items in the ranges ("<<totalRange
+                             <<") does not match the number of items of the object ("
+                             <<getNbItems()<<")"<<std::endl;
+                    return;
+                }
+
+                typename std::vector<T>::iterator it = value_.begin();
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<VectorConstructData<T> > sub = std::dynamic_pointer_cast<VectorConstructData<T> >(fields[i]);
+                    assert(sub);
+                    sub->getVector().insert(sub->getVector().begin(), it, it+(range.at(i)*element_per_items_));
+                    it  = it+(range.at(i)*element_per_items_);
+                }
+                break;
+            }
+            case DECAF_SPLIT_KEEP_VALUE:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<VectorConstructData<T> > sub = std::dynamic_pointer_cast<VectorConstructData<T> >(fields[i]);
+                    assert(sub);
+                    sub->getVector().insert(sub->getVector().begin(), value_.begin(), value_.end());
+                }
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for VectorConstructData"<<std::endl;
+                break;
+            }
+        }
+
         return;
     }
 

@@ -31,6 +31,8 @@ public:
 
     T& getData(){ return value_; }
 
+    void setData( T& value){ value_ = value; }
+
     virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy policy = DECAF_MERGE_DEFAULT)
     {
 	std::cout<<"AppendItem not implemented yet for simpleConstructData."<<std::endl;
@@ -78,6 +80,61 @@ public:
             }
         }
         return result;
+    }
+
+    virtual void split(
+            const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        assert(fields.size() == range.size());
+
+        switch(policy)
+        {
+            case DECAF_SPLIT_DEFAULT :
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<SimpleConstructData<T> > ptr =
+                            std::dynamic_pointer_cast<SimpleConstructData<T> >(fields[i]);
+
+                    ptr->value_ = value_;
+                    ptr->map_ = map_;
+                }
+                break;
+            }
+            case DECAF_SPLIT_KEEP_VALUE:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<SimpleConstructData<T> > ptr =
+                            std::dynamic_pointer_cast<SimpleConstructData<T> >(fields[i]);
+
+                    ptr->value_ = value_;
+                    ptr->map_ = map_;
+                }
+                break;
+            }
+            case DECAF_SPLIT_MINUS_NBITEM:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<SimpleConstructData<T> > ptr =
+                            std::dynamic_pointer_cast<SimpleConstructData<T> >(fields[i]);
+
+                    ptr->value_ = range[i];
+                    ptr->map_ = map_;
+                }
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for SimpleConstructData"<<std::endl;
+                break;
+            }
+        }
+        return;
     }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(

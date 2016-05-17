@@ -144,6 +144,12 @@ public:
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
 
     virtual void split(
+            const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT) = 0;
+
+    virtual void split(
             const std::vector< std::vector<int> >& range,
 	    std::vector< mapConstruct >& partial_map,
 	    std::vector<std::shared_ptr<BaseConstructData> >& fields,
