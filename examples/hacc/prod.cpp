@@ -30,7 +30,7 @@ using namespace std;
 void prod(Decaf* decaf)
 {
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 10; timestep++)
+    for (int timestep = 0; timestep < 1; timestep++)
     {
         fprintf(stderr, "producer timestep %d\n", timestep);
 
@@ -54,7 +54,7 @@ void prod(Decaf* decaf)
 
 // every user application needs to implement the following run function with this signature
 // run(Workflow&) in the global namespace
-void run(Workflow& workflow)                             // workflow
+void run(Workflow& workflow)
 {
     MPI_Init(NULL, NULL);
 

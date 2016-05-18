@@ -25,13 +25,13 @@
 #include "tess/tess.h"
 #include "tess/tess.hpp"
 
-using namespace decaf;
+// using namespace decaf;
 using namespace std;
 
 // consumer
 void tessellate(Decaf* decaf, MPI_Comm comm)
 {
-    // this first test just creates and tessellates some synthetic data to demostrate that 
+    // this first test just creates and tessellates some synthetic data to demostrate that
     // tess (a diy program) can be run as a decaf node task
 
     int tot_blocks = 8;                       // total number of blocks in the domain
@@ -42,7 +42,6 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
     char outfile[256];                        // output file name
     int num_threads = 1;                      // threads diy can use
     strcpy(outfile, "del.out");
-
     double times[TESS_MAX_TIMES];             // timing
 
     // data extents
@@ -78,9 +77,6 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         wraps.assign(3, true);
     diy::decompose(3, world.rank(), domain, assigner, create, share_face, wraps, ghosts);
 
-    // fprintf(stderr, "tessellate: rank %d size %d\n", master.communicator().rank(), master.communicator().size());
-    fprintf(stderr, "tessellate: rank %d size %d\n", world.rank(), world.size());
-
     // tessellate
     quants_t quants;
     timing(times, -1, -1, world);
@@ -92,12 +88,12 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
     timing(times, -1, TOT_TIME, world);
     tess_stats(master, quants, times);
 
-    vector< shared_ptr<ConstructData> > in_data;
-
-    while (decaf->get(in_data))
-    {
-        // TODO: process input data
-    }
+    // TODO: get input data
+    // vector< shared_ptr<ConstructData> > in_data;
+    // while (decaf->get(in_data))
+    // {
+    //     // TODO: process input data
+    // }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "consumer terminating\n");
@@ -106,7 +102,7 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
 
 // every user application needs to implement the following run function with this signature
 // run(Workflow&) in the global namespace
-void run(Workflow& workflow)                             // workflow
+void run(Workflow& workflow)
 {
     MPI_Init(NULL, NULL);
 

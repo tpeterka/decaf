@@ -25,12 +25,12 @@ if(Boost_FOUND)
     add_definitions           (${CGAL_CXX_FLAGS_INIT})
     include_directories       (${CGAL_INCLUDE_DIRS} SYSTEM ${Boost_INCLUDE_DIR})
     target_link_libraries     (tess
-                               ${libraries} 
-                               ${Boost_LIBRARIES} 
-                               ${TESS_LIBRARY} 
-                               ${CGAL_LIBRARY} 
-                               ${CGAL_3RD_PARTY_LIBRARIES} 
-                               decaf_transport 
+                               ${libraries}
+                               ${Boost_LIBRARIES}
+                               ${TESS_LIBRARY}
+                               ${CGAL_LIBRARY}
+                               ${CGAL_3RD_PARTY_LIBRARIES}
+                               decaf_transport
                                decaf_datamodel)
   # set                         (CMAKE_EXE_LINKER_FLAGS "-dynamic ${CMAKE_EXE_LINKER_FLAGS}")
   # TODO: this should really be based on whether the compiler suffers from the bug in std::nth_element()
@@ -38,11 +38,11 @@ if(Boost_FOUND)
   add_definitions             (-DTESS_USE_CGAL)
   else                        ()
     target_link_libraries     (tess
-                               ${libraries} 
-                               ${Boost_LIBRARIES} 
-                               ${TESS_LIBRARY} 
-                               ${QHull_LIBRARY} 
-                               decaf_transport 
+                               ${libraries}
+                               ${Boost_LIBRARIES}
+                               ${TESS_LIBRARY}
+                               ${QHull_LIBRARY}
+                               decaf_transport
                                decaf_datamodel)
   endif                       ()
   target_link_libraries       (hacc_dflow

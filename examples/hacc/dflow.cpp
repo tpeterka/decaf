@@ -26,7 +26,7 @@
 #include <map>
 #include <cstdlib>
 
-#include "wflow.hpp"                         // defines the workflow for this example
+#include "wflow.hpp"                                // defines the workflow for this example
 
 using namespace decaf;
 using namespace std;
@@ -45,7 +45,7 @@ extern "C"
 
 // every user application needs to implement the following run function with this signature
 // run(Workflow&) in the global namespace
-void run(Workflow& workflow)                             // workflow
+void run(Workflow& workflow)
 {
     MPI_Init(NULL, NULL);
 

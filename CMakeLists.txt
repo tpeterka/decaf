@@ -6,26 +6,48 @@ option                      (hacc               "Build HACC example"            
 
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
+# OSX flags
+if                          (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    add_definitions	    (-DMAC_OSX)
+    set			    (CMAKE_MACOSX_RPATH	    on)
+endif                       ()
+
 # C++11
 set                         (CMAKE_CXX_STANDARD        11)
+if                          ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
+                             "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
+  set                       (cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
+  set                       (CMAKE_EXE_LINKER_FLAGS     "-lc++")
+  set                       (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
+  set                       (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
+else                        ()
+  set                       (cxx_flags "${cxx_flags} -std=c++11")
+endif                       ()
 
+# MPI
 if                          (transport_mpi)
   find_package              (MPI REQUIRED)
   set                       (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
   add_definitions           (-DTRANSPORT_MPI)
 endif                       (transport_mpi)
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-    "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
-  set(cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
-  set                     (CMAKE_EXE_LINKER_FLAGS     "-lc++")
-  set                     (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
-  set                     (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
-else()
-    set(cxx_flags "${cxx_flags} -std=c++11")
-endif()
-
+# Set final flags
 add_definitions             (${cxx_flags})
+
+# Threads
+find_package		    (Threads)
+find_package		    (OpenMP)
+if 			    (OPENMP_FOUND)
+  set                       (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else			    ()
+  message		    ("OpenMP not found")
+  add_definitions	    (-DDECAF_NO_OPENMP)
+endif                       ()
+if                          (NOT diy_thread)
+    message                 ("Diy threading is disabled; setting diy threads will have no effect")
+    add_definitions         (-DDIY_NO_THREADS)
+endif                       (NOT diy_thread)
 
 # Python
 find_package                (PythonLibs)
@@ -43,7 +65,7 @@ else                        ()
   set                       (python_examples             OFF)
 endif                       ()
 
-# Set includes
+# Set include directories
 set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")
 include_directories         (${CMAKE_CURRENT_BINARY_DIR}
                              ${CMAKE_CURRENT_SOURCE_DIR}
