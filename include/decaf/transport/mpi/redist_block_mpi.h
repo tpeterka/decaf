@@ -43,7 +43,6 @@ namespace decaf
 
         virtual void flush();
 
-
     protected:
 
         // Compute the values necessary to determine how the data should be splitted
@@ -60,8 +59,6 @@ namespace decaf
         void splitBlock(Block<3> & base, int nbSubblock);
 
         void updateBlockDomainFields();
-
-        std::vector< std::shared_ptr<ConstructData> > splitBuffer_;	// Buffer of container to avoid reallocation
 
         // We keep these values so we can reuse them between 2 iterations
         int global_item_rank_;    // Index of the first item in the global array

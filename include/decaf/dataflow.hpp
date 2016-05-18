@@ -61,6 +61,10 @@ namespace decaf
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
+        // Clear the buffer of the redistribution components.
+        // To call if the data model change from one iteration to another or to free memory space
+        void clearBuffers(TaskType role);
+
         // sets a quit message into a container; caller still needs to send the message
         static
         void
@@ -398,6 +402,17 @@ Dataflow::shutdown()
         redist_prod_dflow_->shutdown();
     if (redist_dflow_con_)
         redist_dflow_con_->shutdown();
+}
+
+
+void
+decaf::
+Dataflow::clearBuffers(TaskType role)
+{
+    if (role == DECAF_LINK)
+        redist_dflow_con_->clearBuffers();
+    else if (role == DECAF_NODE)
+        redist_prod_dflow_->clearBuffers();
 }
 
 #endif

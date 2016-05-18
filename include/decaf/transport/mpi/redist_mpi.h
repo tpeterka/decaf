@@ -18,6 +18,7 @@
 
 #include <decaf/transport/redist_comp.h>
 #include <decaf/transport/mpi/types.h>
+#include <decaf/data_model/constructtype.h>
 
 namespace decaf
 {
@@ -42,6 +43,8 @@ namespace decaf
 
         virtual void flush();
         void shutdown();
+
+        virtual void clearBuffers();
 
     protected:
 
@@ -72,7 +75,9 @@ namespace decaf
         std::vector<CommRequest> reqs;     // pending communication requests
         std::shared_ptr<BaseData> transit; // used when a source and destination are overlapping
         int *sum_;                         // used by the producer
-        int *destBuffer_;                  // used by the consumer
+        int *destBuffer_;
+
+        std::vector< std::shared_ptr<ConstructData> > splitBuffer_;	// Buffer of container to avoid reallocation// used by the consumer
     };
 
 } // namespace

@@ -36,8 +36,8 @@ namespace decaf
                    CommHandle communicator,
                    RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
                    MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
-        RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod, mergeMethod) {}
-        virtual ~RedistCountMPI(){}
+    RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod, mergeMethod) {}
+    virtual ~RedistCountMPI(){}
 
     protected:
 
@@ -52,9 +52,6 @@ namespace decaf
         // We keep these values so we can reuse them between 2 iterations
         int global_item_rank_;    // Index of the first item in the global array
         int global_nb_items_;     // Number of items in the global array
-
-        std::vector< std::shared_ptr<ConstructData> > splitBuffer_;	// Buffer of container to avoid reallocation
-
 
     };
 

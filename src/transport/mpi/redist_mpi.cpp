@@ -442,3 +442,11 @@ RedistMPI::shutdown()
     splitChunks_.clear();
     destList_.clear();
 }
+
+void
+decaf::
+RedistMPI::clearBuffers()
+{
+    splitBuffer_.clear();
+}
+

@@ -73,7 +73,6 @@ namespace decaf
             {
                 send_data_tag = MPI_DATA_TAG;
                 recv_data_tag = MPI_DATA_TAG;
-                useBuffer_ = true;
             }
 
         virtual ~RedistComp(){}
@@ -92,6 +91,8 @@ namespace decaf
 
         virtual void flush()    = 0;
         virtual void shutdown() = 0;
+
+        virtual void clearBuffers() = 0;
 
     protected:
 
@@ -137,9 +138,6 @@ namespace decaf
 
         RedistCommMethod commMethod_;        //Strategy to use during redistribute()
         MergeMethod mergeMethod_;
-
-        bool useBuffer_;
-
     };
 
 } //namespace decaf

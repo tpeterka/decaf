@@ -38,7 +38,6 @@ namespace decaf
                         std::vector<float> bBox = std::vector<float>(),
                         std::vector<int> slices = std::vector<int>());
         virtual ~RedistZCurveMPI() {}
-
     protected:
 
         // Compute the values necessary to determine how the data should be splitted

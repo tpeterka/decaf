@@ -168,57 +168,57 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
-        if(useBuffer_)
+        //if(useBuffer_)
+        //{
+        if(splitBuffer_.empty())
+            // We prealloc with 0 to avoid allocating too much iterations
+            // The first iteration will make a reasonable allocation
+            container->preallocMultiple(nbChunks, 0, splitBuffer_);
+        else
         {
-            if(splitBuffer_.empty())
-                // We prealloc with 0 to avoid allocating too much iterations
-                // The first iteration will make a reasonable allocation
-                container->preallocMultiple(nbChunks, 0, splitBuffer_);
-            else
-            {
-                // If we have more buffer than needed, the remove the excedent
-                if(splitBuffer_.size() > nbChunks)
-                    splitBuffer_.resize(nbChunks);
+            // If we have more buffer than needed, the remove the excedent
+            if(splitBuffer_.size() > nbChunks)
+                splitBuffer_.resize(nbChunks);
 
-                for(unsigned int i = 0; i < splitBuffer_.size(); i++)
-                    splitBuffer_[i]->softClean();
+            for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+                splitBuffer_[i]->softClean();
 
-                // If we don't have enough buffers, we complete it
-                std::vector< std::shared_ptr<ConstructData> > newBuffers;	// Buffer of container to avoid reallocation
-                container->preallocMultiple(nbChunks - splitBuffer_.size(), 0, newBuffers);
-                splitBuffer_.insert(splitBuffer_.end(), newBuffers.begin(), newBuffers.end());
+            // If we don't have enough buffers, we complete it
+            std::vector< std::shared_ptr<ConstructData> > newBuffers;	// Buffer of container to avoid reallocation
+            container->preallocMultiple(nbChunks - splitBuffer_.size(), 0, newBuffers);
+            splitBuffer_.insert(splitBuffer_.end(), newBuffers.begin(), newBuffers.end());
 
-            }
         }
+        //}
 
 
         if(commMethod_ == DECAF_REDIST_P2P)
         {
-            if(useBuffer_)
-            {
+            //if(useBuffer_)
+            //{
                 container->split(split_ranges, splitBuffer_);
                 //splitChunks_.insert(splitChunks_.end(), splitBuffer_, splitBuffer_);
                 for(unsigned int i = 0; i < splitBuffer_.size(); i++)
                     splitChunks_.push_back(splitBuffer_[i]);
-            }
-            else
-            {
-                std::vector<std::shared_ptr<BaseData> > chunks =  data->split( split_ranges );
+            //}
+            //else
+            //{
+            //    std::vector<std::shared_ptr<BaseData> > chunks =  data->split( split_ranges );
                 // TODO : remove this need to copy the pointers
-                splitChunks_.insert(splitChunks_.end(), chunks.begin(), chunks.end());
-            }
+            //    splitChunks_.insert(splitChunks_.end(), chunks.begin(), chunks.end());
+            //}
         }
         else
         {
-            if(useBuffer_)
-            {
+            //if(useBuffer_)
+            //{
                 container->split(split_ranges, splitBuffer_);
                 //splitChunks_.insert(splitChunks_.end(), splitBuffer_, splitBuffer_);
                 for(unsigned int i = 0; i < splitBuffer_.size(); i++)
                     splitChunks_.push_back(splitBuffer_[i]);
-            }
-            else
-                splitChunks_ =  data->split( split_ranges );
+            //}
+            //else
+            //    splitChunks_ =  data->split( split_ranges );
         }
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
