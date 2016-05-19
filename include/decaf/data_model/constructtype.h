@@ -91,13 +91,17 @@ public:
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<int>& range);
 
-    // Temporal development for buffering
+    // Version to call for buffering
     virtual void split(
             const std::vector<int>& range,
             std::vector<std::shared_ptr<ConstructData> > buffers);
 
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<std::vector<int> >& range);
+
+    virtual void split(
+            const std::vector<std::vector<int> >& range,
+            std::vector<std::shared_ptr<ConstructData> > buffers);
 
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<Block<3> >& range);

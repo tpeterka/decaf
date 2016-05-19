@@ -54,7 +54,7 @@ namespace decaf
         virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role);
 
 
-        virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role);
+        //virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role);
 
         void splitBlock(Block<3> & base, int nbSubblock);
 

@@ -616,6 +616,96 @@ ConstructData::split(
     return result;
 }
 
+void
+decaf::
+ConstructData::split(
+            const std::vector<std::vector<int> >& range,
+            std::vector<std::shared_ptr<ConstructData> > buffers)
+{
+    std::vector< mapConstruct > result_maps;
+    for(unsigned int i = 0; i < range.size(); i++)
+    {
+        result_maps.push_back(buffers[i]->getMap());
+    }
+
+    //Sanity check
+    int totalItems = 0;
+    for(unsigned int i = 0; i < range.size(); i++)
+        totalItems+= range.at(i).back();
+
+    if(totalItems > getNbItems()){
+        std::cout<<"ERROR : The number of items in the ranges ("<<totalItems
+                 <<") does not match the number of items of the object ("
+                 <<getNbItems()<<")"<<std::endl;
+        return ;
+    }
+
+    //std::cout<<"Total number of item to split : "<<totalItems<<std::endl;
+
+    //Splitting data
+    if(split_order_.size() > 0) //Splitting from the user order
+    {
+        for(unsigned int i = 0; i < split_order_.size(); i++)
+        {
+            std::map<std::string, datafield>::iterator data  = container_->find(split_order_.at(i));
+            if(data == container_->end())
+            {
+                std::cerr<<"ERROR : field \""<<split_order_.at(i)<<"\" provided by the user to "
+                        <<"split the data not found in the map."<<std::endl;
+                return;
+
+            }
+
+            //Building a temp vector with all the fields
+            std::vector<std::shared_ptr<BaseConstructData> > fields;
+            for(unsigned int i = 0; i < buffers.size(); i++)
+            {
+                std::shared_ptr<BaseConstructData> field = buffers[i]->getData(split_order_.at(i));
+                if(field)
+                    fields.push_back(field);
+                else
+                {
+                    std::cout<<"ERROR : the field "<<split_order_.at(i)<<" is not present in the preallocated container."<<std::endl;
+                    return;
+                }
+            }
+
+            getBaseData(data->second)->split(range, result_maps, fields, getSplitPolicy(data->second));
+        }
+    }
+    else    //Splitting from the map order
+    {
+        for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
+        {
+            // Splitting the current field
+            //Building a temp vector with all the fields
+            std::vector<std::shared_ptr<BaseConstructData> > fields;
+            for(unsigned int i = 0; i < buffers.size(); i++)
+            {
+                std::shared_ptr<BaseConstructData> field = buffers[i]->getData(it->first);
+                if(field)
+                    fields.push_back(field);
+                else
+                {
+                    std::cout<<"ERROR : the field "<<it->first<<" is not present in the preallocated container."<<std::endl;
+                    return;
+                }
+            }
+            getBaseData(it->second)->split(range, result_maps, fields, getSplitPolicy(it->second));
+
+        }
+    }
+
+    for(unsigned int i = 0; i < range.size(); i++)
+    {
+        buffers[i]->updateNbItems();
+        buffers[i]->updateMetaData();
+    }
+
+    return ;
+}
+
 
 void
 computeIndexesFromBlocks(
@@ -986,7 +1076,8 @@ ConstructData::split(const std::vector<Block<3> >& range)
 void
 decaf::
 ConstructData::split(
-            const std::vector<Block<3> >& range, std::vector<std::shared_ptr<ConstructData> >& buffers)
+            const std::vector<Block<3> >& range,
+            std::vector<std::shared_ptr<ConstructData> >& buffers)
 {
     struct timeval begin;
     struct timeval end;

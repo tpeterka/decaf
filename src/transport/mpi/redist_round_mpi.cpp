@@ -68,7 +68,11 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         for(int i = 0; i < nbItems; i++)
         {
             split_ranges[(global_item_rank_ + i) % nbDests_].push_back(i);
+            split_ranges[(global_item_rank_ + i) % nbDests_].push_back(1);
         }
+
+        for(unsigned int i = 0; i < split_ranges.size(); i++)
+            split_ranges[i].push_back(split_ranges[i].size() / 2);
 
         //Updating the informations about messages to send
 
@@ -77,19 +81,47 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             if(split_ranges.at(i).size() > 0)
             {
                 destList_.push_back(i + local_dest_rank_);
+
+                //We won't send a message if we send to self
+                if(i + local_dest_rank_ != rank_)
+                    summerizeDest_[i] = 1;
             }
+            else
+                destList_.push_back(-1);
 
             // We don't need a special case for P2P because
             // we create already as many sub data models as
             // destinations
 
-            //We won't send a message if we send to self
-            if(i + local_dest_rank_ != rank_)
-                summerizeDest_[i] = 1;
         }
 
+        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
 
-        splitChunks_ =  data->split( split_ranges );
+        if(!container)
+        {
+            std::cerr<<"ERROR : Can not convert the data into a ConstructData. ConstructData "
+                    <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 0);
+        }
+
+        //if(useBuffer_)
+        //{
+        if(splitBuffer_.empty())
+            // We prealloc with 0 to avoid allocating too much iterations
+            // The first iteration will make a reasonable allocation
+            container->preallocMultiple(nbDests_, 0, splitBuffer_);
+        else
+        {
+            // No need to adjust the number of buffer, always equal to the number of destination
+            for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+                splitBuffer_[i]->softClean();
+        }
+
+        //splitChunks_ =  data->split( split_ranges );
+        container->split(split_ranges, splitBuffer_);
+
+        for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+            splitChunks_.push_back(splitBuffer_[i]);
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {

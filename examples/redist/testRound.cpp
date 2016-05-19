@@ -87,6 +87,8 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         for(int i = 0; i< nbParticules; i++)
             index[i] = rank*nbParticules + i;
 
+        printArray(index);
+
 
         std::shared_ptr<VectorConstructData<int> > array = std::make_shared<VectorConstructData<int> >( index, 1 );
 
@@ -140,11 +142,11 @@ int main(int argc,
 
     srand(time(NULL) + rank * size_world + nameLen);
 
-    runTestParallelRedistOverlap(0, 4, 4, 4);
-    runTestParallelRedistOverlap(0, 4, 4, 3);
-    runTestParallelRedistOverlap(0, 4, 2, 2);
-    runTestParallelRedistOverlap(0, 4, 2, 3);
-    runTestParallelRedistOverlap(0, 4, 0, 4);
+    //runTestParallelRedistOverlap(0, 4, 4, 4);
+    //runTestParallelRedistOverlap(0, 4, 4, 3);
+    //runTestParallelRedistOverlap(0, 4, 2, 2);
+    //runTestParallelRedistOverlap(0, 4, 2, 3);
+    //runTestParallelRedistOverlap(0, 4, 0, 4);
     runTestParallelRedistOverlap(2, 3, 0, 2);
 
     MPI_Barrier(MPI_COMM_WORLD);

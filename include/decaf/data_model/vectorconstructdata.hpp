@@ -31,7 +31,6 @@ public:
                         element_per_items_(element_per_items), BaseConstructData(map)
     {
         value_.reserve(capacity * element_per_items_);
-        std:: cout<<"Size after the reservation : "<<value_.size()<<", capacity : "<<value_.capacity()<<std::endl;
     }
 
     virtual ~VectorConstructData(){}
@@ -90,7 +89,6 @@ public:
 
     virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result)
     {
-        std::cout<<"Preallocation of the vectors."<<std::endl;
         for(unsigned int i = 0; i < nbCopies; i++)
         {
                 result.push_back(std::make_shared<VectorConstructData>(element_per_items_, nbItems, getMap()));
@@ -107,8 +105,36 @@ public:
             std::vector<std::shared_ptr<BaseConstructData> >& fields,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
-        std::cout<<"ERROR : method split method by individual items with buffer is not implemented in VectorConstruct class."<<std::endl;
-        exit(0);
+        switch(policy)
+        {
+            case DECAF_SPLIT_DEFAULT:
+            {
+
+                typename std::vector<T>::iterator it = value_.begin();
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<VectorConstructData<T> > sub = std::dynamic_pointer_cast<VectorConstructData<T> >(fields[i]);
+                    assert(sub);
+                    sub->getVector().reserve(range[i].back()*element_per_items_);
+
+
+                    for(unsigned int j = 0; j < range[i].size()-1; j+=2) //The last number is the total nb of items
+                    {
+                        sub->getVector().insert(
+                                    sub->getVector().end(),
+                                    it+(range[i][j]*element_per_items_),
+                                    it+(range[i][j]*element_per_items_)+(range[i][j+1]*element_per_items_));
+                    }
+
+                }
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for VectorConstructData"<<std::endl;
+                break;
+            }
+        }
     }
 
     virtual void split(

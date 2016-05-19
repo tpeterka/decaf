@@ -199,7 +199,6 @@ decaf::
 RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 {
 
-    double computeSplit = 0.0, computeSerialize = 0.0;
     struct timeval begin;
     struct timeval end;
     
@@ -230,11 +229,16 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 
 
+        // Always generates as many split data model as subblocks
+        // Subdata model might be empty (no items)
         container->split( subblocks_, splitBuffer_ );
 
         //Pushing the subdomain block into each split chunk.
         //The field domain_block is updated
         updateBlockDomainFields();
+
+        for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+            splitChunks_.push_back(splitBuffer_[i]);
 
         //Updating the informations about messages to send
         for(unsigned int i = 0; i < subblocks_.size(); i++)
@@ -254,31 +258,19 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
         gettimeofday(&begin, NULL);
-        //std::cout<<"[";
-        for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+        for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
-            //int nbItems = splitBuffer_[i]->getNbItems();
-            //std::cout<<splitBuffer_[i]->getNbItems()<<",";
-            if(splitBuffer_[i]->getNbItems() > 0)
+            if(splitChunks_[i]->getNbItems() > 0)
             {
                 // TODO : Check the rank for the destination.
                 // Not necessary to serialize if overlapping
-                if(!splitBuffer_[i]->serialize())
+                if(!splitChunks_[i]->serialize())
                     std::cout<<"ERROR : unable to serialize one object"<<std::endl;
             }
         }
-        //std::cout<<"]"<<std::endl;
+
         gettimeofday(&end, NULL);
         timeGlobalBuild += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-        //if(role == DECAF_REDIST_SOURCE)
-        //    printf("Compute split : %f, compute serialize : %f\n", computeSplit, computeSerialize);
-
-        // DEPRECATED
-        // Everything is done, now we can clean the data.
-        // Data might be rewriten if producers and consummers are overlapping
-        // data->purgeData();
-
-        //subblocks_.clear();
 
     }
 }
@@ -416,7 +408,7 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 */
 
 
-void
+/*void
 decaf::
 RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 {
@@ -531,7 +523,7 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
         timeGlobalMerge += endMerge.tv_sec+(endMerge.tv_usec/1000000.0) - beginMerge.tv_sec - (beginMerge.tv_usec/1000000.0);
     }
 
-}
+}*/
 
 
 void
@@ -543,8 +535,6 @@ RedistBlockMPI::flush()
     reqs.clear();
 
     // Cleaning the data here because synchronous send.
-    // TODO :  move to flush when switching to asynchronous send
-    //splitBuffer_.clear(); //We keep the chunks and soft clean them at each iteration
     destList_.clear();
 }
 
