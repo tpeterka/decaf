@@ -233,7 +233,7 @@ RedistZCurveMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 
-
+        std::vector<unsigned int> sumPos(nbDests_, 0); //To count the amount of particles per
         for(int i = 0; i < nbParticules; i++)
         {
             //Computing the cell of the particule
@@ -267,9 +267,30 @@ RedistZCurveMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             if(destination == nbDests_)
                 destination = nbDests_ - 1;
 
-            split_ranges[destination].push_back(i);
+            // Updating the ranges
+            if(split_ranges[destination].empty())
+            {
+                split_ranges[destination].push_back(i);
+                split_ranges[destination].push_back(1);
+            }
+            // Case where the current position is following the previous one
+            else if(split_ranges[destination].back() + (split_ranges[destination])[split_ranges[destination].size()-2] == i )
+            {
+                split_ranges[destination].back() = split_ranges[destination].back() + 1;
+            }
+            else
+            {
+                split_ranges[destination].push_back(i);
+                split_ranges[destination].push_back(1);
+            }
+
+            sumPos[destination] = sumPos[destination] + 1;
 
         }
+
+        // Pushing the totals in the ranges
+        for(unsigned int i = 0; i < split_ranges.size(); i++)
+            split_ranges[i].push_back(sumPos[i]);
 
         //Updating the informations about messages to send
         for(unsigned int i = 0; i < split_ranges.size(); i++)
@@ -286,8 +307,31 @@ RedistZCurveMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
                 destList_.push_back(-1);
         }
 
+        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
 
-        splitChunks_ =  data->split( split_ranges );
+        if(!container)
+        {
+            std::cerr<<"ERROR : Can not convert the data into a ConstructData. ConstructData "
+                    <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 0);
+        }
+
+        if(splitBuffer_.empty())
+            // We prealloc with 0 to avoid allocating too much iterations
+            // The first iteration will make a reasonable allocation
+            container->preallocMultiple(nbDests_, 0, splitBuffer_);
+        else
+        {
+            // No need to adjust the number of buffer, always equal to the number of destination
+            for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+                splitBuffer_[i]->softClean();
+        }
+
+
+        container->split( split_ranges, splitBuffer_ );
+
+        for(unsigned int i = 0; i < splitBuffer_.size(); i++)
+            splitChunks_.push_back(splitBuffer_[i]);
 
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
