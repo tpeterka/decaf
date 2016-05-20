@@ -15,6 +15,7 @@ if(Boost_FOUND)
 
   add_executable              (hacc_prod          prod.cpp) #remove after testing; call hacc instead
   add_executable              (tess               tess.cpp)
+  add_executable              (dense              dense.cpp)
   add_executable              (hacc_dflow         dflow.cpp)
   add_library                 (mod_hacc_dflow     MODULE dflow.cpp)
 
@@ -32,8 +33,14 @@ if(Boost_FOUND)
                                ${CGAL_3RD_PARTY_LIBRARIES}
                                decaf_transport
                                decaf_datamodel)
-  # set                         (CMAKE_EXE_LINKER_FLAGS "-dynamic ${CMAKE_EXE_LINKER_FLAGS}")
-  # TODO: this should really be based on whether the compiler suffers from the bug in std::nth_element()
+    target_link_libraries     (dense
+                               ${libraries}
+                               ${Boost_LIBRARIES}
+                               ${TESS_LIBRARY}
+                               ${CGAL_LIBRARY}
+                               ${CGAL_3RD_PARTY_LIBRARIES}
+                               decaf_transport
+                               decaf_datamodel)
   add_definitions             (-DTESS_CGAL_ALLOW_SPATIAL_SORT)
   add_definitions             (-DTESS_USE_CGAL)
   else                        ()
@@ -44,28 +51,39 @@ if(Boost_FOUND)
                                ${QHull_LIBRARY}
                                decaf_transport
                                decaf_datamodel)
+    target_link_libraries     (dense
+                               ${libraries}
+                               ${Boost_LIBRARIES}
+                               ${TESS_LIBRARY}
+                               ${QHull_LIBRARY}
+                               decaf_transport
+                               decaf_datamodel)
   endif                       ()
   target_link_libraries       (hacc_dflow
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
   target_link_libraries       (mod_hacc_dflow
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
   # .SO file extension on Linux/Mac OS
-  set_target_properties(mod_hacc_dflow PROPERTIES SUFFIX ".so")
+  set_target_properties       (mod_hacc_dflow PROPERTIES SUFFIX ".so")
 
   # Don't add a 'lib' prefix to the shared library
-  set_target_properties(mod_hacc_dflow PROPERTIES PREFIX "")
+  set_target_properties       (mod_hacc_dflow PROPERTIES PREFIX "")
 
-  install(TARGETS hacc_prod tess hacc_dflow mod_hacc_dflow #remove hacc_prod after testing
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/hacc/
-    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-    GROUP_READ GROUP_WRITE GROUP_EXECUTE
-    WORLD_READ WORLD_WRITE WORLD_EXECUTE)
+  install                     (TARGETS
+                               hacc_prod # remove hacc_prod after testing
+                               tess dense
+                               hacc_dflow
+                               mod_hacc_dflow
+                               DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/hacc/
+                               PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                               GROUP_READ GROUP_WRITE GROUP_EXECUTE
+                               WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-  install(FILES HACC_TEST
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/hacc/
-    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-    GROUP_READ GROUP_WRITE GROUP_EXECUTE
-    WORLD_READ WORLD_WRITE WORLD_EXECUTE)
+  install                     (FILES HACC_TEST
+                               DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/hacc/
+                               PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                               GROUP_READ GROUP_WRITE GROUP_EXECUTE
+                               WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
 endif(Boost_FOUND)

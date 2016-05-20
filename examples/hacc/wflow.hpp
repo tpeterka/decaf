@@ -2,9 +2,9 @@
 //
 // workflow definition
 //
-// prod (8 procs) -> dflow (4 procs) -> con (2 procs)
+// prod (8 procs) -> dflow (4 procs) -> tess (2 procs) -> dflow (2 procs) -> dense (2 procs)
 //
-// entire workflow takes 14 procs
+// entire workflow takes 18 procs
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -39,7 +39,7 @@ void make_wflow(Workflow& workflow)
 
     // fill workflow nodes
     WorkflowNode node;
-    node.out_links.clear();                        // producer
+    node.out_links.clear();                        // prod
     node.in_links.clear();
     node.out_links.push_back(0);
     node.start_proc = 0;
@@ -47,20 +47,39 @@ void make_wflow(Workflow& workflow)
     node.func = "prod";
     workflow.nodes.push_back(node);
 
-    node.out_links.clear();                        // consumer
+    node.out_links.clear();                        // tess
     node.in_links.clear();
     node.in_links.push_back(0);
+    node.out_links.push_back(1);
     node.start_proc = 12;
     node.nprocs = 2;
     node.func = "tessellate";
     workflow.nodes.push_back(node);
 
-    // fill workflow link
+    node.out_links.clear();                        // dense
+    node.in_links.clear();
+    node.in_links.push_back(1);
+    node.start_proc = 16;
+    node.nprocs = 2;
+    node.func = "density_estimate";
+    workflow.nodes.push_back(node);
+
+    // fill workflow links
     WorkflowLink link;
-    link.prod = 0;                                // dataflow
+    link.prod = 0;                                // prod->tess
     link.con = 1;
     link.start_proc = 8;
     link.nprocs = 4;
+    link.func = "dflow";
+    link.path = path;
+    link.prod_dflow_redist = "count";
+    link.dflow_con_redist = "count";
+    workflow.links.push_back(link);
+
+    link.prod = 1;                                // tess->dense
+    link.con = 2;
+    link.start_proc = 14;
+    link.nprocs = 2;
     link.func = "dflow";
     link.path = path;
     link.prod_dflow_redist = "count";
