@@ -13,7 +13,7 @@
 #ifndef DECAF_HPP
 #define DECAF_HPP
 
-#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/pconstructtype.h>
 
 #include <dlfcn.h>
 #include <map>
@@ -56,14 +56,14 @@ namespace decaf
         void print_workflow();               // debug: print the workflow
 
         // put a message on all outbound links
-        void put(shared_ptr<ConstructData> container);
+        void put(pConstructData container);
 
         // put a message on a particular outbound links
-        void put(shared_ptr<ConstructData> container, int i);
+        void put(pConstructData container, int i);
 
         // get messages from all inbound links
         // returns true = process messages, false = break (quit received)
-        bool get(vector< shared_ptr<ConstructData> >& containers);
+        bool get(vector< pConstructData >& containers);
 
         // determine whether to continue processing a node task by checking for a quit message
         bool iterate();
@@ -106,23 +106,23 @@ namespace decaf
 
         // returns the source type (node, link) of a message
         TaskType
-        src_type(shared_ptr<ConstructData> in_data);
+        src_type(pConstructData in_data);
 
         // returns the workflow link id of a message
         // id is the index in the workflow data structure of the link
         int
-        link_id(shared_ptr<ConstructData> in_data);
+        link_id(pConstructData in_data);
 
         // returns the workflow destination id of a message
         // destination could be a node or link depending on the source type
         // id is the index in the workflow data structure of the destination entity
         int
-        dest_id(shared_ptr<ConstructData> in_data);
+        dest_id(pConstructData in_data);
 
         // routes input data to a callback function
         // returns 0 on success, -1 if all my nodes and links are done; ie, shutdown
         int
-        router(list< shared_ptr<ConstructData> >& in_data,
+        router(list< pConstructData >& in_data,
                vector<int>& ready_ids,
                vector<int>& ready_types);
 
@@ -248,7 +248,7 @@ Decaf::~Decaf()
 // put a message on all outbound links
 void
 decaf::
-Decaf::put(shared_ptr<ConstructData> container)
+Decaf::put(pConstructData container)
 {
     for (size_t i = 0; i < out_dataflows.size(); i++)
         out_dataflows[i]->put(container, DECAF_NODE);
@@ -265,7 +265,7 @@ Decaf::put(shared_ptr<ConstructData> container)
 // put a message on a particular outbound links
 void
 decaf::
-Decaf::put(shared_ptr<ConstructData> container, int i)
+Decaf::put(pConstructData container, int i)
 {
     out_dataflows[i]->put(container, DECAF_NODE);
 }
@@ -274,7 +274,7 @@ Decaf::put(shared_ptr<ConstructData> container, int i)
 // returns true = process messages, false = break (quit received)
 bool
 decaf::
-Decaf::get(vector< shared_ptr<ConstructData> >& containers)
+Decaf::get(vector< pConstructData >& containers)
 {
     // link ranks that do overlap this node need to be run in one-time mode, unless
     // the same rank also was a producer node for this link, in which case
@@ -290,13 +290,13 @@ Decaf::get(vector< shared_ptr<ConstructData> >& containers)
 
     for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
     {
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        pConstructData container;
         link_in_dataflows[i]->get(container, DECAF_LINK);
         containers.push_back(container);
     }
     for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
     {
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        pConstructData container;
         node_in_dataflows[i]->get(container, DECAF_NODE);
         containers.push_back(container);
     }
@@ -311,7 +311,7 @@ bool
 decaf::
 Decaf::iterate()
 {
-    vector< shared_ptr<ConstructData> > in_data;
+    vector< pConstructData > in_data;
     get(in_data);
     for (size_t i = 0; i < in_data.size(); i++)
         if (Dataflow::test_quit(in_data[i]))
@@ -324,7 +324,7 @@ void
 decaf::
 Decaf::terminate()
 {
-    shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+    pConstructData quit_container;
     Dataflow::set_quit(quit_container);
     put(quit_container);
 }
@@ -349,12 +349,12 @@ decaf::
 Decaf::run_links(bool run_once)              // spin continuously or run once only
 {
     // incoming messages
-    list< shared_ptr<ConstructData> > containers;
+    list< pConstructData > containers;
 
     // dynamically loaded modules (plugins)
     void(*dflow_func)(void*,                      // ptr to dataflow callback func in a module
                       Dataflow*,
-                      shared_ptr<ConstructData>);
+                      pConstructData);
     map<string, void*> mods;                      // modules dynamically loaded so far
 
     // links are driven by receiving messages
@@ -363,7 +363,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
         // get incoming data
         for (size_t i = 0; i < link_in_dataflows.size(); i++)
         {
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
+            pConstructData container;
             link_in_dataflows[i]->get(container, DECAF_LINK);
             containers.push_back(container);
         }
@@ -374,14 +374,14 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
         int done = router(containers, ready_ids, ready_types);
 
         // check for termination and propagate the quit message
-        for (list< shared_ptr<ConstructData> >::iterator it = containers.begin();
+        for (list< pConstructData >::iterator it = containers.begin();
              it != containers.end(); it++)
         {
             // add quit flag to containers object, initialize to false
             if (Dataflow::test_quit(*it))
             {
                 // send quit to destinations
-                shared_ptr<ConstructData> quit_container = make_shared<ConstructData>();
+                pConstructData quit_container;
                 Dataflow::set_quit(quit_container);
 
                 for (size_t i = 0; i < ready_ids.size(); i++)
@@ -406,7 +406,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
         {
             if (ready_types[i] & DECAF_LINK)
             {
-                list< shared_ptr<ConstructData> >::iterator it = containers.begin();
+                list< pConstructData >::iterator it = containers.begin();
                 // using while instead of for: erase inside loop disrupts the iteration
                 while (it != containers.end())
                 {
@@ -414,7 +414,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                     {
                         dflow_func = (void(*)(void*,            // load the function
                                               Dataflow*,
-                                              shared_ptr<ConstructData>))
+                                              pConstructData))
                             load_dflow(mods,
                                        workflow_.links[ready_ids[i]].path,
                                        workflow_.links[ready_ids[i]].func);
@@ -516,7 +516,7 @@ Decaf::load_dflow(
     pair<map<string, void*>::iterator, bool> ret; // return value of insertion into mods
     int(*func)(void*,                             // ptr to callback func
                Dataflow*,
-               shared_ptr<ConstructData>);
+               pConstructData);
 
     if ((it = mods.find(mod_name)) == mods.end())
     {
@@ -546,14 +546,13 @@ Decaf::unload_mods(map<string, void*>& mods) // (name, handle) of modules dynami
 // returns the source type (node, link) of a message
 TaskType
 decaf::
-Decaf::src_type(shared_ptr<ConstructData> in_data)   // input message
+Decaf::src_type(pConstructData in_data)   // input message
 {
-    shared_ptr<BaseConstructData> ptr = in_data->getData(string("src_type"));
+    shared_ptr<SimpleConstructData<TaskType> > ptr =
+            in_data->getTypedData<SimpleConstructData<TaskType> >(string("src_type"));
     if (ptr)
     {
-        shared_ptr<SimpleConstructData<TaskType> > type =
-            dynamic_pointer_cast<SimpleConstructData<TaskType> >(ptr);
-        return type->getData();
+        return ptr->getData();
     }
     return DECAF_NONE;
 }
@@ -562,14 +561,12 @@ Decaf::src_type(shared_ptr<ConstructData> in_data)   // input message
 // id is the index in the workflow data structure of the link
 int
 decaf::
-Decaf::link_id(shared_ptr<ConstructData> in_data)   // input message
+Decaf::link_id(pConstructData in_data)   // input message
 {
-    shared_ptr<BaseConstructData> ptr = in_data->getData(string("link_id"));
+    shared_ptr<SimpleConstructData<int> > ptr = in_data->getTypedData<SimpleConstructData<int> >(string("link_id"));
     if (ptr)
     {
-        shared_ptr<SimpleConstructData<int> > link =
-            dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-        return link->getData();
+        return ptr->getData();
     }
     return -1;
 }
@@ -579,14 +576,12 @@ Decaf::link_id(shared_ptr<ConstructData> in_data)   // input message
 // id is the index in the workflow data structure of the destination entity
 int
 decaf::
-Decaf::dest_id(shared_ptr<ConstructData> in_data)   // input message
+Decaf::dest_id(pConstructData in_data)   // input message
 {
-    shared_ptr<BaseConstructData> ptr = in_data->getData(string("dest_id"));
+    shared_ptr<SimpleConstructData<int> > ptr = in_data->getTypedData<SimpleConstructData<int> >(string("dest_id"));
     if (ptr)
     {
-        shared_ptr<SimpleConstructData<int> > dest =
-            dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-        return dest->getData();
+        return ptr->getData();
     }
     return -1;
 }
@@ -595,12 +590,12 @@ Decaf::dest_id(shared_ptr<ConstructData> in_data)   // input message
 // returns 0 on success, -1 if all my nodes and links are done; ie, shutdown
 int
 decaf::
-Decaf::router(list< shared_ptr<ConstructData> >& in_data, // input messages
+Decaf::router(list< pConstructData >& in_data, // input messages
               vector<int>& ready_ids,                  // (output) ready workflow node or link ids
               vector<int>& ready_types)                // (output) ready node or link types
                                                        // DECAF_NODE | DECAF_LINK
 {
-    for (list< shared_ptr<ConstructData> >::iterator it = in_data.begin();
+    for (list< pConstructData >::iterator it = in_data.begin();
          it != in_data.end(); it++)
     {
         // is destination a workflow node or a link

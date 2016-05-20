@@ -14,7 +14,7 @@
 
 #include <map>
 
-#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
 
 // transport layer specific types
@@ -46,8 +46,8 @@ namespace decaf
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
                  = DECAF_CONTIG_DECOMP);
         ~Dataflow();
-        void put(std::shared_ptr<BaseData> data, TaskType role);
-        void get(std::shared_ptr<BaseData> data, TaskType role);
+        void put(pConstructData data, TaskType role);
+        void get(pConstructData data, TaskType role);
         DecafSizes* sizes()    { return &sizes_; }
         void shutdown();
         void err()             { ::all_err(err_); }
@@ -68,7 +68,7 @@ namespace decaf
         // sets a quit message into a container; caller still needs to send the message
         static
         void
-        set_quit(shared_ptr<ConstructData> out_data)   // output message
+        set_quit(pConstructData out_data)   // output message
             {
                 shared_ptr<SimpleConstructData<int> > data  =
                     make_shared<SimpleConstructData<int> >(1);
@@ -80,10 +80,10 @@ namespace decaf
         // tests whether a message is a quit command
         static
         bool
-        test_quit(shared_ptr<ConstructData> in_data)   // input message
-            {
-                return in_data->hasData(string("decaf_quit"));
-            }
+        test_quit(pConstructData in_data)   // input message
+        {
+            return in_data->hasData(string("decaf_quit"));
+        }
 
 
     private:
@@ -311,20 +311,18 @@ Dataflow::~Dataflow()
 // NB: source is *link* id while destination is *either node or link* id
 void
 decaf::
-Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
+Dataflow::put(pConstructData data, TaskType role)
 {
     // encode type into message (producer/consumer or dataflow)
     shared_ptr<SimpleConstructData<TaskType> > value  =
         make_shared<SimpleConstructData<TaskType> >(role);
-    std::shared_ptr<ConstructData> map =
-        std::dynamic_pointer_cast<ConstructData>(data);
 
     // clear old identifiers
-    map->removeData("src_type");
-    map->removeData("link_id");
-    map->removeData("dest_id");
+    data->removeData("src_type");
+    data->removeData("link_id");
+    data->removeData("dest_id");
 
-    map->appendData(string("src_type"), value,
+    data->appendData(string("src_type"), value,
                     DECAF_NOFLAG, DECAF_SYSTEM,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -332,7 +330,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
     // encode dataflow link id into message
     shared_ptr<SimpleConstructData<int> > value1  =
         make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-    map->appendData(string("link_id"), value1,
+    data->appendData(string("link_id"), value1,
                      DECAF_NOFLAG, DECAF_SYSTEM,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -342,7 +340,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         // encode destination link id into message
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-        map->appendData(string("dest_id"), value2,
+        data->appendData(string("dest_id"), value2,
                          DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -357,7 +355,7 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         // encode destination node id into message
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_con_id_);
-        map->appendData(string("dest_id"), value2,
+        data->appendData(string("dest_id"), value2,
                          DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -368,14 +366,14 @@ Dataflow::put(std::shared_ptr<BaseData> data, TaskType role)
         redist_dflow_con_->flush();
     }
 
-    map->removeData("src_type");
-    map->removeData("link_id");
-    map->removeData("dest_id");
+    data->removeData("src_type");
+    data->removeData("link_id");
+    data->removeData("dest_id");
 }
 
 void
 decaf::
-Dataflow::get(std::shared_ptr<BaseData> data, TaskType role)
+Dataflow::get(pConstructData data, TaskType role)
 {
     if (role == DECAF_LINK)
     {

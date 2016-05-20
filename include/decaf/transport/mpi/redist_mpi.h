@@ -18,7 +18,6 @@
 
 #include <decaf/transport/redist_comp.h>
 #include <decaf/transport/mpi/types.h>
-#include <decaf/data_model/constructtype.h>
 
 namespace decaf
 {
@@ -50,34 +49,34 @@ namespace decaf
 
         // Compute the values necessary to determine how the data should be
         // splitted and redistributed.
-        virtual void computeGlobal(std::shared_ptr<BaseData> data, RedistRole role) = 0;
+        virtual void computeGlobal(pConstructData& data, RedistRole role) = 0;
 
         // Seperate the Data into chunks for each destination involve in the
         // component and fill the splitChunks vector
-        virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role) = 0;
+        virtual void splitData(pConstructData& data, RedistRole role) = 0;
 
         // Seperate system only data model. The data won't be split but duplicated
-        void splitSystemData(std::shared_ptr<BaseData> data, RedistRole role);
+        void splitSystemData(pConstructData& data, RedistRole role);
 
         // Transfer the chunks from the sources to the destination. The data should be
         // be stored in the vector receivedChunks
-        void redistribute(std::shared_ptr<BaseData> data, RedistRole role);
+        void redistribute(pConstructData& data, RedistRole role);
 
         //Redistribution method using only point to point All to All communication
-        void redistributeP2P(std::shared_ptr<BaseData> data, RedistRole role);
+        void redistributeP2P(pConstructData& data, RedistRole role);
 
         //Redistribution method collective and sending only the necessary messages
-        void redistributeCollective(std::shared_ptr<BaseData> data, RedistRole role);
+        void redistributeCollective(pConstructData& data, RedistRole role);
 
         CommHandle communicator_;          // communicator for all the processes involved in redist
         CommHandle commSources_;           // communicator of the sources
         CommHandle commDests_;             // communicator of the destinations
         std::vector<CommRequest> reqs;     // pending communication requests
-        std::shared_ptr<BaseData> transit; // used when a source and destination are overlapping
+        pConstructData transit; // used when a source and destination are overlapping
         int *sum_;                         // used by the producer
         int *destBuffer_;
 
-        std::vector< std::shared_ptr<ConstructData> > splitBuffer_;	// Buffer of container to avoid reallocation// used by the consumer
+        std::vector< pConstructData > splitBuffer_;	// Buffer of container to avoid reallocation// used by the consumer
     };
 
 } // namespace

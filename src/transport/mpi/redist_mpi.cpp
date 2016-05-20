@@ -125,6 +125,8 @@ RedistMPI::RedistMPI(int rankSource,
 
     destBuffer_ = new int[nbDests_];
     sum_ = new int[nbDests_];
+
+    transit = pConstructData(false);
 }
 
 decaf::
@@ -143,7 +145,7 @@ RedistMPI::~RedistMPI()
 
 void
 decaf::
-RedistMPI::splitSystemData(std::shared_ptr<BaseData> data, RedistRole role)
+RedistMPI::splitSystemData(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
@@ -172,7 +174,7 @@ RedistMPI::splitSystemData(std::shared_ptr<BaseData> data, RedistRole role)
 // collective redistribution protocol
 void
 decaf::
-RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
+RedistMPI::redistribute(pConstructData& data, RedistRole role)
 {
     switch(commMethod_)
     {
@@ -198,7 +200,7 @@ RedistMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 // collective redistribution protocol
 void
 decaf::
-RedistMPI::redistributeCollective(std::shared_ptr<BaseData> data, RedistRole role)
+RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
 {
     // debug
     int rank;
@@ -276,7 +278,7 @@ RedistMPI::redistributeCollective(std::shared_ptr<BaseData> data, RedistRole rol
     }
 
     // check if we have something in transit to/from self
-    if (role == DECAF_REDIST_DEST && transit)
+    if (role == DECAF_REDIST_DEST && !transit.empty())
     {
         data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
         transit.reset();              // we don't need it anymore, clean for the next iteration
@@ -316,7 +318,7 @@ RedistMPI::redistributeCollective(std::shared_ptr<BaseData> data, RedistRole rol
 
 void
 decaf::
-RedistMPI::redistributeP2P(std::shared_ptr<BaseData> data, RedistRole role)
+RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
 {
     //Processing the data exchange
     if(role == DECAF_REDIST_SOURCE)
@@ -356,6 +358,8 @@ RedistMPI::redistributeP2P(std::shared_ptr<BaseData> data, RedistRole role)
             nbRecep = nbSources_-1;
         else
             nbRecep = nbSources_;
+
+        std::cout<<"Attente de "<<nbRecep<<" receptions."<<std::endl;
 
         for(int i = 0; i < nbRecep; i++)
         {
@@ -397,8 +401,9 @@ RedistMPI::redistributeP2P(std::shared_ptr<BaseData> data, RedistRole role)
             }
         }
         // Checking if we have something in transit
-        if(transit)
+        if(!transit.empty())
         {
+            std::cout<<"Merge du transit"<<std::endl;
             if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
                 data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
             else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)

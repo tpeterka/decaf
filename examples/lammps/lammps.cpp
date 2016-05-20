@@ -70,7 +70,7 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
 
         if (!((timestep + 1) % analysis_interval))
         {
-            shared_ptr<ConstructData> container = make_shared<ConstructData>();
+            pConstructData container;
 
             // lammps gathered all positions to rank 0
             if (decaf->prod_comm()->rank() == 0)
@@ -113,19 +113,16 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
 // gets the atom positions and prints them
 void print(Decaf* decaf)
 {
-    vector< shared_ptr<ConstructData> > in_data;
+    vector< pConstructData > in_data;
 
     while (decaf->get(in_data))
     {
         // get the values
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("pos"));
-            if (ptr)
+            shared_ptr<VectorConstructData<double> > pos = in_data[i]->getTypedData<VectorConstructData<double> >(string("pos"));
+            if (pos)
             {
-                shared_ptr<VectorConstructData<double> > pos =
-                    dynamic_pointer_cast<VectorConstructData<double> >(ptr);
-
                 // debug
                 fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
                         pos->getNbItems());
@@ -149,11 +146,10 @@ void print(Decaf* decaf)
 // in a more realistic example, could filter them and only forward some subset of them
 void print2(Decaf* decaf)
 {
-    vector< shared_ptr<ConstructData> > in_data;
+    vector< pConstructData > in_data;
 
     while (decaf->get(in_data))
     {
-        int sum = 0;
 
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
@@ -173,7 +169,7 @@ extern "C"
     // dataflow just forwards everything that comes its way in this example
     void dflow(void* args,                          // arguments to the callback
                Dataflow* dataflow,                  // dataflow
-               shared_ptr<ConstructData> in_data)   // input data
+               pConstructData in_data)   // input data
     {
         dataflow->put(in_data, DECAF_LINK);
     }

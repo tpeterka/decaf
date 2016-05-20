@@ -47,14 +47,14 @@ namespace decaf
 
         // Compute the values necessary to determine how the data should be splitted
         // and redistributed.
-        virtual void computeGlobal(std::shared_ptr<BaseData> data, RedistRole role);
+        virtual void computeGlobal(pConstructData& data, RedistRole role);
 
         // Seperate the Data into chunks for each destination involve in the component
         // and fill the splitChunks vector
-        virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role);
+        virtual void splitData(pConstructData& data, RedistRole role);
 
 
-        //virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role);
+        //virtual void redistribute(pConstructData data, RedistRole role);
 
         void splitBlock(Block<3> & base, int nbSubblock);
 

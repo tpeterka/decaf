@@ -92,10 +92,9 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
 
         std::shared_ptr<VectorConstructData<int> > array = std::make_shared<VectorConstructData<int> >( index, 1 );
 
-        std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
-        std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
+        pConstructData container;
 
-        object->appendData(std::string("index"), array,
+        container->appendData(std::string("index"), array,
                              DECAF_ZCURVEKEY, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
@@ -104,15 +103,13 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
     }
     if(isBetween(rank, startReceptors, nbReceptors))
     {
-        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        pConstructData result;
         component->process(result, decaf::DECAF_REDIST_DEST);
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
         std::cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<std::endl;
-        std::shared_ptr<BaseConstructData> data = result->getData("index");
-        std::shared_ptr<VectorConstructData<int> > index =
-                dynamic_pointer_cast<VectorConstructData<int> >(data);
+        std::shared_ptr<VectorConstructData<int> > index = result->getTypedData<VectorConstructData<int> >("index");
         printArray(index->getVector());
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;

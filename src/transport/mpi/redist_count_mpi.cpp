@@ -20,7 +20,7 @@
 
 void
 decaf::
-RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
+RedistCountMPI::computeGlobal(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
@@ -51,7 +51,7 @@ RedistCountMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 
 void
 decaf::
-RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
+RedistCountMPI::splitData(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
@@ -63,14 +63,7 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 
         int rankOffset = global_nb_items_ %  nbDests_;
 
-        //debug
-        //std::cout<<"Ranks from 0 to "<<rankOffset-1<<" will receive "<< items_per_dest+1 <<
-        //           " items. Ranks from "<<rankOffset<< " to "<<  nbDests_-1<<
-        //           " will reiceive" <<items_per_dest<< " items"<< std::endl;
-
-
         //Computing how to split the data
-
 
         //Compute the destination rank of the first item
         int first_rank;
@@ -103,7 +96,7 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             while(destList_.size() < first_rank)
             {
                 destList_.push_back(-1);
-                splitChunks_.push_back(NULL);
+                splitChunks_.push_back(pConstructData(false));
             }
         }
 
@@ -159,21 +152,12 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             nbChunks++;
         }
 
-        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
-
-        if(!container)
-        {
-            std::cerr<<"ERROR : Can not convert the data into a ConstructData. ConstructData "
-                    <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
-            MPI_Abort(MPI_COMM_WORLD, 0);
-        }
-
         //if(useBuffer_)
         //{
         if(splitBuffer_.empty())
             // We prealloc with 0 to avoid allocating too much iterations
             // The first iteration will make a reasonable allocation
-            container->preallocMultiple(nbChunks, 0, splitBuffer_);
+            data.preallocMultiple(nbChunks, 0, splitBuffer_);
         else
         {
             // If we have more buffer than needed, the remove the excedent
@@ -184,8 +168,8 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
                 splitBuffer_[i]->softClean();
 
             // If we don't have enough buffers, we complete it
-            std::vector< std::shared_ptr<ConstructData> > newBuffers;	// Buffer of container to avoid reallocation
-            container->preallocMultiple(nbChunks - splitBuffer_.size(), 0, newBuffers);
+            std::vector< pConstructData > newBuffers;	// Buffer of container to avoid reallocation
+            data.preallocMultiple(nbChunks - splitBuffer_.size(), 0, newBuffers);
             splitBuffer_.insert(splitBuffer_.end(), newBuffers.begin(), newBuffers.end());
 
         }
@@ -220,7 +204,7 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             else
                 splitChunks_ =  data->split( split_ranges );
         }*/
-        container->split(split_ranges, splitBuffer_);
+        data->split(split_ranges, splitBuffer_);
         //splitChunks_.insert(splitChunks_.end(), splitBuffer_, splitBuffer_);
         for(unsigned int i = 0; i < splitBuffer_.size(); i++)
             splitChunks_.push_back(splitBuffer_[i]);
@@ -229,7 +213,7 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         {
             // TODO : Check the rank for the destination.
             // Not necessary to serialize if overlapping
-            if(splitChunks_.at(i) && !splitChunks_.at(i)->serialize())
+            if(!splitChunks_[i].empty() && !splitChunks_[i]->serialize())
                 std::cout<<"ERROR : unable to serialize one object"<<std::endl;
         }
 
@@ -240,7 +224,7 @@ RedistCountMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
             while(destList_.size() < nbDests_)
             {
                 destList_.push_back(-1);
-                splitChunks_.push_back(NULL);
+                splitChunks_.push_back(pConstructData(false));
             }
         }
 

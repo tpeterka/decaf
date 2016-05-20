@@ -15,7 +15,7 @@
 
 #include <decaf/data_model/simpleconstructdata.hpp>
 #include <decaf/data_model/vectorconstructdata.hpp>
-#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/boost_macros.h>
 
 #include <boost/serialization/serialization.hpp>
@@ -254,10 +254,10 @@ void testConstructType()
     newContainer.printKeys();
 }
 
-void printMap(ConstructData& map)
+void printMap(pConstructData map)
 {
-    std::shared_ptr<VectorConstructData<float> > array = dynamic_pointer_cast<VectorConstructData<float> >(map.getData("pos"));
-    std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map.getData("nbParticules"));
+    std::shared_ptr<VectorConstructData<float> > array = dynamic_pointer_cast<VectorConstructData<float> >(map->getData("pos"));
+    std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map->getData("nbParticules"));
 
     std::cout<<"Number of particule : "<<data->getData()<<std::endl;
     std::cout<<"Positions : [";
@@ -276,16 +276,16 @@ void testConstructTypeSplit()
     std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
     std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
-    ConstructData container;
-    container.appendData(std::string("nbParticules"), data,
+    pConstructData container;
+    container->appendData(std::string("nbParticules"), data,
                          DECAF_NOFLAG, DECAF_SHARED,
                          DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
-    container.appendData(std::string("pos"), array,
+    container->appendData(std::string("pos"), array,
                          DECAF_NOFLAG, DECAF_PRIVATE,
                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
     std::vector<int> ranges {1,2,1};
-    std::vector<std::shared_ptr<BaseData> > partialContainers = container.split(ranges);
+    std::vector<std::shared_ptr<BaseData> > partialContainers = container->split(ranges);
     std::cout<<"----------------------------"<<std::endl
              <<"Number of splits containers : "<<partialContainers.size()<<std::endl;
     for(unsigned int i = 0; i < partialContainers.size(); i++)
@@ -295,23 +295,23 @@ void testConstructTypeSplit()
         std::cout<<"Map "<<i<<" has "<<newContainer->getNbItems()<<" items."<<std::endl;
         std::cout<<"Map "<<i<<" has "<<newContainer->getMap()->size()<<" fields."<<std::endl;
         newContainer->printKeys();
-        printMap(*newContainer);
+        printMap(pConstructData(newContainer));
         std::cout<<"==========================="<<std::endl;
     }
     std::cout<<"----------------------------"<<std::endl;
 
     std::cout<<"MERGING SPLITTED OBJECTS"<<std::endl;
-    ConstructData mergeContainer;
+    pConstructData mergeContainer;
     for(unsigned int i = 0; i < partialContainers.size(); i++)
     {
-        if(!mergeContainer.merge(partialContainers.at(i)))
+        if(!mergeContainer->merge(partialContainers.at(i)))
             std::cout<<"ERROR : merging failed"<<std::endl;
         printMap(mergeContainer);
     }
     std::cout<<"==========================="<<std::endl;
-    std::cout<<"Merged map has "<<mergeContainer.getNbItems()<<" items."<<std::endl;
-    std::cout<<"Merged map has "<<mergeContainer.getMap()->size()<<" fields."<<std::endl;
-    mergeContainer.printKeys();
+    std::cout<<"Merged map has "<<mergeContainer->getNbItems()<<" items."<<std::endl;
+    std::cout<<"Merged map has "<<mergeContainer->getMap()->size()<<" fields."<<std::endl;
+    mergeContainer->printKeys();
     std::cout<<"==========================="<<std::endl;
 }
 
@@ -343,16 +343,16 @@ void testConstructTypeSplitMPI()
         std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
-        ConstructData container;
-        container.appendData(std::string("nbParticules"), data,
+        pConstructData container;
+        container->appendData(std::string("nbParticules"), data,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
-        container.appendData(std::string("pos"), array,
+        container->appendData(std::string("pos"), array,
                              DECAF_NOFLAG, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         std::vector<int> ranges {1,2,1};
-        std::vector<std::shared_ptr<BaseData> > partialContainers = container.split(ranges);
+        std::vector<std::shared_ptr<BaseData> > partialContainers = container->split(ranges);
         std::cout<<"----------------------------"<<std::endl
                  <<"Number of splits containers : "<<partialContainers.size()<<std::endl;
         for(unsigned int i = 0; i < partialContainers.size(); i++)
@@ -362,7 +362,7 @@ void testConstructTypeSplitMPI()
             std::cout<<"Map "<<i<<" has "<<newContainer->getNbItems()<<" items."<<std::endl;
             std::cout<<"Map "<<i<<" has "<<newContainer->getMap()->size()<<" fields."<<std::endl;
             newContainer->printKeys();
-            printMap(*newContainer);
+            printMap(pConstructData(newContainer));
             std::cout<<"==========================="<<std::endl;
         }
         std::cout<<"----------------------------"<<std::endl;
@@ -386,7 +386,7 @@ void testConstructTypeSplitMPI()
     {
 
         std::cout<<"Rank "<<rank<<" Receiving data"<<std::endl;
-        ConstructData container;
+        pConstructData container;
         MPI_Status status;
         MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         if (status.MPI_TAG == 0)  // normal, non-null get
@@ -395,16 +395,16 @@ void testConstructTypeSplitMPI()
             MPI_Get_count(&status, MPI_BYTE, &nitems);
 
             //Allocating the space necessary
-            container.allocate_serial_buffer(nitems);
+            container->allocate_serial_buffer(nitems);
 
-            MPI_Recv(container.getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
+            MPI_Recv(container->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
                      status.MPI_TAG, MPI_COMM_WORLD, &status);
-            container.merge();
+            container->merge();
         }
         std::cout<<"==========================="<<std::endl;
-        std::cout<<"Merged map has "<<container.getNbItems()<<" items."<<std::endl;
-        std::cout<<"Merged map has "<<container.getMap()->size()<<" fields."<<std::endl;
-        container.printKeys();
+        std::cout<<"Merged map has "<<container->getNbItems()<<" items."<<std::endl;
+        std::cout<<"Merged map has "<<container->getMap()->size()<<" fields."<<std::endl;
+        container->printKeys();
         printMap(container);
         std::cout<<"==========================="<<std::endl;
 
@@ -412,7 +412,7 @@ void testConstructTypeSplitMPI()
         //No need to serialize again, we haven't touch the serial buffer
         // NOTE : Normally we use getOutSerialBuffer() to get the serial buffer
         // But here the container only forward data without deserialize/reserialize the data
-        MPI_Send(container.getInSerialBuffer(), container.getInSerialBufferSize(),
+        MPI_Send(container->getInSerialBuffer(), container->getInSerialBufferSize(),
                  MPI_BYTE, 0, 0, MPI_COMM_WORLD);
         std::cout<<"Sending back the splitted containers completed."<<std::endl;
     }
@@ -420,7 +420,7 @@ void testConstructTypeSplitMPI()
     if(rank == 0)
     {
         std::cout<<"Receiving the data after splitting. Merging..."<<std::endl;
-        ConstructData container;
+        pConstructData container;
         for(int i = 0; i < 3; i++)
         {
             MPI_Status status;
@@ -431,17 +431,17 @@ void testConstructTypeSplitMPI()
                 MPI_Get_count(&status, MPI_BYTE, &nitems);
 
                 //Allocating the space necessary
-                container.allocate_serial_buffer(nitems);
+                container->allocate_serial_buffer(nitems);
 
-                MPI_Recv(container.getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
+                MPI_Recv(container->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
                          status.MPI_TAG, MPI_COMM_WORLD, &status);
-                container.merge();
+                container->merge();
             }
         }
         std::cout<<"==========================="<<std::endl;
-        std::cout<<"Final Merged map has "<<container.getNbItems()<<" items."<<std::endl;
-        std::cout<<"Final Merged map has "<<container.getMap()->size()<<" fields."<<std::endl;
-        container.printKeys();
+        std::cout<<"Final Merged map has "<<container->getNbItems()<<" items."<<std::endl;
+        std::cout<<"Final Merged map has "<<container->getMap()->size()<<" fields."<<std::endl;
+        container->printKeys();
         printMap(container);
         std::cout<<"==========================="<<std::endl;
 
@@ -482,12 +482,11 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
 
-        std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
-        std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
-        object->appendData(std::string("nbParticules"), data,
+        pConstructData container;
+        container->appendData(std::string("nbParticules"), data,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
-        object->appendData(std::string("pos"), array,
+        container->appendData(std::string("pos"), array,
                              DECAF_NOFLAG, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
@@ -495,14 +494,14 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
     }
     else if(rank < nbSource + nbReceptors)
     {
-        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        pConstructData result;
         component.process(result, decaf::DECAF_REDIST_DEST);
 
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<std::endl;
         std::cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<std::endl;
         result->printKeys();
-        printMap(*result);
+        printMap(result);
         std::cout<<"==========================="<<std::endl;
         std::cout<<"Simple test between "<<nbSource<<" producers and "<<nbReceptors<<" consummer completed"<<std::endl;
     }
@@ -555,7 +554,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
         std::shared_ptr<SimpleConstructData<int> > data  =
                 std::make_shared<SimpleConstructData<int> >( 1 );
 
-        std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
+        pConstructData container;
         container->appendData(std::string("t_current"), data,
                              DECAF_NOFLAG, DECAF_PRIVATE,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
@@ -565,7 +564,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
     }
     if(rank >= startReceptors && rank < startReceptors + nbReceptors)
     {
-        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        pConstructData result;
         component->process(result, decaf::DECAF_REDIST_DEST);
         component->flush();
 

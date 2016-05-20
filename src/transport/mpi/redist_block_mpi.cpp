@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include <decaf/transport/mpi/redist_block_mpi.h>
-#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/blockconstructdata.hpp>
 
 #include <sys/time.h>
@@ -155,14 +155,13 @@ RedistBlockMPI::updateBlockDomainFields()
     for(unsigned int i = 0; i < subblocks_.size(); i++)
     {
         std::shared_ptr<BlockConstructData> newBlock = std::make_shared<BlockConstructData>(subblocks_[i]);
-        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(splitBuffer_[i]);
-        container->updateData("domain_block", newBlock);
+        splitBuffer_[i]->updateData("domain_block", newBlock);
     }
 }
 
 void
 decaf::
-RedistBlockMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
+RedistBlockMPI::computeGlobal(pConstructData& data, RedistRole role)
 {
 
     // The user has to provide the global block structure.
@@ -171,17 +170,8 @@ RedistBlockMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
     if(role == DECAF_REDIST_SOURCE && subblocks_.empty())
     {
 
-        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
-
-        if(!container)
-        {
-            std::cerr<<"ERROR : Can not convert the data into a ConstructData. ConstructData "
-                     <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
-            MPI_Abort(MPI_COMM_WORLD, 0);
-        }
-
         std::shared_ptr<BlockConstructData> blockData =
-                container->getTypedData<BlockConstructData>("domain_block");
+                data->getTypedData<BlockConstructData>("domain_block");
         if(!blockData)
         {
             std::cerr<<"ERROR : Can not access or convert the field \'domain_block\' in the data model. "
@@ -196,7 +186,7 @@ RedistBlockMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 
 void
 decaf::
-RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
+RedistBlockMPI::splitData(pConstructData& data, RedistRole role)
 {
 
     struct timeval begin;
@@ -205,17 +195,8 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
     if(role == DECAF_REDIST_SOURCE){
         gettimeofday(&begin, NULL);
 
-        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
-
-        if(!container)
-        {
-            std::cerr<<"ERROR : Can not convert the data into a ConstructData. ConstructData "
-                    <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
-            MPI_Abort(MPI_COMM_WORLD, 0);
-        }
-
         if(splitBuffer_.empty())
-            container->preallocMultiple(nbDests_, 34000, splitBuffer_); // TODO : remove the hard coded value
+            data.preallocMultiple(nbDests_, 34000, splitBuffer_); // TODO : remove the hard coded value
         else
         {
             for(unsigned int i = 0; i < splitBuffer_.size(); i++)
@@ -231,7 +212,7 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 
         // Always generates as many split data model as subblocks
         // Subdata model might be empty (no items)
-        container->split( subblocks_, splitBuffer_ );
+        data->split( subblocks_, splitBuffer_ );
 
         //Pushing the subdomain block into each split chunk.
         //The field domain_block is updated
@@ -277,7 +258,7 @@ RedistBlockMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 
 /*void
 decaf::
-RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
+RedistBlockMPI::redistribute(pConstructData data, RedistRole role)
 {
     // Sum the number of emission for each destination
     if(role == DECAF_REDIST_SOURCE)
@@ -410,7 +391,7 @@ RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
 
 /*void
 decaf::
-RedistBlockMPI::redistribute(std::shared_ptr<BaseData> data, RedistRole role)
+RedistBlockMPI::redistribute(pConstructData data, RedistRole role)
 {
     struct timeval beginRedist;
     struct timeval endRedist;

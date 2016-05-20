@@ -20,9 +20,7 @@
 #include <boost/serialization/split_free.hpp>
 #include <boost/unordered_map.hpp>
 
-
-
-
+#include <decaf/data_model/maptools.h>
 
 #include <assert.h>
 #include <math.h>
@@ -46,6 +44,8 @@ extern double timeGlobalReceiv;
 
 namespace decaf {
 
+class pConstructData;
+
 class ConstructData  : public BaseData {
 
 public:
@@ -62,7 +62,7 @@ public:
     
     bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
-    void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<ConstructData> >& result);
+    //void preallocMultiple(int nbCopies , int nbItems, std::vector<pConstructData >& result);
 
     bool removeData(std::string name);
 
@@ -94,20 +94,21 @@ public:
     // Version to call for buffering
     virtual void split(
             const std::vector<int>& range,
-            std::vector<std::shared_ptr<ConstructData> > buffers);
+            std::vector<pConstructData > buffers);
 
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<std::vector<int> >& range);
 
     virtual void split(
             const std::vector<std::vector<int> >& range,
-            std::vector<std::shared_ptr<ConstructData> > buffers);
+            std::vector<pConstructData > buffers);
 
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<Block<3> >& range);
 
     virtual void split(
-            const std::vector<Block<3> >& range, std::vector<std::shared_ptr<ConstructData> >& buffers);
+            const std::vector<Block<3> >& range,
+            std::vector<pConstructData >& buffers);
 
     virtual bool merge(std::shared_ptr<BaseData> other);
 

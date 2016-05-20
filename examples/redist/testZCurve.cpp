@@ -16,7 +16,7 @@
 
 #include <decaf/data_model/vectorconstructdata.hpp>
 #include <decaf/data_model/simpleconstructdata.hpp>
-#include <decaf/data_model/constructtype.h>
+#include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/boost_macros.h>
 
 #include <boost/serialization/serialization.hpp>
@@ -225,7 +225,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
 
-        std::shared_ptr<ConstructData> container = std::make_shared<ConstructData>();
+        pConstructData container = std::make_shared<ConstructData>();
 
         std::stringstream filename;
         filename<<basename<<rank<<"_before.ply";
@@ -242,7 +242,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
     }
     if(isBetween(rank, startReceptors, nbReceptors))
     {
-        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        pConstructData result;
         component->process(result, decaf::DECAF_REDIST_DEST);
         component->flush();
 
@@ -256,9 +256,8 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
 
         std::stringstream filename;
-        std::shared_ptr<BaseConstructData> data = result->getData("pos");
-        std::shared_ptr<VectorConstructData<float> > pos =
-                dynamic_pointer_cast<VectorConstructData<float> >(data);
+
+        std::shared_ptr<VectorConstructData<float> > pos = result->getTypedData<VectorConstructData<float> >("pos");
         filename<<basename<<rank<<".ply";
         posToFile(pos->getVector(), filename.str(),r,g,b);
     }
