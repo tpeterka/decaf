@@ -66,12 +66,10 @@ void con(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
+            shared_ptr<SimpleConstructData<int> > ptr = in_data[i]->getTypedData<SimpleConstructData<int> >(string("var"));
             if (ptr)
             {
-                shared_ptr<SimpleConstructData<int> > val =
-                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-                sum += val->getData();
+                sum += ptr->getData();
             }
             else
                 fprintf(stderr, "Error: null pointer in con\n");
