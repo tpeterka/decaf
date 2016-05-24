@@ -233,7 +233,6 @@ int main(int argc,
     node.start_proc = 5;
     node.nprocs = 1;
     node.func = "print";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();
@@ -242,7 +241,6 @@ int main(int argc,
     node.start_proc = 9;
     node.nprocs = 1;
     node.func = "print";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();
@@ -252,7 +250,6 @@ int main(int argc,
     node.start_proc = 7;
     node.nprocs = 1;
     node.func = "print2";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();
@@ -262,7 +259,6 @@ int main(int argc,
     node.start_proc = 0;
     node.nprocs = 4;
     node.func = "lammps";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     // fill workflow links

@@ -81,6 +81,7 @@ if(Boost_FOUND)
     linear-3nodes-partial-overlap.py
     linear-3nodes-total-overlap.py
     cycle-4nodes-no-overlap.py
+    DIRECT_TEST
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/python
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_WRITE GROUP_EXECUTE

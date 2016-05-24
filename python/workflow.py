@@ -3,15 +3,10 @@
 import imp
 
 def workflow(graph,
-             run_path,
-             source_nodes=None):
-
-    if source_nodes is None:
-        source_nodes = []
+             run_path):
 
     nodes   = []
     links   = []
-    sources = []                                 # indices of source nodes
 
     # load the module
     # hard-coded name 'pymod' must match name of module in PYBIND11_PLUGIN in decaf.hpp
@@ -22,12 +17,9 @@ def workflow(graph,
     for node in graph.nodes_iter(data=True):
         wnode = mod.WorkflowNode(node[1]['start_proc'],
                                  node[1]['nprocs'],
-                                 node[1]['func'],
-                                 node[1]['path'])
+                                 node[1]['func'])
         nodes.append(wnode)
         node[1]['index'] = i
-        if (source_nodes.count(node[0])):
-            sources.append(i)
         i += 1
 
     # iterate over edges
@@ -55,5 +47,5 @@ def workflow(graph,
     wflow = mod.Workflow(nodes, links);
 
     # run the workflow
-    mod.run(wflow, sources)
+    mod.run(wflow)
 
