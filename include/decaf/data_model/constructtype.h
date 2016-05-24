@@ -5,6 +5,7 @@
 #include <decaf/data_model/basedata.h>
 #include <decaf/data_model/vectorconstructdata.hpp>
 #include <decaf/data_model/block.hpp>
+#include <decaf/data_model/basefield.hpp>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -55,6 +56,13 @@ public:
 
     bool appendData(std::string name,
                     std::shared_ptr<BaseConstructData>  data,
+                    ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
+                    ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
+                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+
+    bool appendData(std::string name,
+                    BaseField&  data,
                     ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
@@ -158,6 +166,9 @@ public:
     template<typename T>
     std::shared_ptr<T> getTypedData(std::string key);
 
+    template<typename T>
+    T getFieldData(std::string key);
+
     void updateNbItems();
 
 protected:
@@ -207,6 +218,21 @@ ConstructData::getTypedData(std::string key)
     assert(result);
 
     return result;
+}
+
+template<typename T>
+T
+decaf::
+ConstructData::getFieldData(std::string key)
+{
+    std::shared_ptr<BaseConstructData> field = this->getData(key);
+    if(!field)
+    {
+        std::cerr<<"Fail cast in getFieldData when requesting the field \""<<key<<"\""<<std::endl;
+        return T();
+    }
+
+    return T(field);
 }
 
 } //namespace
