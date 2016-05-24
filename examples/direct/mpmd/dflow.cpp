@@ -16,8 +16,7 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -37,7 +36,7 @@ extern "C"
     // dataflow just forwards everything that comes its way in this example
     void dflow(void* args,                          // arguments to the callback
                Dataflow* dataflow,                  // dataflow
-               shared_ptr<ConstructData> in_data)   // input data
+               pConstructData in_data)   // input data
     {
         dataflow->put(in_data, DECAF_LINK);
     }

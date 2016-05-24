@@ -11,8 +11,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -104,9 +104,9 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         // TODO: send data instead of the token (don't write to a file)
         fprintf(stderr, "tess sending token\n");
         int value = 0;
-        shared_ptr<SimpleConstructData<int> > data =
-            make_shared<SimpleConstructData<int> >(value);
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+
+        SimpleFieldi data(value);
+        pConstructData container;
         container->appendData(string("var"), data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);

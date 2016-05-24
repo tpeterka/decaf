@@ -16,8 +16,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -34,7 +34,7 @@ using namespace std;
 // consumer
 void con(Decaf* decaf)
 {
-    vector< shared_ptr<ConstructData> > in_data;
+    vector< pConstructData > in_data;
 
     while (decaf->get(in_data))
     {
@@ -43,13 +43,9 @@ void con(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
-            if (ptr)
-            {
-                shared_ptr<SimpleConstructData<int> > val =
-                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-                sum += val->getData();
-            }
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi>(string("var"));
+            if (field)
+                sum += field.getData();
             else
                 fprintf(stderr, "Error: null pointer in con\n");
         }

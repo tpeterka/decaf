@@ -11,8 +11,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -68,7 +68,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
 
     // event loop
     // TODO: verify that all of the below can run iteratively, only tested for one time step
-    vector< shared_ptr<ConstructData> > in_data;
+    vector< pConstructData > in_data;
     while (decaf->get(in_data))
     {
         // timing

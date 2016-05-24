@@ -16,8 +16,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -40,9 +40,9 @@ void prod(Decaf* decaf)
         fprintf(stderr, "producer timestep %d\n", timestep);
 
         // the data in this example is just the timestep; add it to a container
-        shared_ptr<SimpleConstructData<int> > data =
-            make_shared<SimpleConstructData<int> >(timestep);
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        SimpleFieldi data(timestep);
+
+        pConstructData container;
         container->appendData(string("var"), data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
