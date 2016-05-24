@@ -191,7 +191,6 @@ void node_d(Decaf* decaf)
 
         // add 1 to the sum and send it back (for example)
         sum++;
-        //shared_ptr<SimpleConstructData<int> > data  = make_shared<SimpleConstructData<int> >(sum);
         SimpleFieldi data(sum);
         pConstructData container;
         container->appendData(string("var"), data,
