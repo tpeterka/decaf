@@ -17,8 +17,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/simplefield.hpp>
 
 #include <decaf/data_model/boost_macros.h>
 
@@ -40,9 +40,9 @@ void node0(Decaf* decaf)
         fprintf(stderr, "node0 timestep %d\n", timestep);
 
         // the data in this example is just the timestep; add it to a container
-        shared_ptr<SimpleConstructData<int> > data =
-            make_shared<SimpleConstructData<int> >(timestep);
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        SimpleFieldi data(timestep);
+
+        pConstructData container;
         container->appendData(string("var"), data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
@@ -60,7 +60,7 @@ void node0(Decaf* decaf)
 // intermediate node is both a consumer and producer
 void node1(Decaf* decaf)
 {
-    vector< shared_ptr<ConstructData> > in_data;
+    vector< pConstructData > in_data;
 
     while (decaf->get(in_data))
     {
@@ -69,13 +69,9 @@ void node1(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
-            if (ptr)
-            {
-                shared_ptr<SimpleConstructData<int> > val =
-                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-                sum += val->getData();
-            }
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi>(string("var"));
+            if(field)
+                sum += field.getData();
             else
                 fprintf(stderr, "Error: null pointer in node1\n");
         }
@@ -83,8 +79,8 @@ void node1(Decaf* decaf)
         fprintf(stderr, "node1: sum = %d\n", sum);
 
         // append the sum to a container
-        shared_ptr<SimpleConstructData<int> > data  = make_shared<SimpleConstructData<int> >(sum);
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        SimpleFieldi data(sum);
+        pConstructData container;
         container->appendData(string("var"), data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
@@ -102,7 +98,7 @@ void node1(Decaf* decaf)
 // consumer
 void node2(Decaf* decaf)
 {
-    vector< shared_ptr<ConstructData> > in_data;
+    vector< pConstructData > in_data;
 
     while (decaf->get(in_data))
     {
@@ -111,13 +107,9 @@ void node2(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<BaseConstructData> ptr = in_data[i]->getData(string("var"));
-            if (ptr)
-            {
-                shared_ptr<SimpleConstructData<int> > val =
-                    dynamic_pointer_cast<SimpleConstructData<int> >(ptr);
-                sum += val->getData();
-            }
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >(string("var"));
+            if(field)
+                sum += field.getData();
             else
                 fprintf(stderr, "Error: null pointer in node2\n");
         }
@@ -134,7 +126,7 @@ extern "C"
     // dataflow just forwards everything that comes its way in this example
     void dflow(void* args,                          // arguments to the callback
                Dataflow* dataflow,                  // dataflow
-               shared_ptr<ConstructData> in_data)   // input data
+               pConstructData in_data)   // input data
     {
         dataflow->put(in_data, DECAF_LINK);
     }

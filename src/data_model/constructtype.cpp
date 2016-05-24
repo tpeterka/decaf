@@ -5,44 +5,18 @@
 
 #include <decaf/data_model/simpleconstructdata.hpp>
 
+#include <decaf/data_model/maptools.h>
+#include <decaf/data_model/pconstructtype.h>
+
 using namespace decaf;
 using namespace std;
+
 
 double timeGlobalSplit = 0.0;
 double timeGlobalBuild = 0.0;
 double timeGlobalMerge = 0.0;
 double timeGlobalRedist = 0.0;
 double timeGlobalReceiv = 0.0;
-
-ConstructTypeFlag& getFlag(datafield& field)
-{
-    return std::get<0>(field);
-}
-
-ConstructTypeScope& getScope(datafield& field)
-{
-    return std::get<1>(field);
-}
-
-int& getNbItemsField(datafield& field)
-{
-    return std::get<2>(field);
-}
-
-std::shared_ptr<BaseConstructData>& getBaseData(datafield& field)
-{
-    return std::get<3>(field);
-}
-
-ConstructTypeSplitPolicy& getSplitPolicy(datafield& field)
-{
-    return std::get<4>(field);
-}
-
-ConstructTypeMergePolicy& getMergePolicy(datafield& field)
-{
-    return std::get<5>(field);
-}
 
 bool
 decaf::
@@ -93,35 +67,6 @@ ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false),
     data_ = static_pointer_cast<void>(container_);
 }
 
-void 
-decaf::
-ConstructData::preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<ConstructData> >& result)
-{
-    // Creating all the empty container
-    for(int i = 0; i < nbCopies; i++)
-    {
-        result.push_back(std::make_shared<ConstructData>());
-    }
-
-    // Going through all the field and preallocating them for the new container
-    for(std::map<std::string, datafield>::iterator it = container_->begin(); it != container_->end(); it++)
-    {
-        std::vector<std::shared_ptr<BaseConstructData> > emptyFields;
-        getBaseData(it->second)->preallocMultiple(nbCopies, nbItems, emptyFields);
-
-        for(int i = 0; i < nbCopies; i++)
-        {
-
-            result.at(i)->appendData(it->first,
-                                     emptyFields.at(i),
-                                     getFlag(it->second),
-                                     getScope(it->second),
-                                     getSplitPolicy(it->second),
-                                     getMergePolicy(it->second));
-        }
-    }
-}
-
 bool 
 decaf::
 ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int index)
@@ -163,6 +108,29 @@ ConstructData::appendData(std::string name,
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
+    ret = container_->insert(std::pair<std::string, datafield>(name, newEntry));
+
+    if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+    {
+        std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+        merge_order_.clear();
+        split_order_.clear();
+    }
+
+    return ret.second && updateMetaData();
+}
+
+bool
+decaf::
+ConstructData::appendData(std::string name,
+                BaseField&  data,
+                ConstructTypeFlag flags,
+                ConstructTypeScope scope,
+                ConstructTypeSplitPolicy splitFlag,
+                ConstructTypeMergePolicy mergeFlag)
+{
+    std::pair<std::map<std::string, datafield>::iterator,bool> ret;
+    datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
     ret = container_->insert(std::pair<std::string, datafield>(name, newEntry));
 
     if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
@@ -418,16 +386,12 @@ ConstructData::split(const std::vector<int>& range)
 void
 decaf::
 ConstructData::split(const std::vector<int>& range,
-                     std::vector<std::shared_ptr<ConstructData> > buffers)
+                     std::vector<pConstructData> buffers)
 {
-    std::vector< std::shared_ptr<BaseData> > result;
     std::vector< mapConstruct > result_maps;
     for(unsigned int i = 0; i < range.size(); i++)
     {
-        result.push_back(std::make_shared<ConstructData>());
-        std::shared_ptr<ConstructData> construct =
-                dynamic_pointer_cast<ConstructData>(result.back());
-        result_maps.push_back(construct->getMap());
+        result_maps.push_back(buffers[i]->getMap());
     }
 
     //Sanity check
@@ -618,9 +582,8 @@ ConstructData::split(
 
 void
 decaf::
-ConstructData::split(
-            const std::vector<std::vector<int> >& range,
-            std::vector<std::shared_ptr<ConstructData> > buffers)
+ConstructData::split(const std::vector<std::vector<int> >& range,
+            std::vector<pConstructData> buffers)
 {
     std::vector< mapConstruct > result_maps;
     for(unsigned int i = 0; i < range.size(); i++)
@@ -1077,7 +1040,7 @@ void
 decaf::
 ConstructData::split(
             const std::vector<Block<3> >& range,
-            std::vector<std::shared_ptr<ConstructData> >& buffers)
+            std::vector<pConstructData >& buffers)
 {
     struct timeval begin;
     struct timeval end;

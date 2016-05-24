@@ -22,7 +22,7 @@
 
 void
 decaf::
-RedistRoundMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
+RedistRoundMPI::computeGlobal(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
@@ -48,7 +48,7 @@ RedistRoundMPI::computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)
 
 void
 decaf::
-RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
+RedistRoundMPI::splitData(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE){
 
@@ -95,21 +95,12 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
 
         }
 
-        std::shared_ptr<ConstructData> container = std::dynamic_pointer_cast<ConstructData>(data);
-
-        if(!container)
-        {
-            std::cerr<<"ERROR : Can not convert the data into a ConstructData. ConstructData "
-                    <<"is required when using the Redist_block_mpi redistribution."<<std::endl;
-            MPI_Abort(MPI_COMM_WORLD, 0);
-        }
-
         //if(useBuffer_)
         //{
         if(splitBuffer_.empty())
             // We prealloc with 0 to avoid allocating too much iterations
             // The first iteration will make a reasonable allocation
-            container->preallocMultiple(nbDests_, 0, splitBuffer_);
+            data.preallocMultiple(nbDests_, 0, splitBuffer_);
         else
         {
             // No need to adjust the number of buffer, always equal to the number of destination
@@ -118,7 +109,7 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         }
 
         //splitChunks_ =  data->split( split_ranges );
-        container->split(split_ranges, splitBuffer_);
+        data->split(split_ranges, splitBuffer_);
 
         for(unsigned int i = 0; i < splitBuffer_.size(); i++)
             splitChunks_.push_back(splitBuffer_[i]);
@@ -127,7 +118,7 @@ RedistRoundMPI::splitData(std::shared_ptr<BaseData> data, RedistRole role)
         {
             // TODO : Check the rank for the destination.
             // Not necessary to serialize if overlapping
-            if(!splitChunks_.at(i)->serialize())
+            if(!splitChunks_[i]->serialize())
                 std::cout<<"ERROR : unable to serialize one object"<<std::endl;
         }
 

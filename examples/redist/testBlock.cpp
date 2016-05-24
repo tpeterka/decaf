@@ -236,7 +236,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
         //Sending to the first
 
-        shared_ptr<ConstructData> container = make_shared<ConstructData>();
+        pConstructData container;
 
         shared_ptr<ArrayConstructData<float> > array =
                 make_shared<ArrayConstructData<float> >( pos, 3*nbParticule, 3, false, container->getMap() );
@@ -269,7 +269,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
     }
     if(isBetween(rank, startReceptors, nbReceptors))
     {
-        shared_ptr<ConstructData> result = make_shared<ConstructData>();
+        pConstructData result;
         component->process(result, decaf::DECAF_REDIST_DEST);
         component->flush();
 

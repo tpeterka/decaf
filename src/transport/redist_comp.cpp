@@ -57,17 +57,17 @@ RedistComp::isDest()
 }
 
 // merge the chunks from the vector receivedChunks into one single data object.
-std::shared_ptr<decaf::BaseData>
+decaf::pConstructData
 decaf::
 RedistComp::merge(RedistRole role)
 {
-    return std::shared_ptr<BaseData>();
+    return pConstructData();
 }
 
 // processes the redistribute communication, whether put or get
 void
 decaf::
-RedistComp::process(std::shared_ptr<BaseData> data,
+RedistComp::process(pConstructData& data,
                     RedistRole role)
 {
     double timeGlobal = 0.0, timeSplit = 0.0, timeRedist = 0.0;

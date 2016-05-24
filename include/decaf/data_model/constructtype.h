@@ -5,6 +5,7 @@
 #include <decaf/data_model/basedata.h>
 #include <decaf/data_model/vectorconstructdata.hpp>
 #include <decaf/data_model/block.hpp>
+#include <decaf/data_model/basefield.hpp>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -20,9 +21,7 @@
 #include <boost/serialization/split_free.hpp>
 #include <boost/unordered_map.hpp>
 
-
-
-
+#include <decaf/data_model/maptools.h>
 
 #include <assert.h>
 #include <math.h>
@@ -46,6 +45,8 @@ extern double timeGlobalReceiv;
 
 namespace decaf {
 
+class pConstructData;
+
 class ConstructData  : public BaseData {
 
 public:
@@ -59,10 +60,17 @@ public:
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
                     ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+
+    bool appendData(std::string name,
+                    BaseField&  data,
+                    ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
+                    ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
+                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
     
     bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
-    void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<ConstructData> >& result);
+    //void preallocMultiple(int nbCopies , int nbItems, std::vector<pConstructData >& result);
 
     bool removeData(std::string name);
 
@@ -94,20 +102,21 @@ public:
     // Version to call for buffering
     virtual void split(
             const std::vector<int>& range,
-            std::vector<std::shared_ptr<ConstructData> > buffers);
+            std::vector<pConstructData > buffers);
 
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<std::vector<int> >& range);
 
     virtual void split(
             const std::vector<std::vector<int> >& range,
-            std::vector<std::shared_ptr<ConstructData> > buffers);
+            std::vector<pConstructData > buffers);
 
     virtual std::vector< std::shared_ptr<BaseData> > split(
             const std::vector<Block<3> >& range);
 
     virtual void split(
-            const std::vector<Block<3> >& range, std::vector<std::shared_ptr<ConstructData> >& buffers);
+            const std::vector<Block<3> >& range,
+            std::vector<pConstructData >& buffers);
 
     virtual bool merge(std::shared_ptr<BaseData> other);
 
@@ -156,6 +165,9 @@ public:
 
     template<typename T>
     std::shared_ptr<T> getTypedData(std::string key);
+
+    template<typename T>
+    T getFieldData(std::string key);
 
     void updateNbItems();
 
@@ -206,6 +218,21 @@ ConstructData::getTypedData(std::string key)
     assert(result);
 
     return result;
+}
+
+template<typename T>
+T
+decaf::
+ConstructData::getFieldData(std::string key)
+{
+    std::shared_ptr<BaseConstructData> field = this->getData(key);
+    if(!field)
+    {
+        std::cerr<<"Fail cast in getFieldData when requesting the field \""<<key<<"\""<<std::endl;
+        return T();
+    }
+
+    return T(field);
 }
 
 } //namespace

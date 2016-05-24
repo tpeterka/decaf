@@ -13,7 +13,7 @@
 #ifndef DECAF_REDIST_COMP_H
 #define DECAF_REDIST_COMP_H
 
-#include <decaf/data_model/basedata.h>
+#include <decaf/data_model/pconstructtype.h>
 #include <vector>
 #include <memory>
 #include <iostream>
@@ -79,7 +79,7 @@ namespace decaf
 
         // Run the pipeline of operations to redistribute the data.
         // This function is the only one that should be called from the main program
-        void process(std::shared_ptr<BaseData> data, RedistRole role);
+        void process(pConstructData& data, RedistRole role);
 
         int getRankSource();
         int getNbSources();
@@ -98,21 +98,21 @@ namespace decaf
 
         // Compute the values necessary to determine how the data should be
         // splitted and redistributed.
-        virtual void computeGlobal(std::shared_ptr<BaseData> data, RedistRole role)=0;
+        virtual void computeGlobal(pConstructData& data, RedistRole role)=0;
 
         // Seperate system only data model. The data won't be split but duplicated
-        virtual void splitSystemData(std::shared_ptr<BaseData> data, RedistRole role)=0;
+        virtual void splitSystemData(pConstructData& data, RedistRole role)=0;
 
         // Seperate the Data into chunks for each destination involve in the
         // component and fill the splitChunks vector
-        virtual void splitData(std::shared_ptr<BaseData> data, RedistRole role)=0;
+        virtual void splitData(pConstructData& data, RedistRole role)=0;
 
         // Transfer the chunks from the sources to the destination. The data
         // should be stored in the vector receivedChunks
-        virtual void redistribute(std::shared_ptr<BaseData> data, RedistRole role)=0;
+        virtual void redistribute(pConstructData& data, RedistRole role)=0;
 
         // Merge the chunks from the vector receivedChunks into one single Data.
-        std::shared_ptr<BaseData> merge(RedistRole role);
+        pConstructData merge(RedistRole role);
 
         int rankSource_;                   // Rank of the first source (=sender)
         int nbSources_;                    // Number of sources, supposed to be consecutive
@@ -131,8 +131,8 @@ namespace decaf
         int send_data_tag;
         int recv_data_tag;
 
-        std::vector<std::shared_ptr<BaseData> > splitChunks_;
-        std::vector<std::shared_ptr<char> > receivedChunks_;
+        std::vector<pConstructData > splitChunks_;
+        //std::vector<std::shared_ptr<char> > receivedChunks_;
         int* summerizeDest_;
         std::vector<int> destList_;
 

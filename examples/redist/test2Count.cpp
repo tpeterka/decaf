@@ -203,7 +203,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         std::shared_ptr<SimpleConstructData<int> > data1  =
             std::make_shared<SimpleConstructData<int> >( nbParticle );
 
-        std::shared_ptr<ConstructData> container1 = std::make_shared<ConstructData>();
+        pConstructData container1;
 
         container1->appendData(std::string("nbParticles"), data1,
                             DECAF_NOFLAG, DECAF_SHARED,
@@ -221,7 +221,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
             std::make_shared<SimpleConstructData<int> >( nbParticle );
 
 
-        std::shared_ptr<ConstructData> container2 = std::make_shared<ConstructData>();
+        pConstructData container2;
 
         container2->appendData(std::string("nbParticles"), data2,
                             DECAF_NOFLAG, DECAF_SHARED,
@@ -238,7 +238,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     if (isBetween(rank, startReceptors1, nbReceptors1))
     {
         fprintf(stderr, "Receiving at Receptor1...\n");
-        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        pConstructData result;
         component1->process(result, decaf::DECAF_REDIST_DEST);
         component1->flush();    // We still need to flush if not doing a get/put
 
@@ -257,7 +257,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
     if (isBetween(rank, startReceptors2, nbReceptors2))
     {
         fprintf(stderr, "Receiving at Receptor2...\n");
-        std::shared_ptr<ConstructData> result = std::make_shared<ConstructData>();
+        pConstructData result;
         component2->process(result, decaf::DECAF_REDIST_DEST);
         component2->flush();    // We still need to flush if not doing a get/put
 
