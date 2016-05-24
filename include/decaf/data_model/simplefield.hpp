@@ -55,6 +55,11 @@ public:
        return ptr_->getData();
    }
 
+   int getNbItems()
+   {
+       return ptr_->getNbItems();
+   }
+
    virtual operator bool() const {
          return ptr_ ? true : false;
        }

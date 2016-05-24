@@ -20,8 +20,8 @@
 //
 //--------------------------------------------------------------------------
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/vectorconstructdata.hpp>
+#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/vectorfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -82,8 +82,8 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
                 //           fprintf(stderr, "%.3lf %.3lf %.3lf\n",
                 // x[3 * i], x[3 * i + 1], x[3 * i + 2]);
 
-                shared_ptr<VectorConstructData<double> > data  =
-                    make_shared<VectorConstructData<double> >(x, 3 * natoms, 3);
+                VectorFliedd data(x, 3 * natoms, 3);
+
                 container->appendData(string("pos"), data,
                                       DECAF_NOFLAG, DECAF_PRIVATE,
                                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
@@ -91,8 +91,7 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
             else
             {
                 vector<double> pos;
-                shared_ptr<VectorConstructData<double> > data  =
-                    make_shared<VectorConstructData<double> >(pos, 3);
+                VectorFliedd data(pos, 3);
                 container->appendData(string("pos"), data,
                                       DECAF_NOFLAG, DECAF_PRIVATE,
                                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
@@ -120,17 +119,17 @@ void print(Decaf* decaf)
         // get the values
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            shared_ptr<VectorConstructData<double> > pos = in_data[i]->getTypedData<VectorConstructData<double> >(string("pos"));
+            VectorFliedd pos = in_data[i]->getFieldData<VectorFliedd>(string("pos"));
             if (pos)
             {
                 // debug
                 fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
-                        pos->getNbItems());
+                        pos.getNbItems());
                 for (int i = 0; i < 10; i++)               // print first few atoms
                     fprintf(stderr, "%.3lf %.3lf %.3lf\n",
-                            pos->getVector()[3 * i],
-                            pos->getVector()[3 * i + 1],
-                            pos->getVector()[3 * i + 2]);
+                            pos.getVector()[3 * i],
+                            pos.getVector()[3 * i + 1],
+                            pos.getVector()[3 * i + 2]);
             }
             else
                 fprintf(stderr, "Error: null pointer in node2\n");

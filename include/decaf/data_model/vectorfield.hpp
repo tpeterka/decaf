@@ -66,6 +66,11 @@ public:
         return ptr_->getVector();
     }
 
+    int getNbItems()
+    {
+        return ptr_->getNbItems();
+    }
+
     virtual operator bool() const {
           return ptr_ ? true : false;
         }
