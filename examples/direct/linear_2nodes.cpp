@@ -146,7 +146,6 @@ int main(int argc,
     node.start_proc = 0;
     node.nprocs = 4;
     node.func = "prod";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();                        // consumer
@@ -155,7 +154,6 @@ int main(int argc,
     node.start_proc = 6;
     node.nprocs = 2;
     node.func = "con";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     // fill workflow link

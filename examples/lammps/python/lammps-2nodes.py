@@ -1,4 +1,5 @@
-# a 4-node workflow example
+# a small 2-node example, just a producer and consumer
+# TODO: update per direct example
 
 import networkx as nx
 import os
@@ -12,15 +13,11 @@ driver_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/python/libpy_lammps
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/libmod_lammps.so'
 
 # define workflow graph
-# 4-node workflow
+# 2-node workflow
 #
-#          print1 (1 proc)
-#        /
-#    lammps (4 procs)
-#        \
-#          print2 (1 proc) - print3 (1 proc)
+#    lammps (4 procs) - print (2 procs)
 #
-#  entire workflow takes 10 procs (1 dataflow proc between each producer consumer pair)
+#  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
 
 w = nx.DiGraph()
@@ -28,14 +25,8 @@ w = nx.DiGraph()
 # example of 4 nodes and 3 edges (single source)
 # this is the example diagrammed above, and for which driver.pyx is made
 w.add_node("lammps", start_proc=0, nprocs=4, func='lammps', path=mod_path)
-w.add_node("print1", start_proc=5, nprocs=1, func='print' , path=mod_path)
-w.add_node("print2", start_proc=7, nprocs=1, func='print2', path=mod_path)
-w.add_node("print3", start_proc=9, nprocs=1, func='print' , path=mod_path)
-w.add_edge("lammps", "print1", start_proc=4, nprocs=1, func='dflow',
-           path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
-w.add_edge("lammps", "print2", start_proc=6, nprocs=1, func='dflow',
-           path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
-w.add_edge("print2", "print3", start_proc=8, nprocs=1, func='dflow',
+w.add_node("print",  start_proc=6, nprocs=2, func='print' , path=mod_path)
+w.add_edge("lammps", "print", start_proc=4, nprocs=2 , func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count')
 
 # total number of time steps
@@ -46,8 +37,6 @@ con_nsteps   = 1
 infile = os.environ['DECAF_PREFIX'] + "/examples/lammps/in.melt"
 
 # --- do not edit below this point --
-
-# call driver
 
 import imp
 driver = imp.load_dynamic('driver', driver_path)

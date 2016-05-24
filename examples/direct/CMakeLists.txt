@@ -1,3 +1,4 @@
+add_subdirectory            (mpmd)
 if                          (python_examples)
   add_subdirectory          (python)
 endif                       (python_examples)

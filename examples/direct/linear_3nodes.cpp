@@ -193,7 +193,6 @@ int main(int argc,
     node.start_proc = 0;
     node.nprocs = 4;
     node.func = "node0";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();                        // node1
@@ -203,7 +202,6 @@ int main(int argc,
     node.start_proc = 7;
     node.nprocs = 2;
     node.func = "node1";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();                        // node2
@@ -212,7 +210,6 @@ int main(int argc,
     node.start_proc = 11;
     node.nprocs = 1;
     node.func = "node2";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     // fill workflow links

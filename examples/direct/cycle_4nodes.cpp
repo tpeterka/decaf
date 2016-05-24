@@ -286,7 +286,6 @@ int main(int argc,
     node.start_proc = 5;
     node.nprocs = 1;
     node.func = "node_b";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();                         // node_d
@@ -295,7 +294,6 @@ int main(int argc,
     node.start_proc = 9;
     node.nprocs = 1;
     node.func = "node_d";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();                         // node_c
@@ -305,7 +303,6 @@ int main(int argc,
     node.start_proc = 7;
     node.nprocs = 1;
     node.func = "node_c";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     node.out_links.clear();                         // node_a
@@ -316,7 +313,6 @@ int main(int argc,
     node.start_proc = 0;
     node.nprocs = 4;
     node.func = "node_a";
-    node.path = path;
     workflow.nodes.push_back(node);
 
     // fill workflow links
