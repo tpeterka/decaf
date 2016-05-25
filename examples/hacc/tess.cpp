@@ -62,7 +62,7 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
 
     // event loop
     // TODO: verify that all of the below can run iteratively, only tested for one time step
-    vector< shared_ptr<ConstructData> > in_data;
+    vector<pConstructData> in_data;
     while (decaf->get(in_data))
     {
         // init diy

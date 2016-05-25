@@ -68,7 +68,6 @@ void con(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            //shared_ptr<SimpleConstructData<int> > ptr = in_data[i]->getTypedData<SimpleConstructData<int> >(string("var"));
             SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >(string("var"));
             if (field)
                 sum += field.getData();
