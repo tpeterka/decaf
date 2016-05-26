@@ -66,7 +66,7 @@ public:
 
    T* getArray()
    {
-       ptr_->getArray();
+       return ptr_->getArray();
    }
 
    virtual int getNbItems()

@@ -16,12 +16,12 @@ endif                       ()
 set                         (CMAKE_CXX_STANDARD        11)
 if                          ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
                              "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
-  set                       (cxx_flags "${cxx_flags} -std=c++11 -stdlib=libc++")
+  set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
   set                       (CMAKE_EXE_LINKER_FLAGS     "-lc++")
   set                       (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
   set                       (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
 else                        ()
-  set                       (cxx_flags "${cxx_flags} -std=c++11")
+  set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif                       ()
 
 # MPI
@@ -30,9 +30,6 @@ if                          (transport_mpi)
   set                       (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
   add_definitions           (-DTRANSPORT_MPI)
 endif                       (transport_mpi)
-
-# Set final flags
-add_definitions             (${cxx_flags})
 
 # Threads
 find_package		    (Threads)
