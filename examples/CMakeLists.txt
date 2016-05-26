@@ -1,6 +1,7 @@
 add_subdirectory            (direct)
 
 add_subdirectory            (redist)
+add_subdirectory            (C)
 #add_subdirectory            (flowvr)
 if                          (LAMMPS_INCLUDE_DIR AND
                              LAMMPS_LIBRARY     AND

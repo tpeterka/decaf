@@ -42,6 +42,7 @@ public:
        ptr_ = std::make_shared<ArrayConstructData<T> >(segments, element_per_items, map);
    }
 
+   virtual ~ArrayField(){}
 
    virtual BaseConstructData* operator -> () const
    {
@@ -68,7 +69,7 @@ public:
        ptr_->getArray();
    }
 
-   int getNbItems()
+   virtual int getNbItems()
    {
        return ptr_->getNbItems();
    }
@@ -86,7 +87,7 @@ private:
 typedef ArrayField<int> ArrayFieldi;
 typedef ArrayField<unsigned int> ArrayFieldu;
 typedef ArrayField<float> ArrayFieldf;
-typedef ArrayField<double> ArrayFliedd;
+typedef ArrayField<double> ArrayFieldd;
 
 } // namespace
 #endif

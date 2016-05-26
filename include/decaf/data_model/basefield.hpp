@@ -18,9 +18,13 @@ public:
         return false;
       }
 
+    virtual ~BaseField(){}
+
     virtual std::shared_ptr<BaseConstructData> getBasePtr() = 0;
 
     virtual bool empty() = 0;
+
+    virtual int getNbItems() = 0;
 
 };
 
