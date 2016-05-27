@@ -536,10 +536,7 @@ public:
                 memcpy(newArray + size_, other_->value_, other_->size_ * sizeof(T));
 
                 if(owner_)
-                {
                     delete[] value_;
-                    std::cout<<"Suppressing the array in merge."<<std::endl;
-                }
                 value_ = newArray;
                 size_ = size_ + other_->size_;
                 capacity_ = size_;

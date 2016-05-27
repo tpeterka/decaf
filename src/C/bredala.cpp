@@ -14,6 +14,12 @@
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/arrayfield.hpp>
 #include <decaf/data_model/simplefield.hpp>
+#include <decaf/transport/redist_comp.h>
+#include <decaf/transport/mpi/redist_block_mpi.h>
+#include <decaf/transport/mpi/redist_count_mpi.h>
+#include <decaf/transport/mpi/redist_round_mpi.h>
+#include <decaf/transport/mpi/redist_zcurve_mpi.h>
+#include <decaf/data_model/boost_macros.h>
 
 namespace
 {
@@ -365,6 +371,7 @@ using namespace decaf;
          * object and vice versa. */
         BOX_TRAITS(bca_constructdata, pConstructData);
         BOX_TRAITS(bca_field, BaseField);
+        BOX_TRAITS(bca_redist, RedistComp);
 
         /* For derivated classes we only associate them with the boxes of their base
          * class. */
@@ -378,6 +385,10 @@ using namespace decaf;
         BOX_TRAITS_2(bca_field, SimpleFieldi);
         BOX_TRAITS_2(bca_field, SimpleFieldu);
         BOX_TRAITS_2(bca_field, SimpleField<char>);
+        BOX_TRAITS_2(bca_redist, RedistBlockMPI);
+        BOX_TRAITS_2(bca_redist, RedistZCurveMPI);
+        BOX_TRAITS_2(bca_redist, RedistRoundMPI);
+        BOX_TRAITS_2(bca_redist, RedistCountMPI);
 
 #	undef BOX_TRAITS
 #	undef BOX_TRAITS_2
@@ -419,7 +430,7 @@ using namespace decaf;
 extern "C"
 {
     bca_constructdata
-    bca_new_constructdata()
+    bca_create_constructdata()
     {
         return box(new pConstructData());
     }
@@ -831,5 +842,63 @@ extern "C"
         return container1->getPtr()->merge(container2->getPtr());
     }
 
+    bca_redist
+    bca_create_redist(bca_RedistType type, int rank_source, int nb_sources, int rank_dest, int nb_dests, MPI_Comm communicator)
+    {
+        switch(type)
+        {
+        case bca_REDIST_COUNT:
+        {
+            return box(new RedistCountMPI(rank_source, nb_sources,
+                                          rank_dest, nb_dests, communicator));
+        }
+        case bca_REDIST_ROUND:
+        {
+            return box(new RedistRoundMPI(rank_source, nb_sources,
+                                          rank_dest, nb_dests, communicator));
+        }
+        case bca_REDIST_ZCURVE:
+        {
+            not_implemented();
+            //return box(new RedistZCurveMPI(rank_source, nb_sources,
+            //                               rank_dest, nb_dests, communicator));
+            break;
+        }
+        case bca_REDIST_BLOCK:
+        {
+            return box(new RedistBlockMPI(rank_source, nb_sources,
+                                          rank_dest, nb_dests, communicator));
+        }
+        default:
+        {
+            cerr<<"ERROR : unknown redistribution type."<<endl;
+            break;
+        }
+        }
+
+        return NULL;
+    }
+
+    void bca_free_redist(bca_redist comp)
+    {
+        delete unbox(comp);
+    }
+
+    void
+    bca_process_redist(bca_constructdata data, bca_redist comp, bca_RedistRole role)
+    {
+        pConstructData* container = unbox(data);
+        RedistComp* component = unbox(comp);
+
+        component->process(*container, (RedistRole)role);
+    }
+
+    void
+    bca_flush_redist(bca_redist comp)
+    {
+        RedistComp* component = unbox(comp);
+
+        component->flush();
+    }
 
 }

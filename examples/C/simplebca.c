@@ -20,7 +20,7 @@ int main()
     printf("Initial simple data : %i\n", single_data);
 
     printf("Creation of the container...");
-    bca_constructdata container = bca_new_constructdata();
+    bca_constructdata container = bca_create_constructdata();
     printf("OK.\n");
     printf("Creation of the array field...");
     bca_field field_array = bca_create_arrayfield(array, bca_INT, SIZE, 1, SIZE, false);
@@ -111,7 +111,7 @@ int main()
     }
 
     printf("Merging the data models...");
-    bca_constructdata merged_container = bca_new_constructdata();
+    bca_constructdata merged_container = bca_create_constructdata();
     if(!bca_merge_constructdata(merged_container, results[0]))
         printf("FAILED\n");
     else if(!bca_merge_constructdata(merged_container, results[1]))
@@ -135,7 +135,7 @@ int main()
     printf("]\n");
 
 
-    printf("Cleaning...\n");
+    printf("Cleaning...");
     bca_free_field(get_field_simple);
     bca_free_field(get_field_array);
     bca_free_field(field_simple);

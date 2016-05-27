@@ -6,6 +6,8 @@
 #	define __has_extension(EXT) 0
 #endif
 
+#include <mpi.h>
+
 #ifdef __cplusplus
 #include <cstddef>
 using std::size_t;
@@ -43,6 +45,11 @@ extern "C" {
     //BCA_DECLARE_TYPE(bca_arrayfield);
 
     BCA_DECLARE_TYPE(bca_field);
+
+    /**
+     * Wrap of a redistribution component
+     */
+    BCA_DECLARE_TYPE(bca_redist);
 
 
     /**
@@ -85,8 +92,22 @@ extern "C" {
         bca_MERGE_BBOX_POS = 0x8,       // Compute the bounding box from the field pos
     } bca_ConstructTypeMergePolicy;
 
+    typedef enum {
+        bca_REDIST_COUNT,
+        bca_REDIST_ROUND,
+        bca_REDIST_ZCURVE,
+        bca_REDIST_BLOCK,
+    } bca_RedistType;
+
+    // Has to be exactly as in redist_comp.h
+    typedef enum
+    {
+        bca_REDIST_SOURCE = 0,
+        bca_REDIST_DEST,
+    } bca_RedistRole;
+
     bca_constructdata
-    bca_new_constructdata();
+    bca_create_constructdata();
 
     bool
     bca_append_field(   bca_constructdata container,
@@ -132,9 +153,28 @@ extern "C" {
     bca_merge_constructdata(bca_constructdata cont1, bca_constructdata cont2);
 
     bool
-    bca_split_by_range(bca_constructdata container, int nb_range, int* ranges, bca_constructdata* results);
+    bca_split_by_range(
+            bca_constructdata container,
+            int nb_range,
+            int* ranges,
+            bca_constructdata* results);
 
+    bca_redist
+    bca_create_redist(
+            bca_RedistType type,
+            int rank_source,
+            int nb_sources,
+            int rank_dest,
+            int nb_dests,
+            MPI_Comm communicator);
 
+    void bca_free_redist(bca_redist comp);
+
+    void
+    bca_process_redist(bca_constructdata data, bca_redist comp, bca_RedistRole role);
+
+    void
+    bca_flush_redist(bca_redist comp);
 #undef BCA_DEPRECATED
 
 #ifdef __cplusplus
