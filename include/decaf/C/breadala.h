@@ -60,7 +60,8 @@ extern "C" {
          bca_UNSIGNED,
          bca_FLOAT,
          bca_DOUBLE,
-         bca_CHAR
+         bca_CHAR,
+         bca_BLOCK3,
     } bca_type;
 
     // Has to be exactly as in maptools.h
@@ -106,6 +107,17 @@ extern "C" {
         bca_REDIST_DEST,
     } bca_RedistRole;
 
+    typedef struct bca_block_ {
+        float gridspace;
+        int ghostsize;
+        float* globalbbox;
+        unsigned int* globalextends;
+        float* localbbox;
+        unsigned int* localextends;
+        float* ownbbox;
+        unsigned int* ownextends;
+    }   bca_block;
+
     bca_constructdata
     bca_create_constructdata();
 
@@ -130,10 +142,12 @@ extern "C" {
                           int capacity,
                           bool owner);
 
+    bca_field
+    bca_create_blockfield(bca_block* block);
+
     void bca_free_constructdata(bca_constructdata data);
 
     void bca_free_field(bca_field data);
-
 
     bca_field
     bca_get_simplefield(bca_constructdata container, const char* name, bca_type type);
@@ -141,10 +155,15 @@ extern "C" {
     bca_field
     bca_get_arrayfield(bca_constructdata container, const char* name, bca_type type);
 
+    bca_field
+    bca_get_blockfield(bca_constructdata container, const char* name);
+
     bool
     bca_get_data(bca_field field, bca_type type, void* data);
 
     void * bca_get_array(bca_field field, bca_type type, size_t* size);
+
+    bool bca_get_block(bca_field field, bca_block* block);
 
     int
     bca_get_nbitems(bca_field field);

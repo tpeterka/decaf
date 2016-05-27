@@ -34,6 +34,12 @@ void printExtends(std::vector<unsigned int>& extend)
              <<","<<extend[2]+extend[5]<<"]"<<std::endl;
 }
 
+void printBox(std::vector<float>& extend)
+{
+    std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
+             <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]
+             <<","<<extend[2]+extend[5]<<"]"<<std::endl;
+}
 
 // TODO : remove the recursion on this
 void splitExtends(std::vector<unsigned int>& extends, int nbSubblock, std::vector< std::vector<unsigned int> >& subblocks)
@@ -178,6 +184,10 @@ RedistBlockMPI::computeGlobal(pConstructData& data, RedistRole role)
                      <<"Abording."<<std::endl;
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
+
+        printExtends(blockData->getData().globalExtends_);
+        printBox(blockData->getData().globalBBox_);
+
 
         // Building the sub blocks and pushing them in subblocks_
         splitBlock(blockData->getData(), nbDests_);

@@ -14,6 +14,7 @@
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/arrayfield.hpp>
 #include <decaf/data_model/simplefield.hpp>
+#include <decaf/data_model/blockfield.hpp>
 #include <decaf/transport/redist_comp.h>
 #include <decaf/transport/mpi/redist_block_mpi.h>
 #include <decaf/transport/mpi/redist_count_mpi.h>
@@ -385,6 +386,7 @@ using namespace decaf;
         BOX_TRAITS_2(bca_field, SimpleFieldi);
         BOX_TRAITS_2(bca_field, SimpleFieldu);
         BOX_TRAITS_2(bca_field, SimpleField<char>);
+        BOX_TRAITS_2(bca_field, BlockField);
         BOX_TRAITS_2(bca_redist, RedistBlockMPI);
         BOX_TRAITS_2(bca_redist, RedistZCurveMPI);
         BOX_TRAITS_2(bca_redist, RedistRoundMPI);
@@ -601,6 +603,18 @@ extern "C"
     }
 
     bca_field
+    bca_get_blockfield(bca_constructdata container, const char* name)
+    {
+         pConstructData* container_ = unbox(container);
+
+         BlockField field = (*container_)->getFieldData<BlockField>(string(name));
+         if(field)
+             return box(new BlockField(field.getPtr()));
+         else
+             return NULL;
+    }
+
+    bca_field
     bca_create_simplefield(void* data,
                            bca_type type)
     {
@@ -682,6 +696,40 @@ extern "C"
         }
         }
         return NULL;
+    }
+
+    bca_field
+    bca_create_blockfield(bca_block *block)
+    {
+        BlockField* newBlock = new BlockField();
+        newBlock->getBlock()->setGridspace(block->gridspace);
+        if(block->globalbbox != NULL)
+        {
+            cout<<"Ajout de la boite global"<<endl;
+            vector<float> box(block->globalbbox, block->globalbbox + 6);
+            newBlock->getBlock()->setGlobalBBox(box);
+        }
+        if(block->globalextends != NULL)
+        {
+            cout<<"Ajout des extends globaux"<<endl;
+            vector<unsigned int> box(block->globalextends, block->globalextends + 6);
+            newBlock->getBlock()->setGlobalExtends(box);
+        }
+        if(block->localbbox != NULL)
+        {
+            vector<float> box(block->localbbox, block->localbbox + 6);
+            newBlock->getBlock()->setLocalBBox(box);
+        }
+        if(block->localextends != NULL)
+        {
+            vector<unsigned int> box(block->localextends, block->localextends + 6);
+            newBlock->getBlock()->setLocalExtends(box);
+        }
+
+        if(block->ghostsize > 0 && block->localbbox != NULL && block->localextends != NULL)
+            newBlock->getBlock()->buildGhostRegions(block->ghostsize);
+
+        return box(newBlock);
     }
 
     bool
@@ -807,6 +855,28 @@ extern "C"
         }
         *size = 0;
         return NULL;
+    }
+
+    bool bca_get_block(bca_field field, bca_block* block)
+    {
+        assert(block != NULL);
+
+        BaseField* basefield = unbox(field);
+        BlockField* dfield = dynamic_cast<BlockField*>(basefield);
+
+        assert(dfield);
+
+        Block<3>* obj =  dfield->getBlock();
+
+        block->ghostsize = obj->getGhostsize();
+        block->gridspace=  obj->getGridspace();
+        block->globalbbox = obj->getGlobalBBox();
+        block->globalextends = obj->getGlobalExtends();
+        block->localbbox = obj->getLocalBBox();
+        block->localextends = obj->getLocalExtends();
+        block->ownbbox = obj->getOwnBBox();
+        block->ownextends = obj->getOwnExtends();
+        return true;
     }
 
     int
