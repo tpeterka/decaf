@@ -48,7 +48,10 @@ if(Boost_FOUND)
     add_executable              (testblock testBlock.cpp)
     target_link_libraries       (testblock     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
-    install(TARGETS testboost testzcurve testround test2count testblock
+    add_executable              (testmem testmem.cpp)
+    target_link_libraries       (testmem     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+
+    install(TARGETS testboost testzcurve testround test2count testblock testmem
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )

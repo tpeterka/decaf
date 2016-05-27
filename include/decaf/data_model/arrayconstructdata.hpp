@@ -16,7 +16,7 @@ public:
     ArrayConstructData(T* array, int size, int element_per_items, bool owner = false, mapConstruct map = mapConstruct()) :
                         value_(array), element_per_items_(element_per_items),
                         size_(size), capacity_(size), owner_(owner),
-			BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
+                        BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
 
     ArrayConstructData(T* array, int size, int element_per_items, int capacity, bool owner = false, mapConstruct map = mapConstruct()) :
                         value_(array), element_per_items_(element_per_items),
@@ -37,7 +37,10 @@ public:
 
     virtual ~ArrayConstructData()
     {
-        if(owner_) delete[] value_;
+        if(owner_)
+        {
+            delete[] value_;
+        }
     }
 
     template<class Archive>
@@ -528,23 +531,19 @@ public:
         {
             case DECAF_MERGE_DEFAULT:
             {
-                if(size_ != other_->size_)
+                T* newArray = new T[size_ + other_->size_];
+                memcpy(newArray, value_, size_ * sizeof(T));
+                memcpy(newArray + size_, other_->value_, other_->size_ * sizeof(T));
+
+                if(owner_)
                 {
-                    std::cout<<"ERROR : Trying to apply default merge policy with ArrayConstructData"
-                             <<" Default policy keep one array and check that the second is identical."
-                             <<" The 2 arrays have different sizes."<<std::endl;
-                    return false;
+                    delete[] value_;
+                    std::cout<<"Suppressing the array in merge."<<std::endl;
                 }
-                for(int i = 0; i < size_; i++)
-                {
-                    if(value_ != other_->value_)
-                    {
-                        std::cout<<"ERROR : The original and other data do not have the same data."
-                        <<"Default policy keep one array and check that the 2 merged values are"
-                        <<" the same. Make sure the values are the same or change the merge policy"<<std::endl;
-                        return false;
-                    }
-                }
+                value_ = newArray;
+                size_ = size_ + other_->size_;
+                capacity_ = size_;
+                owner_ = true;
                 return true;
                 break;
             }
@@ -555,7 +554,6 @@ public:
             }
             case DECAF_MERGE_APPEND_VALUES:
             {
-                //std::cout<<"Merging arrays of size "<<size_<<" and "<<other_->size_<<std::endl;
                 T* newArray = new T[size_ + other_->size_];
                 memcpy(newArray, value_, size_ * sizeof(T));
                 memcpy(newArray + size_, other_->value_, other_->size_ * sizeof(T));
@@ -563,6 +561,8 @@ public:
                 if(owner_) delete[] value_;
                 value_ = newArray;
                 size_ = size_ + other_->size_;
+                capacity_ = size_;
+                owner_ = true;
                 return true;
                 break;
             }
@@ -612,6 +612,8 @@ public:
                 if(owner_) delete[] value_;
                 value_ = newArray;
                 size_ = totalSize;
+                capacity_ = size_;
+                owner_ = true;
 		return true;
 		break;
 	    }

@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
-
+#include <vector>
 ////////////////////////////////////////
 // Decaf includes and namespaces.
 
@@ -804,4 +804,32 @@ extern "C"
         BaseField* data = unbox(field);
         return data->getNbItems();
     }
+
+    bool
+    bca_split_by_range(bca_constructdata container, int nb_range, int* ranges, bca_constructdata* results)
+    {
+        pConstructData* cont = unbox(container);
+        vector<int> ranges_v(ranges, ranges + nb_range);
+
+        vector<std::shared_ptr<BaseData> > chunks = (*cont)->split(ranges_v);
+
+        assert(chunks.size() == nb_range);
+
+        for(unsigned int i = 0; i < chunks.size(); i++)
+            results[i] = box(new pConstructData(dynamic_pointer_cast<ConstructData>(chunks[i])));
+
+        return true;
+    }
+
+
+    bool
+    bca_merge_constructdata(bca_constructdata cont1, bca_constructdata cont2)
+    {
+        pConstructData* container1 = unbox(cont1);
+        pConstructData* container2 = unbox(cont2);
+
+        return container1->getPtr()->merge(container2->getPtr());
+    }
+
+
 }

@@ -64,7 +64,7 @@ ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false),
                                  bZCurveKey_(false), zCurveKey_(NULL), bSystem_(false)
 {
     container_ = std::make_shared<std::map<std::string, datafield> >();
-    data_ = static_pointer_cast<void>(container_);
+    //data_ = static_pointer_cast<void>(container_);
 }
 
 bool 
@@ -1171,11 +1171,11 @@ ConstructData::merge(shared_ptr<BaseData> other)
     }
 
     //No data yet, we simply copy the data from the other map
-    if(!data_ || container_->empty())
+    if(container_->empty())
     {
         //TODO : DANGEROUS should use a copy function
         container_ = otherConstruct->container_;
-        data_ = static_pointer_cast<void>(container_);
+        //data_ = static_pointer_cast<void>(container_);
         nbItems_ = otherConstruct->nbItems_;
         nbFields_ = otherConstruct->nbFields_;
         bZCurveKey_ = otherConstruct->bZCurveKey_;
@@ -1234,7 +1234,7 @@ ConstructData::merge(shared_ptr<BaseData> other)
                     std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
                     return false;
                 }
-                getBaseData(dataLocal->second)->setMap(container_);
+                //getBaseData(dataLocal->second)->setMap(container_);
                 getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
             }
         }
@@ -1252,7 +1252,10 @@ ConstructData::merge(shared_ptr<BaseData> other)
                     std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has be corrupted."<<std::endl;
                     return false;
                 }
-                getBaseData(it->second)->setMap(container_);
+
+                // Can not give the map to a field
+                // Create a loop on the shared pointer
+                //getBaseData(it->second)->setMap(container_);
                 getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
             }
         }
@@ -1336,7 +1339,7 @@ ConstructData::merge(char* buffer, int size)
                     std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
                     return false;
                 }
-                getBaseData(dataLocal->second)->setMap(container_);
+                //getBaseData(dataLocal->second)->setMap(container_);
                 getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
             }
         }
@@ -1354,7 +1357,7 @@ ConstructData::merge(char* buffer, int size)
                     std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has been corrupted."<<std::endl;
                     return false;
                 }
-                getBaseData(it->second)->setMap(container_);
+                //getBaseData(it->second)->setMap(container_);
                 getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
             }
         }
@@ -1412,7 +1415,7 @@ ConstructData::mergeStoredData()
                     std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
                     return false;
                 }
-                getBaseData(dataLocal->second)->setMap(container_);
+                //getBaseData(dataLocal->second)->setMap(container_);
                 getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
             }
         }
@@ -1440,7 +1443,7 @@ ConstructData::mergeStoredData()
                     std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has been corrupted."<<std::endl;
                     return false;
                 }
-                getBaseData(it->second)->setMap(container_);
+                //getBaseData(it->second)->setMap(container_);
                 getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
 /*		if(it->first == "pos")
 		{
@@ -1727,7 +1730,7 @@ ConstructData::updateMetaData()
                     <<"of the new field should be 1 or "<<nbItems_<<std::endl;
             return false;
         }
-        else if(getScope(it->second) != DECAF_SYSTEM && getNbItemsField(it->second) > 0)// We still update the number of items
+        else if(getScope(it->second) != DECAF_SYSTEM && getScope(it->second) != DECAF_SHARED && getNbItemsField(it->second) > 0)// We still update the number of items
             nbItems_ = getNbItemsField(it->second);
 
         if(getFlag(it->second) == DECAF_ZCURVEKEY)

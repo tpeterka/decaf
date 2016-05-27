@@ -31,6 +31,7 @@
 #include <vector>
 #include <sstream>
 #include <memory>
+#include <string>
 
 
 //extern double timeGlobalSerialization;

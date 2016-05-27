@@ -128,7 +128,11 @@ extern "C" {
     int
     bca_get_nbitems(bca_field field);
 
+    bool
+    bca_merge_constructdata(bca_constructdata cont1, bca_constructdata cont2);
 
+    bool
+    bca_split_by_range(bca_constructdata container, int nb_range, int* ranges, bca_constructdata* results);
 
 
 #undef BCA_DEPRECATED
