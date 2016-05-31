@@ -705,13 +705,11 @@ extern "C"
         newBlock->getBlock()->setGridspace(block->gridspace);
         if(block->globalbbox != NULL)
         {
-            cout<<"Ajout de la boite global"<<endl;
             vector<float> box(block->globalbbox, block->globalbbox + 6);
             newBlock->getBlock()->setGlobalBBox(box);
         }
         if(block->globalextends != NULL)
         {
-            cout<<"Ajout des extends globaux"<<endl;
             vector<unsigned int> box(block->globalextends, block->globalextends + 6);
             newBlock->getBlock()->setGlobalExtends(box);
         }

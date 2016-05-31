@@ -7,12 +7,12 @@
 #define SIZE 10
 #define NBPARTICLES 10
 
-bool isBetween(int rank, int start, int nb)
+bool is_between(int rank, int start, int nb)
 {
     return rank >= start && rank < start + nb;
 }
 
-void initPosition(float* pos, int nbParticule, float* bbox)
+void init_position(float* pos, int nbParticule, float* bbox)
 {
     float dx = bbox[3] - bbox[0];
     float dy = bbox[4] - bbox[1];
@@ -26,7 +26,16 @@ void initPosition(float* pos, int nbParticule, float* bbox)
     }
 }
 
-void initBlock(bca_block* block)
+void print_pos(float* pos, unsigned int nb_pos)
+{
+    unsigned int i;
+    for(i = 0; i < nb_pos; i++)
+    {
+        printf("%f %f %f\n", pos[3*i], pos[3*i+1], pos[3*i+2]);
+    }
+}
+
+void init_block(bca_block* block)
 {
     block->ghostsize = 0;
     block->gridspace = 0;
@@ -38,9 +47,39 @@ void initBlock(bca_block* block)
     block->ownextends = NULL;
 }
 
-void runParallelRedistBlock(int rank_source, int nb_sources,
-                       int rank_dest, int nb_dests)
+void print_block_arrayf(float* array)
 {
+    unsigned int i;
+    printf("[ ");
+    for(i = 0; i < 6; i++)
+        printf("%f ", array[i]);
+    printf("]\n");
+
+}
+
+void print_block(bca_block* block)
+{
+    printf("Gridspace : %f, GhostSize : %i\n", block->gridspace, block->ghostsize);
+    if(block->globalbbox != NULL)
+    {
+        printf("Global Domain BBox");
+        print_block_arrayf(block->globalbbox);
+    }
+    if(block->localbbox != NULL)
+    {
+        printf("Local Domain BBox");
+        print_block_arrayf(block->localbbox);
+    }
+}
+
+
+void runParallelRedistBlock(
+        int rank_source, int nb_sources,
+        int rank_dest, int nb_dests)
+{
+    fprintf(stdout, "--------------------------\n");
+    fprintf(stdout, " Block redistribution test\n");
+    fprintf(stdout, "--------------------------\n");
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     fprintf(stdout, "Rank : %i\n", rank);
@@ -51,7 +90,7 @@ void runParallelRedistBlock(int rank_source, int nb_sources,
                 rank_dest, nb_dests,
                 MPI_COMM_WORLD);
 
-    if(isBetween(rank, rank_source, nb_sources))
+    if(is_between(rank, rank_source, nb_sources))
     {
         //Creation of the data model
         float global_bbox[6];
@@ -63,17 +102,18 @@ void runParallelRedistBlock(int rank_source, int nb_sources,
         global_extends[3] = 10;global_extends[4] = 10;global_extends[5] = 10;
 
         bca_block block;
-        initBlock(&block);
+        init_block(&block);
         block.gridspace = 1.0f;
+        block.ghostsize = 1;
         block.globalbbox = global_bbox;
         block.globalextends = global_extends;
 
         float* pos = (float*)(malloc(NBPARTICLES * 3 * sizeof(float)));
-        initPosition(pos, NBPARTICLES, global_bbox);
+        init_position(pos, NBPARTICLES, global_bbox);
 
 
         bca_constructdata container = bca_create_constructdata();
-        bca_field field_array = bca_create_arrayfield(pos, bca_FLOAT, SIZE, 1, SIZE, false);
+        bca_field field_array = bca_create_arrayfield(pos, bca_FLOAT, NBPARTICLES * 3, 3, SIZE, false);
         bca_field field_block = bca_create_blockfield(&block);
 
         if(!bca_append_field(container, "pos", field_array,
@@ -93,7 +133,6 @@ void runParallelRedistBlock(int rank_source, int nb_sources,
             MPI_Abort(MPI_COMM_WORLD, 2);
         }
 
-
         bca_process_redist(container, component, bca_REDIST_SOURCE);
         bca_flush_redist(component); // Assume no overlapping!
 
@@ -103,10 +142,26 @@ void runParallelRedistBlock(int rank_source, int nb_sources,
         free(pos);
     }
 
-    if(isBetween(rank, rank_dest, nb_dests))
+    if(is_between(rank, rank_dest, nb_dests))
     {
         bca_constructdata container = bca_create_constructdata();
         bca_process_redist(container, component, bca_REDIST_DEST);
+
+        bca_field field_block = bca_get_blockfield(container, "domain_block");
+        if(field_block == NULL)
+        {
+            fprintf(stderr, "Abord. Unable to request the field \"domain_block\" in the container\n");
+            MPI_Abort(MPI_COMM_WORLD, 3);
+        }
+
+        bca_block block;
+        if(!bca_get_block(field_block, &block))
+        {
+            fprintf(stderr, "Abord. Unable to extract the block from the field\n");
+            MPI_Abort(MPI_COMM_WORLD, 4);
+        }
+
+        print_block(&block);
 
         bca_field field_array = bca_get_arrayfield(container, "pos", bca_FLOAT);
         if(field_array == NULL)
@@ -123,21 +178,20 @@ void runParallelRedistBlock(int rank_source, int nb_sources,
             MPI_Abort(MPI_COMM_WORLD, 4);
         }
 
-        fprintf(stdout, "Sub array [ ");
-        unsigned int i;
-        for(i = 0; i < size; i++)
-        {
-            fprintf(stdout, "%f ", array[i]);
-        }
-        fprintf(stdout, "]\n");
+        print_pos(array, size / 3);
 
         bca_flush_redist(component); // Assume no overlapping!
 
+        bca_free_field(field_block);
         bca_free_field(field_array);
         bca_free_constructdata(container);
     }
 
     bca_free_redist(component);
+
+    fprintf(stdout, "------------------------------\n");
+    fprintf(stdout, " End Block redistribution test\n");
+    fprintf(stdout, "------------------------------\n");
 }
 
 
@@ -148,13 +202,17 @@ void runParallelRedistCount(int rank_source, int nb_sources,
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     fprintf(stdout, "Rank : %i\n", rank);
 
+    fprintf(stdout, "--------------------------\n");
+    fprintf(stdout, " Count redistribution test\n");
+    fprintf(stdout, "--------------------------\n");
+
     bca_redist component = bca_create_redist(
                 bca_REDIST_COUNT,
                 rank_source, nb_sources,
                 rank_dest, nb_dests,
                 MPI_COMM_WORLD);
 
-    if(isBetween(rank, rank_source, nb_sources))
+    if(is_between(rank, rank_source, nb_sources))
     {
         //Creation of the data model
         int* array = (int*)(malloc(SIZE * sizeof(int)));
@@ -189,7 +247,7 @@ void runParallelRedistCount(int rank_source, int nb_sources,
         free(array);
     }
 
-    if(isBetween(rank, rank_dest, nb_dests))
+    if(is_between(rank, rank_dest, nb_dests))
     {
         bca_constructdata container = bca_create_constructdata();
         bca_process_redist(container, component, bca_REDIST_DEST);
@@ -224,6 +282,10 @@ void runParallelRedistCount(int rank_source, int nb_sources,
     }
 
     bca_free_redist(component);
+
+    fprintf(stdout, "------------------------------\n");
+    fprintf(stdout, " End Count redistribution test\n");
+    fprintf(stdout, "------------------------------\n");
 }
 
 int main()

@@ -185,10 +185,6 @@ RedistBlockMPI::computeGlobal(pConstructData& data, RedistRole role)
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
-        printExtends(blockData->getData().globalExtends_);
-        printBox(blockData->getData().globalBBox_);
-
-
         // Building the sub blocks and pushing them in subblocks_
         splitBlock(blockData->getData(), nbDests_);
     }
@@ -223,6 +219,7 @@ RedistBlockMPI::splitData(pConstructData& data, RedistRole role)
         // Always generates as many split data model as subblocks
         // Subdata model might be empty (no items)
         data->split( subblocks_, splitBuffer_ );
+
 
         //Pushing the subdomain block into each split chunk.
         //The field domain_block is updated
@@ -262,7 +259,6 @@ RedistBlockMPI::splitData(pConstructData& data, RedistRole role)
 
         gettimeofday(&end, NULL);
         timeGlobalBuild += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-
     }
 }
 

@@ -470,8 +470,7 @@ public:
             {
 		for(unsigned int i = 0; i < range.size(); i++)
                 {
-
-		    // TODO : use the fields as memory layer
+                    // TODO : use the fields as memory layer
                     //T* array = new T[range[i].back() * element_per_items_];
                     std::shared_ptr<ArrayConstructData<T> > arrayconstruct =
                             std::dynamic_pointer_cast<ArrayConstructData<T> >(fields[i]);
@@ -504,6 +503,7 @@ public:
                     //                                             element_per_items_, true);
 		    //result.push_back(sub);
                     arrayconstruct->size_ = range[i].back() * element_per_items_;
+
                 }
                 break;
             }

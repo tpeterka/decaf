@@ -696,6 +696,7 @@ computeIndexesFromBlocks(
 
             if(blocks[b].isInLocalBlock(x, y, z))
             {
+
                 //                result[b].push_back(i);
                 //                particlesInBlock = true;
                 // Case for the first element
