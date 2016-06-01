@@ -20,6 +20,9 @@
 #include <queue>
 #include <string>
 #include <iostream>
+#include <fstream>
+
+#include "json/json.h"
 
 using namespace std;
 
@@ -125,6 +128,73 @@ struct Workflow                              // an entire workflow
             }
             return false;
         }
+
+  static void
+  make_wflow_from_json( Workflow& workflow, string json_path )
+  {
+    char *prefix = getenv("DECAF_PREFIX");
+    if( prefix == nullptr ) {
+      fprintf( stderr, "ERROR: environment variable DECAF_PREFIX not defined."
+	       "Please export DECAF_PREFIX to point to the root of your decaf"
+	       "install directory.\n");
+      exit(1);
+    }
+
+    Json::Value root;
+
+    try {
+      std::ifstream fs( json_path, std::ifstream::binary );
+      fs >> root;
+    }
+    catch( std::exception& e ) {
+      cerr << "std::exception while opening/parsing JSON file("
+	   << json_path
+	   << ")"
+	   << e.what()
+	   << endl;
+    }
+
+    Json::Value nodes = root["nodes"];
+    Json::Value edges = root["edges"];
+
+    for( auto &&v : nodes ) {
+      /* 
+       * iterate over the list of nodes, creating and populating WorkflowNodes as we go
+       */
+      WorkflowNode node;
+      node.out_links.clear();
+      node.in_links.clear();
+      /* we defer actually linking nodes until we read the edge list */
+      
+      node.start_proc = v.get("start_proc").asInt();
+      node.nprocs = v.get("nprocs").asInt();
+      node.func = v.get("func").asString();
+      workflow.nodes.push_back( node );
+    }
+
+    string path = string( prefix, strlen(prefix) );
+    path.append( root["path"].asString() );
+
+    for( auto &&v : edges ) {
+
+      WorkflowLink link;
+      
+      /* link the nodes correctly(?) */      
+      link.prod = v.get("source").asInt();
+      link.con = v.get("target").asInt();
+      workflow.nodes.at( link.prod ).out_links.push_back( link.con );
+      workflow.nodes.at( link.con ).in_links.push_back( link.prod );
+
+      link.path = path;
+      link.start_proc = v.get("start_proc").asInt();
+      link.nprocs = v.get("nprocs").asInt();
+      link.func = v.get("func").asString();
+      link.prod_dflow_redist = v.get("count").asString();
+      link.dflow_con_redist = v.get("count").asString();
+      workflow.links.push_back( link );
+    }
+  }
+  
 };
 
 #endif
