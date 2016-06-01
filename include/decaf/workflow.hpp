@@ -22,7 +22,10 @@
 #include <iostream>
 #include <fstream>
 
-#include "json/json.h"
+#include "boost/property_tree/ptree.hpp"
+#include "boost/property_tree/json_parser.hpp"
+
+namespace bpt = boost::property_tree;
 
 using namespace std;
 
@@ -140,59 +143,69 @@ struct Workflow                              // an entire workflow
       exit(1);
     }
 
-    Json::Value root;
-
-    try {
-      std::ifstream fs( json_path, std::ifstream::binary );
-      fs >> root;
-    }
-    catch( std::exception& e ) {
-      cerr << "std::exception while opening/parsing JSON file("
+    std::ifstream fs( json_path, std::ifstream::binary );
+    if (!fs) {      
+      cerr << "Error opening JSON file("
 	   << json_path
 	   << ")"
-	   << e.what()
 	   << endl;
+      exit(1);
     }
 
-    Json::Value nodes = root["nodes"];
-    Json::Value edges = root["edges"];
+    bpt::ptree root;
 
-    for( auto &&v : nodes ) {
-      /* 
-       * iterate over the list of nodes, creating and populating WorkflowNodes as we go
-       */
-      WorkflowNode node;
-      node.out_links.clear();
-      node.in_links.clear();
-      /* we defer actually linking nodes until we read the edge list */
+    try {
       
-      node.start_proc = v.get("start_proc").asInt();
-      node.nprocs = v.get("nprocs").asInt();
-      node.func = v.get("func").asString();
-      workflow.nodes.push_back( node );
-    }
+      bpt::read_json( json_path, root );
 
-    string path = string( prefix, strlen(prefix) );
-    path.append( root["path"].asString() );
+      for( auto &&v : root.get_child( "nodes" ) ) {
+	/* 
+	 * iterate over the list of nodes, creating and populating WorkflowNodes as we go
+	 */
+	WorkflowNode node;
+	node.out_links.clear();
+	node.in_links.clear();
+	/* we defer actually linking nodes until we read the edge list */
+	
+	node.start_proc = v.get<int>("start_proc");
+	node.nprocs = v.get<int>("nprocs");
+	node.func = v.get<std::string>("func");
+	
+	workflow.nodes.push_back( node );
+      }
 
-    for( auto &&v : edges ) {
-
-      WorkflowLink link;
+      string path = string( prefix, strlen(prefix) );
+      path.append( root.get<std::string>("path") );
       
-      /* link the nodes correctly(?) */      
-      link.prod = v.get("source").asInt();
-      link.con = v.get("target").asInt();
-      workflow.nodes.at( link.prod ).out_links.push_back( link.con );
-      workflow.nodes.at( link.con ).in_links.push_back( link.prod );
+      for( auto &&v : edges ) {
+	
+	WorkflowLink link;
+	
+	/* link the nodes correctly(?) */      
+	link.prod = v.get<int>("source");
+	link.con = v.get<int>("target");
 
-      link.path = path;
-      link.start_proc = v.get("start_proc").asInt();
-      link.nprocs = v.get("nprocs").asInt();
-      link.func = v.get("func").asString();
-      link.prod_dflow_redist = v.get("count").asString();
-      link.dflow_con_redist = v.get("count").asString();
-      workflow.links.push_back( link );
+	workflow.nodes.at( link.prod ).out_links.push_back( link.con );
+	workflow.nodes.at( link.con ).in_links.push_back( link.prod );
+	 
+	link.path = path;
+	link.start_proc = v.get<int>("start_proc");
+	link.nprocs = v.get<int>("nprocs");
+	link.func = v.get<std::string>("func");
+	link.prod_dflow_redist = v.get<std::string>("count");
+	link.dflow_con_redist = v.get<std::string>("count");
+	workflow.links.push_back( link );
+      }
     }
+    catch( const bpt::json_parser_error& jpe ) {
+      cerr << jpe.what() << endl;
+      exit(1);
+    }
+    catch ( const bpt::ptree_error& pte ) {
+      cerr << pte.what() << endl;
+      exit(1);
+    }
+    
   }
   
 };
