@@ -8,9 +8,17 @@ ADD_EXECUTABLE(RedistBCA redistbca.c)
 
 TARGET_LINK_LIBRARIES(RedistBCA bca)
 
-INSTALL(TARGETS SimpleBCA  RedistBCA DESTINATION examples/C/)
+add_executable(linear_2nodes_c linear_2nodes_c.c)
+add_library(mod_dflow_direct  MODULE dflow.cpp)
 
-INSTALL(FILES REDIST_TEST
+target_link_libraries(linear_2nodes_c bca dca)
+target_link_libraries(mod_dflow_direct
+  ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+
+INSTALL(TARGETS SimpleBCA  RedistBCA linear_2nodes_c mod_dflow_direct
+        DESTINATION examples/C/)
+
+INSTALL(FILES REDIST_TEST LINEAR_2NODES_TEST
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/C/
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
