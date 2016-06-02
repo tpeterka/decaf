@@ -177,7 +177,7 @@ struct Workflow                              // an entire workflow
       string path = string( prefix, strlen(prefix) );
       path.append( root.get<std::string>("path") );
       
-      for( auto &&v : edges ) {
+      for( auto &&v : root.get_child( "edges" ) ) {
 	
 	WorkflowLink link;
 	
