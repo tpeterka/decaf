@@ -112,4 +112,6 @@ int main()
 
     dca_free_decaf(decaf);
     MPI_Finalize();
+
+    return 0;
 }
