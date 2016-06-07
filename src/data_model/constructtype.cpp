@@ -1533,15 +1533,6 @@ ConstructData::serialize()
     oa << container_;
     s.flush();
     
-    /*out_serial_buffer_.resize(nbItems_ * (3*sizeof(float) + sizeof(unsigned int)));
-    std::shared_ptr<ArrayConstructData<float> > pos = getTypedData<ArrayConstructData<float> >("pos");
-    std::shared_ptr<ArrayConstructData<unsigned int> > morton = getTypedData<ArrayConstructData<unsigned int> >("morton");
-
-    float* posArray = pos->getArray();
-    unsigned int* mortonArray = morton->getArray();
-
-    memcpy(&out_serial_buffer_[0], posArray, nbItems_ * 3 * sizeof(float));
-    memcpy(((char*)(&out_serial_buffer_[0]))+nbItems_ * 3 * sizeof(float), mortonArray, nbItems_ * sizeof(unsigned int));*/
     gettimeofday(&end, NULL);
     //timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
     return true;
