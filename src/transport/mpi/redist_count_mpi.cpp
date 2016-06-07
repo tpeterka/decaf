@@ -102,8 +102,8 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
 
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
-        if( summerizeDest_) delete  summerizeDest_;
-         summerizeDest_ = new int[ nbDests_];
+        if( summerizeDest_) delete [] summerizeDest_;
+        summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 
         //We have nothing to do now, the necessary data are initialized

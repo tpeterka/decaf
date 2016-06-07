@@ -71,6 +71,12 @@ extern "C" {
     void
     dca_terminate(dca_decaf decaf);
 
+    int
+    dca_get_dataflow_con_size(dca_decaf decaf, int dataflow);
+
+    int
+    dca_get_dataflow_prod_size(dca_decaf decaf, int dataflow);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

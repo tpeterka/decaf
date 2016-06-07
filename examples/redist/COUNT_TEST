@@ -42,13 +42,13 @@ fi
 
 if [ "$ARCH" = "LINUX" ]; then
 
-mpiexec -n $num_procs $exe
+#mpiexec -n $num_procs $exe
 
 #mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe
 
 #mpiexec -n $num_procs valgrind -q $exe
 
-#mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
+mpiexec -n $num_procs xterm -hold -e valgrind --suppressions=/home/matthieu/Dependencies/openmpi-1.8.7/install/share/openmpi/openmpi-valgrind.supp --suppressions=/home/matthieu/dumb/suppOpenMPI.txt --leak-check=yes $exe
 
 fi
 

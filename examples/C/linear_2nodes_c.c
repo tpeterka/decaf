@@ -63,8 +63,11 @@ void con(dca_decaf decaf)
             else
                 fprintf(stderr, "Error: null pointer in con\n");
 
+            bca_free_field(field);
+            bca_free_constructdata(in_data[i]);
         }
         fprintf(stderr, "consumer sum = %d\n", sum);
+        free(in_data);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

@@ -8,7 +8,7 @@
 // entire workflow takes 12 procs (3 dataflow procs between node0 and node1 and
 // 2 dataflow procs between node1 and node2)
 //
-// Tom Peterka
+// Matthieu Dreher
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
@@ -81,7 +81,11 @@ void node1(dca_decaf decaf)
             else
                 fprintf(stderr, "Error: null pointer in con\n");
 
+            bca_free_field(field);
+            bca_free_constructdata(in_data[i]);
+
         }
+        free(in_data);
         fprintf(stderr, "node1 sum = %d\n", sum);
 
         // the data in this example is just the timestep; add it to a container
@@ -134,8 +138,12 @@ void node2(dca_decaf decaf)
             else
                 fprintf(stderr, "Error: null pointer in con\n");
 
+            // We need to each each bca object
+            bca_free_field(field);
+            bca_free_constructdata(in_data[i]);
         }
         fprintf(stderr, "node2 sum = %d\n", sum);
+        free(in_data);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

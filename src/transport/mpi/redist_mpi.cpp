@@ -403,7 +403,6 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
         // Checking if we have something in transit
         if(!transit.empty())
         {
-            std::cout<<"Merge du transit"<<std::endl;
             if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
                 data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
             else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)

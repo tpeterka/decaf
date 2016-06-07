@@ -36,6 +36,7 @@ using namespace decaf;
 
         ~DecafHolder()
         {
+            messages_.clear();
             if(decaf_) delete decaf_;
         }
 
@@ -232,7 +233,7 @@ extern "C"
 
         bca_constructdata* containers = (bca_constructdata*)(malloc(nbMessages*sizeof(bca_constructdata)));
         for(unsigned int i = 0; i < nbMessages; i++)
-            containers[i] = box(&(messages[i]));
+            containers[i] = box(new pConstructData(messages[i].getPtr()));
 
         *nb_containers = nbMessages;
         return containers;
@@ -266,5 +267,19 @@ extern "C"
     dca_terminate(dca_decaf decaf)
     {
         return unbox(decaf)->getDecaf()->terminate();
+    }
+
+    int
+    dca_get_dataflow_con_size(dca_decaf decaf, int dataflow)
+    {
+        DecafHolder* handler = unbox(decaf);
+        return handler->getDecaf()->dataflow(dataflow)->sizes()->con_size;
+    }
+
+    int
+    dca_get_dataflow_prod_size(dca_decaf decaf, int dataflow)
+    {
+        DecafHolder* handler = unbox(decaf);
+        return handler->getDecaf()->dataflow(dataflow)->sizes()->prod_size;
     }
 }

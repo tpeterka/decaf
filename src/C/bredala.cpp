@@ -460,7 +460,7 @@ extern "C"
 
     void bca_free_constructdata(bca_constructdata data)
     {
-        delete (unbox(data));
+        delete unbox(data);
     }
 
     void bca_free_field(bca_field data)
