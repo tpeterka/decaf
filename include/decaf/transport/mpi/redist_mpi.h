@@ -60,7 +60,7 @@ namespace decaf
 
         // Transfer the chunks from the sources to the destination. The data should be
         // be stored in the vector receivedChunks
-        void redistribute(pConstructData& data, RedistRole role);
+        virtual void redistribute(pConstructData& data, RedistRole role);
 
         //Redistribution method using only point to point All to All communication
         void redistributeP2P(pConstructData& data, RedistRole role);

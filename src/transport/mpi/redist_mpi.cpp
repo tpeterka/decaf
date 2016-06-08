@@ -280,7 +280,10 @@ RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
     // check if we have something in transit to/from self
     if (role == DECAF_REDIST_DEST && !transit.empty())
     {
-        data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+        if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+        else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+            data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
         transit.reset();              // we don't need it anymore, clean for the next iteration
         //return;
     }
@@ -310,9 +313,21 @@ RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
             // NOTE: examine if it's not more efficient to receive everything
             // and then merge. Memory footprint more important but allows to
             // aggregate the allocations etc
-            data->merge();
+            if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+                data->merge();
+            else if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+                //data->unserializeAndStore();
+                data->unserializeAndStore(data->getInSerialBuffer(), nbytes);
+            else
+            {
+                std::cout<<"ERROR : merge method not specified. Abording."<<std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 0);
+            }
         }
         recv_data_tag = (recv_data_tag == INT_MAX ? MPI_DATA_TAG : recv_data_tag + 1);
+
+        if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+            data->mergeStoredData();
     }
 }
 

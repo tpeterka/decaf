@@ -98,6 +98,7 @@ extern "C" {
         bca_REDIST_ROUND,
         bca_REDIST_ZCURVE,
         bca_REDIST_BLOCK,
+        bca_REDIST_PROC,
     } bca_RedistType;
 
     // Has to be exactly as in redist_comp.h

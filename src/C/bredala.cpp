@@ -21,6 +21,7 @@
 #include <decaf/transport/mpi/redist_count_mpi.h>
 #include <decaf/transport/mpi/redist_round_mpi.h>
 #include <decaf/transport/mpi/redist_zcurve_mpi.h>
+#include <decaf/transport/mpi/redist_proc_mpi.h>
 #include <decaf/data_model/boost_macros.h>
 
 namespace
@@ -392,6 +393,7 @@ using namespace decaf;
         BOX_TRAITS_2(bca_redist, RedistZCurveMPI);
         BOX_TRAITS_2(bca_redist, RedistRoundMPI);
         BOX_TRAITS_2(bca_redist, RedistCountMPI);
+        BOX_TRAITS_2(bca_redist, RedistProcMPI);
 
 #	undef BOX_TRAITS
 #	undef BOX_TRAITS_2
@@ -937,6 +939,11 @@ extern "C"
         {
             return box(new RedistBlockMPI(rank_source, nb_sources,
                                           rank_dest, nb_dests, communicator));
+        }
+        case bca_REDIST_PROC:
+        {
+            return box(new RedistProcMPI(rank_source, nb_sources,
+                                         rank_dest, nb_dests, communicator));
         }
         default:
         {
