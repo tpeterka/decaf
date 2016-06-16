@@ -33,7 +33,6 @@ RedistMPI::RedistMPI(int rankSource,
     sum_(NULL),
     destBuffer_(NULL)
 {
-    fprintf(stderr, "Constructor of the component\n");
     MPI_Group group, groupRedist, groupSource, groupDest;
     MPI_Comm_group(world_comm, &group);
 
@@ -68,7 +67,6 @@ RedistMPI::RedistMPI(int rankSource,
 
         }
         MPI_Group_range_incl(group, 2, range_both, &groupRedist);
-        fprintf(stderr, "Creation of the group non overlapping\n");
     }
     else //Sources and Receivers are overlapping
     {
@@ -88,22 +86,16 @@ RedistMPI::RedistMPI(int rankSource,
             local_source_rank_ = 0;
             local_dest_rank_  = rankDest - rankSource;
         }
-        fprintf(stderr, "Creation of the group with overlapping\n");
     }
 
-    fprintf(stderr,"Creation of the range ok\n");
-
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
-    fprintf(stderr, "Create communicator of redist ok\n");
     MPI_Group_free(&groupRedist);
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
-    fprintf(stderr, "Creation of the group ok\n");
 
     // group with all the sources
     if(isSource())
     {
-        fprintf(stderr, "Creating the group for the source...\n");
         int range_src[3];
         range_src[0] = rankSource;
         range_src[1] = rankSource + nbSources - 1;
@@ -113,13 +105,11 @@ RedistMPI::RedistMPI(int rankSource,
         MPI_Group_free(&groupSource);
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
-        fprintf(stderr, "source group done\n");
     }
 
     // group with all the destinations
     if(isDest())
     {
-        fprintf(stderr, "Creating the group of dest...\n");
         int range_dest[3];
         range_dest[0] = rankDest;
         range_dest[1] = rankDest + nbDests - 1;
@@ -129,7 +119,6 @@ RedistMPI::RedistMPI(int rankSource,
         MPI_Group_free(&groupDest);
         int dest_rank;
         MPI_Comm_rank(commDests_, &dest_rank);
-        fprintf(stderr, "Dest group created\n");
     }
 
     MPI_Group_free(&group);
@@ -138,7 +127,6 @@ RedistMPI::RedistMPI(int rankSource,
     sum_ = new int[nbDests_];
 
     transit = pConstructData(false);
-    fprintf(stderr, "Component created\n");
 }
 
 decaf::

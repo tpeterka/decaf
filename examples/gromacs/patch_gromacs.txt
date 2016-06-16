@@ -1,7 +1,7 @@
 From b99a67de86247a6f4a3f22825024cd874cf0e021 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 10:39:56 -0500
-Subject: [PATCH 1/9] Patch with dflow and treatment in the simulation code.
+Subject: [PATCH 01/10] Patch with dflow and treatment in the simulation code.
 
 ---
  CMakeLists.txt                   |  16 ++++
@@ -644,7 +644,7 @@ index eb30fc9..4dbf5ea 100644
 From 99ba3e127d18b1dbdac77046daf2e6d46ac2631e Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:10:36 -0500
-Subject: [PATCH 2/9] Check the status of MPI
+Subject: [PATCH 02/10] Check the status of MPI
 
 ---
  CMakeLists.txt | 6 +++++-
@@ -674,7 +674,7 @@ index 3909fd3..f3ac23f 100644
 From eaa854ab810c29f3e0ecd8c67d7dfbcd3c7602ae Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:32:54 -0500
-Subject: [PATCH 3/9] Add extra info
+Subject: [PATCH 03/10] Add extra info
 
 ---
  CMakeLists.txt | 5 +++++
@@ -703,7 +703,7 @@ index f3ac23f..089edd9 100644
 From 634e6e124fc4f4c06f8aab8c10536427f1d56b67 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:10:40 -0500
-Subject: [PATCH 4/9] Add mpi checks
+Subject: [PATCH 04/10] Add mpi checks
 
 ---
  CMakeLists.txt           | 2 +-
@@ -742,7 +742,7 @@ index 28d23d8..ce4b299 100644
 From 631fb2aa7e19d3a388ed9956d84e6542651959fc Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:16:59 -0500
-Subject: [PATCH 5/9] Add mpi checks
+Subject: [PATCH 05/10] Add mpi checks
 
 ---
  cmake/gmxManageMPI.cmake | 3 +++
@@ -774,7 +774,7 @@ index ce4b299..1e3af82 100644
 From d49d34c8c25255bcda600bf22caa185db297a4c9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:33:54 -0500
-Subject: [PATCH 6/9] Add infos
+Subject: [PATCH 06/10] Add infos
 
 ---
  CMakeLists.txt | 5 +++++
@@ -803,7 +803,7 @@ index b2e82d8..b14d7ec 100644
 From 2ac35154d1f8bcce44a9ab466404a3ee92b91f12 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:37:44 -0500
-Subject: [PATCH 7/9] Force MPI
+Subject: [PATCH 07/10] Force MPI
 
 ---
  CMakeLists.txt | 4 ++--
@@ -831,7 +831,7 @@ index b14d7ec..4649e3b 100644
 From 9668b8e9a4fd9f9af762f88b3844b84bf5ac02b0 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 10:53:34 -0500
-Subject: [PATCH 8/9] Remove the barrier
+Subject: [PATCH 08/10] Remove the barrier
 
 ---
  include/network.h    |  3 +++
@@ -947,7 +947,7 @@ index 4dbf5ea..38d0acf 100644
 From 6bb435dbb51329e5179d8fc37fcd3c2c5c9122df Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 11:10:23 -0500
-Subject: [PATCH 9/9] Check linkage
+Subject: [PATCH 09/10] Check linkage
 
 ---
  src/gmxlib/network.c | 1 -
@@ -965,6 +965,56 @@ index be83348..0bded05 100644
      MPI_Barrier(dca_get_com(decaf));
  
      /*
+-- 
+2.1.4
+
+
+From 076cfedf4249a44a87e65db7cfebc4045b9cb270 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Thu, 16 Jun 2016 13:34:04 -0500
+Subject: [PATCH 10/10] Attempt to fix crash during finalize
+
+---
+ src/gmxlib/network.c | 5 +++--
+ src/kernel/mdrun.c   | 2 ++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/gmxlib/network.c b/src/gmxlib/network.c
+index 0bded05..cfb951e 100644
+--- a/src/gmxlib/network.c
++++ b/src/gmxlib/network.c
+@@ -1250,15 +1250,16 @@ void gmx_finalize_par_decaf(dca_decaf decaf)
+     /* Apparently certain mpich implementations cause problems
+      * with MPI_Finalize. In that case comment out MPI_Finalize.
+      */
+-    if (debug)
++    /*if (debug)
+     {
+         fprintf(debug, "Will call MPI_Finalize now\n");
+     }
+ 
++
+     ret = MPI_Finalize();
+     if (debug)
+     {
+         fprintf(debug, "Return code from MPI_Finalize = %d\n", ret);
+-    }
++    }*/
+ #endif
+ }
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index 38d0acf..d0094d9 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -848,6 +848,8 @@ int cmain(int argc, char *argv[])
+     gmx_finalize_par_decaf(cr->decaf);
+     dca_free_decaf(decaf);
+ 
++    MPI_Finalize();
++
+ 
+     if (MULTIMASTER(cr))
+     {
 -- 
 2.1.4
 
