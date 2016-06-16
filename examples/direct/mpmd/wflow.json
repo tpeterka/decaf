@@ -1,7 +1,7 @@
 {
     "workflow" :
     {
-	"path" : "/examples/direct/mod_linear_2nodes.so",
+	"path" : "/build/examples/direct/mod_linear_2nodes.so",
 	"nodes" : [
 	    {
 		"start_proc" : 0 ,

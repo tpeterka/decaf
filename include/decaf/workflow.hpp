@@ -192,8 +192,8 @@ struct Workflow                              // an entire workflow
 	link.start_proc = v.second.get<int>("start_proc");
 	link.nprocs = v.second.get<int>("nprocs");
 	link.func = v.second.get<std::string>("func");
-	link.prod_dflow_redist = v.second.get<std::string>("count");
-	link.dflow_con_redist = v.second.get<std::string>("count");
+	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
+	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
 	workflow.links.push_back( link );
       }
     }
