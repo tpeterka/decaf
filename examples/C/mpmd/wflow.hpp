@@ -36,7 +36,7 @@ void make_wflow(Workflow& workflow)
     }
 
     string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/C/mod_dflow_c.so"));
+    path.append(string("/examples/C/mpmd/mod_dflow_c.so"));
 
     // fill workflow nodes
     WorkflowNode node;

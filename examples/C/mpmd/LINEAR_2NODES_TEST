@@ -11,8 +11,8 @@
 # tpeterka@mcs.anl.gov
 #
 #----------------------------------------------------------------------------
-ARCH=MAC_OSX
-#ARCH=LINUX
+#ARCH=MAC_OSX
+ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
 #ARCH=CRAY
@@ -33,9 +33,9 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executables
-exe1=./prod
-exe2=./dflow
-exe3=./con
+exe1=./prod_c
+exe2=./dflow_c
+exe3=./con_c
 
 # mpmd command
 mpmd="-n $np1 $exe1 : -n $np2 $exe2 : -n $np3 $exe3"
@@ -53,7 +53,7 @@ fi
 
 if [ "$ARCH" = "LINUX" ]; then
 
-mpiexec -l $mpmd
+mpiexec $mpmd
 
 fi
 
