@@ -166,10 +166,10 @@ struct Workflow                              // an entire workflow
 	node.out_links.clear();
 	node.in_links.clear();
 	/* we defer actually linking nodes until we read the edge list */
-	
-	node.start_proc = v.get<int>("start_proc");
-	node.nprocs = v.get<int>("nprocs");
-	node.func = v.get<std::string>("func");
+
+	node.start_proc = v.second.get<int>("start_proc");
+	node.nprocs = v.second.get<int>("nprocs");
+	node.func = v.second.get<std::string>("func");
 	
 	workflow.nodes.push_back( node );
       }
@@ -182,18 +182,18 @@ struct Workflow                              // an entire workflow
 	WorkflowLink link;
 	
 	/* link the nodes correctly(?) */      
-	link.prod = v.get<int>("source");
-	link.con = v.get<int>("target");
+	link.prod = v.second.get<int>("source");
+	link.con = v.second.get<int>("target");
 
 	workflow.nodes.at( link.prod ).out_links.push_back( link.con );
 	workflow.nodes.at( link.con ).in_links.push_back( link.prod );
 	 
 	link.path = path;
-	link.start_proc = v.get<int>("start_proc");
-	link.nprocs = v.get<int>("nprocs");
-	link.func = v.get<std::string>("func");
-	link.prod_dflow_redist = v.get<std::string>("count");
-	link.dflow_con_redist = v.get<std::string>("count");
+	link.start_proc = v.second.get<int>("start_proc");
+	link.nprocs = v.second.get<int>("nprocs");
+	link.func = v.second.get<std::string>("func");
+	link.prod_dflow_redist = v.second.get<std::string>("count");
+	link.dflow_con_redist = v.second.get<std::string>("count");
 	workflow.links.push_back( link );
       }
     }
