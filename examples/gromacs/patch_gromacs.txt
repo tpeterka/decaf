@@ -1,7 +1,7 @@
 From b99a67de86247a6f4a3f22825024cd874cf0e021 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 10:39:56 -0500
-Subject: [PATCH 1/7] Patch with dflow and treatment in the simulation code.
+Subject: [PATCH 1/9] Patch with dflow and treatment in the simulation code.
 
 ---
  CMakeLists.txt                   |  16 ++++
@@ -576,7 +576,7 @@ index eb30fc9..4dbf5ea 100644
 -    cr = init_par(&argc, &argv);
 +    char libpath[MAX_STRING_LENGTH];
 +    char path[MAX_STRING_LENGTH];
-+    strcpy(libpath, "/examples/gromacs/libmod_mod_dflow.so");
++    strcpy(libpath, "/examples/C/libmod_dflow_direct.so");
 +    strcpy(path, prefix);
 +    strcat(path, libpath);
 +
@@ -588,7 +588,7 @@ index eb30fc9..4dbf5ea 100644
 +    dca_append_workflow_node(decaf, 0, 2, "gmx", 0, NULL, 1, &out_link);
 +    dca_append_workflow_node(decaf, 3, 1, "treatment", 1, &in_link, 0, NULL);
 +    dca_append_workflow_link(decaf, 0, 1, 2, 1, "dflow",
-+                             path, "proc", "proc");
++                             path, "count", "count");
 +
 +    fprintf(stdout,"Creation of the workflow completed\n");
 +    dca_init_decaf(decaf);
@@ -644,7 +644,7 @@ index eb30fc9..4dbf5ea 100644
 From 99ba3e127d18b1dbdac77046daf2e6d46ac2631e Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:10:36 -0500
-Subject: [PATCH 2/7] Check the status of MPI
+Subject: [PATCH 2/9] Check the status of MPI
 
 ---
  CMakeLists.txt | 6 +++++-
@@ -674,7 +674,7 @@ index 3909fd3..f3ac23f 100644
 From eaa854ab810c29f3e0ecd8c67d7dfbcd3c7602ae Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:32:54 -0500
-Subject: [PATCH 3/7] Add extra info
+Subject: [PATCH 3/9] Add extra info
 
 ---
  CMakeLists.txt | 5 +++++
@@ -703,7 +703,7 @@ index f3ac23f..089edd9 100644
 From 634e6e124fc4f4c06f8aab8c10536427f1d56b67 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:10:40 -0500
-Subject: [PATCH 4/7] Add mpi checks
+Subject: [PATCH 4/9] Add mpi checks
 
 ---
  CMakeLists.txt           | 2 +-
@@ -742,7 +742,7 @@ index 28d23d8..ce4b299 100644
 From 631fb2aa7e19d3a388ed9956d84e6542651959fc Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:16:59 -0500
-Subject: [PATCH 5/7] Add mpi checks
+Subject: [PATCH 5/9] Add mpi checks
 
 ---
  cmake/gmxManageMPI.cmake | 3 +++
@@ -774,7 +774,7 @@ index ce4b299..1e3af82 100644
 From d49d34c8c25255bcda600bf22caa185db297a4c9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:33:54 -0500
-Subject: [PATCH 6/7] Add infos
+Subject: [PATCH 6/9] Add infos
 
 ---
  CMakeLists.txt | 5 +++++
@@ -803,7 +803,7 @@ index b2e82d8..b14d7ec 100644
 From 2ac35154d1f8bcce44a9ab466404a3ee92b91f12 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:37:44 -0500
-Subject: [PATCH 7/7] Force MPI
+Subject: [PATCH 7/9] Force MPI
 
 ---
  CMakeLists.txt | 4 ++--
@@ -824,6 +824,147 @@ index b14d7ec..4649e3b 100644
  option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
  mark_as_advanced(GMX_SOFTWARE_INVSQRT)
  option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
+-- 
+2.1.4
+
+
+From 9668b8e9a4fd9f9af762f88b3844b84bf5ac02b0 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Thu, 16 Jun 2016 10:53:34 -0500
+Subject: [PATCH 8/9] Remove the barrier
+
+---
+ include/network.h    |  3 +++
+ src/gmxlib/network.c | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ src/kernel/mdrun.c   |  4 ++--
+ 3 files changed, 58 insertions(+), 3 deletions(-)
+
+diff --git a/include/network.h b/include/network.h
+index 21a1d08..dab841c 100644
+--- a/include/network.h
++++ b/include/network.h
+@@ -154,6 +154,9 @@ GMX_LIBGMX_EXPORT
+ void gmx_finalize_par(void);
+ /* Finish the parallel run in an ordered manner */
+ 
++GMX_LIBGMX_EXPORT
++void gmx_finalize_par_decaf(dca_decaf decaf);
++
+ #ifdef GMX_DOUBLE
+ #define gmx_sum_comm  gmx_sumd_comm
+ #define gmx_sum       gmx_sumd
+diff --git a/src/gmxlib/network.c b/src/gmxlib/network.c
+index 2fcdd44..be83348 100644
+--- a/src/gmxlib/network.c
++++ b/src/gmxlib/network.c
+@@ -1185,7 +1185,59 @@ void gmx_finalize_par(void)
+      * unfinished processes to terminate.
+      */
+     MPI_Barrier(MPI_COMM_WORLD);
+-    //MPI_Barrier(dca_get_com( cr->decaf ));
++
++    /*
++       if (DOMAINDECOMP(cr)) {
++       if (cr->npmenodes > 0 || cr->dd->bCartesian)
++        MPI_Comm_free(&cr->mpi_comm_mygroup);
++       if (cr->dd->bCartesian)
++        MPI_Comm_free(&cr->mpi_comm_mysim);
++       }
++     */
++
++    /* Apparently certain mpich implementations cause problems
++     * with MPI_Finalize. In that case comment out MPI_Finalize.
++     */
++    if (debug)
++    {
++        fprintf(debug, "Will call MPI_Finalize now\n");
++    }
++
++    ret = MPI_Finalize();
++    if (debug)
++    {
++        fprintf(debug, "Return code from MPI_Finalize = %d\n", ret);
++    }
++#endif
++}
++
++void gmx_finalize_par_decaf(dca_decaf decaf)
++{
++#ifndef GMX_MPI
++    /* Compiled without MPI, no MPI finalizing needed */
++    return;
++#else
++    int initialized, finalized;
++    int ret;
++
++    MPI_Initialized(&initialized);
++    if (!initialized)
++    {
++        return;
++    }
++    /* just as a check; we don't want to finalize twice */
++    MPI_Finalized(&finalized);
++    if (finalized)
++    {
++        return;
++    }
++
++    /* We sync the processes here to try to avoid problems
++     * with buggy MPI implementations that could cause
++     * unfinished processes to terminate.
++     */
++    MPI_Barrier(MPI_COMM_WORLD);
++    MPI_Barrier(dca_get_com(decaf));
+ 
+     /*
+        if (DOMAINDECOMP(cr)) {
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index 4dbf5ea..38d0acf 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -622,7 +622,7 @@ int cmain(int argc, char *argv[])
+ 
+     char libpath[MAX_STRING_LENGTH];
+     char path[MAX_STRING_LENGTH];
+-    strcpy(libpath, "/examples/C/libmod_dflow_direct.so");
++    strcpy(libpath, "gromacs/libmod_mod_dflow.so");
+     strcpy(path, prefix);
+     strcat(path, libpath);
+ 
+@@ -845,7 +845,7 @@ int cmain(int argc, char *argv[])
+ 
+     dca_terminate(cr->decaf);
+     fprintf(stdout," Decaf terminated\n");
+-    gmx_finalize_par();
++    gmx_finalize_par_decaf(cr->decaf);
+     dca_free_decaf(decaf);
+ 
+ 
+-- 
+2.1.4
+
+
+From 6bb435dbb51329e5179d8fc37fcd3c2c5c9122df Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Thu, 16 Jun 2016 11:10:23 -0500
+Subject: [PATCH 9/9] Check linkage
+
+---
+ src/gmxlib/network.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/src/gmxlib/network.c b/src/gmxlib/network.c
+index be83348..0bded05 100644
+--- a/src/gmxlib/network.c
++++ b/src/gmxlib/network.c
+@@ -1236,7 +1236,6 @@ void gmx_finalize_par_decaf(dca_decaf decaf)
+      * with buggy MPI implementations that could cause
+      * unfinished processes to terminate.
+      */
+-    MPI_Barrier(MPI_COMM_WORLD);
+     MPI_Barrier(dca_get_com(decaf));
+ 
+     /*
 -- 
 2.1.4
 

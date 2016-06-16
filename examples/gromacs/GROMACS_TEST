@@ -36,7 +36,7 @@ fi
 
 # executables
 exe1="./bin/mdrun_mpi_decaf -s $MODEL -nsteps 100 -v"
-exe2=./dflow
+exe2=./dflow_gromacs
 exe3=./treatment
 
 # mpmd command
