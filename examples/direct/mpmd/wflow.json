@@ -20,7 +20,7 @@
 		"nprocs" : 2 ,
 		"func" : "dflow" ,
 		"prod_dflow_redist" : "count" ,
-		"dflow_con_redist" : "count"
+		"dflow_con_redist" : "count" ,
 		"source" : 0 ,
 		"target" : 1
 	    }

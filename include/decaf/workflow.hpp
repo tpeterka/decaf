@@ -133,20 +133,20 @@ struct Workflow                              // an entire workflow
         }
 
   static void
-  make_wflow_from_json( Workflow& workflow, string json_path )
+  make_wflow_from_json( Workflow& workflow, const string& json_path )
   {
-    char *prefix = getenv("DECAF_PREFIX");
-    if( prefix == nullptr ) {
+    string decaf_prefix (getenv("DECAF_PREFIX"));
+    if( decaf_prefix.size() == 0 ) {
       fprintf( stderr, "ERROR: environment variable DECAF_PREFIX not defined."
 	       "Please export DECAF_PREFIX to point to the root of your decaf"
 	       "install directory.\n");
       exit(1);
     }
 
-    std::ifstream fs( json_path, std::ifstream::binary );
+    std::ifstream fs( decaf_prefix + json_path, std::ifstream::binary );
     if (!fs) {      
       cerr << "Error opening JSON file("
-	   << json_path
+	   << decaf_prefix + json_path
 	   << ")"
 	   << endl;
       exit(1);
@@ -156,9 +156,9 @@ struct Workflow                              // an entire workflow
 
     try {
       
-      bpt::read_json( json_path, root );
+      bpt::read_json( decaf_prefix + json_path, root );
 
-      for( auto &&v : root.get_child( "nodes" ) ) {
+      for( auto &&v : root.get_child( "workflow.nodes" ) ) {
 	/* 
 	 * iterate over the list of nodes, creating and populating WorkflowNodes as we go
 	 */
@@ -174,10 +174,10 @@ struct Workflow                              // an entire workflow
 	workflow.nodes.push_back( node );
       }
 
-      string path = string( prefix, strlen(prefix) );
-      path.append( root.get<std::string>("path") );
+      string path = decaf_prefix + root.get<std::string>("workflow.path");
+      cerr << path << endl;
       
-      for( auto &&v : root.get_child( "edges" ) ) {
+      for( auto &&v : root.get_child( "workflow.edges" ) ) {
 	
 	WorkflowLink link;
 	
@@ -198,11 +198,11 @@ struct Workflow                              // an entire workflow
       }
     }
     catch( const bpt::json_parser_error& jpe ) {
-      cerr << jpe.what() << endl;
+      cerr << "JSON parser exception: " << jpe.what() << endl;
       exit(1);
     }
     catch ( const bpt::ptree_error& pte ) {
-      cerr << pte.what() << endl;
+      cerr << "property_tree exception: " << pte.what() << endl;
       exit(1);
     }
     
