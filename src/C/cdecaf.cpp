@@ -282,4 +282,11 @@ extern "C"
         DecafHolder* handler = unbox(decaf);
         return handler->getDecaf()->dataflow(dataflow)->sizes()->prod_size;
     }
+
+    MPI_Comm
+    dca_get_com(dca_decaf decaf)
+    {
+        DecafHolder* handler = unbox(decaf);
+        return handler->getDecaf()->prod_comm_handle();
+    }
 }

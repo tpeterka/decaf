@@ -167,7 +167,10 @@ extern "C" {
     bool bca_get_block(bca_field field, bca_block* block);
 
     int
-    bca_get_nbitems(bca_field field);
+    bca_get_nbitems_field(bca_field field);
+
+    int
+    bca_get_nbitems_constructdata(bca_constructdata container);
 
     bool
     bca_merge_constructdata(bca_constructdata cont1, bca_constructdata cont2);

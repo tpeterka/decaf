@@ -25,7 +25,7 @@
 #include <map>
 #include <cstdlib>
 
-#include "wflow.hpp"                         // defines the workflow for this example
+#include "wflow_gromacs.hpp"                         // defines the workflow for this example
 
 using namespace decaf;
 using namespace std;
@@ -38,6 +38,7 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
+        fprintf(stdout, "dflow gromacs app\n");
         dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"
@@ -47,6 +48,10 @@ extern "C"
 void run(Workflow& workflow)                             // workflow
 {
     MPI_Init(NULL, NULL);
+
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    fprintf(stdout, "Dflow rank %i\n", rank);
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
@@ -61,6 +66,8 @@ void run(Workflow& workflow)                             // workflow
 int main(int argc,
          char** argv)
 {
+
+    fprintf(stdout, "Hello\n");
     // define the workflow
     Workflow workflow;
     make_wflow(workflow);

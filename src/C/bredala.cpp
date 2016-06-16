@@ -881,10 +881,17 @@ extern "C"
     }
 
     int
-    bca_get_nbitems(bca_field field)
+    bca_get_nbitems_field(bca_field field)
     {
         BaseField* data = unbox(field);
         return data->getNbItems();
+    }
+
+    int
+    bca_get_nbitems_constructdata(bca_constructdata container)
+    {
+        pConstructData* cont = unbox(container);
+        return cont->getPtr()->getNbItems();
     }
 
     bool

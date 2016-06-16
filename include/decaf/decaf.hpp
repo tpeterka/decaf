@@ -170,7 +170,9 @@ Decaf::Decaf(CommHandle world_comm,
     world_comm_(world_comm),
     workflow_(workflow)
 {
+    fprintf(stderr, "Initialization of Decaf...");
     world = new Comm(world_comm);
+    fprintf(stderr, "Worldcom ok\n");
 
     // build routing table
     // routing table is simply vectors of workflow nodes and links that belong to my process
@@ -188,6 +190,7 @@ Decaf::Decaf(CommHandle world_comm,
             my_nodes_.push_back(nl);
         }
     }
+    fprintf(stderr, "Add the nodes ok\n");
 
     // add my links
     for (size_t i = 0; i < workflow_.links.size(); i++)
@@ -201,9 +204,11 @@ Decaf::Decaf(CommHandle world_comm,
             my_links_.push_back(nl);
         }
     }
+    fprintf(stderr, "Add the links ok\n");
 
     // collect all dataflows
     build_dataflows(dataflows);
+    fprintf(stderr, "Build the dataflow ok\n");
 
     // inbound dataflows
     for (size_t i = 0; i < workflow_.links.size(); i++)
@@ -213,6 +218,7 @@ Decaf::Decaf(CommHandle world_comm,
         if (workflow_.my_in_link(world->rank(), i))     // I am a node and this dataflow is an input
             node_in_dataflows.push_back(dataflows[i]);
     }
+    fprintf(stderr, "Push the inbound dataflows\n");
 
     // outbound dataflows
     set <Dataflow*> unique_out_dataflows;               // set prevents adding duplicates
@@ -225,7 +231,9 @@ Decaf::Decaf(CommHandle world_comm,
     }
     out_dataflows.resize(unique_out_dataflows.size()); // copy set to vector
     copy(unique_out_dataflows.begin(), unique_out_dataflows.end(), out_dataflows.begin());
+    fprintf(stderr, "Push the outbound dataflows ok\n");
 
+    MPI_Barrier(MPI_COMM_WORLD);
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
     for (size_t i = 0; i < workflow_.nodes.size(); i++)

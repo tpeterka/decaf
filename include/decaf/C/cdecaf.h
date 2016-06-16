@@ -77,6 +77,9 @@ extern "C" {
     int
     dca_get_dataflow_prod_size(dca_decaf decaf, int dataflow);
 
+    MPI_Comm
+    dca_get_com(dca_decaf decaf);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

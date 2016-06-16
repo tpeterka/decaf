@@ -3,6 +3,7 @@ cmake_minimum_required      (VERSION 2.8)
 
 option                      (transport_mpi      "Build Decaf with MPI transport layer"         ON)
 option                      (hacc               "Build HACC example"                           OFF)
+option                      (gromacs            "Build Gromacs example"                        OFF)
 
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 

@@ -11,6 +11,7 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
+        fprintf(stdout, "Processing dflow\n");
         dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"

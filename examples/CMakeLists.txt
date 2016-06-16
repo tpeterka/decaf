@@ -16,6 +16,9 @@ endif                       ()
 if                          (hacc)
   add_subdirectory          (hacc)
 endif                       ()
+if(gromacs)
+  add_subdirectory          (gromacs)
+endif                       ()
 
 #add_subdirectory          (block_data_model)
 

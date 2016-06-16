@@ -140,6 +140,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     assert(sizes_.prod_start == decaf_sizes.prod_start);
     assert(sizes_.dflow_start == decaf_sizes.dflow_start);
     assert(sizes_.con_start == decaf_sizes.con_start);
+    fprintf(stderr, "Initializing a dataflow...\n");
 
     int world_rank = CommRank(world_comm); // my place in the world
     int world_size = CommSize(world_comm);
@@ -152,6 +153,8 @@ Dataflow::Dataflow(CommHandle world_comm,
         err_ = DECAF_COMM_SIZES_ERR;
         return;
     }
+
+    fprintf(stderr, "Setting up the sizes ok\n");
 
     // debug
     // if (world_rank == 0)
@@ -176,6 +179,8 @@ Dataflow::Dataflow(CommHandle world_comm,
         type_ |= DECAF_CONSUMER_COMM;
         con_comm_ = new Comm(world_comm, sizes_.con_start, sizes_.con_start + sizes_.con_size - 1);
     }
+
+    fprintf(stderr, "Creation of the communicator ok\n");
 
     // producer and dataflow
     if ((world_rank >= sizes_.prod_start && world_rank < sizes_.prod_start + sizes_.prod_size) ||
@@ -251,6 +256,8 @@ Dataflow::Dataflow(CommHandle world_comm,
         redist_prod_dflow_ = NULL;
     }
 
+    fprintf(stderr, "Creation of prod->dflow ok \n");
+
     // consumer and dataflow
     if ((world_rank >= sizes_.dflow_start && world_rank < sizes_.dflow_start + sizes_.dflow_size) ||
         (world_rank >= sizes_.con_start && world_rank < sizes_.con_start + sizes_.con_size))
@@ -324,8 +331,10 @@ Dataflow::Dataflow(CommHandle world_comm,
         // fprintf(stderr, "No redistribution between dflow and cons needed.\n");
         redist_dflow_con_ = NULL;
     }
+    fprintf(stderr, "Redist dflow -> con ok\n");
 
     err_ = DECAF_OK;
+    fprintf(stderr, "Dataflow initialized\n");
 }
 
 decaf::
