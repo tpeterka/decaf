@@ -137,31 +137,34 @@ struct Workflow                              // an entire workflow
   {
     string decaf_prefix (getenv("DECAF_PREFIX"));
     if( decaf_prefix.size() == 0 ) {
-      fprintf( stderr, "ERROR: environment variable DECAF_PREFIX not defined."
-	       "Please export DECAF_PREFIX to point to the root of your decaf"
-	       "install directory.\n");
-      exit(1);
-    }
-
-    std::ifstream fs( decaf_prefix + json_path, std::ifstream::binary );
-    if (!fs) {      
-      cerr << "Error opening JSON file("
-	   << decaf_prefix + json_path
-	   << ")"
+      cerr << "ERROR: environment variable DECAF_PREFIX not defined. "
+	   << "Please export DECAF_PREFIX to point to the root of your decaf"
+	   << " install directory."
 	   << endl;
       exit(1);
     }
 
-    bpt::ptree root;
-
     try {
+
+      bpt::ptree root;
+      
+      /*
+       * Use Boost::property_tree to read/parse the JSON file. This 
+       * creates a property_tree object which we'll then query to get 
+       * the information we want.
+       *
+       * N.B. Unlike what is provided by most JSON/XML parsers, the 
+       * property_tree is NOT a DOM tree, although processing it is somewhat
+       * similar to what you'd do with a DOM tree. Refer to the Boost documentation
+       * for more information.
+       */
       
       bpt::read_json( decaf_prefix + json_path, root );
 
+      /* 
+       * iterate over the list of nodes, creating and populating WorkflowNodes as we go
+       */
       for( auto &&v : root.get_child( "workflow.nodes" ) ) {
-	/* 
-	 * iterate over the list of nodes, creating and populating WorkflowNodes as we go
-	 */
 	WorkflowNode node;
 	node.out_links.clear();
 	node.in_links.clear();
@@ -175,18 +178,20 @@ struct Workflow                              // an entire workflow
       }
 
       string path = decaf_prefix + root.get<std::string>("workflow.path");
-      cerr << path << endl;
-      
+
+      /* 
+       * similarly for the edges
+       */
       for( auto &&v : root.get_child( "workflow.edges" ) ) {
-	
+
 	WorkflowLink link;
 	
 	/* link the nodes correctly(?) */      
 	link.prod = v.second.get<int>("source");
 	link.con = v.second.get<int>("target");
 
-	workflow.nodes.at( link.prod ).out_links.push_back( link.con );
-	workflow.nodes.at( link.con ).in_links.push_back( link.prod );
+	workflow.nodes.at( link.prod ).out_links.push_back( 0 );
+	workflow.nodes.at( link.con ).in_links.push_back( 0 );
 	 
 	link.path = path;
 	link.start_proc = v.second.get<int>("start_proc");
