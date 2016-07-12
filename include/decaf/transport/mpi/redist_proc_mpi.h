@@ -32,10 +32,11 @@ namespace decaf
                        int nbSources,
                        int rankDest,
                        int nbDests,
+                       int id,
                        CommHandle communicator,
                        RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
                        MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
-        RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod, mergeMethod) {}
+        RedistMPI(rankSource, nbSources, rankDest, nbDests, id, communicator, commMethod, mergeMethod) {}
         virtual ~RedistProcMPI() {}
 
     protected:

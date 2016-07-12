@@ -325,8 +325,8 @@ int main(int argc,
     link.nprocs = 1;
     link.func = "dflow";
     link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
+    link.prod_dflow_redist = "proc";
+    link.dflow_con_redist = "proc";
     workflow.links.push_back(link);
 
     link.prod = 0;                                  // node_b -> node_a

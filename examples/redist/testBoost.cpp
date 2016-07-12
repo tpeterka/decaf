@@ -466,7 +466,7 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
         return;
 
     //First 2 ranks are producer, third is consumer
-    RedistCountMPI component(0, nbSource, nbSource, nbReceptors, MPI_COMM_WORLD);
+    RedistCountMPI component(0, nbSource, nbSource, nbReceptors, 0, MPI_COMM_WORLD);
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component..."<<std::endl;
@@ -526,7 +526,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
     if(rank >= max(startSource + nbSource, startReceptors + nbReceptors))
         return;
 
-    RedistCountMPI *component = new RedistCountMPI(startSource, nbSource, startReceptors, nbReceptors, MPI_COMM_WORLD);
+    RedistCountMPI *component = new RedistCountMPI(startSource, nbSource, startReceptors, nbReceptors, 0, MPI_COMM_WORLD);
 
     std::cout<<"-------------------------------------"<<std::endl;
     std::cout<<"Test with Redistribution component with overlapping..."<<std::endl;

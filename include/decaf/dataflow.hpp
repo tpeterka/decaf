@@ -190,6 +190,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
+                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
@@ -200,6 +201,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
+                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
@@ -210,6 +212,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                      sizes_.prod_size,
                                                      sizes_.dflow_start,
                                                      sizes_.dflow_size,
+                                                     wflow_dflow_id_ * 2,
                                                      world_comm);
             break;
         }
@@ -219,16 +222,18 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
+                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
         case DECAF_PROC_DECOMP:
         {
             redist_prod_dflow_ = new RedistProcMPI(sizes_.prod_start,
-                                                    sizes_.prod_size,
-                                                    sizes_.dflow_start,
-                                                    sizes_.dflow_size,
-                                                    world_comm);
+                                                   sizes_.prod_size,
+                                                   sizes_.dflow_start,
+                                                   sizes_.dflow_size,
+                                                   wflow_dflow_id_ * 2,
+                                                   world_comm);
             break;
         }
         default:
@@ -239,6 +244,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
+                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
@@ -264,6 +270,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.dflow_size,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
+                                                   wflow_dflow_id_ * 2+1,
                                                    world_comm);
             break;
         }
@@ -274,6 +281,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.dflow_size,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
+                                                   wflow_dflow_id_ * 2+1,
                                                    world_comm);
             break;
         }
@@ -284,25 +292,28 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.dflow_size,
                                                     sizes_.con_start,
                                                     sizes_.con_size,
+                                                    wflow_dflow_id_ * 2+1,
                                                     world_comm);
             break;
         }
         case DECAF_BLOCK_DECOMP:
         {
-            redist_dflow_con_ = new RedistBlockMPI(sizes_.prod_start,
-                                                    sizes_.prod_size,
-                                                    sizes_.dflow_start,
-                                                    sizes_.dflow_size,
-                                                    world_comm);
+            redist_dflow_con_ = new RedistBlockMPI(sizes_.dflow_start,
+                                                   sizes_.dflow_size,
+                                                   sizes_.con_start,
+                                                   sizes_.con_size,
+                                                   wflow_dflow_id_ * 2+1,
+                                                   world_comm);
             break;
         }
         case DECAF_PROC_DECOMP:
         {
-            redist_dflow_con_ = new RedistProcMPI(sizes_.prod_start,
-                                                    sizes_.prod_size,
-                                                    sizes_.dflow_start,
-                                                    sizes_.dflow_size,
-                                                    world_comm);
+            redist_dflow_con_ = new RedistProcMPI(sizes_.dflow_start,
+                                                  sizes_.dflow_size,
+                                                  sizes_.con_start,
+                                                  sizes_.con_size,
+                                                  wflow_dflow_id_ * 2+1,
+                                                  world_comm);
             break;
         }
         default:
@@ -313,6 +324,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.dflow_size,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
+                                                   wflow_dflow_id_ * 2+1,
                                                    world_comm);
             break;
         }

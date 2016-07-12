@@ -928,12 +928,12 @@ extern "C"
         case bca_REDIST_COUNT:
         {
             return box(new RedistCountMPI(rank_source, nb_sources,
-                                          rank_dest, nb_dests, communicator));
+                                          rank_dest, nb_dests, 0, communicator));
         }
         case bca_REDIST_ROUND:
         {
             return box(new RedistRoundMPI(rank_source, nb_sources,
-                                          rank_dest, nb_dests, communicator));
+                                          rank_dest, nb_dests, 0, communicator));
         }
         case bca_REDIST_ZCURVE:
         {
@@ -945,12 +945,12 @@ extern "C"
         case bca_REDIST_BLOCK:
         {
             return box(new RedistBlockMPI(rank_source, nb_sources,
-                                          rank_dest, nb_dests, communicator));
+                                          rank_dest, nb_dests, 0, communicator));
         }
         case bca_REDIST_PROC:
         {
             return box(new RedistProcMPI(rank_source, nb_sources,
-                                         rank_dest, nb_dests, communicator));
+                                         rank_dest, nb_dests, 0, communicator));
         }
         default:
         {

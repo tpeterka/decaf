@@ -32,6 +32,7 @@ namespace decaf
                         int nbSources,
                         int rankDest,
                         int nbDests,
+                        int id,
                         CommHandle communicator,
                         RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
                         MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP,

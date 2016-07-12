@@ -71,7 +71,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
     std::cout<<"Rank : "<<rank<<std::endl;
     std::cout<<"Configuration : "<<startSource<<", "<<nbSource<<", "<<startReceptors<<", "<<nbReceptors<<std::endl;
     RedistRoundMPI *component = new RedistRoundMPI(startSource, nbSource,
-                                                     startReceptors, nbReceptors,
+                                                     startReceptors, nbReceptors, 0,
                                                      MPI_COMM_WORLD, DECAF_REDIST_P2P, DECAF_REDIST_MERGE_ONCE);
 
     std::cout<<"-------------------------------------"<<std::endl;

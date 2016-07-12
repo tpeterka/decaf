@@ -585,10 +585,10 @@ index eb30fc9..4dbf5ea 100644
 +    fprintf(stdout,"Creation of Decaf completed\n");
 +    int out_link = 0;
 +    int in_link = 0;
-+    dca_append_workflow_node(decaf, 0, 2, "gmx", 0, NULL, 1, &out_link);
-+    dca_append_workflow_node(decaf, 3, 1, "treatment", 1, &in_link, 0, NULL);
-+    dca_append_workflow_link(decaf, 0, 1, 2, 1, "dflow",
-+                             path, "count", "count");
++    dca_append_workflow_node(decaf, 0, 4, "gmx", 0, NULL, 1, &out_link);
++    dca_append_workflow_node(decaf, 6, 2, "treatment", 1, &in_link, 0, NULL);
++    dca_append_workflow_link(decaf, 0, 1, 4, 2, "dflow",
++                             path, "proc", "count");
 +
 +    fprintf(stdout,"Creation of the workflow completed\n");
 +    dca_init_decaf(decaf);
