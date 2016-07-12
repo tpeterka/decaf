@@ -113,6 +113,10 @@ extern "C"
         float* pos = posArray.getArray();
         int nbParticle = posArray->getNbItems();
         fprintf(stdout,"Number of particles in dflow : %i\n", nbParticle);
+
+        for(int i = 0; i < nbParticle; i++)
+            pos[i] = pos[i] * 10.0; // Switching from nm to Angstrom
+
         vector<unsigned int> morton(nbParticle);
         float *box = globalBox.getBlock()->getGlobalBBox();
         unsigned int* cells = globalBox.getBlock()->getGlobalExtends();

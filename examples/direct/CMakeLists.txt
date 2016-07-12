@@ -15,11 +15,9 @@ if(Boost_FOUND)
   add_executable              (linear_2nodes             linear_2nodes.cpp)
   add_executable              (linear_3nodes             linear_3nodes.cpp)
   add_executable              (cycle_4nodes              cycle_4nodes.cpp)
-  add_executable              (linear_5nodes             linear_5nodes.cpp)
   add_library                 (mod_linear_2nodes  MODULE linear_2nodes.cpp)
   add_library                 (mod_linear_3nodes  MODULE linear_3nodes.cpp)
   add_library                 (mod_cycle_4nodes   MODULE cycle_4nodes.cpp)
-  add_library                 (mod_linear_5nodes  MODULE linear_5nodes.cpp)
 
   target_link_libraries       (linear_2nodes
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
@@ -27,15 +25,11 @@ if(Boost_FOUND)
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
   target_link_libraries       (cycle_4nodes
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
-  target_link_libraries       (linear_5nodes
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
   target_link_libraries       (mod_linear_2nodes
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
   target_link_libraries       (mod_linear_3nodes
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
   target_link_libraries       (mod_cycle_4nodes
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
-  target_link_libraries       (mod_linear_5nodes
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
   # .SO file extension on Linux/Mac OS
@@ -47,13 +41,11 @@ if(Boost_FOUND)
   set_target_properties(mod_linear_2nodes PROPERTIES PREFIX "")
   set_target_properties(mod_linear_3nodes PROPERTIES PREFIX "")
   set_target_properties(mod_cycle_4nodes  PROPERTIES PREFIX "")
-  set_target_properties(mod_linear_5nodes PROPERTIES PREFIX "")
 
 
   install(TARGETS linear_2nodes mod_linear_2nodes
     linear_3nodes mod_linear_3nodes
     cycle_4nodes mod_cycle_4nodes
-    linear_5nodes mod_linear_5nodes
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
