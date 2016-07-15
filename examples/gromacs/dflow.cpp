@@ -83,7 +83,7 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
     {
         globalPos = {
                         -0.7f, -0.72f, -0.8f,
-                        29.0f, 45.0f, 35.17f
+                        29.0f, 45.0f, 25.4f
                     };
     }
     else if(profile.compare(std::string("bench54k")) == 0)

@@ -82,11 +82,13 @@ void posToFile(float* pos, int nbParticules, const string filename)
     file.close();
 }
 
-void computeBBox(float* pos, int nbParticles)
+void computeBBox(float* pos, int nbParticles,
+                 float &xmin, float &xmax,
+                 float &ymin, float &ymax,
+                 float &zmin, float &zmax)
 {
     if(nbParticles > 0)
     {
-        float xmin,ymin,zmin,xmax,ymax,zmax;
         xmin = pos[0];
         xmax = pos[0];
         ymin = pos[1];
@@ -141,19 +143,43 @@ void treatment1(Decaf* decaf)
                 // Getting the grid info
                 BlockField blockField  = in_data[i]->getFieldData<BlockField>("domain_block");
                 Block<3>* block = blockField.getBlock();
-                //block->printExtends();
+                block->printExtends();
                 //block->printBoxes();
             }
 
             ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
+            float* pos = posField.getArray();
+            int nbParticles = posField->getNbItems();
 
             stringstream filename;
             filename<<"pos_"<<rank<<"_"<<iteration<<"_treat.ply";
-            posToFile(posField.getArray(), posField->getNbItems(), filename.str());
+            posToFile(pos, nbParticles, filename.str());
 
-            computeBBox(posField.getArray(), posField->getNbItems());
+            float xmin,ymin,zmin,xmax,ymax,zmax;
+            computeBBox(pos, nbParticles,xmin,xmax,ymin,ymax,zmin,zmax);
 
+            MPI_Comm communicator = decaf->con_comm_handle();
+            float minl[3];
+            float maxl[3];
+            float ming[3];
+            float maxg[3];
+
+            minl[0] = xmin; minl[1] = ymin; minl[2] = zmin;
+            maxl[0] = xmax; maxl[1] = ymax; maxl[2] = zmax;
+            MPI_Reduce(minl, ming, 3, MPI_FLOAT, MPI_MIN, 0, communicator);
+            MPI_Reduce(maxl, maxg, 3, MPI_FLOAT, MPI_MAX, 0, communicator);
+
+            int localRank;
+            MPI_Comm_rank(communicator, &localRank);
+
+            if(localRank == 0)
+            {
+                std::cout<<"Global box : "<<std::endl;
+                std::cout<<"["<<ming[0]<<","<<ming[1]<<","<<ming[2]<<"]["<<maxg[0]<<","<<maxg[1]<<","<<maxg[2]<<"]"<<std::endl;
+            }
         }
+
+
 
         // Now each process has a sub domain of the global grid
 
