@@ -168,7 +168,6 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                                         nbSource,
                                         startReceptors1,
                                         nbReceptors1,
-                                        0,
                                         MPI_COMM_WORLD,
                                         DECAF_REDIST_P2P);
     }
@@ -180,7 +179,6 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                                         nbSource,
                                         startReceptors2,
                                         nbReceptors2,
-                                        1,
                                         MPI_COMM_WORLD,
                                         DECAF_REDIST_P2P);
     }

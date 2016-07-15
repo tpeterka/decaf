@@ -190,7 +190,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
-                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
@@ -201,7 +200,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
-                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
@@ -212,7 +210,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                      sizes_.prod_size,
                                                      sizes_.dflow_start,
                                                      sizes_.dflow_size,
-                                                     wflow_dflow_id_ * 2,
                                                      world_comm);
             break;
         }
@@ -222,7 +219,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
-                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
@@ -232,7 +228,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.prod_size,
                                                    sizes_.dflow_start,
                                                    sizes_.dflow_size,
-                                                   wflow_dflow_id_ * 2,
                                                    world_comm);
             break;
         }
@@ -244,7 +239,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.prod_size,
                                                     sizes_.dflow_start,
                                                     sizes_.dflow_size,
-                                                    wflow_dflow_id_ * 2,
                                                     world_comm);
             break;
         }
@@ -270,7 +264,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.dflow_size,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
-                                                   wflow_dflow_id_ * 2+1,
                                                    world_comm);
             break;
         }
@@ -281,7 +274,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.dflow_size,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
-                                                   wflow_dflow_id_ * 2+1,
                                                    world_comm);
             break;
         }
@@ -292,7 +284,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.dflow_size,
                                                     sizes_.con_start,
                                                     sizes_.con_size,
-                                                    wflow_dflow_id_ * 2+1,
                                                     world_comm);
             break;
         }
@@ -302,7 +293,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.dflow_size,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
-                                                   wflow_dflow_id_ * 2+1,
                                                    world_comm);
             break;
         }
@@ -312,7 +302,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                   sizes_.dflow_size,
                                                   sizes_.con_start,
                                                   sizes_.con_size,
-                                                  wflow_dflow_id_ * 2+1,
                                                   world_comm);
             break;
         }
@@ -324,7 +313,6 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.dflow_size,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
-                                                   wflow_dflow_id_ * 2+1,
                                                    world_comm);
             break;
         }

@@ -35,7 +35,6 @@ namespace decaf
                   int nbSources,
                   int rankDest,
                   int nbDests,
-                  int id,
                   CommHandle communicator,
                   RedistCommMethod commMethod,
                   MergeMethod mergeMethod);

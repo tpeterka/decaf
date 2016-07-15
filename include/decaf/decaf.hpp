@@ -230,7 +230,7 @@ Decaf::Decaf(CommHandle world_comm,
     copy(unique_out_dataflows.begin(), unique_out_dataflows.end(), out_dataflows.begin());
 
 
-    MPI_Barrier(MPI_COMM_WORLD); // Matthieu : TO REMOVE?
+    //MPI_Barrier(MPI_COMM_WORLD); // Matthieu : TO REMOVE?
 
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
@@ -308,7 +308,9 @@ Decaf::get(vector< pConstructData >& containers)
     }
     for (size_t i = 0; i < containers.size(); i++)
         if (Dataflow::test_quit(containers[i]))
+        {
             return false;
+        }
     return true;
 }
 
@@ -391,8 +393,12 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                 Dataflow::set_quit(quit_container);
 
                 for (size_t i = 0; i < ready_ids.size(); i++)
+                {
                     if (ready_types[i] & DECAF_LINK)
+                    {
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
+                    }
+                }
             }
         }
 

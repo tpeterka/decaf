@@ -61,7 +61,6 @@ namespace decaf
                int nbSources,
                int rankDest,
                int nbDests,
-               int id,
                RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
                MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
             rankSource_(rankSource),

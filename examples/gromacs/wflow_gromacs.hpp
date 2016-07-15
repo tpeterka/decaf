@@ -51,7 +51,7 @@ void make_wflow(Workflow& workflow)
     node.in_links.clear();
     node.in_links.push_back(0);
     node.start_proc = 6;
-    node.nprocs = 2;
+    node.nprocs = 4;
     node.func = "treatment";
     workflow.nodes.push_back(node);
 

@@ -25,9 +25,8 @@ RedistMPI::RedistMPI(int rankSource,
                      int nbSources,
                      int rankDest,
                      int nbDests,
-                     int id,
                      CommHandle world_comm, RedistCommMethod commMethod, MergeMethod mergeMethod) :
-    RedistComp(rankSource, nbSources, rankDest, nbDests, id, commMethod, mergeMethod),
+    RedistComp(rankSource, nbSources, rankDest, nbDests, commMethod, mergeMethod),
     communicator_(MPI_COMM_NULL),
     commSources_(MPI_COMM_NULL),
     commDests_(MPI_COMM_NULL),
@@ -90,7 +89,7 @@ RedistMPI::RedistMPI(int rankSource,
         }
     }
 
-    MPI_Comm_create_group(world_comm, groupRedist, id, &communicator_);
+    MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Group_free(&groupRedist);
 
     MPI_Comm_rank(communicator_, &rank_);
@@ -104,7 +103,7 @@ RedistMPI::RedistMPI(int rankSource,
         range_src[1] = rankSource + nbSources - 1;
         range_src[2] = 1;
         MPI_Group_range_incl(group, 1, &range_src, &groupSource);
-        MPI_Comm_create_group(world_comm, groupSource, id, &commSources_);
+        MPI_Comm_create_group(world_comm, groupSource, 0, &commSources_);
         MPI_Group_free(&groupSource);
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
@@ -118,7 +117,7 @@ RedistMPI::RedistMPI(int rankSource,
         range_dest[1] = rankDest + nbDests - 1;
         range_dest[2] = 1;
         MPI_Group_range_incl(group, 1, &range_dest, &groupDest);
-        MPI_Comm_create_group(world_comm, groupDest, id, &commDests_);
+        MPI_Comm_create_group(world_comm, groupDest, 0, &commDests_);
         MPI_Group_free(&groupDest);
         int dest_rank;
         MPI_Comm_rank(commDests_, &dest_rank);
@@ -253,6 +252,7 @@ RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
                 MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_,
                          MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
             }
+
         }
        /* // producer root sends the number of messages to root of consumer
         if (role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)

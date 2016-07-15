@@ -18,9 +18,9 @@ ARCH=LINUX
 #ARCH=CRAY
 
 # number of procs
-np1=2
-np2=1
-np3=1
+np1=4
+np2=2
+np3=4
 num_procs=$[$np1 + $np2 + $np3]
 
 # procs per node
@@ -35,7 +35,7 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executables
-exe1="./bin/mdrun_mpi_decaf -s $MODEL -nsteps 100 -v"
+exe1="./bin/mdrun_mpi_decaf -s $MODEL -nsteps 1 -v"
 exe2=./dflow_gromacs
 exe3=./treatment
 

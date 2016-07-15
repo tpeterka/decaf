@@ -1,7 +1,7 @@
 From b99a67de86247a6f4a3f22825024cd874cf0e021 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 10:39:56 -0500
-Subject: [PATCH 01/10] Patch with dflow and treatment in the simulation code.
+Subject: [PATCH 01/15] Patch with dflow and treatment in the simulation code.
 
 ---
  CMakeLists.txt                   |  16 ++++
@@ -585,10 +585,10 @@ index eb30fc9..4dbf5ea 100644
 +    fprintf(stdout,"Creation of Decaf completed\n");
 +    int out_link = 0;
 +    int in_link = 0;
-+    dca_append_workflow_node(decaf, 0, 4, "gmx", 0, NULL, 1, &out_link);
-+    dca_append_workflow_node(decaf, 6, 2, "treatment", 1, &in_link, 0, NULL);
-+    dca_append_workflow_link(decaf, 0, 1, 4, 2, "dflow",
-+                             path, "proc", "block");
++    dca_append_workflow_node(decaf, 0, 2, "gmx", 0, NULL, 1, &out_link);
++    dca_append_workflow_node(decaf, 3, 1, "treatment", 1, &in_link, 0, NULL);
++    dca_append_workflow_link(decaf, 0, 1, 2, 1, "dflow",
++                             path, "count", "count");
 +
 +    fprintf(stdout,"Creation of the workflow completed\n");
 +    dca_init_decaf(decaf);
@@ -644,7 +644,7 @@ index eb30fc9..4dbf5ea 100644
 From 99ba3e127d18b1dbdac77046daf2e6d46ac2631e Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:10:36 -0500
-Subject: [PATCH 02/10] Check the status of MPI
+Subject: [PATCH 02/15] Check the status of MPI
 
 ---
  CMakeLists.txt | 6 +++++-
@@ -674,7 +674,7 @@ index 3909fd3..f3ac23f 100644
 From eaa854ab810c29f3e0ecd8c67d7dfbcd3c7602ae Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:32:54 -0500
-Subject: [PATCH 03/10] Add extra info
+Subject: [PATCH 03/15] Add extra info
 
 ---
  CMakeLists.txt | 5 +++++
@@ -703,7 +703,7 @@ index f3ac23f..089edd9 100644
 From 634e6e124fc4f4c06f8aab8c10536427f1d56b67 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:10:40 -0500
-Subject: [PATCH 04/10] Add mpi checks
+Subject: [PATCH 04/15] Add mpi checks
 
 ---
  CMakeLists.txt           | 2 +-
@@ -742,7 +742,7 @@ index 28d23d8..ce4b299 100644
 From 631fb2aa7e19d3a388ed9956d84e6542651959fc Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:16:59 -0500
-Subject: [PATCH 05/10] Add mpi checks
+Subject: [PATCH 05/15] Add mpi checks
 
 ---
  cmake/gmxManageMPI.cmake | 3 +++
@@ -774,7 +774,7 @@ index ce4b299..1e3af82 100644
 From d49d34c8c25255bcda600bf22caa185db297a4c9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:33:54 -0500
-Subject: [PATCH 06/10] Add infos
+Subject: [PATCH 06/15] Add infos
 
 ---
  CMakeLists.txt | 5 +++++
@@ -803,7 +803,7 @@ index b2e82d8..b14d7ec 100644
 From 2ac35154d1f8bcce44a9ab466404a3ee92b91f12 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:37:44 -0500
-Subject: [PATCH 07/10] Force MPI
+Subject: [PATCH 07/15] Force MPI
 
 ---
  CMakeLists.txt | 4 ++--
@@ -831,7 +831,7 @@ index b14d7ec..4649e3b 100644
 From 9668b8e9a4fd9f9af762f88b3844b84bf5ac02b0 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 10:53:34 -0500
-Subject: [PATCH 08/10] Remove the barrier
+Subject: [PATCH 08/15] Remove the barrier
 
 ---
  include/network.h    |  3 +++
@@ -947,7 +947,7 @@ index 4dbf5ea..38d0acf 100644
 From 6bb435dbb51329e5179d8fc37fcd3c2c5c9122df Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 11:10:23 -0500
-Subject: [PATCH 09/10] Check linkage
+Subject: [PATCH 09/15] Check linkage
 
 ---
  src/gmxlib/network.c | 1 -
@@ -972,7 +972,7 @@ index be83348..0bded05 100644
 From 076cfedf4249a44a87e65db7cfebc4045b9cb270 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 13:34:04 -0500
-Subject: [PATCH 10/10] Attempt to fix crash during finalize
+Subject: [PATCH 10/15] Attempt to fix crash during finalize
 
 ---
  src/gmxlib/network.c | 5 +++--
@@ -1015,6 +1015,151 @@ index 38d0acf..d0094d9 100644
  
      if (MULTIMASTER(cr))
      {
+-- 
+2.1.4
+
+
+From a920a1ed24ab7689c2d6fb5891fb8ea3a32f7bf9 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 13 Jul 2016 13:07:04 -0500
+Subject: [PATCH 11/15] Add a Barrier before clearing everything
+
+---
+ src/kernel/mdrun.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index d0094d9..7c00299 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -634,7 +634,7 @@ int cmain(int argc, char *argv[])
+     dca_append_workflow_node(decaf, 0, 2, "gmx", 0, NULL, 1, &out_link);
+     dca_append_workflow_node(decaf, 3, 1, "treatment", 1, &in_link, 0, NULL);
+     dca_append_workflow_link(decaf, 0, 1, 2, 1, "dflow",
+-                             path, "count", "count");
++                             path, "proc", "count");
+ 
+     fprintf(stdout,"Creation of the workflow completed\n");
+     dca_init_decaf(decaf);
+@@ -846,6 +846,8 @@ int cmain(int argc, char *argv[])
+     dca_terminate(cr->decaf);
+     fprintf(stdout," Decaf terminated\n");
+     gmx_finalize_par_decaf(cr->decaf);
++
++    //MPI_Barrier(MPI_COMM_WORLD);
+     dca_free_decaf(decaf);
+ 
+     MPI_Finalize();
+-- 
+2.1.4
+
+
+From dbb6d99220e7b293d453ae74fe2c62af0fb43c56 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 13 Jul 2016 13:34:39 -0500
+Subject: [PATCH 12/15] Fix the name of the dflow library
+
+---
+ src/kernel/mdrun.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index 7c00299..7cbe33a 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -622,7 +622,7 @@ int cmain(int argc, char *argv[])
+ 
+     char libpath[MAX_STRING_LENGTH];
+     char path[MAX_STRING_LENGTH];
+-    strcpy(libpath, "gromacs/libmod_mod_dflow.so");
++    strcpy(libpath, "gromacs/libmod_mod_dflow_gromacs.so");
+     strcpy(path, prefix);
+     strcat(path, libpath);
+ 
+-- 
+2.1.4
+
+
+From 4fccd84f8007624b8d368838ec4bb269d0247cc8 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 13 Jul 2016 13:39:41 -0500
+Subject: [PATCH 13/15] Fix the name of the dflow library
+
+---
+ src/kernel/mdrun.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index 7cbe33a..e8211a7 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -622,7 +622,7 @@ int cmain(int argc, char *argv[])
+ 
+     char libpath[MAX_STRING_LENGTH];
+     char path[MAX_STRING_LENGTH];
+-    strcpy(libpath, "gromacs/libmod_mod_dflow_gromacs.so");
++    strcpy(libpath, "/examples/gromacs/libmod_mod_dflow_gromacs.so");
+     strcpy(path, prefix);
+     strcat(path, libpath);
+ 
+-- 
+2.1.4
+
+
+From 7d667dc746ca675986fae961700bf07271011081 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 13 Jul 2016 13:49:38 -0500
+Subject: [PATCH 14/15] Fix the name of the dflow library
+
+---
+ src/kernel/mdrun.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index e8211a7..9934ae6 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -622,7 +622,7 @@ int cmain(int argc, char *argv[])
+ 
+     char libpath[MAX_STRING_LENGTH];
+     char path[MAX_STRING_LENGTH];
+-    strcpy(libpath, "/examples/gromacs/libmod_mod_dflow_gromacs.so");
++    strcpy(libpath, "/examples/gromacs/libmod_dflow_gromacs.so");
+     strcpy(path, prefix);
+     strcat(path, libpath);
+ 
+-- 
+2.1.4
+
+
+From efca0d61b17dc47a4ebd3b9e440a743da385a330 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 13 Jul 2016 13:56:34 -0500
+Subject: [PATCH 15/15] Fix the graph
+
+---
+ src/kernel/mdrun.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index 9934ae6..4d74f2f 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -631,10 +631,10 @@ int cmain(int argc, char *argv[])
+     fprintf(stdout,"Creation of Decaf completed\n");
+     int out_link = 0;
+     int in_link = 0;
+-    dca_append_workflow_node(decaf, 0, 2, "gmx", 0, NULL, 1, &out_link);
+-    dca_append_workflow_node(decaf, 3, 1, "treatment", 1, &in_link, 0, NULL);
+-    dca_append_workflow_link(decaf, 0, 1, 2, 1, "dflow",
+-                             path, "proc", "count");
++    dca_append_workflow_node(decaf, 0, 4, "gmx", 0, NULL, 1, &out_link);
++    dca_append_workflow_node(decaf, 6, 4, "treatment", 1, &in_link, 0, NULL);
++    dca_append_workflow_link(decaf, 0, 1, 4, 2, "dflow",
++                             path, "proc", "block");
+ 
+     fprintf(stdout,"Creation of the workflow completed\n");
+     dca_init_decaf(decaf);
 -- 
 2.1.4
 

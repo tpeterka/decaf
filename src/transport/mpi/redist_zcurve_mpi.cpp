@@ -98,7 +98,7 @@ decaf::
 RedistZCurveMPI::RedistZCurveMPI(int rankSource,
                                  int nbSources,
                                  int rankDest,
-                                 int nbDests, int id,
+                                 int nbDests,
                                  CommHandle world_comm,
                                  RedistCommMethod commMethod,
                                  MergeMethod mergeMethod,
@@ -107,7 +107,7 @@ RedistZCurveMPI::RedistZCurveMPI(int rankSource,
     bBBox_(false),
     bBox_(bBox),
     slices_(slices),
-    RedistMPI(rankSource, nbSources, rankDest, nbDests, id, world_comm, commMethod, mergeMethod)
+    RedistMPI(rankSource, nbSources, rankDest, nbDests, world_comm, commMethod, mergeMethod)
 {
 
     // The slices are the number rows in each dimension for the grid

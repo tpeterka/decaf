@@ -198,7 +198,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
     std::vector<float> bbox = {0.0,0.0,0.0,10.0,10.0,10.0};
 
     RedistZCurveMPI *component = new RedistZCurveMPI(startSource, nbSource,
-                                                     startReceptors, nbReceptors, 0,
+                                                     startReceptors, nbReceptors,
                                                      MPI_COMM_WORLD, DECAF_REDIST_COLLECTIVE, DECAF_REDIST_MERGE_STEP, bbox);
 
     std::cout<<"-------------------------------------"<<std::endl;

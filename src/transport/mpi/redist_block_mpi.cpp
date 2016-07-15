@@ -220,7 +220,6 @@ RedistBlockMPI::splitData(pConstructData& data, RedistRole role)
         // Subdata model might be empty (no items)
         data->split( subblocks_, splitBuffer_ );
 
-
         //Pushing the subdomain block into each split chunk.
         //The field domain_block is updated
         updateBlockDomainFields();
@@ -513,7 +512,7 @@ RedistBlockMPI::redistribute(pConstructData data, RedistRole role)
 }*/
 
 
-void
+/*void
 decaf::
 RedistBlockMPI::flush()
 {
@@ -523,7 +522,7 @@ RedistBlockMPI::flush()
 
     // Cleaning the data here because synchronous send.
     destList_.clear();
-}
+}*/
 
 
 

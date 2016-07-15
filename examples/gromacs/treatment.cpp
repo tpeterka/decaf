@@ -30,6 +30,9 @@
 #include <mpi.h>
 #include <map>
 #include <cstdlib>
+#include <sstream>
+#include <fstream>
+
 
 #include "wflow_gromacs.hpp"                         // defines the workflow for this example
 
@@ -37,7 +40,79 @@ using namespace decaf;
 using namespace std;
 using namespace boost;
 
-RedistBlockMPI* redist;
+template <typename T>
+T clip(const T& n, const T& lower, const T& upper) {
+  return max(lower, min(n, upper));
+}
+
+void posToFile(float* pos, int nbParticules, const string filename)
+{
+    ofstream file;
+    cout<<"Filename : "<<filename<<endl;
+    file.open(filename.c_str());
+
+    unsigned int r,g,b;
+    r = rand() % 255;
+    g = rand() % 255;
+    b = rand() % 255;
+
+    unsigned int ur,ug,ub;
+    ur = r;
+    ug = g;
+    ub = b;
+    ur = clip<unsigned int>(ur, 0, 255);
+    ug = clip<unsigned int>(ug, 0, 255);
+    ub = clip<unsigned int>(ub, 0, 255);
+    //cout<<"UColor : "<<ur<<","<<ug<<","<<ub<<endl;
+
+    //cout<<"Number of particules to save : "<<nbParticules<<endl;
+    file<<"ply"<<endl;
+    file<<"format ascii 1.0"<<endl;
+    file<<"element vertex "<<nbParticules<<endl;
+    file<<"property float x"<<endl;
+    file<<"property float y"<<endl;
+    file<<"property float z"<<endl;
+    file<<"property uchar red"<<endl;
+    file<<"property uchar green"<<endl;
+    file<<"property uchar blue"<<endl;
+    file<<"end_header"<<endl;
+    for(int i = 0; i < nbParticules; i++)
+        file<<pos[3*i]<<" "<<pos[3*i+1]<<" "<<pos[3*i+2]
+            <<" "<<ur<<" "<<ug<<" "<<ub<<endl;
+    file.close();
+}
+
+void computeBBox(float* pos, int nbParticles)
+{
+    if(nbParticles > 0)
+    {
+        float xmin,ymin,zmin,xmax,ymax,zmax;
+        xmin = pos[0];
+        xmax = pos[0];
+        ymin = pos[1];
+        ymax = pos[1];
+        zmin = pos[2];
+        zmax = pos[2];
+
+        for(int i = 1; i < nbParticles; i++)
+        {
+            if(xmin > pos[3*i])
+                xmin = pos[3*i];
+            if(ymin > pos[3*i+1])
+                ymin = pos[3*i+1];
+            if(zmin > pos[3*i+2])
+                zmin = pos[3*i+2];
+            if(xmax < pos[3*i])
+                xmax = pos[3*i];
+            if(ymax < pos[3*i+1])
+                ymax = pos[3*i+1];
+            if(zmax < pos[3*i+2])
+                zmax = pos[3*i+2];
+        }
+
+        std::cout<<"["<<xmin<<","<<ymin<<","<<zmin<<"]["<<xmax<<","<<ymax<<","<<zmax<<"]"<<std::endl;
+    }
+}
 
 // consumer
 void treatment1(Decaf* decaf)
@@ -45,38 +120,47 @@ void treatment1(Decaf* decaf)
     vector< pConstructData > in_data;
     fprintf(stderr, "Launching treatment\n");
     fflush(stderr);
+
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int iteration = 0;
+
     while (decaf->get(in_data))
     {
         // get the atom positions
-        pConstructData atoms;
         fprintf(stderr, "Reception of %u messages.\n", in_data.size());
-        if(in_data[0]->hasData(string("domain_block")))
-            fprintf(stderr, "The block is in the model before block redist\n");
-        else
-            fprintf(stderr, "The block is not in the model before block redist\n");
 
-        for (size_t i = 0; i < in_data.size(); i++)
+        fprintf(stderr, "Number of particles received : %i\n", in_data[0]->getNbItems());
+        if(in_data[0]->getNbItems() > 0)
         {
-            fprintf(stderr, "Number of particles received : %i\n", in_data[i]->getNbItems());
+            for (size_t i = 0; i < in_data.size(); i++)
+            {
 
-            // Sending the data
-            redist->process(in_data[i], DECAF_REDIST_SOURCE);
 
-            //Receiving the data
-            redist->process(atoms, DECAF_REDIST_DEST);
-            redist->flush();
+                // Getting the grid info
+                BlockField blockField  = in_data[i]->getFieldData<BlockField>("domain_block");
+                Block<3>* block = blockField.getBlock();
+                //block->printExtends();
+                //block->printBoxes();
+            }
+
+            ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
+
+            stringstream filename;
+            filename<<"pos_"<<rank<<"_"<<iteration<<"_treat.ply";
+            posToFile(posField.getArray(), posField->getNbItems(), filename.str());
+
+            computeBBox(posField.getArray(), posField->getNbItems());
+
         }
-        atoms->printKeys();
 
         // Now each process has a sub domain of the global grid
 
-        // Getting the grid info
-        /*BlockField blockField  = atoms->getFieldData<BlockField>("domain_block");
-        Block<3>* block = blockField.getBlock();
-        block->printExtends();
+
 
         //Building the grid
-        unsigned int* lExtends = block->getLocalExtends();
+        /*unsigned int* lExtends = block->getLocalExtends();
         multi_array<float,3>* grid = new multi_array<float,3>(
                     extents[lExtends[3]][lExtends[4]][lExtends[5]]
                 );
@@ -106,11 +190,13 @@ void treatment1(Decaf* decaf)
 
         delete grid;
         */
+
+        iteration++;
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "Treatment terminating\n");
-    decaf->terminate();
+    //decaf->terminate();
 }
 
 // every user application needs to implement the following run function with this signature
@@ -118,20 +204,20 @@ void treatment1(Decaf* decaf)
 void run(Workflow& workflow)                             // workflow
 {
     MPI_Init(NULL, NULL);
-    int rank;
+
+    char processorName[MPI_MAX_PROCESSOR_NAME];
+    int size_world, rank, nameLen;
+
+    MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Get_processor_name(processorName,&nameLen);
+
+    srand(time(NULL) + rank * size_world + nameLen);
+
     fprintf(stderr, "treatment rank %i\n", rank);
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
-    fprintf(stderr, "Decaf created\n");
-
-    // We do the redistribution here between the component
-    // TODO : Insert this in the workflow instead
-    fprintf(stderr, "Size of the communicator for block redist : %i\n", decaf->con_comm_size());
-    redist = new RedistBlockMPI(0, decaf->con_comm_size(),
-                          0, decaf->con_comm_size(), 20,
-                          decaf->con_comm_handle());
 
     // start the task
     treatment1(decaf);

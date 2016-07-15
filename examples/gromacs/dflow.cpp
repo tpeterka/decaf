@@ -19,6 +19,8 @@
 #include <map>
 #include <cstdlib>
 #include <string>
+#include <sstream>
+#include <fstream>
 
 #include "wflow_gromacs.hpp"                         // defines the workflow for this example
 
@@ -26,6 +28,50 @@
 
 using namespace decaf;
 using namespace std;
+
+template <typename T>
+T clip(const T& n, const T& lower, const T& upper) {
+  return max(lower, min(n, upper));
+}
+
+static int iteration = 0;
+
+void posToFile(float* pos, int nbParticules, const string filename)
+{
+    ofstream file;
+    //cout<<"Filename : "<<filename<<endl;
+    file.open(filename.c_str());
+
+    unsigned int r,g,b;
+    r = rand() % 255;
+    g = rand() % 255;
+    b = rand() % 255;
+
+    unsigned int ur,ug,ub;
+    ur = r;
+    ug = g;
+    ub = b;
+    ur = clip<unsigned int>(ur, 0, 255);
+    ug = clip<unsigned int>(ug, 0, 255);
+    ub = clip<unsigned int>(ub, 0, 255);
+    //cout<<"UColor : "<<ur<<","<<ug<<","<<ub<<endl;
+
+    //cout<<"Number of particules to save : "<<nbParticules<<endl;
+    file<<"ply"<<endl;
+    file<<"format ascii 1.0"<<endl;
+    file<<"element vertex "<<nbParticules<<endl;
+    file<<"property float x"<<endl;
+    file<<"property float y"<<endl;
+    file<<"property float z"<<endl;
+    file<<"property uchar red"<<endl;
+    file<<"property uchar green"<<endl;
+    file<<"property uchar blue"<<endl;
+    file<<"end_header"<<endl;
+    for(int i = 0; i < nbParticules; i++)
+        file<<pos[3*i]<<" "<<pos[3*i+1]<<" "<<pos[3*i+2]
+            <<" "<<ur<<" "<<ug<<" "<<ub<<endl;
+    file.close();
+}
 
 void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
 {
@@ -56,16 +102,16 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
     // Extension of the box as these box are the strict box of the first frame
     // so even with some movements the model is still in the box
 
-    float dX = globalPos[3] * 0.2;
-    float dY = globalPos[4] * 0.2;
-    float dZ = globalPos[5] * 0.2;
+    /*float dX = ( globalPos[3] - globalPos[0] ) * 0.2;
+    float dY = ( globalPos[4] - globalPos[1] ) * 0.2;
+    float dZ = ( globalPos[5] - globalPos[2] ) * 0.2;
 
     globalPos[0] -= dX;
     globalPos[1] -= dY;
     globalPos[2] -= dZ;
     globalPos[3] += dX;
     globalPos[4] += dY;
-    globalPos[5] += dZ;
+    globalPos[5] += dZ;*/
 
     globalExtends[0] = 0;
     globalExtends[1] = 0;
@@ -79,8 +125,8 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
     block->setGridspace(gridspace);
     block->setGhostSizes(2);
 
-    globalBox.getBlock()->printBoxes();
-    globalBox.getBlock()->printExtends();
+    //globalBox.getBlock()->printBoxes();
+    //globalBox.getBlock()->printExtends();
 }
 
 // link callback function
@@ -91,7 +137,8 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
-        fprintf(stdout, "dflow gromacs app\n");
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
         //TODO : find a way to pass the value as a global argument
         BlockField globalBox;
@@ -112,10 +159,13 @@ extern "C"
 
         float* pos = posArray.getArray();
         int nbParticle = posArray->getNbItems();
-        fprintf(stdout,"Number of particles in dflow : %i\n", nbParticle);
 
-        for(int i = 0; i < nbParticle; i++)
+        for(int i = 0; i < 3 * nbParticle; i++)
             pos[i] = pos[i] * 10.0; // Switching from nm to Angstrom
+
+        stringstream filename;
+        filename<<"pos_"<<rank<<"_"<<iteration<<"_dflow.ply";
+        posToFile(pos, nbParticle, filename.str());
 
         vector<unsigned int> morton(nbParticle);
         float *box = globalBox.getBlock()->getGlobalBBox();
@@ -150,16 +200,12 @@ extern "C"
                               DECAF_NOFLAG, DECAF_SHARED,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
         container->appendData("morton", mortonField,
-                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_ZCURVEINDEX, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-         fprintf(stderr, "Sending %i items.\n", container->getNbItems());
-         if(container->hasData(string("domain_block")))
-             fprintf(stderr, "The block is in the model\n");
-         else
-             fprintf(stderr, "The block is not in the model\n");
-
         dataflow->put(container, DECAF_LINK);
+
+        iteration++;
     }
 } // extern "C"
 
@@ -169,8 +215,14 @@ void run(Workflow& workflow)                             // workflow
 {
     MPI_Init(NULL, NULL);
 
-    int rank;
+    char processorName[MPI_MAX_PROCESSOR_NAME];
+    int size_world, rank, nameLen;
+
+    MPI_Comm_size(MPI_COMM_WORLD, &size_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Get_processor_name(processorName,&nameLen);
+
+    srand(time(NULL) + rank * size_world + nameLen);
     fprintf(stdout, "Dflow rank %i\n", rank);
 
     // create decaf
