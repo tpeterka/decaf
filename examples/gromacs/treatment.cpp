@@ -216,7 +216,7 @@ void treatment1(Decaf* decaf)
             fprintf(stderr,"Computation of the grid completed\n");
 
             // Giving the parameter setup to Damaris for the storage layout
-            if(iteration == 0)
+            /*if(iteration == 0)
             {
                 unsigned int DX,DY,DZ;
                 unsigned int* extends = block->getGlobalExtends();
@@ -245,8 +245,15 @@ void treatment1(Decaf* decaf)
                 damaris_write("coordinates/y3d", rmesh_y);
                 damaris_write("coordinates/z3d", rmesh_z);
 
+                damaris_end_iteration();
 
-            }
+                free(rmesh_x);
+                free(rmesh_y);
+                free(rmesh_z);
+
+            }*/
+
+
 
 
 
@@ -285,7 +292,7 @@ void run(Workflow& workflow)                             // workflow
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
     //Initalizing the Damaris context
-    damaris_initialize("decaf_grid.xml",decaf->con_comm_handle());
+    /*damaris_initialize("decaf_grid.xml",decaf->con_comm_handle());
 
     int is_client, err;
     if((err == DAMARIS_OK || err == DAMARIS_NO_SERVER) && is_client) {
@@ -306,7 +313,7 @@ void run(Workflow& workflow)                             // workflow
     {
         fprintf(stderr, "ERROR during the initialization of Damaris. Abording.\n");
         MPI_Abort(MPI_COMM_WORLD, 0);
-    }
+    }*/
 
 
     // start the task
