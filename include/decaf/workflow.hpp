@@ -190,8 +190,8 @@ struct Workflow                              // an entire workflow
 	link.prod = v.second.get<int>("source");
 	link.con = v.second.get<int>("target");
 
-	workflow.nodes.at( link.prod ).out_links.push_back( 0 );
-	workflow.nodes.at( link.con ).in_links.push_back( 0 );
+        workflow.nodes.at( link.prod ).out_links.push_back( workflow.links.size() );
+        workflow.nodes.at( link.con ).in_links.push_back( workflow.links.size() );
 	 
 	link.path = path;
 	link.start_proc = v.second.get<int>("start_proc");
@@ -199,7 +199,7 @@ struct Workflow                              // an entire workflow
 	link.func = v.second.get<std::string>("func");
 	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
 	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
-	workflow.links.push_back( link );
+        workflow.links.push_back( link );
       }
     }
     catch( const bpt::json_parser_error& jpe ) {

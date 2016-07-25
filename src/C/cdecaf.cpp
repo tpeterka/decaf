@@ -94,6 +94,12 @@ using namespace decaf;
         unsigned int getNbMessages(){ return messages_.size(); }
         pConstructData* getMessages(){ return &messages_[0]; }
 
+        void initFromJSON(const char* path)
+        {
+            Workflow::make_wflow_from_json(workflow_, path);
+            decaf_ = new Decaf( communicator_, workflow_ );
+        }
+
     private:
         Workflow workflow_;
         Decaf* decaf_;
@@ -206,6 +212,11 @@ extern "C"
     void dca_init_decaf(dca_decaf decaf)
     {
         unbox(decaf)->initDecaf();
+    }
+
+    void dca_init_from_json(dca_decaf decaf, const char* path)
+    {
+        unbox(decaf)->initFromJSON(path);
     }
 
     dca_decaf

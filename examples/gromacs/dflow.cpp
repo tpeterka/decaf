@@ -22,7 +22,8 @@
 #include <sstream>
 #include <fstream>
 
-#include "wflow_gromacs.hpp"                         // defines the workflow for this example
+//#include "wflow_gromacs.hpp"                         // defines the workflow for this example
+#include <decaf/workflow.hpp>
 
 #include <decaf/data_model/morton.h>
 
@@ -137,6 +138,7 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
+        std::cout<<"Call do dflow"<<std::endl;
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -206,6 +208,7 @@ extern "C"
         dataflow->put(container, DECAF_LINK);
 
         iteration++;
+        std::cout<<"End of dflow iteration"<<std::endl;
     }
 } // extern "C"
 
@@ -247,7 +250,8 @@ int main(int argc,
 
     // define the workflow
     Workflow workflow;
-    make_wflow(workflow);
+    //make_wflow(workflow);
+    Workflow::make_wflow_from_json(workflow, "/examples/gromacs/wflow_gromacs.json");
 
     // run decaf
     run(workflow);

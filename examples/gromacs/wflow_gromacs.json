@@ -1,0 +1,29 @@
+{
+    "workflow" :
+    {
+    "path" : "/examples/gromacs/libmod_dflow_gromacs.so",
+    "nodes" : [
+        {
+        "start_proc" : 0 ,
+        "nprocs" : 4 ,
+        "func" : "gmx"
+        },
+        {
+        "start_proc" : 6 ,
+        "nprocs" : 4 ,
+        "func" : "treatment"
+        }
+    ],
+    "edges" : [
+        {
+        "start_proc" : 4 ,
+        "nprocs" : 2 ,
+        "func" : "dflow" ,
+        "prod_dflow_redist" : "proc" ,
+        "dflow_con_redist" : "block" ,
+        "source" : 0 ,
+        "target" : 1
+        }
+    ]
+    }
+}

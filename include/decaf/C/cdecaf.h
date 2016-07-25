@@ -49,6 +49,8 @@ extern "C" {
 
     void dca_init_decaf(dca_decaf decaf);
 
+    void dca_init_from_json(dca_decaf decaf, const char* path);
+
     dca_decaf
     dca_create_decaf(MPI_Comm comm_world);
 

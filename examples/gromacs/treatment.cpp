@@ -35,7 +35,9 @@
 
 #include "Damaris.h"
 
-#include "wflow_gromacs.hpp"                         // defines the workflow for this example
+#include <decaf/workflow.hpp>
+
+//#include "wflow_gromacs.hpp"                         // defines the workflow for this example
 
 using namespace decaf;
 using namespace std;
@@ -136,11 +138,11 @@ void treatment1(Decaf* decaf)
 
         fprintf(stderr, "Number of particles received : %i\n", in_data[0]->getNbItems());
 
-        if(iteration == 0 && in_data[0]->getNbItems() > 0)
-        {
-            fprintf(stderr,"ERROR : not all the treatment got a data. Abording.\n");
-            MPI_Abort(MPI_COMM_WORLD, 0);
-        }
+        //if(iteration == 0 && in_data[0]->getNbItems() > 0)
+        //{
+        //    fprintf(stderr,"ERROR : not all the treatment got a data. Abording.\n");
+        //    MPI_Abort(MPI_COMM_WORLD, 0);
+        //}
 
         if(in_data[0]->getNbItems() > 0)
         {
@@ -332,7 +334,9 @@ int main(int argc,
     fprintf(stderr, "Hello treatment\n");
     // define the workflow
     Workflow workflow;
-    make_wflow(workflow);
+    //make_wflow(workflow);
+    Workflow::make_wflow_from_json(workflow, "/examples/gromacs/wflow_gromacs.json");
+
 
     // run decaf
     run(workflow);
