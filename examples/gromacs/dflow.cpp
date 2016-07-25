@@ -138,7 +138,6 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
-        std::cout<<"Call do dflow"<<std::endl;
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -208,7 +207,6 @@ extern "C"
         dataflow->put(container, DECAF_LINK);
 
         iteration++;
-        std::cout<<"End of dflow iteration"<<std::endl;
     }
 } // extern "C"
 
@@ -233,6 +231,7 @@ void run(Workflow& workflow)                             // workflow
 
     // cleanup
     delete decaf;
+    fprintf(stderr,"Decaf deleted. Waiting on finalize\n");
     MPI_Finalize();
 }
 

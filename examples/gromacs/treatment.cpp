@@ -323,6 +323,7 @@ void run(Workflow& workflow)                             // workflow
 
     // cleanup
     delete decaf;
+    fprintf(stderr,"Decaf deleted. Waiting on finalize\n");
     MPI_Finalize();
 }
 

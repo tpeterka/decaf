@@ -396,9 +396,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                 {
                     if (ready_types[i] & DECAF_LINK)
                     {
-                        std::cout<<"Forwarding quit message"<<std::endl;
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
-                        std::cout<<"Forward done"<<std::endl;
                     }
                 }
             }
@@ -407,17 +405,12 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
         // all done
         if (done)
         {
-            fprintf(stderr, "All done, shuting down the dflow\n");
             for (size_t i = 0; i < dataflows.size(); i++)
             {
                 if (my_link(i))
                     dataflows[i]->shutdown();
             }
             break;
-        }
-        else
-        {
-            fprintf(stderr,"Still some things to finish\n");
         }
 
         // otherwise, act on the messages

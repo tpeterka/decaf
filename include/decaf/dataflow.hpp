@@ -181,7 +181,6 @@ Dataflow::Dataflow(CommHandle world_comm,
     if ((world_rank >= sizes_.prod_start && world_rank < sizes_.prod_start + sizes_.prod_size) ||
         (world_rank >= sizes_.dflow_start && world_rank < sizes_.dflow_start + sizes_.dflow_size))
     {
-        fprintf(stderr,"Communicator prod-> dflow : from %i to %i\n", sizes_.prod_start, sizes_.dflow_start);
         switch(prod_dflow_redist)
         {
         case DECAF_ROUND_ROBIN_DECOMP:
@@ -256,8 +255,6 @@ Dataflow::Dataflow(CommHandle world_comm,
     if ((world_rank >= sizes_.dflow_start && world_rank < sizes_.dflow_start + sizes_.dflow_size) ||
         (world_rank >= sizes_.con_start && world_rank < sizes_.con_start + sizes_.con_size))
     {
-        fprintf(stderr,"Communicator dflow-> cons : from %i to %i\n", sizes_.dflow_start, sizes_.con_start);
-
         switch(dflow_cons_redist)
         {
         case DECAF_ROUND_ROBIN_DECOMP:
