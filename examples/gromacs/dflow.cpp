@@ -250,7 +250,7 @@ int main(int argc,
     // define the workflow
     Workflow workflow;
     //make_wflow(workflow);
-    Workflow::make_wflow_from_json(workflow, "/examples/gromacs/wflow_gromacs.json");
+    Workflow::make_wflow_from_json(workflow, "wflow_gromacs.json");
 
     // run decaf
     run(workflow);

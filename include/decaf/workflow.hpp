@@ -135,15 +135,6 @@ struct Workflow                              // an entire workflow
   static void
   make_wflow_from_json( Workflow& workflow, const string& json_path )
   {
-    string decaf_prefix (getenv("DECAF_PREFIX"));
-    if( decaf_prefix.size() == 0 ) {
-      cerr << "ERROR: environment variable DECAF_PREFIX not defined. "
-	   << "Please export DECAF_PREFIX to point to the root of your decaf"
-	   << " install directory."
-	   << endl;
-      exit(1);
-    }
-
     try {
 
       bpt::ptree root;
@@ -159,7 +150,7 @@ struct Workflow                              // an entire workflow
        * for more information.
        */
       
-      bpt::read_json( decaf_prefix + json_path, root );
+      bpt::read_json( json_path, root );
 
       /* 
        * iterate over the list of nodes, creating and populating WorkflowNodes as we go
@@ -177,7 +168,7 @@ struct Workflow                              // an entire workflow
 	workflow.nodes.push_back( node );
       }
 
-      string path = decaf_prefix + root.get<std::string>("workflow.path");
+      string path = root.get<std::string>("workflow.path");
 
       /* 
        * similarly for the edges

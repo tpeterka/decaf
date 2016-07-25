@@ -1,7 +1,7 @@
 {
     "workflow" :
     {
-    "path" : "/examples/gromacs/libmod_dflow_gromacs.so",
+    "path" : "/home/matthieu/Argonne/Decaf/source_froggy/install/examples/gromacs/libmod_dflow_gromacs.so",
     "nodes" : [
         {
         "start_proc" : 0 ,
