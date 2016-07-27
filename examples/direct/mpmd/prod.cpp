@@ -25,7 +25,7 @@
 #include <map>
 #include <cstdlib>
 
-#include "wflow.hpp"                         // defines the workflow for this example
+//#include "wflow.hpp"                         // defines the workflow for this example
 
 using namespace decaf;
 using namespace std;
@@ -80,7 +80,8 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    make_wflow(workflow);
+    //make_wflow(workflow);
+    Workflow::make_wflow_from_json(workflow, "linear2.json");
 
     // run decaf
     run(workflow);
