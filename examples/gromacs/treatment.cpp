@@ -43,9 +43,24 @@ using namespace decaf;
 using namespace std;
 using namespace boost;
 
+double* rmesh_x =  NULL;
+double* rmesh_y = NULL;
+double* rmesh_z = NULL;
+
+int DX,DY,DZ;
+
+#define GRID(i,j,k) ( grid[i*DY*DZ + j*DZ + k] )
+
+
 template <typename T>
 T clip(const T& n, const T& lower, const T& upper) {
   return max(lower, min(n, upper));
+}
+
+unsigned int lineariseCoord(unsigned int x, unsigned int y, unsigned int z,
+                            unsigned int dx, unsigned int dy, unsigned int dz)
+{
+    return x * dy * dz + y * dz + z;
 }
 
 void posToFile(float* pos, int nbParticules, const string filename)
@@ -119,6 +134,40 @@ void computeBBox(float* pos, int nbParticles,
     }
 }
 
+void compteBBox(float* pos, int nbPos)
+{
+    if(pos != NULL && nbPos > 0)
+    {
+        float xmin,ymin,zmin,xmax,ymax,zmax;
+        xmin = pos[0];
+        ymin = pos[1];
+        zmin = pos[2];
+        xmax = pos[0];
+        ymax = pos[1];
+        zmax = pos[2];
+
+        for(int i = 0; i < nbPos; i++)
+        {
+            if(pos[3*i] < xmin)
+                xmin = pos[3*i];
+            if(pos[3*i+1] < ymin)
+                ymin = pos[3*i+1];
+            if(pos[3*i+2] < zmin)
+                zmin = pos[3*i+2];
+            if(pos[3*i] > xmax)
+                xmax = pos[3*i];
+            if(pos[3*i+1] > ymax)
+                ymax = pos[3*i+1];
+            if(pos[3*i+2] > zmax)
+                zmax = pos[3*i+2];
+        }
+
+        fprintf(stderr, "Local bounding box : [%f %f %f] [%f %f %f]\n", xmin,ymin,zmin,xmax,ymax,zmax);
+        fprintf(stderr, "Global bounding box : [%f %f %f] [%f %f %f]\n", -0.7f, -0.72f, -0.8f,
+                29.0f, 45.0f, 25.4f);
+    }
+}
+
 // consumer
 void treatment1(Decaf* decaf)
 {
@@ -138,13 +187,13 @@ void treatment1(Decaf* decaf)
 
         fprintf(stderr, "Number of particles received : %i\n", in_data[0]->getNbItems());
 
-        //if(iteration == 0 && in_data[0]->getNbItems() > 0)
-        //{
-        //    fprintf(stderr,"ERROR : not all the treatment got a data. Abording.\n");
-        //    MPI_Abort(MPI_COMM_WORLD, 0);
-        //}
+        if(iteration == 0 && in_data[0]->getNbItems() <= 1)
+        {
+            fprintf(stderr,"ERROR : not all the treatment got a data. Abording.\n");
+            MPI_Abort(MPI_COMM_WORLD, 0);
+        }
 
-        if(in_data[0]->getNbItems() > 0)
+        if(iteration % 100 == 0 && in_data[0]->getNbItems() > 0)
         {
 
 
@@ -190,11 +239,22 @@ void treatment1(Decaf* decaf)
             // Now each process has a sub domain of the global grid
             //Building the grid
             unsigned int* lExtends = block->getLocalExtends();
-            multi_array<float,3>* grid = new multi_array<float,3>(
-                        extents[lExtends[3]][lExtends[4]][lExtends[5]]
-                    );
+            //multi_array<float,3>* grid = new multi_array<float,3>(
+            //            extents[lExtends[3]][lExtends[4]][lExtends[5]]);
+            int* grid = new int[lExtends[3]*lExtends[4]*lExtends[5]];
+            bzero(grid, lExtends[3]*lExtends[4]*lExtends[5]*sizeof(int));
 
 
+            /*for(unsigned int i = 0; i < lExtends[3]; i++)
+                for(unsigned int j = 0; j < lExtends[4]; j++)
+                    for(unsigned int k = 0; k < lExtends[5]; k++)
+                    {
+                        //grid[lineariseCoord(i,j,k,lExtends[3],lExtends[4],lExtends[5])] = (float)rand() / (float)RAND_MAX;
+                        GRID(i,j,k) = i+j+k;
+                    }
+            */
+
+            fprintf(stderr, "Initialization of the grid completed\n");
             ArrayFieldu mortonField = in_data[0]->getFieldData<ArrayFieldu>("morton");
             unsigned int *morton = mortonField.getArray();
             int nbMorton = mortonField->getNbItems();
@@ -213,53 +273,58 @@ void treatment1(Decaf* decaf)
                 localy = y - lExtends[1];
                 localz = z - lExtends[2];
 
-                (*grid)[localx][localy][localz] += 1.0f; // TODO : get the full formulation
+                //GRID(localx,localy,localz) = 1; // TODO : get the full formulation
+                grid[lineariseCoord(localx,localy,localz,lExtends[3],lExtends[4],lExtends[5])] = 1;
+                //fprintf(stderr,"%i %i %i\n", localx, localy, localz);
             }
+
+            int counter = 0;
+            for(unsigned int i = 0; i < lExtends[3]*lExtends[4]*lExtends[5]; i++)
+            {
+                if(grid[i] > 0)
+                    counter++;
+            }
+
+            fprintf(stderr, "Number of active cells : %i\n", counter);
+            fprintf(stderr, "Total number of cells : %u\n", (lExtends[3]*lExtends[4]*lExtends[5]));
+
+
             fprintf(stderr,"Computation of the grid completed\n");
 
             // Giving the parameter setup to Damaris for the storage layout
-            /*if(iteration == 0)
+            if(iteration == 0)
             {
-                unsigned int DX,DY,DZ;
-                unsigned int* extends = block->getGlobalExtends();
+                unsigned int* extends = block->getLocalExtends();
                 DX = extends[3]; DY = extends[4]; DZ = extends[5];
 
                 //Pushing the global parameter of the grid
-                damaris_parameter_set("DX", &DX, sizeof(unsigned int));
-                damaris_parameter_set("DY", &DY, sizeof(unsigned int));
-                damaris_parameter_set("DZ", &DZ, sizeof(unsigned int));
+                damaris_parameter_set("WIDTH", &DX, sizeof(int));
+                damaris_parameter_set("HEIGHT", &DY, sizeof(int));
+                damaris_parameter_set("DEPTH", &DZ, sizeof(int));
 
 
 
                 //Creating the scales for the local information
-                float* rmesh_x = (float*)malloc(sizeof(float) * (lExtends[3] + 1));
-                float* rmesh_y = (float*)malloc(sizeof(float) * (lExtends[4] + 1));
-                float* rmesh_z = (float*)malloc(sizeof(float) * (lExtends[5] + 1));
+                rmesh_x = (double*)malloc(sizeof(double) * (lExtends[3]));
+                rmesh_y = (double*)malloc(sizeof(double) * (lExtends[4]));
+                rmesh_z = (double*)malloc(sizeof(double) * (lExtends[5]));
 
-                for(unsigned int i = 0; i <= lExtends[3]; i++)
-                    rmesh_x[i] = (float)(lExtends[0]) + (float)(i);
-                for(unsigned int i = 0; i <= lExtends[4]; i++)
-                    rmesh_y[i] = (float)(lExtends[1]) + (float)(i);
-                for(unsigned int i = 0; i <= lExtends[5]; i++)
-                    rmesh_z[i] = (float)(lExtends[2]) + (float)(i);
+                for(unsigned int i = 0; i < lExtends[3]; i++)
+                    rmesh_x[i] = (double)(lExtends[0]) + (double)(i);
+                for(unsigned int i = 0; i < lExtends[4]; i++)
+                    rmesh_y[i] = (double)(lExtends[1]) + (double)(i);
+                for(unsigned int i = 0; i < lExtends[5]; i++)
+                    rmesh_z[i] = (double)(lExtends[2]) + (double)(i);
 
-                damaris_write("coordinates/x3d", rmesh_x);
-                damaris_write("coordinates/y3d", rmesh_y);
-                damaris_write("coordinates/z3d", rmesh_z);
+                damaris_write("coord/x", rmesh_x);
+                damaris_write("coord/y", rmesh_y);
+                damaris_write("coord/z", rmesh_z);
+            }
 
-                damaris_end_iteration();
+            // Normal data transmition to Damaris
 
-                free(rmesh_x);
-                free(rmesh_y);
-                free(rmesh_z);
-
-            }*/
-
-
-
-
-
-
+            damaris_write("space", grid );
+            damaris_end_iteration();
 
             delete grid;
         }
@@ -268,9 +333,14 @@ void treatment1(Decaf* decaf)
         iteration++;
     }
 
+    // Cleaning the grid
+    free(rmesh_x);
+    free(rmesh_y);
+    free(rmesh_z);
+
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "Treatment terminating\n");
-    //decaf->terminate();
+    decaf->terminate();
 }
 
 // every user application needs to implement the following run function with this signature
@@ -294,9 +364,11 @@ void run(Workflow& workflow)                             // workflow
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
     //Initalizing the Damaris context
-    /*damaris_initialize("decaf_grid.xml",decaf->con_comm_handle());
+    damaris_initialize("decaf_grid.xml",decaf->con_comm_handle());
 
     int is_client, err;
+    err = damaris_start(&is_client);
+
     if((err == DAMARIS_OK || err == DAMARIS_NO_SERVER) && is_client) {
         MPI_Comm damaris_com;
         damaris_client_comm_get(&damaris_com);
@@ -315,11 +387,13 @@ void run(Workflow& workflow)                             // workflow
     {
         fprintf(stderr, "ERROR during the initialization of Damaris. Abording.\n");
         MPI_Abort(MPI_COMM_WORLD, 0);
-    }*/
+    }
 
 
     // start the task
     treatment1(decaf);
+
+    damaris_stop();
 
     // cleanup
     delete decaf;

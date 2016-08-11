@@ -80,6 +80,7 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
     vector<unsigned int> globalExtends(6);
     Block<3> *block = globalBox.getBlock();
 
+    // 02_DA_W.3K
     if(profile.compare(std::string("SimplePeptideWater")) == 0)
     {
         globalPos = {
@@ -128,6 +129,7 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
 
     //globalBox.getBlock()->printBoxes();
     //globalBox.getBlock()->printExtends();
+
 }
 
 // link callback function
@@ -207,6 +209,7 @@ extern "C"
         dataflow->put(container, DECAF_LINK);
 
         iteration++;
+
     }
 } // extern "C"
 

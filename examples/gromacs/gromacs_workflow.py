@@ -22,7 +22,7 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/gromacs/libmod_dflow_gromacs.
 
 w = nx.DiGraph()
 w.add_node("gmx", start_proc=0, nprocs=4, func='gmx')
-w.add_node("treatment",  start_proc=6, nprocs=4, func='treatment')
+w.add_node("treatment",  start_proc=6, nprocs=2, func='treatment')
 w.add_edge("gmx", "treatment", start_proc=4, nprocs=2, func='dflow', path=mod_path,
            prod_dflow_redist='proc', dflow_con_redist='block')
 

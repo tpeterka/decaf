@@ -20,7 +20,7 @@ ARCH=LINUX
 # number of procs
 np1=4
 np2=2
-np3=4
+np3=2
 num_procs=$[$np1 + $np2 + $np3]
 
 # procs per node
