@@ -684,6 +684,10 @@ computeIndexesFromBlocks(
     gettimeofday(&begin, NULL);
     int notInBlock = 0;
 
+    fprintf(stderr, "Sub block bbox before rooting: \n");
+    for(unsigned int b = 0; b < blocks.size(); b++)
+        blocks[b].printBoxes();
+
     std::vector<unsigned int> sumPos(result.size(), 0);
     for(int i = 0; i < nbPos; i++)
     {
@@ -722,7 +726,7 @@ computeIndexesFromBlocks(
         }
         if(!particlesInBlock)
         {
-            std::cout<<"Not attributed : ["<<pos[i]<<"]"<<std::endl;
+            std::cout<<"Not attributed : ["<<pos[3*i]<<","<<pos[3*i+1]<<","<<pos[3*i+2]<<"]"<<std::endl;
             notInBlock++;
         }
     }

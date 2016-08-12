@@ -230,16 +230,16 @@ RedistBlockMPI::splitData(pConstructData& data, RedistRole role)
         //Updating the informations about messages to send
         for(unsigned int i = 0; i < subblocks_.size(); i++)
         {
-            if(splitBuffer_[i]->getNbItems() > 0)
-            {
+            //if(splitBuffer_[i]->getNbItems() > 0)
+            //{
                 destList_.push_back(i + local_dest_rank_);
 
                 //We won't send a message if we send to self
                 if(i + local_dest_rank_ != rank_)
                     summerizeDest_[i] = 1;
-            }
-            else //No data for this split
-                destList_.push_back(-1);
+            //}
+            //else //No data for this split
+            //    destList_.push_back(-1);
         }
         gettimeofday(&end, NULL);
         timeGlobalSplit += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
@@ -247,13 +247,13 @@ RedistBlockMPI::splitData(pConstructData& data, RedistRole role)
         gettimeofday(&begin, NULL);
         for(unsigned int i = 0; i < splitChunks_.size(); i++)
         {
-            if(splitChunks_[i]->getNbItems() > 0)
-            {
+            //if(splitChunks_[i]->getNbItems() > 0)
+            //{
                 // TODO : Check the rank for the destination.
                 // Not necessary to serialize if overlapping
                 if(!splitChunks_[i]->serialize())
                     std::cout<<"ERROR : unable to serialize one object"<<std::endl;
-            }
+            //}
         }
 
         gettimeofday(&end, NULL);

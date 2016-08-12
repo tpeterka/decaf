@@ -36,6 +36,7 @@ T clip(const T& n, const T& lower, const T& upper) {
 }
 
 static int iteration = 0;
+int filter = 0;
 
 void posToFile(float* pos, int nbParticules, const string filename)
 {
@@ -87,6 +88,7 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
                         -0.7f, -0.72f, -0.8f,
                         29.0f, 45.0f, 25.4f
                     };
+        filter = 191; // We keep only the water
     }
     else if(profile.compare(std::string("bench54k")) == 0)
     {
@@ -132,6 +134,40 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
 
 }
 
+void compteBBox(float* pos, int nbPos)
+{
+    if(pos != NULL && nbPos > 0)
+    {
+        float xmin,ymin,zmin,xmax,ymax,zmax;
+        xmin = pos[0];
+        ymin = pos[1];
+        zmin = pos[2];
+        xmax = pos[0];
+        ymax = pos[1];
+        zmax = pos[2];
+
+        for(int i = 0; i < nbPos; i++)
+        {
+            if(pos[3*i] < xmin)
+                xmin = pos[3*i];
+            if(pos[3*i+1] < ymin)
+                ymin = pos[3*i+1];
+            if(pos[3*i+2] < zmin)
+                zmin = pos[3*i+2];
+            if(pos[3*i] > xmax)
+                xmax = pos[3*i];
+            if(pos[3*i+1] > ymax)
+                ymax = pos[3*i+1];
+            if(pos[3*i+2] > zmax)
+                zmax = pos[3*i+2];
+        }
+
+        fprintf(stderr, "Local bounding box : [%f %f %f] [%f %f %f]\n", xmin,ymin,zmin,xmax,ymax,zmax);
+        fprintf(stderr, "Global bounding box : [%f %f %f] [%f %f %f]\n", -0.7f, -0.72f, -0.8f,
+                29.0f, 45.0f, 25.4f);
+    }
+}
+
 // link callback function
 extern "C"
 {
@@ -163,23 +199,45 @@ extern "C"
         float* pos = posArray.getArray();
         int nbParticle = posArray->getNbItems();
 
-        for(int i = 0; i < 3 * nbParticle; i++)
-            pos[i] = pos[i] * 10.0; // Switching from nm to Angstrom
+        vector<float> filteredPos;
+        ArrayFieldu indexes = in_data->getFieldData<ArrayFieldu>("ids");
+        if(!indexes)
+        {
+            fprintf(stderr, "ERROR dflow: unable to find the field required \"ids\" in the data model.\n");
+            return;
+        }
+        unsigned int* index = indexes.getArray();
+
+        int nbFilteredPart = 0;
+        for(int i = 0; i < nbParticle; i++)
+        {
+            if(index[i] < filter)
+            {
+                filteredPos.push_back(pos[3*i] * 10.0); // Switching from nm to Angstrom
+                filteredPos.push_back(pos[3*i+1] * 10.0);
+                filteredPos.push_back(pos[3*i+2] * 10.0);
+                nbFilteredPart++;
+            }
+        }
+        ArrayFieldf filterPosField = ArrayFieldf(&filteredPos[0], 3 * nbFilteredPart, 3, false);
+
+        compteBBox(&filteredPos[0], nbFilteredPart);
 
         stringstream filename;
         filename<<"pos_"<<rank<<"_"<<iteration<<"_dflow.ply";
         posToFile(pos, nbParticle, filename.str());
 
-        vector<unsigned int> morton(nbParticle);
+        vector<unsigned int> morton(nbFilteredPart);
         float *box = globalBox.getBlock()->getGlobalBBox();
         unsigned int* cells = globalBox.getBlock()->getGlobalExtends();
+        unsigned int offset = 0;
 
-        for(int i = 0; i < nbParticle; i++)
+        for(int i = 0; i < nbFilteredPart; i++)
         {
             //Using cast from float to unsigned int to keep the lower int
-            unsigned int cellX = (unsigned int)((pos[3*i] - box[0]) / gridspace);
-            unsigned int cellY = (unsigned int)((pos[3*i+1] - box[1]) / gridspace);
-            unsigned int cellZ = (unsigned int)((pos[3*i+2] - box[2]) / gridspace);
+            unsigned int cellX = (unsigned int)((filteredPos[3*i] - box[0]) / gridspace);
+            unsigned int cellY = (unsigned int)((filteredPos[3*i+1] - box[1]) / gridspace);
+            unsigned int cellZ = (unsigned int)((filteredPos[3*i+2] - box[2]) / gridspace);
 
             //Clamping the cells to the bbox. Atoms can move away from the box, we count them in the nearest cell (although it's not correct)
             cellX = cellX >= (cells[3])?(cells[3]-1):cellX;
@@ -190,21 +248,55 @@ extern "C"
             //cellZ = cellZ < 0?0:cellZ;
 
             //Computing the corresponding morton code
-            morton[i] = Morton_3D_Encode_10bit(cellX,cellY,cellZ);
+            morton[offset] = Morton_3D_Encode_10bit(cellX,cellY,cellZ);
+            offset++;
         }
 
-        ArrayFieldu mortonField = ArrayFieldu(&morton[0], nbParticle, 1, false);
+        ArrayFieldu mortonField = ArrayFieldu(&morton[0], nbFilteredPart, 1, false);
 
         pConstructData container;
-        container->appendData("pos", posArray,
+        container->appendData("pos", filterPosField,
                               DECAF_ZCURVEKEY, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         container->appendData("domain_block", globalBox,
                               DECAF_NOFLAG, DECAF_SHARED,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
         container->appendData("morton", mortonField,
-                              DECAF_ZCURVEINDEX, DECAF_PRIVATE,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+        for(unsigned int i = 0; i < nbFilteredPart; i++)
+        {
+            ArrayFieldf posF = container->getFieldData<ArrayFieldf>("pos");
+            ArrayFieldu mortonF = container->getFieldData<ArrayFieldu>("morton");
+            BlockField blockF = container->getFieldData<BlockField>("domain_block");
+
+            float* posA = posF.getArray();
+            unsigned int *mortonA = mortonF.getArray();
+            float* globalBB = blockF.getBlock()->getGlobalBBox();
+            float currentGridspace = blockF.getBlock()->getGridspace();
+
+            //Using cast from float to unsigned int to keep the lower int
+            unsigned int cellX = (unsigned int)((posA[3*i] - globalBB[0]) / currentGridspace);
+            unsigned int cellY = (unsigned int)((posA[3*i+1] - globalBB[1]) / currentGridspace);
+            unsigned int cellZ = (unsigned int)((posA[3*i+2] - globalBB[2]) / currentGridspace);
+
+            //Clamping the cells to the bbox. Atoms can move away from the box, we count them in the nearest cell (although it's not correct)
+            cellX = cellX >= (cells[3])?(cells[3]-1):cellX;
+            //cellX = cellX < 0?0:cellX;
+            cellY = cellY >= (cells[4])?(cells[4]-1):cellY;
+            //cellY = cellY < 0?0:cellY;
+            cellZ = cellZ >= (cells[5])?(cells[5]-1):cellZ;
+            //cellZ = cellZ < 0?0:cellZ;
+
+            unsigned int x,y,z;
+            Morton_3D_Decode_10bit(mortonA[i], x,y,z);
+
+            if(x != cellX || y != cellY || z != cellZ)
+            {
+                fprintf(stderr, "ERROR : morton codes not consistant\n");
+
+            }
+        }
 
         dataflow->put(container, DECAF_LINK);
 

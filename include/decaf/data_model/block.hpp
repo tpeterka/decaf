@@ -245,21 +245,21 @@ public:
 
     bool hasGhostRegions(){ return ghostSize_ > 0; }
 
-    void printExtend(std::vector<unsigned int>& extend)
+    void printExtend(const std::vector<unsigned int>& extend) const
     {
         std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
                 <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]
                 <<","<<extend[2]+extend[5]<<"]"<<std::endl;
     }
 
-    void printBox(std::vector<float>& box)
+    void printBox(const std::vector<float>& box) const
     {
         std::cout<<"["<<box[0]<<","<<box[1]<<","<<box[2]<<"]"
                 <<"["<<box[0]+box[3]<<","<<box[1]+box[4]<<","
                                                        <<box[2]+box[5]<<"]"<<std::endl;
     }
 
-    void printBoxes()
+    void printBoxes() const
     {
         if(hasGlobalBBox_)
         {
@@ -278,7 +278,7 @@ public:
         }
     }
 
-    void printExtends()
+    void printExtends() const
     {
         if(hasGlobalExtends_)
         {

@@ -60,7 +60,9 @@ T clip(const T& n, const T& lower, const T& upper) {
 unsigned int lineariseCoord(unsigned int x, unsigned int y, unsigned int z,
                             unsigned int dx, unsigned int dy, unsigned int dz)
 {
-    return x * dy * dz + y * dz + z;
+    //return x * dy * dz + y * dz + z;
+    fprintf(stderr,"access to %u (%u %u %u)\n", x + y*dx + z*dx*dy,x, y, z);
+    return x + y*dx + z*dx*dy;
 }
 
 void posToFile(float* pos, int nbParticules, const string filename)
@@ -187,13 +189,13 @@ void treatment1(Decaf* decaf)
 
         fprintf(stderr, "Number of particles received : %i\n", in_data[0]->getNbItems());
 
-        if(iteration == 0 && in_data[0]->getNbItems() <= 1)
+        if(iteration == 0 && !in_data[0]->hasData("domain_block"))
         {
-            fprintf(stderr,"ERROR : not all the treatment got a data. Abording.\n");
+            fprintf(stderr,"ERROR : No block info in the data model\n");
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
-        if(iteration % 100 == 0 && in_data[0]->getNbItems() > 0)
+        if(iteration % 100 == 0 && in_data[0]->hasData("domain_block"))
         {
 
 
@@ -201,43 +203,45 @@ void treatment1(Decaf* decaf)
             BlockField blockField  = in_data[0]->getFieldData<BlockField>("domain_block");
             Block<3>* block = blockField.getBlock();
             block->printExtends();
-            //block->printBoxes();
-
-            ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
-            float* pos = posField.getArray();
-            int nbParticles = posField->getNbItems();
-
-            stringstream filename;
-            filename<<"pos_"<<rank<<"_"<<iteration<<"_treat.ply";
-            posToFile(pos, nbParticles, filename.str());
-
-            float xmin,ymin,zmin,xmax,ymax,zmax;
-            computeBBox(pos, nbParticles,xmin,xmax,ymin,ymax,zmin,zmax);
-
-            MPI_Comm communicator = decaf->con_comm_handle();
-            float minl[3];
-            float maxl[3];
-            float ming[3];
-            float maxg[3];
-
-            minl[0] = xmin; minl[1] = ymin; minl[2] = zmin;
-            maxl[0] = xmax; maxl[1] = ymax; maxl[2] = zmax;
-            MPI_Reduce(minl, ming, 3, MPI_FLOAT, MPI_MIN, 0, communicator);
-            MPI_Reduce(maxl, maxg, 3, MPI_FLOAT, MPI_MAX, 0, communicator);
-
-            int localRank;
-            MPI_Comm_rank(communicator, &localRank);
-
-            if(localRank == 0)
+            block->printBoxes();
+            if(in_data[0]->getNbItems() > 0)
             {
-                std::cout<<"Global box : "<<std::endl;
-                std::cout<<"["<<ming[0]<<","<<ming[1]<<","<<ming[2]<<"]["<<maxg[0]<<","<<maxg[1]<<","<<maxg[2]<<"]"<<std::endl;
+                ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
+                float* pos = posField.getArray();
+                int nbParticles = posField->getNbItems();
+
+                stringstream filename;
+                filename<<"pos_"<<rank<<"_"<<iteration<<"_treat.ply";
+                posToFile(pos, nbParticles, filename.str());
+
+                float xmin,ymin,zmin,xmax,ymax,zmax;
+                computeBBox(pos, nbParticles,xmin,xmax,ymin,ymax,zmin,zmax);
+
+                /*MPI_Comm communicator = decaf->con_comm_handle();
+                float minl[3];
+                float maxl[3];
+                float ming[3];
+                float maxg[3];
+
+                minl[0] = xmin; minl[1] = ymin; minl[2] = zmin;
+                maxl[0] = xmax; maxl[1] = ymax; maxl[2] = zmax;
+                MPI_Reduce(minl, ming, 3, MPI_FLOAT, MPI_MIN, 0, communicator);
+                MPI_Reduce(maxl, maxg, 3, MPI_FLOAT, MPI_MAX, 0, communicator);
+
+                int localRank;
+                MPI_Comm_rank(communicator, &localRank);
+
+                if(localRank == 0)
+                {
+                    std::cout<<"Global box : "<<std::endl;
+                    std::cout<<"["<<ming[0]<<","<<ming[1]<<","<<ming[2]<<"]["<<maxg[0]<<","<<maxg[1]<<","<<maxg[2]<<"]"<<std::endl;
+                }*/
             }
 
 
 
             // Now each process has a sub domain of the global grid
-            //Building the grid
+            // Building the grid
             unsigned int* lExtends = block->getLocalExtends();
             //multi_array<float,3>* grid = new multi_array<float,3>(
             //            extents[lExtends[3]][lExtends[4]][lExtends[5]]);
@@ -256,26 +260,48 @@ void treatment1(Decaf* decaf)
 
             fprintf(stderr, "Initialization of the grid completed\n");
             ArrayFieldu mortonField = in_data[0]->getFieldData<ArrayFieldu>("morton");
-            unsigned int *morton = mortonField.getArray();
-            int nbMorton = mortonField->getNbItems();
-
-            for(int i = 0; i < nbMorton; i++)
+            if(mortonField)
             {
-                unsigned int x,y,z;
-                Morton_3D_Decode_10bit(morton[i], x, y, z);
+                unsigned int *morton = mortonField.getArray();
+                int nbMorton = mortonField->getNbItems();
+                ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
+                float* pos = posField.getArray();
 
-                // Checking if the particle should be here
-                if(!block->isInLocalBlock(x,y,z))
-                    fprintf(stderr, "ERROR : particle not belonging to the local block. FIXME\n");
+                for(int i = 0; i < nbMorton; i++)
+                {
+                    unsigned int x,y,z;
+                    Morton_3D_Decode_10bit(morton[i], x, y, z);
 
-                unsigned int localx, localy, localz;
-                localx = x - lExtends[0];
-                localy = y - lExtends[1];
-                localz = z - lExtends[2];
+                    // Checking if the particle should be here
+                    if(!block->isInLocalBlock(x,y,z))
+                    {
+                        fprintf(stderr, "ERROR : particle not belonging to the local block. FIXME\n");
+                        fprintf(stderr, "Particle : %f %f %f\n", pos[3*i], pos[3*i+1], pos[3*i+2]);
+                        fprintf(stderr, "Particle : %u %u %u\n", x, y, z);
+                        if(block->isInLocalBlock(pos[3*i], pos[3*i+1], pos[3*i+2]))
+                            fprintf(stderr, "The particle is in the position block\n");
+                        else
+                            fprintf(stderr, "The particle is not in the position block\n");
 
-                //GRID(localx,localy,localz) = 1; // TODO : get the full formulation
-                grid[lineariseCoord(localx,localy,localz,lExtends[3],lExtends[4],lExtends[5])] = 1;
-                //fprintf(stderr,"%i %i %i\n", localx, localy, localz);
+                        float gridspace = blockField.getBlock()->getGridspace();
+                        float *box = blockField.getBlock()->getGlobalBBox();
+                        //Using cast from float to unsigned int to keep the lower int
+                        unsigned int cellX = (unsigned int)((pos[3*i] - box[0]) / gridspace);
+                        unsigned int cellY = (unsigned int)((pos[3*i+1] - box[1]) / gridspace);
+                        unsigned int cellZ = (unsigned int)((pos[3*i+2] - box[2]) / gridspace);
+
+                        fprintf(stderr," Particle after recomputation : %u %u %u\n", cellX, cellY, cellZ);
+                    }
+
+                    unsigned int localx, localy, localz;
+                    localx = x - lExtends[0];
+                    localy = y - lExtends[1];
+                    localz = z - lExtends[2];
+
+                    //GRID(localx,localy,localz) = 1; // TODO : get the full formulation
+                    grid[lineariseCoord(localx,localy,localz,lExtends[3],lExtends[4],lExtends[5])] += 1;
+                    //fprintf(stderr,"%i %i %i\n", localx, localy, localz);
+                }
             }
 
             int counter = 0;

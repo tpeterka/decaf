@@ -1,7 +1,7 @@
 From b99a67de86247a6f4a3f22825024cd874cf0e021 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 10:39:56 -0500
-Subject: [PATCH 01/21] Patch with dflow and treatment in the simulation code.
+Subject: [PATCH 01/22] Patch with dflow and treatment in the simulation code.
 
 ---
  CMakeLists.txt                   |  16 ++++
@@ -644,7 +644,7 @@ index eb30fc9..4dbf5ea 100644
 From 99ba3e127d18b1dbdac77046daf2e6d46ac2631e Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:10:36 -0500
-Subject: [PATCH 02/21] Check the status of MPI
+Subject: [PATCH 02/22] Check the status of MPI
 
 ---
  CMakeLists.txt | 6 +++++-
@@ -674,7 +674,7 @@ index 3909fd3..f3ac23f 100644
 From eaa854ab810c29f3e0ecd8c67d7dfbcd3c7602ae Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:32:54 -0500
-Subject: [PATCH 03/21] Add extra info
+Subject: [PATCH 03/22] Add extra info
 
 ---
  CMakeLists.txt | 5 +++++
@@ -703,7 +703,7 @@ index f3ac23f..089edd9 100644
 From 634e6e124fc4f4c06f8aab8c10536427f1d56b67 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:10:40 -0500
-Subject: [PATCH 04/21] Add mpi checks
+Subject: [PATCH 04/22] Add mpi checks
 
 ---
  CMakeLists.txt           | 2 +-
@@ -742,7 +742,7 @@ index 28d23d8..ce4b299 100644
 From 631fb2aa7e19d3a388ed9956d84e6542651959fc Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:16:59 -0500
-Subject: [PATCH 05/21] Add mpi checks
+Subject: [PATCH 05/22] Add mpi checks
 
 ---
  cmake/gmxManageMPI.cmake | 3 +++
@@ -774,7 +774,7 @@ index ce4b299..1e3af82 100644
 From d49d34c8c25255bcda600bf22caa185db297a4c9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:33:54 -0500
-Subject: [PATCH 06/21] Add infos
+Subject: [PATCH 06/22] Add infos
 
 ---
  CMakeLists.txt | 5 +++++
@@ -803,7 +803,7 @@ index b2e82d8..b14d7ec 100644
 From 2ac35154d1f8bcce44a9ab466404a3ee92b91f12 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:37:44 -0500
-Subject: [PATCH 07/21] Force MPI
+Subject: [PATCH 07/22] Force MPI
 
 ---
  CMakeLists.txt | 4 ++--
@@ -831,7 +831,7 @@ index b14d7ec..4649e3b 100644
 From 9668b8e9a4fd9f9af762f88b3844b84bf5ac02b0 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 10:53:34 -0500
-Subject: [PATCH 08/21] Remove the barrier
+Subject: [PATCH 08/22] Remove the barrier
 
 ---
  include/network.h    |  3 +++
@@ -947,7 +947,7 @@ index 4dbf5ea..38d0acf 100644
 From 6bb435dbb51329e5179d8fc37fcd3c2c5c9122df Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 11:10:23 -0500
-Subject: [PATCH 09/21] Check linkage
+Subject: [PATCH 09/22] Check linkage
 
 ---
  src/gmxlib/network.c | 1 -
@@ -972,7 +972,7 @@ index be83348..0bded05 100644
 From 076cfedf4249a44a87e65db7cfebc4045b9cb270 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 13:34:04 -0500
-Subject: [PATCH 10/21] Attempt to fix crash during finalize
+Subject: [PATCH 10/22] Attempt to fix crash during finalize
 
 ---
  src/gmxlib/network.c | 5 +++--
@@ -1022,7 +1022,7 @@ index 38d0acf..d0094d9 100644
 From a920a1ed24ab7689c2d6fb5891fb8ea3a32f7bf9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:07:04 -0500
-Subject: [PATCH 11/21] Add a Barrier before clearing everything
+Subject: [PATCH 11/22] Add a Barrier before clearing everything
 
 ---
  src/kernel/mdrun.c | 4 +++-
@@ -1057,7 +1057,7 @@ index d0094d9..7c00299 100644
 From dbb6d99220e7b293d453ae74fe2c62af0fb43c56 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:34:39 -0500
-Subject: [PATCH 12/21] Fix the name of the dflow library
+Subject: [PATCH 12/22] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1083,7 +1083,7 @@ index 7c00299..7cbe33a 100644
 From 4fccd84f8007624b8d368838ec4bb269d0247cc8 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:39:41 -0500
-Subject: [PATCH 13/21] Fix the name of the dflow library
+Subject: [PATCH 13/22] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1109,7 +1109,7 @@ index 7cbe33a..e8211a7 100644
 From 7d667dc746ca675986fae961700bf07271011081 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:49:38 -0500
-Subject: [PATCH 14/21] Fix the name of the dflow library
+Subject: [PATCH 14/22] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1135,7 +1135,7 @@ index e8211a7..9934ae6 100644
 From efca0d61b17dc47a4ebd3b9e440a743da385a330 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:56:34 -0500
-Subject: [PATCH 15/21] Fix the graph
+Subject: [PATCH 15/22] Fix the graph
 
 ---
  src/kernel/mdrun.c | 8 ++++----
@@ -1167,7 +1167,7 @@ index 9934ae6..4d74f2f 100644
 From 12e44804a8cdab3444bd465952262ba3709f810f Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 15:02:59 -0500
-Subject: [PATCH 16/21] Remove the workflow definition from the code and read
+Subject: [PATCH 16/22] Remove the workflow definition from the code and read
  the JSON file instead
 
 ---
@@ -1204,7 +1204,7 @@ index 4d74f2f..e206a3c 100644
 From dd3d5a2bf72a6ea7e8c0bb7d023926b8aab2d507 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:02:13 -0500
-Subject: [PATCH 17/21] Typo correction
+Subject: [PATCH 17/22] Typo correction
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1230,7 +1230,7 @@ index e206a3c..c0b9162 100644
 From bd9a75dedf3daf776ba81fa75637ae4555f06138 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:07:31 -0500
-Subject: [PATCH 18/21] Fix compilation error
+Subject: [PATCH 18/22] Fix compilation error
 
 ---
  src/kernel/mdrun.c | 4 ++--
@@ -1265,7 +1265,7 @@ index c0b9162..00d7d46 100644
 From 8af97b9e4f0ad2771aaf4fada79664822724ad48 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:20:40 -0500
-Subject: [PATCH 19/21] Fix Hanging
+Subject: [PATCH 19/22] Fix Hanging
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1291,7 +1291,7 @@ index 00d7d46..09e2e35 100644
 From 2aeb66c176516bc0af5a77cd346e917bbd2c454b Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 25 Jul 2016 11:09:20 -0500
-Subject: [PATCH 20/21] Remove barrier
+Subject: [PATCH 20/22] Remove barrier
 
 ---
  src/kernel/mdrun.c | 1 -
@@ -1316,7 +1316,7 @@ index 09e2e35..5fa5c1f 100644
 From 791728ea9448abd6ea037fffbffce5f99fab1dc1 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 25 Jul 2016 13:36:07 -0500
-Subject: [PATCH 21/21] Change json file
+Subject: [PATCH 21/22] Change json file
 
 ---
  src/kernel/mdrun.c | 3 ++-
@@ -1336,6 +1336,65 @@ index 5fa5c1f..74eb7f1 100644
      if(decaf == NULL)
          fprintf(stdout, "ERROR : fail to intialize decaf.\n");
      else
+-- 
+2.1.4
+
+
+From c64c5cc6bc2e859a758dbd908bc83ed941eb1560 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Thu, 11 Aug 2016 13:51:47 -0500
+Subject: [PATCH 22/22] Add the ids to the data model
+
+---
+ src/kernel/md.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/src/kernel/md.c b/src/kernel/md.c
+index 66f8180..e774987 100644
+--- a/src/kernel/md.c
++++ b/src/kernel/md.c
+@@ -1575,6 +1575,20 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
+         bca_field field_pos = bca_create_arrayfield(state->x, bca_FLOAT,
+                                                     mdatoms->homenr * 3, 3,
+                                                     mdatoms->homenr * 3, false);
++
++        size_t i;
++        unsigned int *IDs = (unsigned int*)(malloc(mdatoms->homenr * sizeof(unsigned int)));
++        for (i = mdatoms->start; i < mdatoms->start + mdatoms->homenr; ++i)
++        {
++            if(cr->nnodes == 1)
++                IDs[i] = i;
++            else
++                IDs[i] = cr->dd->gatindex[i];
++        }
++        bca_field field_ID = bca_create_arrayfield(IDs, bca_UNSIGNED,
++                                                   mdatoms->homenr, 1,
++                                                   mdatoms->homenr, false);
++
+         bca_constructdata container = bca_create_constructdata();
+ 
+         if(!bca_append_field(container, "pos",
+@@ -1583,11 +1597,20 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
+         {
+             gmx_fatal(FARGS, "Could not get append the data field in Decaf");
+         }
++        if(!bca_append_field(container, "ids",
++                             field_ID, bca_NOFLAG, bca_PRIVATE,
++                             bca_SPLIT_DEFAULT, bca_MERGE_APPEND_VALUES))
++        {
++            gmx_fatal(FARGS, "Could not get append the data field in Decaf");
++        }
++
+ 
+         dca_put(cr->decaf, container);
+ 
+         bca_free_field(field_pos);
++        bca_free_field(field_ID);
+         bca_free_constructdata(container);
++        free(IDs);
+         fprintf(stdout, "Container sent\n");
+ 
+         /*  ################## END TRAJECTORY OUTPUT ################ */
 -- 
 2.1.4
 
