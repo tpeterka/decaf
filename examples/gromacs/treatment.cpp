@@ -47,6 +47,8 @@ double* rmesh_x =  NULL;
 double* rmesh_y = NULL;
 double* rmesh_z = NULL;
 
+int* grid = NULL;
+
 int DX,DY,DZ;
 
 #define GRID(i,j,k) ( grid[i*DY*DZ + j*DZ + k] )
@@ -61,7 +63,7 @@ unsigned int lineariseCoord(unsigned int x, unsigned int y, unsigned int z,
                             unsigned int dx, unsigned int dy, unsigned int dz)
 {
     //return x * dy * dz + y * dz + z;
-    fprintf(stderr,"access to %u (%u %u %u)\n", x + y*dx + z*dx*dy,x, y, z);
+    //fprintf(stderr,"access to %u (%u %u %u)\n", x + y*dx + z*dx*dy,x, y, z);
     return x + y*dx + z*dx*dy;
 }
 
@@ -170,6 +172,25 @@ void compteBBox(float* pos, int nbPos)
     }
 }
 
+void updateGrid(int* grid, int x, int y, int z, unsigned int DX, unsigned int DY, unsigned int DZ)
+{
+    for(int i = -1; i < 2; i++)
+    {
+        for(int j = -1; j < 2; j++)
+        {
+            for(int k = -1; k < 2; k++)
+            {
+                int localX = x+i;
+                int localY = y+j;
+                int localZ = z+k;
+                if(localX >= 0 && localX < DX && localY >= 0 && localY < DY && localZ >= 0 && localZ < DZ)
+                    grid[lineariseCoord(localX,localY,localZ,DX,DY,DZ)] += 1;
+            }
+        }
+    }
+}
+
+
 // consumer
 void treatment1(Decaf* decaf)
 {
@@ -185,10 +206,6 @@ void treatment1(Decaf* decaf)
     while (decaf->get(in_data))
     {
         // get the atom positions
-        fprintf(stderr, "Reception of %u messages.\n", in_data.size());
-
-        fprintf(stderr, "Number of particles received : %i\n", in_data[0]->getNbItems());
-
         if(iteration == 0 && !in_data[0]->hasData("domain_block"))
         {
             fprintf(stderr,"ERROR : No block info in the data model\n");
@@ -197,14 +214,12 @@ void treatment1(Decaf* decaf)
 
         if(iteration % 100 == 0 && in_data[0]->hasData("domain_block"))
         {
-
-
             // Getting the grid info
             BlockField blockField  = in_data[0]->getFieldData<BlockField>("domain_block");
             Block<3>* block = blockField.getBlock();
-            block->printExtends();
-            block->printBoxes();
-            if(in_data[0]->getNbItems() > 0)
+            //block->printExtends();
+            //block->printBoxes();
+            /*if(in_data[0]->getNbItems() > 0)
             {
                 ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
                 float* pos = posField.getArray();
@@ -213,52 +228,17 @@ void treatment1(Decaf* decaf)
                 stringstream filename;
                 filename<<"pos_"<<rank<<"_"<<iteration<<"_treat.ply";
                 posToFile(pos, nbParticles, filename.str());
-
-                float xmin,ymin,zmin,xmax,ymax,zmax;
-                computeBBox(pos, nbParticles,xmin,xmax,ymin,ymax,zmin,zmax);
-
-                /*MPI_Comm communicator = decaf->con_comm_handle();
-                float minl[3];
-                float maxl[3];
-                float ming[3];
-                float maxg[3];
-
-                minl[0] = xmin; minl[1] = ymin; minl[2] = zmin;
-                maxl[0] = xmax; maxl[1] = ymax; maxl[2] = zmax;
-                MPI_Reduce(minl, ming, 3, MPI_FLOAT, MPI_MIN, 0, communicator);
-                MPI_Reduce(maxl, maxg, 3, MPI_FLOAT, MPI_MAX, 0, communicator);
-
-                int localRank;
-                MPI_Comm_rank(communicator, &localRank);
-
-                if(localRank == 0)
-                {
-                    std::cout<<"Global box : "<<std::endl;
-                    std::cout<<"["<<ming[0]<<","<<ming[1]<<","<<ming[2]<<"]["<<maxg[0]<<","<<maxg[1]<<","<<maxg[2]<<"]"<<std::endl;
-                }*/
-            }
+            }*/
 
 
 
             // Now each process has a sub domain of the global grid
             // Building the grid
             unsigned int* lExtends = block->getLocalExtends();
-            //multi_array<float,3>* grid = new multi_array<float,3>(
-            //            extents[lExtends[3]][lExtends[4]][lExtends[5]]);
-            int* grid = new int[lExtends[3]*lExtends[4]*lExtends[5]];
+            if(!grid)
+                grid = new int[lExtends[3]*lExtends[4]*lExtends[5]];
             bzero(grid, lExtends[3]*lExtends[4]*lExtends[5]*sizeof(int));
 
-
-            /*for(unsigned int i = 0; i < lExtends[3]; i++)
-                for(unsigned int j = 0; j < lExtends[4]; j++)
-                    for(unsigned int k = 0; k < lExtends[5]; k++)
-                    {
-                        //grid[lineariseCoord(i,j,k,lExtends[3],lExtends[4],lExtends[5])] = (float)rand() / (float)RAND_MAX;
-                        GRID(i,j,k) = i+j+k;
-                    }
-            */
-
-            fprintf(stderr, "Initialization of the grid completed\n");
             ArrayFieldu mortonField = in_data[0]->getFieldData<ArrayFieldu>("morton");
             if(mortonField)
             {
@@ -293,14 +273,15 @@ void treatment1(Decaf* decaf)
                         fprintf(stderr," Particle after recomputation : %u %u %u\n", cellX, cellY, cellZ);
                     }
 
-                    unsigned int localx, localy, localz;
+                    int localx, localy, localz;
                     localx = x - lExtends[0];
                     localy = y - lExtends[1];
                     localz = z - lExtends[2];
 
                     //GRID(localx,localy,localz) = 1; // TODO : get the full formulation
-                    grid[lineariseCoord(localx,localy,localz,lExtends[3],lExtends[4],lExtends[5])] += 1;
+                    //grid[lineariseCoord(localx,localy,localz,lExtends[3],lExtends[4],lExtends[5])] += 1;
                     //fprintf(stderr,"%i %i %i\n", localx, localy, localz);
+                    updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5]);
                 }
             }
 
@@ -311,11 +292,11 @@ void treatment1(Decaf* decaf)
                     counter++;
             }
 
-            fprintf(stderr, "Number of active cells : %i\n", counter);
-            fprintf(stderr, "Total number of cells : %u\n", (lExtends[3]*lExtends[4]*lExtends[5]));
+            //fprintf(stderr, "Number of active cells : %i\n", counter);
+            //fprintf(stderr, "Total number of cells : %u\n", (lExtends[3]*lExtends[4]*lExtends[5]));
 
 
-            fprintf(stderr,"Computation of the grid completed\n");
+            //fprintf(stderr,"Computation of the grid completed\n");
 
             // Giving the parameter setup to Damaris for the storage layout
             if(iteration == 0)
@@ -331,9 +312,9 @@ void treatment1(Decaf* decaf)
 
 
                 //Creating the scales for the local information
-                rmesh_x = (double*)malloc(sizeof(double) * (lExtends[3]));
-                rmesh_y = (double*)malloc(sizeof(double) * (lExtends[4]));
-                rmesh_z = (double*)malloc(sizeof(double) * (lExtends[5]));
+                rmesh_x = new double[lExtends[3]];
+                rmesh_y = new double[lExtends[4]];
+                rmesh_z = new double[lExtends[5]];
 
                 for(unsigned int i = 0; i < lExtends[3]; i++)
                     rmesh_x[i] = (double)(lExtends[0]) + (double)(i);
@@ -351,8 +332,6 @@ void treatment1(Decaf* decaf)
 
             damaris_write("space", grid );
             damaris_end_iteration();
-
-            delete grid;
         }
 
 
@@ -360,9 +339,11 @@ void treatment1(Decaf* decaf)
     }
 
     // Cleaning the grid
-    free(rmesh_x);
-    free(rmesh_y);
-    free(rmesh_z);
+    delete [] rmesh_x;
+    delete [] rmesh_y;
+    delete [] rmesh_z;
+
+    delete [] grid;
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "Treatment terminating\n");

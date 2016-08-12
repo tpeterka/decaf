@@ -684,10 +684,6 @@ computeIndexesFromBlocks(
     gettimeofday(&begin, NULL);
     int notInBlock = 0;
 
-    fprintf(stderr, "Sub block bbox before rooting: \n");
-    for(unsigned int b = 0; b < blocks.size(); b++)
-        blocks[b].printBoxes();
-
     std::vector<unsigned int> sumPos(result.size(), 0);
     for(int i = 0; i < nbPos; i++)
     {

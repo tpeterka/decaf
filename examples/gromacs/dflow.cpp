@@ -221,11 +221,11 @@ extern "C"
         }
         ArrayFieldf filterPosField = ArrayFieldf(&filteredPos[0], 3 * nbFilteredPart, 3, false);
 
-        compteBBox(&filteredPos[0], nbFilteredPart);
+        //compteBBox(&filteredPos[0], nbFilteredPart);
 
-        stringstream filename;
-        filename<<"pos_"<<rank<<"_"<<iteration<<"_dflow.ply";
-        posToFile(pos, nbParticle, filename.str());
+        //stringstream filename;
+        //filename<<"pos_"<<rank<<"_"<<iteration<<"_dflow.ply";
+        //posToFile(pos, nbParticle, filename.str());
 
         vector<unsigned int> morton(nbFilteredPart);
         float *box = globalBox.getBlock()->getGlobalBBox();
@@ -264,40 +264,6 @@ extern "C"
         container->appendData("morton", mortonField,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-        for(unsigned int i = 0; i < nbFilteredPart; i++)
-        {
-            ArrayFieldf posF = container->getFieldData<ArrayFieldf>("pos");
-            ArrayFieldu mortonF = container->getFieldData<ArrayFieldu>("morton");
-            BlockField blockF = container->getFieldData<BlockField>("domain_block");
-
-            float* posA = posF.getArray();
-            unsigned int *mortonA = mortonF.getArray();
-            float* globalBB = blockF.getBlock()->getGlobalBBox();
-            float currentGridspace = blockF.getBlock()->getGridspace();
-
-            //Using cast from float to unsigned int to keep the lower int
-            unsigned int cellX = (unsigned int)((posA[3*i] - globalBB[0]) / currentGridspace);
-            unsigned int cellY = (unsigned int)((posA[3*i+1] - globalBB[1]) / currentGridspace);
-            unsigned int cellZ = (unsigned int)((posA[3*i+2] - globalBB[2]) / currentGridspace);
-
-            //Clamping the cells to the bbox. Atoms can move away from the box, we count them in the nearest cell (although it's not correct)
-            cellX = cellX >= (cells[3])?(cells[3]-1):cellX;
-            //cellX = cellX < 0?0:cellX;
-            cellY = cellY >= (cells[4])?(cells[4]-1):cellY;
-            //cellY = cellY < 0?0:cellY;
-            cellZ = cellZ >= (cells[5])?(cells[5]-1):cellZ;
-            //cellZ = cellZ < 0?0:cellZ;
-
-            unsigned int x,y,z;
-            Morton_3D_Decode_10bit(mortonA[i], x,y,z);
-
-            if(x != cellX || y != cellY || z != cellZ)
-            {
-                fprintf(stderr, "ERROR : morton codes not consistant\n");
-
-            }
-        }
-
         dataflow->put(container, DECAF_LINK);
 
         iteration++;
@@ -344,7 +310,6 @@ int main(int argc,
 
     // define the workflow
     Workflow workflow;
-    //make_wflow(workflow);
     Workflow::make_wflow_from_json(workflow, "wflow_gromacs.json");
 
     // run decaf
