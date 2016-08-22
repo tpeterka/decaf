@@ -106,8 +106,8 @@ void node_b(Decaf* decaf)
 
         // replicate the sums in an array so that they can be sent to a destination with
         // more ranks
-        int* sums = new int[decaf->dataflow(3)->sizes()->con_size];
-        for (size_t i = 0; i < decaf->dataflow(3)->sizes()->con_size; i++)
+        int* sums = new int[decaf->dataflow(1)->sizes()->con_size];
+        for (size_t i = 0; i < decaf->dataflow(1)->sizes()->con_size; i++)
             sums[i] = sum;
 
         // append the array to a container
@@ -251,7 +251,7 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    char * prefix = getenv("DECAF_PREFIX");
+    /*char * prefix = getenv("DECAF_PREFIX");
     if (prefix == NULL)
     {
         fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
@@ -325,8 +325,8 @@ int main(int argc,
     link.nprocs = 1;
     link.func = "dflow";
     link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
+    link.prod_dflow_redist = "proc";
+    link.dflow_con_redist = "proc";
     workflow.links.push_back(link);
 
     link.prod = 0;                                  // node_b -> node_a
@@ -342,7 +342,9 @@ int main(int argc,
     // identify sources
     vector<int> sources;
     sources.push_back(3);                           // node_a
+    */
 
+    Workflow::make_wflow_from_json(workflow, "cycle.json");
     // run decaf
     run(workflow);
 

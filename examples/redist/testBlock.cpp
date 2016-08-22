@@ -197,8 +197,8 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
     vector<float> bbox = {0.0,0.0,0.0,10.0,10.0,10.0};
 
     RedistBlockMPI *component = new RedistBlockMPI(startSource, nbSource,
-                                                     startReceptors, nbReceptors,
-                                                     MPI_COMM_WORLD);
+                                                   startReceptors, nbReceptors,
+                                                   MPI_COMM_WORLD);
 
     cout<<"-------------------------------------"<<endl;
     cout<<"Test with Redistribution component with overlapping..."<<endl;

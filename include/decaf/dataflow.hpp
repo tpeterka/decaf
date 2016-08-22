@@ -24,6 +24,8 @@
 #include "transport/mpi/redist_count_mpi.h"
 #include "transport/mpi/redist_round_mpi.h"
 #include "transport/mpi/redist_zcurve_mpi.h"
+#include "transport/mpi/redist_block_mpi.h"
+#include "transport/mpi/redist_proc_mpi.h"
 #include "transport/mpi/tools.hpp"
 #include <memory>
 #endif
@@ -211,6 +213,24 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                      world_comm);
             break;
         }
+        case DECAF_BLOCK_DECOMP:
+        {
+            redist_prod_dflow_ = new RedistBlockMPI(sizes_.prod_start,
+                                                    sizes_.prod_size,
+                                                    sizes_.dflow_start,
+                                                    sizes_.dflow_size,
+                                                    world_comm);
+            break;
+        }
+        case DECAF_PROC_DECOMP:
+        {
+            redist_prod_dflow_ = new RedistProcMPI(sizes_.prod_start,
+                                                   sizes_.prod_size,
+                                                   sizes_.dflow_start,
+                                                   sizes_.dflow_size,
+                                                   world_comm);
+            break;
+        }
         default:
         {
             fprintf(stderr, "ERROR: policy %d unrecognized to select a redistribution component. "
@@ -265,6 +285,24 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     sizes_.con_start,
                                                     sizes_.con_size,
                                                     world_comm);
+            break;
+        }
+        case DECAF_BLOCK_DECOMP:
+        {
+            redist_dflow_con_ = new RedistBlockMPI(sizes_.dflow_start,
+                                                   sizes_.dflow_size,
+                                                   sizes_.con_start,
+                                                   sizes_.con_size,
+                                                   world_comm);
+            break;
+        }
+        case DECAF_PROC_DECOMP:
+        {
+            redist_dflow_con_ = new RedistProcMPI(sizes_.dflow_start,
+                                                  sizes_.dflow_size,
+                                                  sizes_.con_start,
+                                                  sizes_.con_size,
+                                                  world_comm);
             break;
         }
         default:

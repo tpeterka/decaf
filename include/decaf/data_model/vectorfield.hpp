@@ -41,6 +41,8 @@ public:
         ptr_ = std::make_shared<VectorConstructData<T> >(Vector, size, element_per_items, map);
     }
 
+    virtual ~VectorField(){}
+
     virtual BaseConstructData* operator -> () const
     {
         return ptr_.get();
@@ -66,7 +68,7 @@ public:
         return ptr_->getVector();
     }
 
-    int getNbItems()
+    virtual int getNbItems()
     {
         return ptr_->getNbItems();
     }

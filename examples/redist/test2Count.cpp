@@ -193,7 +193,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                 nbSource, nbReceptors1, nbReceptors2);
 
         std::vector<double> pos;
-        int nbParticle = 4000;
+        int nbParticle = 40000;
 
         initPosition(pos, nbParticle, bbox);
 

@@ -13,8 +13,11 @@ public:
     SimpleConstructData(mapConstruct map = mapConstruct())
         : BaseConstructData(map){}
 
-    SimpleConstructData(T value, mapConstruct map = mapConstruct())
+    SimpleConstructData(const T& value, mapConstruct map = mapConstruct())
         : value_(value), BaseConstructData(map){}
+
+    SimpleConstructData(T* value, mapConstruct map = mapConstruct())
+        : value_(*value), BaseConstructData(map){}
 
     virtual ~SimpleConstructData(){}
 

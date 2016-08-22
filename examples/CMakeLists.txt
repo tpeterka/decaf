@@ -1,6 +1,7 @@
 add_subdirectory            (direct)
 
 add_subdirectory            (redist)
+add_subdirectory            (C)
 #add_subdirectory            (flowvr)
 if                          (LAMMPS_INCLUDE_DIR AND
                              LAMMPS_LIBRARY     AND
@@ -14,6 +15,9 @@ endif                       ()
 
 if                          (hacc)
   add_subdirectory          (hacc)
+endif                       ()
+if(gromacs)
+  add_subdirectory          (gromacs)
 endif                       ()
 
 #add_subdirectory          (block_data_model)

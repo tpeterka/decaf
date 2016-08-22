@@ -1,0 +1,74 @@
+#!/bin/bash
+
+#----------------------------------------------------------------------------
+#
+# mpi run script
+#
+# Tom Peterka
+# Argonne National Laboratory
+# 9700 S. Cass Ave.
+# Argonne, IL 60439
+# tpeterka@mcs.anl.gov
+#
+#----------------------------------------------------------------------------
+#ARCH=MAC_OSX
+ARCH=LINUX
+#ARCH=BGQ
+#ARCH=FUSION
+#ARCH=CRAY
+
+# number of procs
+num_procs=11
+
+# procs per node
+ppn=1 # adjustable for BG/Q, allowed 1, 2, 4, 8, 16, 32, 64
+
+# number of nodes
+num_nodes=$[$num_procs / $ppn]
+if [ $num_nodes -lt 1 ]; then
+    num_nodes=1
+fi
+
+# executable
+exe=./cycle_4nodes_c
+
+#------
+#
+# run commands
+#
+
+if [ "$ARCH" = "MAC_OSX" ]; then
+
+mpiexec -l -n $num_procs $exe
+
+#dsymutil $exe ; mpiexec -l -n $num_procs xterm -e lldb --args $exe
+
+#dsymutil $exe ; mpiexec -n $num_procs valgrind -q $exe
+
+#dsymutil $exe ; mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
+
+fi
+
+if [ "$ARCH" = "LINUX" ]; then
+
+mpiexec -n $num_procs $exe
+
+#mpiexec -n $num_procs xterm -e gdb -x gdb.run --args $exe
+
+#mpiexec -n $num_procs valgrind -q $exe
+
+#mpiexec -n $num_procs valgrind -q --leak-check=yes $exe
+
+fi
+
+if [ "$ARCH" = "BGQ" ]; then
+
+qsub -n $num_nodes --mode c$ppn -A SDAV -t 60 $exe
+
+fi
+
+if [ "$ARCH" = "CRAY" ]; then
+
+aprun -n $num_procs $exe
+
+fi

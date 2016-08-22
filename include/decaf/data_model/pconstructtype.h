@@ -34,6 +34,11 @@ class pConstructData {
             ptr_.reset();
         }
 
+        std::shared_ptr<ConstructData> getPtr()
+        {
+            return ptr_;
+        }
+
         // Matthieu : ugly to have it here
         void preallocMultiple(int nbCopies , int nbItems, std::vector<pConstructData >& result)
         {

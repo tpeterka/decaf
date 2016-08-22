@@ -27,6 +27,8 @@ public:
 
     Block<3>& getData(){ return value_; }
 
+    Block<3>* getBlock(){ return &value_; }
+
     virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy = DECAF_MERGE_DEFAULT)
     {
 	return true;

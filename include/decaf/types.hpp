@@ -28,6 +28,8 @@ enum Decomposition
     DECAF_ROUND_ROBIN_DECOMP,
     DECAF_CONTIG_DECOMP,
     DECAF_ZCURVE_DECOMP,
+    DECAF_BLOCK_DECOMP,
+    DECAF_PROC_DECOMP,
     DECAF_NUM_DECOMPS,
 };
 
@@ -87,6 +89,10 @@ Decomposition stringToDecomposition(std::string name)
         return DECAF_CONTIG_DECOMP;
     else if (name.compare(std::string("zcurve")) == 0)
         return DECAF_ZCURVE_DECOMP;
+    else if (name.compare(std::string("block")) == 0)
+        return DECAF_BLOCK_DECOMP;
+    else if (name.compare(std::string("proc")) == 0)
+        return DECAF_PROC_DECOMP;
     else
     {
         std::cerr<<"ERROR : unknown Decomposition name : "<<name<<". Using count instead."<<std::endl;

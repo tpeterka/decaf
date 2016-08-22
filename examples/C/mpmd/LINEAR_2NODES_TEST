@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#----------------------------------------------------------------------------
+#
+# mpi run script
+#
+# Tom Peterka
+# Argonne National Laboratory
+# 9700 S. Cass Ave.
+# Argonne, IL 60439
+# tpeterka@mcs.anl.gov
+#
+#----------------------------------------------------------------------------
+#ARCH=MAC_OSX
+ARCH=LINUX
+#ARCH=BGQ
+#ARCH=FUSION
+#ARCH=CRAY
+
+# number of procs
+np1=4
+np2=2
+np3=2
+num_procs=$[$np1 + $np2 + $np3]
+
+# procs per node
+ppn=1 # adjustable for BG/Q, allowed 1, 2, 4, 8, 16, 32, 64
+
+# number of nodes
+num_nodes=$[$num_procs / $ppn]
+if [ $num_nodes -lt 1 ]; then
+    num_nodes=1
+fi
+
+# executables
+exe1=./prod_c
+exe2=./dflow_c
+exe3=./con_c
+
+# mpmd command
+mpmd="-n $np1 $exe1 : -n $np2 $exe2 : -n $np3 $exe3"
+
+#------
+#
+# run commands
+#
+
+if [ "$ARCH" = "MAC_OSX" ]; then
+
+mpiexec -l $mpmd
+
+fi
+
+if [ "$ARCH" = "LINUX" ]; then
+
+mpiexec $mpmd
+
+fi
+
+if [ "$ARCH" = "BGQ" ]; then
+echo "TODO"
+fi
+
+if [ "$ARCH" = "CRAY" ]; then
+echo "TODO"
+fi

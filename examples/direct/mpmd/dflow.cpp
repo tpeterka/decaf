@@ -16,7 +16,7 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/arrayfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -25,7 +25,7 @@
 #include <map>
 #include <cstdlib>
 
-#include "wflow.hpp"                         // defines the workflow for this example
+//#include "wflow.hpp"                         // defines the workflow for this example
 
 using namespace decaf;
 using namespace std;
@@ -63,7 +63,8 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    make_wflow(workflow);
+    //make_wflow(workflow);
+    Workflow::make_wflow_from_json(workflow, "linear2.json");
 
     // run decaf
     run(workflow);

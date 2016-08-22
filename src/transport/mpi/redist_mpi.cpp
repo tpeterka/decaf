@@ -67,6 +67,7 @@ RedistMPI::RedistMPI(int rankSource,
 
         }
         MPI_Group_range_incl(group, 2, range_both, &groupRedist);
+
     }
     else //Sources and Receivers are overlapping
     {
@@ -90,6 +91,7 @@ RedistMPI::RedistMPI(int rankSource,
 
     MPI_Comm_create_group(world_comm, groupRedist, 0, &communicator_);
     MPI_Group_free(&groupRedist);
+
     MPI_Comm_rank(communicator_, &rank_);
     MPI_Comm_size(communicator_, &size_);
 
@@ -149,6 +151,12 @@ RedistMPI::splitSystemData(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
+        // Create the array which represents where the current source will emit toward
+        // the destinations rank. 0 is no send to that rank, 1 is send
+        if( summerizeDest_) delete [] summerizeDest_;
+        summerizeDest_ = new int[ nbDests_];
+        bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
+
         // For this case we simply duplicate the message for each destination
         for(unsigned int i = 0; i < nbDests_; i++)
         {
@@ -244,6 +252,7 @@ RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
                 MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_,
                          MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
             }
+
         }
        /* // producer root sends the number of messages to root of consumer
         if (role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
@@ -280,7 +289,10 @@ RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
     // check if we have something in transit to/from self
     if (role == DECAF_REDIST_DEST && !transit.empty())
     {
-        data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+        if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+        else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+            data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
         transit.reset();              // we don't need it anymore, clean for the next iteration
         //return;
     }
@@ -310,9 +322,21 @@ RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
             // NOTE: examine if it's not more efficient to receive everything
             // and then merge. Memory footprint more important but allows to
             // aggregate the allocations etc
-            data->merge();
+            if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+                data->merge();
+            else if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+                //data->unserializeAndStore();
+                data->unserializeAndStore(data->getInSerialBuffer(), nbytes);
+            else
+            {
+                std::cout<<"ERROR : merge method not specified. Abording."<<std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 0);
+            }
         }
         recv_data_tag = (recv_data_tag == INT_MAX ? MPI_DATA_TAG : recv_data_tag + 1);
+
+        if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+            data->mergeStoredData();
     }
 }
 
@@ -359,8 +383,6 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
         else
             nbRecep = nbSources_;
 
-        std::cout<<"Attente de "<<nbRecep<<" receptions."<<std::endl;
-
         for(int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
@@ -403,7 +425,6 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
         // Checking if we have something in transit
         if(!transit.empty())
         {
-            std::cout<<"Merge du transit"<<std::endl;
             if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
                 data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
             else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)

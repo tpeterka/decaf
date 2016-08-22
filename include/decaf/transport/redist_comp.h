@@ -23,7 +23,7 @@ namespace decaf
 
     enum RedistRole
     {
-        DECAF_REDIST_SOURCE,
+        DECAF_REDIST_SOURCE = 0,
         DECAF_REDIST_DEST,
     };
 

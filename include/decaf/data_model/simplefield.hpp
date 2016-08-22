@@ -25,10 +25,17 @@ public:
        ptr_ = std::make_shared<SimpleConstructData<T> >(map);
    }
 
-   SimpleField(T value, mapConstruct map = mapConstruct())
+   SimpleField(const T& value, mapConstruct map = mapConstruct())
    {
        ptr_ = std::make_shared<SimpleConstructData<T> >(value, map);
    }
+
+   SimpleField(T* value, mapConstruct map = mapConstruct())
+   {
+       ptr_ = std::make_shared<SimpleConstructData<T> >(value, map);
+   }
+
+   virtual ~SimpleField(){}
 
    virtual BaseConstructData* operator -> () const
    {
@@ -55,7 +62,7 @@ public:
        return ptr_->getData();
    }
 
-   int getNbItems()
+   virtual int getNbItems()
    {
        return ptr_->getNbItems();
    }
@@ -72,7 +79,7 @@ private:
 typedef SimpleField<int> SimpleFieldi;
 typedef SimpleField<unsigned int> SimpleFieldu;
 typedef SimpleField<float> SimpleFieldf;
-typedef SimpleField<double> SimpleFliedd;
+typedef SimpleField<double> SimpleFieldd;
 
 } // namespace
 #endif

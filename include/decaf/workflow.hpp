@@ -20,6 +20,12 @@
 #include <queue>
 #include <string>
 #include <iostream>
+#include <fstream>
+
+#include "boost/property_tree/ptree.hpp"
+#include "boost/property_tree/json_parser.hpp"
+
+namespace bpt = boost::property_tree;
 
 using namespace std;
 
@@ -125,6 +131,79 @@ struct Workflow                              // an entire workflow
             }
             return false;
         }
+
+  static void
+  make_wflow_from_json( Workflow& workflow, const string& json_path )
+  {
+    try {
+
+      bpt::ptree root;
+      
+      /*
+       * Use Boost::property_tree to read/parse the JSON file. This 
+       * creates a property_tree object which we'll then query to get 
+       * the information we want.
+       *
+       * N.B. Unlike what is provided by most JSON/XML parsers, the 
+       * property_tree is NOT a DOM tree, although processing it is somewhat
+       * similar to what you'd do with a DOM tree. Refer to the Boost documentation
+       * for more information.
+       */
+      
+      bpt::read_json( json_path, root );
+
+      /* 
+       * iterate over the list of nodes, creating and populating WorkflowNodes as we go
+       */
+      for( auto &&v : root.get_child( "workflow.nodes" ) ) {
+	WorkflowNode node;
+	node.out_links.clear();
+	node.in_links.clear();
+	/* we defer actually linking nodes until we read the edge list */
+
+	node.start_proc = v.second.get<int>("start_proc");
+	node.nprocs = v.second.get<int>("nprocs");
+	node.func = v.second.get<std::string>("func");
+	
+	workflow.nodes.push_back( node );
+      }
+
+      string path = root.get<std::string>("workflow.path");
+
+      /* 
+       * similarly for the edges
+       */
+      for( auto &&v : root.get_child( "workflow.edges" ) ) {
+
+	WorkflowLink link;
+	
+	/* link the nodes correctly(?) */      
+	link.prod = v.second.get<int>("source");
+	link.con = v.second.get<int>("target");
+
+        workflow.nodes.at( link.prod ).out_links.push_back( workflow.links.size() );
+        workflow.nodes.at( link.con ).in_links.push_back( workflow.links.size() );
+	 
+	link.path = path;
+	link.start_proc = v.second.get<int>("start_proc");
+	link.nprocs = v.second.get<int>("nprocs");
+	link.func = v.second.get<std::string>("func");
+	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
+	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+        workflow.links.push_back( link );
+      }
+    }
+    catch( const bpt::json_parser_error& jpe ) {
+      cerr << "JSON parser exception: " << jpe.what() << endl;
+      exit(1);
+    }
+    catch ( const bpt::ptree_error& pte ) {
+      cerr << "property_tree exception: " << pte.what() << endl;
+      exit(1);
+    }
+    
+  }
+  
 };
 
 #endif

@@ -80,6 +80,9 @@ namespace decaf
         // return a handle for this node's producer or consumer communicator
         CommHandle prod_comm_handle() { return out_dataflows[0]->prod_comm_handle();    }
         CommHandle con_comm_handle()  { return node_in_dataflows[0]->con_comm_handle(); }
+        int prod_comm_size()          { return out_dataflows[0]->sizes()->con_size;     }
+        int con_comm_size()           { return node_in_dataflows[0]->sizes()->con_size; }
+
 
         // return a pointer to this node's producer or consumer communicator
         Comm* prod_comm() { return out_dataflows[0]->prod_comm();    }
@@ -226,6 +229,9 @@ Decaf::Decaf(CommHandle world_comm,
     out_dataflows.resize(unique_out_dataflows.size()); // copy set to vector
     copy(unique_out_dataflows.begin(), unique_out_dataflows.end(), out_dataflows.begin());
 
+
+    //MPI_Barrier(MPI_COMM_WORLD); // Matthieu : TO REMOVE?
+
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
     for (size_t i = 0; i < workflow_.nodes.size(); i++)
@@ -302,7 +308,9 @@ Decaf::get(vector< pConstructData >& containers)
     }
     for (size_t i = 0; i < containers.size(); i++)
         if (Dataflow::test_quit(containers[i]))
+        {
             return false;
+        }
     return true;
 }
 
@@ -385,8 +393,12 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                 Dataflow::set_quit(quit_container);
 
                 for (size_t i = 0; i < ready_ids.size(); i++)
+                {
                     if (ready_types[i] & DECAF_LINK)
+                    {
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
+                    }
+                }
             }
         }
 

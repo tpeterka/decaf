@@ -1,0 +1,29 @@
+{
+    "workflow" :
+    {
+	"path" : "/build/examples/direct/mod_linear_2nodes.so",
+	"nodes" : [
+	    {
+		"start_proc" : 0 ,
+		"nprocs" : 4 ,
+		"func" : "prod" 
+	    },
+	    {
+		"start_proc" : 6 ,
+		"nprocs" : 2 ,
+		"func" : "con"
+	    }
+	],
+	"edges" : [
+	    {
+		"start_proc" : 4 ,
+		"nprocs" : 2 ,
+		"func" : "dflow" ,
+		"prod_dflow_redist" : "count" ,
+		"dflow_con_redist" : "count" ,
+		"source" : 0 ,
+		"target" : 1
+	    }
+	]
+    }
+}

@@ -38,10 +38,11 @@ namespace decaf
                        CommHandle communicator,
                        RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
                        MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
-             RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod, mergeMethod) {}
+             RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod, mergeMethod)
+        { }
         virtual ~RedistBlockMPI() {}
 
-        virtual void flush();
+        //virtual void flush();
 
     protected:
 

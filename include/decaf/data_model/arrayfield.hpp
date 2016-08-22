@@ -16,66 +16,87 @@ public:
     ArrayField(std::shared_ptr<BaseConstructData> ptr)
     {
         ptr_ = std::dynamic_pointer_cast<ArrayConstructData<T> >(ptr);
-        if(!ptr_){
+        if(!ptr_)
+        {
             std::cerr<<"ERROR : Unable to cast pointer to ArrayConstructData<T> when using a ArrayField."<<std::endl;
             ptr_.reset();
         }
     }
 
-   ArrayField(mapConstruct map = mapConstruct())
-   {
-       ptr_ = std::make_shared<ArrayConstructData<T> >(map);
-   }
+    ArrayField(mapConstruct map = mapConstruct())
+    {
+        ptr_ = std::make_shared<ArrayConstructData<T> >(map);
+    }
 
-   ArrayField(T* array, int size, int element_per_items, bool owner = false, mapConstruct map = mapConstruct())
-   {
-       ptr_ = std::make_shared<ArrayConstructData<T> >(array, size, element_per_items, owner, map);
-   }
+    ArrayField(T* array,
+               int size,
+               int element_per_items,
+               bool owner = false,
+               mapConstruct map = mapConstruct())
+    {
+        ptr_ = std::make_shared<ArrayConstructData<T> >
+                (array, size, element_per_items, owner, map);
+    }
 
-   ArrayField(T* array, int size, int element_per_items, int capacity, bool owner = false, mapConstruct map = mapConstruct())
-   {
-       ptr_ = std::make_shared<ArrayConstructData<T> >( array, size, element_per_items, capacity, owner, map);
-   }
+    ArrayField(T* array,
+               int size,
+               int element_per_items,
+               int capacity,
+               bool owner = false,
+               mapConstruct map = mapConstruct())
+    {
+        ptr_ = std::make_shared<ArrayConstructData<T> >
+                ( array, size, element_per_items, capacity, owner, map);
+    }
 
-   ArrayField(std::vector<std::pair<T*, unsigned int> > segments, int element_per_items, mapConstruct map = mapConstruct())
-   {
-       ptr_ = std::make_shared<ArrayConstructData<T> >(segments, element_per_items, map);
-   }
+    ArrayField(std::vector<std::pair<T*, unsigned int> > segments,
+               int element_per_items,
+               mapConstruct map = mapConstruct())
+    {
+        ptr_ = std::make_shared<ArrayConstructData<T> >(segments, element_per_items, map);
+    }
 
+    virtual ~ArrayField(){}
 
-   virtual BaseConstructData* operator -> () const
-   {
-       return ptr_.get();
-   }
+    virtual BaseConstructData* operator -> () const
+    {
+        return ptr_.get();
+    }
 
-   virtual std::shared_ptr<BaseConstructData> getBasePtr()
-   {
-       return ptr_;
-   }
+    virtual std::shared_ptr<BaseConstructData> getBasePtr()
+    {
+        return ptr_;
+    }
 
-   std::shared_ptr<ArrayConstructData<T> > getPtr()
-   {
-       return ptr_;
-   }
+    std::shared_ptr<ArrayConstructData<T> > getPtr()
+    {
+        return ptr_;
+    }
 
-   bool empty()
-   {
-       return ptr_.use_count() == 0;
-   }
+    bool empty()
+    {
+        return ptr_.use_count() == 0;
+    }
 
-   T* getArray()
-   {
-       ptr_->getArray();
-   }
+    void reset()
+    {
+        ptr_.reset();
+    }
 
-   int getNbItems()
-   {
-       return ptr_->getNbItems();
-   }
+    T* getArray()
+    {
+        return ptr_->getArray();
+    }
 
-   virtual operator bool() const {
-         return ptr_ ? true : false;
-       }
+    virtual int getNbItems()
+    {
+        return ptr_->getNbItems();
+    }
+
+    virtual operator bool() const
+    {
+        return ptr_ ? true : false;
+    }
 
 
 
@@ -86,7 +107,7 @@ private:
 typedef ArrayField<int> ArrayFieldi;
 typedef ArrayField<unsigned int> ArrayFieldu;
 typedef ArrayField<float> ArrayFieldf;
-typedef ArrayField<double> ArrayFliedd;
+typedef ArrayField<double> ArrayFieldd;
 
 } // namespace
 #endif

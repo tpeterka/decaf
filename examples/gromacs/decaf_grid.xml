@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<simulation name="mandelbulb" language="c" xmlns="http://damaris.gforge.inria.fr/damaris/model">
+	<architecture>
+		<domains count="1" />
+		<dedicated cores="0" nodes="0" />
+		<buffer name="damaris-buffer" size="536870912" />
+		<queue  name="damaris-queue" size="100" />
+	</architecture>
+	<data>
+		<parameter name="WIDTH" type="int" value="1"/>
+		<parameter name="HEIGHT" type="int" value="1"/>
+		<parameter name="DEPTH" type="int" value="1"/>
+
+		<layout name="cells"  type="int" dimensions="DEPTH,HEIGHT,WIDTH" />
+		<layout name="rmeshX" type="double" dimensions="WIDTH" />
+		<layout name="rmeshY" type="double" dimensions="HEIGHT" />
+		<layout name="rmeshZ" type="double" dimensions="DEPTH" />
+
+		<mesh name="mesh" type="rectilinear" topology="3">
+			<coord name="coord/x" label="x"/>
+			<coord name="coord/y" label="y"/>
+			<coord name="coord/z" label="z"/>
+		</mesh>
+
+		<group name="coord">
+			<variable name="x" layout="rmeshX" visualizable="false" time-varying="false" />
+			<variable name="y" layout="rmeshY" visualizable="false" time-varying="false" />
+			<variable name="z" layout="rmeshZ" visualizable="false" time-varying="false" />
+		</group>
+	
+		<variable name="space" type="scalar" layout="cells" mesh="mesh" centering="nodal" />
+	</data>
+	<actions>
+	</actions>
+	<visit>
+		<path>/home/matthieu/Argonne/Visit/install</path>
+	</visit>
+</simulation>
