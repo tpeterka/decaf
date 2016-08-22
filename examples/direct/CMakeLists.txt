@@ -9,6 +9,8 @@ if(Boost_FOUND)
 
   message("Building direct example")
   include_directories(${Boost_INCLUDE_DIRS})
+  message("Boost_INCLUDE_DIRS=" ${Boost_INCLUDE_DIRS})
+  message("Boost_LIBRARIES=" ${Boost_LIBRARIES})
 
   add_executable              (linear_2nodes             linear_2nodes.cpp)
   add_executable              (linear_3nodes             linear_3nodes.cpp)
