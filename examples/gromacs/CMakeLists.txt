@@ -34,9 +34,10 @@ ExternalProject_Add(gromacsmodify
     CMAKE_ARGS ${GROMACS_COMPILATION_OPTIONS}
 )
 
-add_executable              (prod_c_gromacs      prod_c.c)
+add_executable              (prod_c_gromacs     prod_c.c)
 add_executable              (treatment          treatment.cpp)
 add_executable              (dflow_gromacs      dflow.cpp)
+add_executable              (targetmanager      targetmanager.cpp)
 add_library                 (mod_dflow_gromacs  MODULE dflow.cpp)
 
 
@@ -44,13 +45,15 @@ target_link_libraries       (treatment
     ${libraries} decaf_transport decaf_datamodel ${DAMARIS_LIBRARY} ${DEP_LIBRARIES})
 target_link_libraries       (dflow_gromacs
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+target_link_libraries       (targetmanager
+    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 target_link_libraries       (mod_dflow_gromacs
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 target_link_libraries       (prod_c_gromacs bca dca)
 
 set_target_properties (treatment PROPERTIES LINK_FLAGS "-Wl,-export-dynamic")
 
-  install(TARGETS treatment dflow_gromacs mod_dflow_gromacs prod_c_gromacs
+  install(TARGETS treatment dflow_gromacs mod_dflow_gromacs prod_c_gromacs targetmanager
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/gromacs/
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_WRITE GROUP_EXECUTE

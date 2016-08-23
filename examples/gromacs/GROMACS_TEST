@@ -21,7 +21,9 @@ ARCH=LINUX
 np1=4
 np2=2
 np3=2
-num_procs=$[$np1 + $np2 + $np3]
+np4=1
+np5=1
+num_procs=$[$np1 + $np2 + $np3 + $np4 + $np5]
 
 # procs per node
 ppn=1 # adjustable for BG/Q, allowed 1, 2, 4, 8, 16, 32, 64
@@ -38,9 +40,11 @@ fi
 exe1="./bin/mdrun_mpi_decaf -s $MODEL -nsteps 100000 -v"
 exe2=./dflow_gromacs
 exe3="./treatment"
+exe4=./dflow_gromacs
+exe5=./targetmanager
 
 # mpmd command
-mpmd="-n $np1 $exe1 : -n $np2 $exe2 : -n $np3 $exe3"
+mpmd="-n $np1 $exe1 : -n $np2 $exe2 : -n $np3 $exe3 : -n $np4 $exe4 : -n $np5 $exe5"
 
 #------
 #

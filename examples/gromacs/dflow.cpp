@@ -172,7 +172,7 @@ void compteBBox(float* pos, int nbPos)
 extern "C"
 {
     // dataflow just forwards everything that comes its way in this example
-    void dflow(void* args,                          // arguments to the callback
+    void dflow_morton(void* args,                          // arguments to the callback
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
@@ -200,6 +200,8 @@ extern "C"
         int nbParticle = posArray->getNbItems();
 
         vector<float> filteredPos;
+        vector<unsigned int> filteredIds;
+
         ArrayFieldu indexes = in_data->getFieldData<ArrayFieldu>("ids");
         if(!indexes)
         {
@@ -216,16 +218,13 @@ extern "C"
                 filteredPos.push_back(pos[3*i] * 10.0); // Switching from nm to Angstrom
                 filteredPos.push_back(pos[3*i+1] * 10.0);
                 filteredPos.push_back(pos[3*i+2] * 10.0);
+                filteredIds.push_back(index[i]);
                 nbFilteredPart++;
             }
         }
+
         ArrayFieldf filterPosField = ArrayFieldf(&filteredPos[0], 3 * nbFilteredPart, 3, false);
-
-        //compteBBox(&filteredPos[0], nbFilteredPart);
-
-        //stringstream filename;
-        //filename<<"pos_"<<rank<<"_"<<iteration<<"_dflow.ply";
-        //posToFile(pos, nbParticle, filename.str());
+        ArrayFieldu filterIdsField = ArrayFieldu(&filteredIds[0], nbFilteredPart, 1, false);
 
         vector<unsigned int> morton(nbFilteredPart);
         float *box = globalBox.getBlock()->getGlobalBBox();
@@ -262,12 +261,22 @@ extern "C"
                               DECAF_NOFLAG, DECAF_SHARED,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
         container->appendData("morton", mortonField,
+                              DECAF_ZCURVEINDEX, DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+        container->appendData("ids", filterIdsField,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         dataflow->put(container, DECAF_LINK);
 
         iteration++;
 
+    }
+
+    void dflow_simple(void* args,                          // arguments to the callback
+               Dataflow* dataflow,                  // dataflow
+               pConstructData in_data)   // input data
+    {
+        dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"
 
