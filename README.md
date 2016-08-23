@@ -20,8 +20,6 @@ Configure the build using cmake with this sample command line. We recommend savi
 
 ```
 cmake .. \
--DCMAKE_CXX_COMPILER=mpicxx \
--DCMAKE_C_COMPILER=mpicc \
 -DCMAKE_INSTALL_PREFIX=/path/to/decaf/install \
 -Dtransport_mpi=on \
 ```
