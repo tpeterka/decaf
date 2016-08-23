@@ -21,15 +21,12 @@ Configure the build using cmake with this sample command line. We recommend savi
 ```
 cmake .. \
 -DCMAKE_CXX_COMPILER=mpicxx \
--Ddebug=on \
--Doptimize=off \
+-DCMAKE_C_COMPILER=mpicc \
 -Dtransport_mpi=on \
 ```
 
 Currently, the available options are:
 
-- debug              "Build Decaf with debugging on"                OFF/ON, default OFF
-- optimize           "Build Decaf with optimization"                OFF/ON, default OFF
 - transport_mpi      "Build Decaf with MPI transport layer"         ON/OFF, default ON
 
 Then, make, install, and set environment variables:
