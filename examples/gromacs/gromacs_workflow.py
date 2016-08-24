@@ -28,10 +28,9 @@ w.add_edge("gmx", "treatment", start_proc=4, nprocs=2, func='dflow_morton', path
            prod_dflow_redist='proc', dflow_con_redist='block')
 w.add_edge("treatment", "target", start_proc=8, nprocs=1, func='dflow_simple', path=mod_path,
            prod_dflow_redist='proc', dflow_con_redist='proc')
+w.add_edge("target", "gmx", start_proc=10, nprocs=1, func='dflow_simple', path=mod_path,
+           prod_dflow_redist='proc', dflow_con_redist='proc')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-
-#wf.workflow(w,                               # nx workflow graph
-#            run_path)                        # run path
 
 wf.workflowToJson(w, mod_path, "wflow_gromacs.json")

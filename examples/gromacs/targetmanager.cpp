@@ -84,7 +84,7 @@ std::vector<int> arrayIds = {  109, 110, 111, 112, 113, 114,
 std::vector<Target> targets;
 
 float distanceValidTarget = 0.5;
-float maxTotalForces = 5.0;
+float maxTotalForces = 1.0;
 
 void loadTargets()
 {
@@ -115,7 +115,7 @@ void loadTargets()
 void target(Decaf* decaf)
 {
     vector< pConstructData > in_data;
-    fprintf(stderr, "Launching treatment\n");
+    fprintf(stderr, "Launching target\n");
     fflush(stderr);
 
     int rank;
@@ -168,6 +168,8 @@ void target(Decaf* decaf)
         avg[1] = avg[1] / (float)filterIds.size();
         avg[2] = avg[2] / (float)filterIds.size();
 
+        fprintf(stderr, "Average position : %f %f %f\n", avg[0], avg[1], avg[2]);
+
         // Checking the position between the system and the target
         float* targetPos = targets[currentTarget].target;
         float dist = distance(avg, targetPos);
@@ -175,8 +177,16 @@ void target(Decaf* decaf)
         {
             //Changing the active target
             currentTarget++;
-            targetPos = targets[currentTarget].target;
+            fprintf(stderr, "Changing target\n");
+            if(currentTarget < targets.size())
+                targetPos = targets[currentTarget].target;
+            else
+            {
+                fprintf(stderr, "Steering terminated. Closing the app\n");
+                break;
+            }
         }
+        fprintf(stderr, "Target position : %f %f %f\n", targetPos[0], targetPos[1], targetPos[2]);
 
         // Computing the force direction
         float force[3];
@@ -191,6 +201,7 @@ void target(Decaf* decaf)
         force[0] = force[0] * maxForcesPerAtom;
         force[1] = force[1] * maxForcesPerAtom;
         force[2] = force[2] * maxForcesPerAtom;
+        fprintf(stderr, "Force emitted : %f %f %f\n", force[0], force[1], force[2]);
 
         // Generating the data model
         pConstructData container;
@@ -216,8 +227,6 @@ void target(Decaf* decaf)
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "Target terminating\n");
     decaf->terminate();
-
-    if(_SimulationForce) delete [] _SimulationForce;
 }
 
 // every user application needs to implement the following run function with this signature

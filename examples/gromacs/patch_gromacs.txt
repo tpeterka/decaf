@@ -1,7 +1,7 @@
 From b99a67de86247a6f4a3f22825024cd874cf0e021 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 10:39:56 -0500
-Subject: [PATCH 01/23] Patch with dflow and treatment in the simulation code.
+Subject: [PATCH 01/29] Patch with dflow and treatment in the simulation code.
 
 ---
  CMakeLists.txt                   |  16 ++++
@@ -644,7 +644,7 @@ index eb30fc9..4dbf5ea 100644
 From 99ba3e127d18b1dbdac77046daf2e6d46ac2631e Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:10:36 -0500
-Subject: [PATCH 02/23] Check the status of MPI
+Subject: [PATCH 02/29] Check the status of MPI
 
 ---
  CMakeLists.txt | 6 +++++-
@@ -674,7 +674,7 @@ index 3909fd3..f3ac23f 100644
 From eaa854ab810c29f3e0ecd8c67d7dfbcd3c7602ae Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:32:54 -0500
-Subject: [PATCH 03/23] Add extra info
+Subject: [PATCH 03/29] Add extra info
 
 ---
  CMakeLists.txt | 5 +++++
@@ -703,7 +703,7 @@ index f3ac23f..089edd9 100644
 From 634e6e124fc4f4c06f8aab8c10536427f1d56b67 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:10:40 -0500
-Subject: [PATCH 04/23] Add mpi checks
+Subject: [PATCH 04/29] Add mpi checks
 
 ---
  CMakeLists.txt           | 2 +-
@@ -742,7 +742,7 @@ index 28d23d8..ce4b299 100644
 From 631fb2aa7e19d3a388ed9956d84e6542651959fc Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:16:59 -0500
-Subject: [PATCH 05/23] Add mpi checks
+Subject: [PATCH 05/29] Add mpi checks
 
 ---
  cmake/gmxManageMPI.cmake | 3 +++
@@ -774,7 +774,7 @@ index ce4b299..1e3af82 100644
 From d49d34c8c25255bcda600bf22caa185db297a4c9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:33:54 -0500
-Subject: [PATCH 06/23] Add infos
+Subject: [PATCH 06/29] Add infos
 
 ---
  CMakeLists.txt | 5 +++++
@@ -803,7 +803,7 @@ index b2e82d8..b14d7ec 100644
 From 2ac35154d1f8bcce44a9ab466404a3ee92b91f12 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:37:44 -0500
-Subject: [PATCH 07/23] Force MPI
+Subject: [PATCH 07/29] Force MPI
 
 ---
  CMakeLists.txt | 4 ++--
@@ -831,7 +831,7 @@ index b14d7ec..4649e3b 100644
 From 9668b8e9a4fd9f9af762f88b3844b84bf5ac02b0 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 10:53:34 -0500
-Subject: [PATCH 08/23] Remove the barrier
+Subject: [PATCH 08/29] Remove the barrier
 
 ---
  include/network.h    |  3 +++
@@ -947,7 +947,7 @@ index 4dbf5ea..38d0acf 100644
 From 6bb435dbb51329e5179d8fc37fcd3c2c5c9122df Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 11:10:23 -0500
-Subject: [PATCH 09/23] Check linkage
+Subject: [PATCH 09/29] Check linkage
 
 ---
  src/gmxlib/network.c | 1 -
@@ -972,7 +972,7 @@ index be83348..0bded05 100644
 From 076cfedf4249a44a87e65db7cfebc4045b9cb270 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 13:34:04 -0500
-Subject: [PATCH 10/23] Attempt to fix crash during finalize
+Subject: [PATCH 10/29] Attempt to fix crash during finalize
 
 ---
  src/gmxlib/network.c | 5 +++--
@@ -1022,7 +1022,7 @@ index 38d0acf..d0094d9 100644
 From a920a1ed24ab7689c2d6fb5891fb8ea3a32f7bf9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:07:04 -0500
-Subject: [PATCH 11/23] Add a Barrier before clearing everything
+Subject: [PATCH 11/29] Add a Barrier before clearing everything
 
 ---
  src/kernel/mdrun.c | 4 +++-
@@ -1057,7 +1057,7 @@ index d0094d9..7c00299 100644
 From dbb6d99220e7b293d453ae74fe2c62af0fb43c56 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:34:39 -0500
-Subject: [PATCH 12/23] Fix the name of the dflow library
+Subject: [PATCH 12/29] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1083,7 +1083,7 @@ index 7c00299..7cbe33a 100644
 From 4fccd84f8007624b8d368838ec4bb269d0247cc8 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:39:41 -0500
-Subject: [PATCH 13/23] Fix the name of the dflow library
+Subject: [PATCH 13/29] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1109,7 +1109,7 @@ index 7cbe33a..e8211a7 100644
 From 7d667dc746ca675986fae961700bf07271011081 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:49:38 -0500
-Subject: [PATCH 14/23] Fix the name of the dflow library
+Subject: [PATCH 14/29] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1135,7 +1135,7 @@ index e8211a7..9934ae6 100644
 From efca0d61b17dc47a4ebd3b9e440a743da385a330 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:56:34 -0500
-Subject: [PATCH 15/23] Fix the graph
+Subject: [PATCH 15/29] Fix the graph
 
 ---
  src/kernel/mdrun.c | 8 ++++----
@@ -1167,7 +1167,7 @@ index 9934ae6..4d74f2f 100644
 From 12e44804a8cdab3444bd465952262ba3709f810f Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 15:02:59 -0500
-Subject: [PATCH 16/23] Remove the workflow definition from the code and read
+Subject: [PATCH 16/29] Remove the workflow definition from the code and read
  the JSON file instead
 
 ---
@@ -1204,7 +1204,7 @@ index 4d74f2f..e206a3c 100644
 From dd3d5a2bf72a6ea7e8c0bb7d023926b8aab2d507 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:02:13 -0500
-Subject: [PATCH 17/23] Typo correction
+Subject: [PATCH 17/29] Typo correction
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1230,7 +1230,7 @@ index e206a3c..c0b9162 100644
 From bd9a75dedf3daf776ba81fa75637ae4555f06138 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:07:31 -0500
-Subject: [PATCH 18/23] Fix compilation error
+Subject: [PATCH 18/29] Fix compilation error
 
 ---
  src/kernel/mdrun.c | 4 ++--
@@ -1265,7 +1265,7 @@ index c0b9162..00d7d46 100644
 From 8af97b9e4f0ad2771aaf4fada79664822724ad48 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:20:40 -0500
-Subject: [PATCH 19/23] Fix Hanging
+Subject: [PATCH 19/29] Fix Hanging
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1291,7 +1291,7 @@ index 00d7d46..09e2e35 100644
 From 2aeb66c176516bc0af5a77cd346e917bbd2c454b Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 25 Jul 2016 11:09:20 -0500
-Subject: [PATCH 20/23] Remove barrier
+Subject: [PATCH 20/29] Remove barrier
 
 ---
  src/kernel/mdrun.c | 1 -
@@ -1316,7 +1316,7 @@ index 09e2e35..5fa5c1f 100644
 From 791728ea9448abd6ea037fffbffce5f99fab1dc1 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 25 Jul 2016 13:36:07 -0500
-Subject: [PATCH 21/23] Change json file
+Subject: [PATCH 21/29] Change json file
 
 ---
  src/kernel/mdrun.c | 3 ++-
@@ -1343,7 +1343,7 @@ index 5fa5c1f..74eb7f1 100644
 From c64c5cc6bc2e859a758dbd908bc83ed941eb1560 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 11 Aug 2016 13:51:47 -0500
-Subject: [PATCH 22/23] Add the ids to the data model
+Subject: [PATCH 22/29] Add the ids to the data model
 
 ---
  src/kernel/md.c | 23 +++++++++++++++++++++++
@@ -1402,7 +1402,7 @@ index 66f8180..e774987 100644
 From b19ebf876fe3ec76796a4a6eecd3d77528cd997f Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 12 Aug 2016 14:08:54 -0500
-Subject: [PATCH 23/23] Remove printf
+Subject: [PATCH 23/29] Remove printf
 
 ---
  src/kernel/md.c | 4 ++--
@@ -1429,6 +1429,561 @@ index e774987..561e933 100644
 +        //fprintf(stdout, "Container sent\n");
  
          /*  ################## END TRAJECTORY OUTPUT ################ */
+ 
+-- 
+2.1.4
+
+
+From 435fabf986a1b643f2c787ec2299cdcc003e119f Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 24 Aug 2016 11:20:54 -0500
+Subject: [PATCH 24/29] Add the steering part to Gromacs
+
+---
+ include/types/commrec.h |   8 ++++
+ src/kernel/md.c         |  71 ++++++++++++++++++----------------
+ src/kernel/mdrun.c      |  18 ++++-----
+ src/mdlib/sim_util.c    | 101 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 154 insertions(+), 44 deletions(-)
+
+diff --git a/include/types/commrec.h b/include/types/commrec.h
+index 19fcb4a..ffa25d0 100644
+--- a/include/types/commrec.h
++++ b/include/types/commrec.h
+@@ -300,6 +300,14 @@ typedef struct {
+ 
+     dca_decaf decaf;
+ 
++    int* forceIds;  // Ids of atoms to steer
++    int nbIds;      // Number of atom steered
++    float* force;   // force vector to apply
++    int stepDecaf;  // Do a get/put every stepDecaf iteration
++    bool firstStep; // Marker to signal the first time we call Decaf.
++                    // Needed not to do a get on the first iteration.
++    int iteration;  // simulation step
++
+ } t_commrec;
+ 
+ #define MASTERNODE(cr)     (((cr)->nodeid == 0) || !PAR(cr))
+diff --git a/src/kernel/md.c b/src/kernel/md.c
+index 561e933..25ab84a 100644
+--- a/src/kernel/md.c
++++ b/src/kernel/md.c
+@@ -1572,46 +1572,49 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
+         //}
+ 
+         //fprintf(stdout, "Creation of the data model...\n");
+-        bca_field field_pos = bca_create_arrayfield(state->x, bca_FLOAT,
+-                                                    mdatoms->homenr * 3, 3,
+-                                                    mdatoms->homenr * 3, false);
+-
+-        size_t i;
+-        unsigned int *IDs = (unsigned int*)(malloc(mdatoms->homenr * sizeof(unsigned int)));
+-        for (i = mdatoms->start; i < mdatoms->start + mdatoms->homenr; ++i)
++        if(cr-> iteration % cr->stepDecaf == 0)
+         {
+-            if(cr->nnodes == 1)
+-                IDs[i] = i;
+-            else
+-                IDs[i] = cr->dd->gatindex[i];
+-        }
+-        bca_field field_ID = bca_create_arrayfield(IDs, bca_UNSIGNED,
+-                                                   mdatoms->homenr, 1,
+-                                                   mdatoms->homenr, false);
++            bca_field field_pos = bca_create_arrayfield(state->x, bca_FLOAT,
++                                                        mdatoms->homenr * 3, 3,
++                                                        mdatoms->homenr * 3, false);
+ 
+-        bca_constructdata container = bca_create_constructdata();
++            size_t i;
++            unsigned int *IDs = (unsigned int*)(malloc(mdatoms->homenr * sizeof(unsigned int)));
++            for (i = mdatoms->start; i < mdatoms->start + mdatoms->homenr; ++i)
++            {
++                if(cr->nnodes == 1)
++                    IDs[i] = i;
++                else
++                    IDs[i] = cr->dd->gatindex[i];
++            }
++            bca_field field_ID = bca_create_arrayfield(IDs, bca_UNSIGNED,
++                                                       mdatoms->homenr, 1,
++                                                       mdatoms->homenr, false);
+ 
+-        if(!bca_append_field(container, "pos",
+-                             field_pos, bca_NOFLAG, bca_PRIVATE,
+-                             bca_SPLIT_DEFAULT, bca_MERGE_APPEND_VALUES))
+-        {
+-            gmx_fatal(FARGS, "Could not get append the data field in Decaf");
+-        }
+-        if(!bca_append_field(container, "ids",
+-                             field_ID, bca_NOFLAG, bca_PRIVATE,
+-                             bca_SPLIT_DEFAULT, bca_MERGE_APPEND_VALUES))
+-        {
+-            gmx_fatal(FARGS, "Could not get append the data field in Decaf");
+-        }
++            bca_constructdata container = bca_create_constructdata();
++
++            if(!bca_append_field(container, "pos",
++                                 field_pos, bca_NOFLAG, bca_PRIVATE,
++                                 bca_SPLIT_DEFAULT, bca_MERGE_APPEND_VALUES))
++            {
++                gmx_fatal(FARGS, "Could not get append the data field in Decaf");
++            }
++            if(!bca_append_field(container, "ids",
++                                 field_ID, bca_NOFLAG, bca_PRIVATE,
++                                 bca_SPLIT_DEFAULT, bca_MERGE_APPEND_VALUES))
++            {
++                gmx_fatal(FARGS, "Could not get append the data field in Decaf");
++            }
+ 
+ 
+-        dca_put(cr->decaf, container);
++            dca_put(cr->decaf, container);
+ 
+-        bca_free_field(field_pos);
+-        bca_free_field(field_ID);
+-        bca_free_constructdata(container);
+-        free(IDs);
+-        //fprintf(stdout, "Container sent\n");
++            bca_free_field(field_pos);
++            bca_free_field(field_ID);
++            bca_free_constructdata(container);
++            free(IDs);
++            //fprintf(stdout, "Container sent\n");
++        }
+ 
+         /*  ################## END TRAJECTORY OUTPUT ################ */
+ 
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index 74eb7f1..bf3699b 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -629,16 +629,7 @@ int cmain(int argc, char *argv[])
+     MPI_Init(&argc, &argv);
+     dca_decaf decaf = dca_create_decaf(MPI_COMM_WORLD);
+     fprintf(stdout,"Creation of Decaf completed\n");
+-    /*int out_link = 0;
+-    int in_link = 0;
+-    dca_append_workflow_node(decaf, 0, 4, "gmx", 0, NULL, 1, &out_link);
+-    dca_append_workflow_node(decaf, 6, 2, "treatment", 1, &in_link, 0, NULL);
+-    dca_append_workflow_link(decaf, 0, 1, 4, 2, "dflow",
+-                             path, "proc", "block");
+-
+-    fprintf(stdout,"Creation of the workflow completed\n");
+-    dca_init_decaf(decaf);*/
+-    //dca_init_from_json(decaf, "/examples/gromacs/wflow_gromacs.json");
++
+     dca_init_from_json(decaf, "wflow_gromacs.json");
+     if(decaf == NULL)
+         fprintf(stdout, "ERROR : fail to intialize decaf.\n");
+@@ -661,6 +652,13 @@ int cmain(int argc, char *argv[])
+     }
+ 
+     cr = init_par_decaf(&argc, &argv, decaf);
++    cr->forceIds = NULL;    // Ids of atoms to steer
++    cr->nbIds = 0;
++    cr->force = NULL;       // force vector to apply
++    cr->stepDecaf = 100;    // Do a get/put every stepDecaf iteration
++    cr->firstStep = true;   // Marker to signal the first time we call Decaf.
++                            // Needed not to do a get on the first iteration.
++    cr->iteration = 0;      // step in the simulation loop
+ 
+     if (MASTER(cr))
+     {
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index 88f6aa6..0bbfe75 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -110,6 +110,103 @@
+ #include "nbnxn_cuda_data_mgmt.h"
+ #include "nbnxn_cuda/nbnxn_cuda.h"
+ 
++
++#include <gmx_ga2la.h>
++
++void steer_from_decaf(t_commrec *cr, rvec *forces)
++{
++    // We don't do a get ont he first iteration to avoid deadlock
++    if(cr->firstStep)
++    {
++        cr->firstStep = false;
++        return;
++    }
++
++    if(cr->iteration % cr->stepDecaf == 0)
++    {
++        //Getting the information from the Graph
++        unsigned int nb_data = 0;
++        bca_constructdata* in_data = dca_get(cr->decaf, &nb_data);
++        if(in_data == NULL)
++        {
++            fprintf(stderr, "ERROR : no force received by the simulation. Abording\n");
++            MPI_Abort(MPI_COMM_WORLD, 0);
++        }
++
++        bca_field fieldForce = bca_get_arrayfield(in_data[0], "force", bca_FLOAT);
++
++        if(!fieldForce)
++        {
++            fprintf(stderr, "Error: the field \'force\' is not present in the data model. Abording\n");
++            MPI_Abort(MPI_COMM_WORLD, 0);
++        }
++
++        size_t size;
++        float* arrayForce = bca_get_array(fieldForce, bca_FLOAT, &size);
++
++        //We copy the force so we can apply it when not in a decaf iteration
++        if( cr->force == NULL )
++            cr->force = (float*)malloc(size * sizeof(float));
++        memcpy(cr->force, arrayForce, size * sizeof(float));
++
++        if(!cr->forceIds) //We have not received the IDs yet
++        {
++            bca_field fieldIds = bca_get_arrayfield(in_data[0], "ids", bca_INT);
++            if(!fieldIds)
++            {
++                fprintf(stderr, "Error: the field \'ids\' is not present in the data model. Abording\n");
++                MPI_Abort(MPI_COMM_WORLD, 0);
++            }
++
++            // Saving the Ids that we will use at each iteration
++            cr->forceIds = (int*)malloc(size * sizeof(int));
++            size_t size;
++            float* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
++            cr->nbIds = size;
++            memcpy(cr->forceIds, arrayIds, size * sizeof(int));
++
++            bca_free_field(fieldIds);
++
++        }
++
++
++        bca_free_field(fieldForce);
++        bca_free_constructdata(in_data[0]);
++
++    }
++
++    // Appying the forces if we have everything required
++    if(cr->force && cr->forceIds)
++    {
++        int i;
++        for(i = 0; i < cr->nbIds; i++)
++        {
++            int index = cr->forceIds[i];
++            int local_index = -1;
++            int cell_id = -1;
++            if(cr->dd == NULL) // No domain decomposition, 1 MPI rank
++            {
++                cell_id = 0;
++                local_index = index;
++            }
++            else if( ga2la_get_home(cr->dd->ga2la, index, &local_index) )
++                cell_id = 0;
++
++            if(0==cell_id) //The particule is treated by the current node
++            {
++                float fx = 1000.0 * cr->force[0];
++                float fy = 1000.0 * cr->force[1];
++                float fz = 1000.0 * cr->force[2];
++
++                forces[local_index][0] += fx;
++                forces[local_index][1] += fy;
++                forces[local_index][2] += fz;
++            }
++        }
++    }
++}
++
++
+ #if 0
+ typedef struct gmx_timeprint {
+ 
+@@ -1328,6 +1425,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
+ 
+     if (bDoForces)
+     {
++        steer_from_decaf(cr, f);
++
+         /* Communicate the forces */
+         if (PAR(cr))
+         {
+@@ -1879,6 +1978,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
+                                 inputrec->ePBC == epbcNONE ? NULL : &pbc);
+         }
+ 
++        steer_from_decaf(cr, f);
++
+         /* Communicate the forces */
+         if (PAR(cr))
+         {
+-- 
+2.1.4
+
+
+From 4d295e7eff1f405464b4628b8a7346886a455c76 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 24 Aug 2016 11:26:38 -0500
+Subject: [PATCH 25/29] Make the steering part optional
+
+---
+ src/mdlib/sim_util.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index 0bbfe75..6a4f308 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -127,11 +127,8 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+         //Getting the information from the Graph
+         unsigned int nb_data = 0;
+         bca_constructdata* in_data = dca_get(cr->decaf, &nb_data);
+-        if(in_data == NULL)
+-        {
+-            fprintf(stderr, "ERROR : no force received by the simulation. Abording\n");
+-            MPI_Abort(MPI_COMM_WORLD, 0);
+-        }
++        if(in_data == NULL || nb_data == 0)
++            return; // No steering available
+ 
+         bca_field fieldForce = bca_get_arrayfield(in_data[0], "force", bca_FLOAT);
+ 
+-- 
+2.1.4
+
+
+From f13fcceddeeedb2cb04a40a2b2fbfc0396018b22 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 24 Aug 2016 13:10:54 -0500
+Subject: [PATCH 26/29] Add printf for debuging\n
+
+---
+ src/mdlib/sim_util.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index 6a4f308..b5b084f 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -118,17 +118,23 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+     // We don't do a get ont he first iteration to avoid deadlock
+     if(cr->firstStep)
+     {
++        fprintf(stderr, "First iteration, we don't do anything\n");
+         cr->firstStep = false;
++        cr->iteration += 1;
+         return;
+     }
+ 
+     if(cr->iteration % cr->stepDecaf == 0)
+     {
++        fprintf(stderr, "Decaf iteration\n");
+         //Getting the information from the Graph
+         unsigned int nb_data = 0;
+         bca_constructdata* in_data = dca_get(cr->decaf, &nb_data);
+         if(in_data == NULL || nb_data == 0)
++        {
++            fprintf(stderr, "Steering is not connected\n");
+             return; // No steering available
++        }
+ 
+         bca_field fieldForce = bca_get_arrayfield(in_data[0], "force", bca_FLOAT);
+ 
+@@ -140,6 +146,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+ 
+         size_t size;
+         float* arrayForce = bca_get_array(fieldForce, bca_FLOAT, &size);
++        fprintf(stderr, "Reception of an array of force of size %u\n", size);
+ 
+         //We copy the force so we can apply it when not in a decaf iteration
+         if( cr->force == NULL )
+@@ -159,6 +166,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+             cr->forceIds = (int*)malloc(size * sizeof(int));
+             size_t size;
+             float* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
++            fprintf(stderr, "Reception of an array of Ids of size %u\n", size);
+             cr->nbIds = size;
+             memcpy(cr->forceIds, arrayIds, size * sizeof(int));
+ 
+@@ -171,10 +179,13 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+         bca_free_constructdata(in_data[0]);
+ 
+     }
++    else
++        fprintf(stderr, "non Decaf iteration\n");
+ 
+     // Appying the forces if we have everything required
+     if(cr->force && cr->forceIds)
+     {
++        fprintf(stderr, "Application of the forces\n");
+         int i;
+         for(i = 0; i < cr->nbIds; i++)
+         {
+@@ -200,7 +211,9 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+                 forces[local_index][2] += fz;
+             }
+         }
++        fprintf(stderr, "Application of the forces done\n");
+     }
++    cr->iteration += 1;
+ }
+ 
+ 
+-- 
+2.1.4
+
+
+From f498454818e78c8db4fe5010646888277ea59cfc Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 24 Aug 2016 13:29:51 -0500
+Subject: [PATCH 27/29] bugfix segfault
+
+---
+ src/mdlib/sim_util.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index b5b084f..4907474 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -163,10 +163,10 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+             }
+ 
+             // Saving the Ids that we will use at each iteration
+-            cr->forceIds = (int*)malloc(size * sizeof(int));
+             size_t size;
+             float* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
+             fprintf(stderr, "Reception of an array of Ids of size %u\n", size);
++            cr->forceIds = (int*)malloc(size * sizeof(int));
+             cr->nbIds = size;
+             memcpy(cr->forceIds, arrayIds, size * sizeof(int));
+ 
+-- 
+2.1.4
+
+
+From 98c723d79b6489788b82381583afddcdeb528e00 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 24 Aug 2016 14:09:59 -0500
+Subject: [PATCH 28/29] Remove the printf
+
+---
+ src/mdlib/sim_util.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index 4907474..7576b5b 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -126,7 +126,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+ 
+     if(cr->iteration % cr->stepDecaf == 0)
+     {
+-        fprintf(stderr, "Decaf iteration\n");
+         //Getting the information from the Graph
+         unsigned int nb_data = 0;
+         bca_constructdata* in_data = dca_get(cr->decaf, &nb_data);
+@@ -146,7 +145,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+ 
+         size_t size;
+         float* arrayForce = bca_get_array(fieldForce, bca_FLOAT, &size);
+-        fprintf(stderr, "Reception of an array of force of size %u\n", size);
+ 
+         //We copy the force so we can apply it when not in a decaf iteration
+         if( cr->force == NULL )
+@@ -165,7 +163,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+             // Saving the Ids that we will use at each iteration
+             size_t size;
+             float* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
+-            fprintf(stderr, "Reception of an array of Ids of size %u\n", size);
+             cr->forceIds = (int*)malloc(size * sizeof(int));
+             cr->nbIds = size;
+             memcpy(cr->forceIds, arrayIds, size * sizeof(int));
+@@ -179,13 +176,10 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+         bca_free_constructdata(in_data[0]);
+ 
+     }
+-    else
+-        fprintf(stderr, "non Decaf iteration\n");
+ 
+     // Appying the forces if we have everything required
+     if(cr->force && cr->forceIds)
+     {
+-        fprintf(stderr, "Application of the forces\n");
+         int i;
+         for(i = 0; i < cr->nbIds; i++)
+         {
+@@ -211,7 +205,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+                 forces[local_index][2] += fz;
+             }
+         }
+-        fprintf(stderr, "Application of the forces done\n");
+     }
+     cr->iteration += 1;
+ }
+-- 
+2.1.4
+
+
+From 1c6f1001de7dcdc80495819b56c06fb564cf34b6 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 24 Aug 2016 14:53:05 -0500
+Subject: [PATCH 29/29] Manage the terminate signal
+
+---
+ include/types/commrec.h | 1 +
+ src/kernel/md.c         | 3 +++
+ src/kernel/mdrun.c      | 1 +
+ src/mdlib/sim_util.c    | 1 +
+ 4 files changed, 6 insertions(+)
+
+diff --git a/include/types/commrec.h b/include/types/commrec.h
+index ffa25d0..20333ac 100644
+--- a/include/types/commrec.h
++++ b/include/types/commrec.h
+@@ -307,6 +307,7 @@ typedef struct {
+     bool firstStep; // Marker to signal the first time we call Decaf.
+                     // Needed not to do a get on the first iteration.
+     int iteration;  // simulation step
++    bool terminated;// Received the quit message
+ 
+ } t_commrec;
+ 
+diff --git a/src/kernel/md.c b/src/kernel/md.c
+index 25ab84a..98e7927 100644
+--- a/src/kernel/md.c
++++ b/src/kernel/md.c
+@@ -1574,6 +1574,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
+         //fprintf(stdout, "Creation of the data model...\n");
+         if(cr-> iteration % cr->stepDecaf == 0)
+         {
++            if(cr->terminated)
++                break; // Leaving the loop
++
+             bca_field field_pos = bca_create_arrayfield(state->x, bca_FLOAT,
+                                                         mdatoms->homenr * 3, 3,
+                                                         mdatoms->homenr * 3, false);
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index bf3699b..2885b31 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -659,6 +659,7 @@ int cmain(int argc, char *argv[])
+     cr->firstStep = true;   // Marker to signal the first time we call Decaf.
+                             // Needed not to do a get on the first iteration.
+     cr->iteration = 0;      // step in the simulation loop
++    cr->terminated = false;
+ 
+     if (MASTER(cr))
+     {
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index 7576b5b..c34a94c 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -132,6 +132,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+         if(in_data == NULL || nb_data == 0)
+         {
+             fprintf(stderr, "Steering is not connected\n");
++            cr->terminated = true;
+             return; // No steering available
+         }
  
 -- 
 2.1.4

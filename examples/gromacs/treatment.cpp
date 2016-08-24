@@ -212,7 +212,7 @@ void treatment1(Decaf* decaf)
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
-        if(iteration % 100 == 0 && in_data[0]->hasData("domain_block"))
+        if(in_data[0]->hasData("domain_block"))
         {
             // Getting the grid info
             BlockField blockField  = in_data[0]->getFieldData<BlockField>("domain_block");
@@ -334,6 +334,7 @@ void treatment1(Decaf* decaf)
             damaris_end_iteration();
         }
 
+        decaf->put(in_data[0]);
 
         iteration++;
     }

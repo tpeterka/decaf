@@ -106,16 +106,16 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
     // Extension of the box as these box are the strict box of the first frame
     // so even with some movements the model is still in the box
 
-    /*float dX = ( globalPos[3] - globalPos[0] ) * 0.2;
-    float dY = ( globalPos[4] - globalPos[1] ) * 0.2;
-    float dZ = ( globalPos[5] - globalPos[2] ) * 0.2;
+    float dX = ( globalPos[3] ) * 0.2;
+    float dY = ( globalPos[4] ) * 0.2;
+    float dZ = ( globalPos[5] ) * 0.2;
 
     globalPos[0] -= dX;
     globalPos[1] -= dY;
     globalPos[2] -= dZ;
     globalPos[3] += dX;
     globalPos[4] += dY;
-    globalPos[5] += dZ;*/
+    globalPos[5] += dZ;
 
     globalExtends[0] = 0;
     globalExtends[1] = 0;

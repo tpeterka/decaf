@@ -399,6 +399,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                     if (ready_types[i] & DECAF_LINK)
                     {
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
+                        fprintf(stderr, "Forwarding a quit message by a link\n");
                     }
                 }
             }
