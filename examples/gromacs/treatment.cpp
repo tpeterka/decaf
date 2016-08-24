@@ -67,6 +67,44 @@ unsigned int lineariseCoord(unsigned int x, unsigned int y, unsigned int z,
     return x + y*dx + z*dx*dy;
 }
 
+std::set<int> filterIds = {  109, 110, 111, 112, 113, 114,
+                                115, 116, 117, 118, 119, 120
+                             }; //HARD CODED for SimpleWater example
+
+#define MAX_SIZE_REQUEST 2048
+typedef struct
+{
+    int type;                   //Target absolute in space or relative to a reference point
+    float target[3];            //Coordonates of the absolute target
+    char targetRequest[2048];   //Request of the
+}Target;
+
+std::vector<Target> targets;
+
+void loadTargets()
+{
+    Target target;
+    target.target[0] = 4.0;
+    target.target[1] = 6.0;
+    target.target[2] = 20.0;
+    targets.push_back(target);
+
+    target.target[0] = 23.0;
+    target.target[1] = 6.0;
+    target.target[2] = 20.0;
+    targets.push_back(target);
+
+    target.target[0] = 23.0;
+    target.target[1] = 38.0;
+    target.target[2] = 20.0;
+    targets.push_back(target);
+
+    target.target[0] = 4.0;
+    target.target[1] = 38.0;
+    target.target[2] = 20.0;
+    targets.push_back(target);
+}
+
 void posToFile(float* pos, int nbParticules, const string filename)
 {
     ofstream file;
@@ -172,7 +210,7 @@ void compteBBox(float* pos, int nbPos)
     }
 }
 
-void updateGrid(int* grid, int x, int y, int z, unsigned int DX, unsigned int DY, unsigned int DZ)
+void updateGrid(int* grid, int x, int y, int z, unsigned int DX, unsigned int DY, unsigned int DZ, int increment)
 {
     for(int i = -1; i < 2; i++)
     {
@@ -184,7 +222,7 @@ void updateGrid(int* grid, int x, int y, int z, unsigned int DX, unsigned int DY
                 int localY = y+j;
                 int localZ = z+k;
                 if(localX >= 0 && localX < DX && localY >= 0 && localY < DY && localZ >= 0 && localZ < DZ)
-                    grid[lineariseCoord(localX,localY,localZ,DX,DY,DZ)] += 1;
+                    grid[lineariseCoord(localX,localY,localZ,DX,DY,DZ)] += increment;
             }
         }
     }
@@ -202,6 +240,8 @@ void treatment1(Decaf* decaf)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     int iteration = 0;
+
+    loadTargets();
 
     while (decaf->get(in_data))
     {
@@ -247,8 +287,14 @@ void treatment1(Decaf* decaf)
                 ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
                 float* pos = posField.getArray();
 
+                ArrayFieldu idsField = in_data[0]->getFieldData<ArrayFieldu>("ids");
+                unsigned int* ids = idsField.getArray();
+
                 for(int i = 0; i < nbMorton; i++)
                 {
+                    if(filterIds.count(ids[i]) == 0)
+                        continue;
+
                     unsigned int x,y,z;
                     Morton_3D_Decode_10bit(morton[i], x, y, z);
 
@@ -281,8 +327,30 @@ void treatment1(Decaf* decaf)
                     //GRID(localx,localy,localz) = 1; // TODO : get the full formulation
                     //grid[lineariseCoord(localx,localy,localz,lExtends[3],lExtends[4],lExtends[5])] += 1;
                     //fprintf(stderr,"%i %i %i\n", localx, localy, localz);
-                    updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5]);
+                    updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5],1);
                 }
+
+                // Adding the cells of the targets
+                for(unsigned int i = 0; i < targets.size(); i++)
+                {
+                    if(block->isInLocalBlock(targets[i].target[0], targets[i].target[1],targets[i].target[2]))
+                    {
+                        float gridspace = blockField.getBlock()->getGridspace();
+                        float *box = blockField.getBlock()->getGlobalBBox();
+                        //Using cast from float to unsigned int to keep the lower int
+                        unsigned int cellX = (unsigned int)((targets[i].target[0] - box[0]) / gridspace);
+                        unsigned int cellY = (unsigned int)((targets[i].target[1] - box[1]) / gridspace);
+                        unsigned int cellZ = (unsigned int)((targets[i].target[2] - box[2]) / gridspace);
+
+                        int localx, localy, localz;
+                        localx = cellX - lExtends[0];
+                        localy = cellY - lExtends[1];
+                        localz = cellZ - lExtends[2];
+
+                        updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5], 10);
+                    }
+                }
+
             }
 
             int counter = 0;

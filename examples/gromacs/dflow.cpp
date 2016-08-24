@@ -106,16 +106,16 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
     // Extension of the box as these box are the strict box of the first frame
     // so even with some movements the model is still in the box
 
-    float dX = ( globalPos[3] ) * 0.2;
-    float dY = ( globalPos[4] ) * 0.2;
-    float dZ = ( globalPos[5] ) * 0.2;
+    float dX = ( globalPos[3] ) * 1.f;
+    float dY = ( globalPos[4] ) * 1.f;
+    float dZ = ( globalPos[5] ) * 1.f;
 
     globalPos[0] -= dX;
     globalPos[1] -= dY;
     globalPos[2] -= dZ;
-    globalPos[3] += dX;
-    globalPos[4] += dY;
-    globalPos[5] += dZ;
+    globalPos[3] += 2*dX;
+    globalPos[4] += 2*dY;
+    globalPos[5] += 2*dZ;
 
     globalExtends[0] = 0;
     globalExtends[1] = 0;
@@ -182,7 +182,7 @@ extern "C"
         //TODO : find a way to pass the value as a global argument
         BlockField globalBox;
         string model("SimplePeptideWater");
-        float gridspace = 1.0;
+        float gridspace = 0.5;
         updateGlobalBox(model, globalBox, gridspace);
 
         // We compute the morton codes which will be used

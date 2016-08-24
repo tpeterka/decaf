@@ -84,7 +84,7 @@ std::vector<int> arrayIds = {  109, 110, 111, 112, 113, 114,
 std::vector<Target> targets;
 
 float distanceValidTarget = 0.5;
-float maxTotalForces = 1.0;
+float maxTotalForces = 1.f;
 
 void loadTargets()
 {
