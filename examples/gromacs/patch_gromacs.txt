@@ -1,7 +1,7 @@
 From b99a67de86247a6f4a3f22825024cd874cf0e021 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 10:39:56 -0500
-Subject: [PATCH 01/29] Patch with dflow and treatment in the simulation code.
+Subject: [PATCH 01/30] Patch with dflow and treatment in the simulation code.
 
 ---
  CMakeLists.txt                   |  16 ++++
@@ -644,7 +644,7 @@ index eb30fc9..4dbf5ea 100644
 From 99ba3e127d18b1dbdac77046daf2e6d46ac2631e Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:10:36 -0500
-Subject: [PATCH 02/29] Check the status of MPI
+Subject: [PATCH 02/30] Check the status of MPI
 
 ---
  CMakeLists.txt | 6 +++++-
@@ -674,7 +674,7 @@ index 3909fd3..f3ac23f 100644
 From eaa854ab810c29f3e0ecd8c67d7dfbcd3c7602ae Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 13:32:54 -0500
-Subject: [PATCH 03/29] Add extra info
+Subject: [PATCH 03/30] Add extra info
 
 ---
  CMakeLists.txt | 5 +++++
@@ -703,7 +703,7 @@ index f3ac23f..089edd9 100644
 From 634e6e124fc4f4c06f8aab8c10536427f1d56b67 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:10:40 -0500
-Subject: [PATCH 04/29] Add mpi checks
+Subject: [PATCH 04/30] Add mpi checks
 
 ---
  CMakeLists.txt           | 2 +-
@@ -742,7 +742,7 @@ index 28d23d8..ce4b299 100644
 From 631fb2aa7e19d3a388ed9956d84e6542651959fc Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:16:59 -0500
-Subject: [PATCH 05/29] Add mpi checks
+Subject: [PATCH 05/30] Add mpi checks
 
 ---
  cmake/gmxManageMPI.cmake | 3 +++
@@ -774,7 +774,7 @@ index ce4b299..1e3af82 100644
 From d49d34c8c25255bcda600bf22caa185db297a4c9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:33:54 -0500
-Subject: [PATCH 06/29] Add infos
+Subject: [PATCH 06/30] Add infos
 
 ---
  CMakeLists.txt | 5 +++++
@@ -803,7 +803,7 @@ index b2e82d8..b14d7ec 100644
 From 2ac35154d1f8bcce44a9ab466404a3ee92b91f12 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 9 Jun 2016 14:37:44 -0500
-Subject: [PATCH 07/29] Force MPI
+Subject: [PATCH 07/30] Force MPI
 
 ---
  CMakeLists.txt | 4 ++--
@@ -831,7 +831,7 @@ index b14d7ec..4649e3b 100644
 From 9668b8e9a4fd9f9af762f88b3844b84bf5ac02b0 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 10:53:34 -0500
-Subject: [PATCH 08/29] Remove the barrier
+Subject: [PATCH 08/30] Remove the barrier
 
 ---
  include/network.h    |  3 +++
@@ -947,7 +947,7 @@ index 4dbf5ea..38d0acf 100644
 From 6bb435dbb51329e5179d8fc37fcd3c2c5c9122df Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 11:10:23 -0500
-Subject: [PATCH 09/29] Check linkage
+Subject: [PATCH 09/30] Check linkage
 
 ---
  src/gmxlib/network.c | 1 -
@@ -972,7 +972,7 @@ index be83348..0bded05 100644
 From 076cfedf4249a44a87e65db7cfebc4045b9cb270 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 16 Jun 2016 13:34:04 -0500
-Subject: [PATCH 10/29] Attempt to fix crash during finalize
+Subject: [PATCH 10/30] Attempt to fix crash during finalize
 
 ---
  src/gmxlib/network.c | 5 +++--
@@ -1022,7 +1022,7 @@ index 38d0acf..d0094d9 100644
 From a920a1ed24ab7689c2d6fb5891fb8ea3a32f7bf9 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:07:04 -0500
-Subject: [PATCH 11/29] Add a Barrier before clearing everything
+Subject: [PATCH 11/30] Add a Barrier before clearing everything
 
 ---
  src/kernel/mdrun.c | 4 +++-
@@ -1057,7 +1057,7 @@ index d0094d9..7c00299 100644
 From dbb6d99220e7b293d453ae74fe2c62af0fb43c56 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:34:39 -0500
-Subject: [PATCH 12/29] Fix the name of the dflow library
+Subject: [PATCH 12/30] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1083,7 +1083,7 @@ index 7c00299..7cbe33a 100644
 From 4fccd84f8007624b8d368838ec4bb269d0247cc8 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:39:41 -0500
-Subject: [PATCH 13/29] Fix the name of the dflow library
+Subject: [PATCH 13/30] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1109,7 +1109,7 @@ index 7cbe33a..e8211a7 100644
 From 7d667dc746ca675986fae961700bf07271011081 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:49:38 -0500
-Subject: [PATCH 14/29] Fix the name of the dflow library
+Subject: [PATCH 14/30] Fix the name of the dflow library
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1135,7 +1135,7 @@ index e8211a7..9934ae6 100644
 From efca0d61b17dc47a4ebd3b9e440a743da385a330 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 13 Jul 2016 13:56:34 -0500
-Subject: [PATCH 15/29] Fix the graph
+Subject: [PATCH 15/30] Fix the graph
 
 ---
  src/kernel/mdrun.c | 8 ++++----
@@ -1167,7 +1167,7 @@ index 9934ae6..4d74f2f 100644
 From 12e44804a8cdab3444bd465952262ba3709f810f Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 15:02:59 -0500
-Subject: [PATCH 16/29] Remove the workflow definition from the code and read
+Subject: [PATCH 16/30] Remove the workflow definition from the code and read
  the JSON file instead
 
 ---
@@ -1204,7 +1204,7 @@ index 4d74f2f..e206a3c 100644
 From dd3d5a2bf72a6ea7e8c0bb7d023926b8aab2d507 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:02:13 -0500
-Subject: [PATCH 17/29] Typo correction
+Subject: [PATCH 17/30] Typo correction
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1230,7 +1230,7 @@ index e206a3c..c0b9162 100644
 From bd9a75dedf3daf776ba81fa75637ae4555f06138 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:07:31 -0500
-Subject: [PATCH 18/29] Fix compilation error
+Subject: [PATCH 18/30] Fix compilation error
 
 ---
  src/kernel/mdrun.c | 4 ++--
@@ -1265,7 +1265,7 @@ index c0b9162..00d7d46 100644
 From 8af97b9e4f0ad2771aaf4fada79664822724ad48 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 22 Jul 2016 16:20:40 -0500
-Subject: [PATCH 19/29] Fix Hanging
+Subject: [PATCH 19/30] Fix Hanging
 
 ---
  src/kernel/mdrun.c | 2 +-
@@ -1291,7 +1291,7 @@ index 00d7d46..09e2e35 100644
 From 2aeb66c176516bc0af5a77cd346e917bbd2c454b Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 25 Jul 2016 11:09:20 -0500
-Subject: [PATCH 20/29] Remove barrier
+Subject: [PATCH 20/30] Remove barrier
 
 ---
  src/kernel/mdrun.c | 1 -
@@ -1316,7 +1316,7 @@ index 09e2e35..5fa5c1f 100644
 From 791728ea9448abd6ea037fffbffce5f99fab1dc1 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 25 Jul 2016 13:36:07 -0500
-Subject: [PATCH 21/29] Change json file
+Subject: [PATCH 21/30] Change json file
 
 ---
  src/kernel/mdrun.c | 3 ++-
@@ -1343,7 +1343,7 @@ index 5fa5c1f..74eb7f1 100644
 From c64c5cc6bc2e859a758dbd908bc83ed941eb1560 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 11 Aug 2016 13:51:47 -0500
-Subject: [PATCH 22/29] Add the ids to the data model
+Subject: [PATCH 22/30] Add the ids to the data model
 
 ---
  src/kernel/md.c | 23 +++++++++++++++++++++++
@@ -1402,7 +1402,7 @@ index 66f8180..e774987 100644
 From b19ebf876fe3ec76796a4a6eecd3d77528cd997f Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Fri, 12 Aug 2016 14:08:54 -0500
-Subject: [PATCH 23/29] Remove printf
+Subject: [PATCH 23/30] Remove printf
 
 ---
  src/kernel/md.c | 4 ++--
@@ -1437,7 +1437,7 @@ index e774987..561e933 100644
 From 435fabf986a1b643f2c787ec2299cdcc003e119f Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 24 Aug 2016 11:20:54 -0500
-Subject: [PATCH 24/29] Add the steering part to Gromacs
+Subject: [PATCH 24/30] Add the steering part to Gromacs
 
 ---
  include/types/commrec.h |   8 ++++
@@ -1722,7 +1722,7 @@ index 88f6aa6..0bbfe75 100644
 From 4d295e7eff1f405464b4628b8a7346886a455c76 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 24 Aug 2016 11:26:38 -0500
-Subject: [PATCH 25/29] Make the steering part optional
+Subject: [PATCH 25/30] Make the steering part optional
 
 ---
  src/mdlib/sim_util.c | 7 ++-----
@@ -1753,7 +1753,7 @@ index 0bbfe75..6a4f308 100644
 From f13fcceddeeedb2cb04a40a2b2fbfc0396018b22 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 24 Aug 2016 13:10:54 -0500
-Subject: [PATCH 26/29] Add printf for debuging\n
+Subject: [PATCH 26/30] Add printf for debuging\n
 
 ---
  src/mdlib/sim_util.c | 13 +++++++++++++
@@ -1834,7 +1834,7 @@ index 6a4f308..b5b084f 100644
 From f498454818e78c8db4fe5010646888277ea59cfc Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 24 Aug 2016 13:29:51 -0500
-Subject: [PATCH 27/29] bugfix segfault
+Subject: [PATCH 27/30] bugfix segfault
 
 ---
  src/mdlib/sim_util.c | 2 +-
@@ -1863,7 +1863,7 @@ index b5b084f..4907474 100644
 From 98c723d79b6489788b82381583afddcdeb528e00 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 24 Aug 2016 14:09:59 -0500
-Subject: [PATCH 28/29] Remove the printf
+Subject: [PATCH 28/30] Remove the printf
 
 ---
  src/mdlib/sim_util.c | 7 -------
@@ -1926,7 +1926,7 @@ index 4907474..7576b5b 100644
 From 1c6f1001de7dcdc80495819b56c06fb564cf34b6 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Wed, 24 Aug 2016 14:53:05 -0500
-Subject: [PATCH 29/29] Manage the terminate signal
+Subject: [PATCH 29/30] Manage the terminate signal
 
 ---
  include/types/commrec.h | 1 +
@@ -1984,6 +1984,62 @@ index 7576b5b..c34a94c 100644
 +            cr->terminated = true;
              return; // No steering available
          }
+ 
+-- 
+2.1.4
+
+
+From 24ffd462b5f1039389b78de46240cd9bc3c55f3c Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Thu, 25 Aug 2016 11:22:09 -0500
+Subject: [PATCH 30/30] Add the support for pme nodes with Decaf
+
+---
+ src/mdlib/pme.c | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/src/mdlib/pme.c b/src/mdlib/pme.c
+index 2a1f6af..b880f4b 100644
+--- a/src/mdlib/pme.c
++++ b/src/mdlib/pme.c
+@@ -4371,6 +4371,38 @@ int gmx_pmeonly(gmx_pme_t pme,
+                                     cycles);
+ 
+         count++;
++
++        // Decaf part
++        // We dequeue the messages do avoid overflow
++        // and send empty messages to unlock the rest of the workflow
++        if(cr->firstStep)
++        {
++            fprintf(stderr, "First iteration, we don't do anything\n");
++            cr->firstStep = false;
++            cr->iteration += 1;
++        }
++
++        if(cr->iteration % cr->stepDecaf == 0)
++        {
++            //Getting the information from the Graph
++            unsigned int nb_data = 0;
++            bca_constructdata* in_data = dca_get(cr->decaf, &nb_data);
++            if(in_data == NULL || nb_data == 0)
++            {
++                fprintf(stderr, "Steering is not connected\n");
++                cr->terminated = true;
++                break; // No steering available
++            }
++
++            bca_free_constructdata(in_data[0]);
++
++            // Sending empty data
++            bca_constructdata container = bca_create_constructdata();
++            dca_put(cr->decaf, container);
++
++            bca_free_constructdata(container);
++        }
++
+     } /***** end of quasi-loop, we stop with the break above */
+     while (TRUE);
  
 -- 
 2.1.4

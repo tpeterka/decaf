@@ -67,9 +67,7 @@ unsigned int lineariseCoord(unsigned int x, unsigned int y, unsigned int z,
     return x + y*dx + z*dx*dy;
 }
 
-std::set<int> filterIds = {  109, 110, 111, 112, 113, 114,
-                                115, 116, 117, 118, 119, 120
-                             }; //HARD CODED for SimpleWater example
+std::set<int> filterIds;
 
 #define MAX_SIZE_REQUEST 2048
 typedef struct
@@ -81,28 +79,86 @@ typedef struct
 
 std::vector<Target> targets;
 
-void loadTargets()
+void loadTargets(std::string profile)
 {
-    Target target;
-    target.target[0] = 4.0;
-    target.target[1] = 6.0;
-    target.target[2] = 20.0;
-    targets.push_back(target);
+    if(profile.compare(std::string("SimplePeptideWater")) == 0)
+    {
+        Target target;
+        target.target[0] = 4.0;
+        target.target[1] = 6.0;
+        target.target[2] = 20.0;
+        targets.push_back(target);
 
-    target.target[0] = 23.0;
-    target.target[1] = 6.0;
-    target.target[2] = 20.0;
-    targets.push_back(target);
+        target.target[0] = 23.0;
+        target.target[1] = 6.0;
+        target.target[2] = 20.0;
+        targets.push_back(target);
 
-    target.target[0] = 23.0;
-    target.target[1] = 38.0;
-    target.target[2] = 20.0;
-    targets.push_back(target);
+        target.target[0] = 23.0;
+        target.target[1] = 38.0;
+        target.target[2] = 20.0;
+        targets.push_back(target);
 
-    target.target[0] = 4.0;
-    target.target[1] = 38.0;
-    target.target[2] = 20.0;
-    targets.push_back(target);
+        target.target[0] = 4.0;
+        target.target[1] = 38.0;
+        target.target[2] = 20.0;
+        targets.push_back(target);
+
+        filterIds = {  109, 110, 111, 112, 113, 114,
+                       115, 116, 117, 118, 119, 120
+                    }; //HARD CODED for SimpleWater example
+    }
+    else if(profile.compare(std::string("fepa")) == 0)
+    {
+        Target target;
+        target.target[0] = 50.649998;
+        target.target[1] = 40.020000;
+        target.target[2] = 74.940002;
+        targets.push_back(target);
+
+        target.target[0] = 57.994247;
+        target.target[1] = 42.744064;
+        target.target[2] = 75.205559;
+        targets.push_back(target);
+
+        target.target[0] = 58.028599;
+        target.target[1] = 39.480324;
+        target.target[2] = 62.716755;
+        targets.push_back(target);
+
+        target.target[0] = 58.175446;
+        target.target[1] = 36.721069;
+        target.target[2] = 59.135941;
+        targets.push_back(target);
+
+        target.target[0] = 60.568310;
+        target.target[1] = 35.987762;
+        target.target[2] = 56.373985;
+        targets.push_back(target);
+
+        target.target[0] = 57.443069;
+        target.target[1] = 41.200779;
+        target.target[2] = 52.448627;
+        targets.push_back(target);
+
+        target.target[0] = 60.272179;
+        target.target[1] = 41.596397;
+        target.target[2] = 41.934307;
+        targets.push_back(target);
+
+        target.target[0] = 58.013557;
+        target.target[1] = 49.347263;
+        target.target[2] = 14.191130;
+        targets.push_back(target);
+
+        //Ids for ENT and FE residues
+        for(int i = 69901; i <= 69953; i++)
+        {
+            filterIds.insert(i);
+        }
+    }
+
+
 }
 
 void posToFile(float* pos, int nbParticules, const string filename)
@@ -241,7 +297,8 @@ void treatment1(Decaf* decaf)
 
     int iteration = 0;
 
-    loadTargets();
+    string model("fepa");
+    loadTargets(model);
 
     while (decaf->get(in_data))
     {

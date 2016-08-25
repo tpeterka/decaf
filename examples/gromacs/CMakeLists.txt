@@ -34,6 +34,16 @@ ExternalProject_Add(gromacsmodify
     CMAKE_ARGS ${GROMACS_COMPILATION_OPTIONS}
 )
 
+set(GROMACS_COMPILATION_OPTIONS -DGMX_MPI=ON -DGMX_CPU_ACCELERATION:STRING=SSE -DGMX_THREAD_MPI=OFF -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}/examples/gromacs -DCMAKE_BUILD_TYPE:STRING=Release -DFFTWF_LIBRARY:PATH=${FFTW_PREFIX}/lib/libfftw3f.so)
+
+
+ExternalProject_Add(gromacs-4.5.5modify
+    PREFIX "gromacs-4.5.5-decaf"
+    URL ftp://ftp.gromacs.org/pub/gromacs/gromacs-4.5.5.tar.gz
+    PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patch_gromacs_4.5.5.txt
+    CMAKE_ARGS ${GROMACS_COMPILATION_OPTIONS}
+)
+
 add_executable              (prod_c_gromacs     prod_c.c)
 add_executable              (treatment          treatment.cpp)
 add_executable              (dflow_gromacs      dflow.cpp)
@@ -59,7 +69,7 @@ set_target_properties (treatment PROPERTIES LINK_FLAGS "-Wl,-export-dynamic")
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
     WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-  install(FILES GROMACS_TEST gromacs_workflow.py decaf_grid.xml
+  install(FILES GROMACS_TEST FEPA_TEST gromacs_workflow.py decaf_grid.xml
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/gromacs/
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_WRITE GROUP_EXECUTE

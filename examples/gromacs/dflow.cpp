@@ -97,6 +97,13 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
                         1283.0f, 1283.0f, 145.0f
                     };
     }
+    else if(profile.compare(std::string("fepa")) == 0)
+    {
+        globalPos = {
+                        0.0f, 0.0f, 0.0f,
+                        1283.0f, 1283.0f, 145.0f
+                    };
+    }
     else
     {
         std::cerr<<"ERROR : unknown profil, can't load a box"<<std::endl;
@@ -106,9 +113,9 @@ void updateGlobalBox(string& profile, BlockField& globalBox, float gridspace)
     // Extension of the box as these box are the strict box of the first frame
     // so even with some movements the model is still in the box
 
-    float dX = ( globalPos[3] ) * 1.f;
-    float dY = ( globalPos[4] ) * 1.f;
-    float dZ = ( globalPos[5] ) * 1.f;
+    float dX = ( globalPos[3] ) * 0.2f;
+    float dY = ( globalPos[4] ) * 0.2f;
+    float dZ = ( globalPos[5] ) * 0.2f;
 
     globalPos[0] -= dX;
     globalPos[1] -= dY;
@@ -181,7 +188,8 @@ extern "C"
 
         //TODO : find a way to pass the value as a global argument
         BlockField globalBox;
-        string model("SimplePeptideWater");
+        //string model("SimplePeptideWater");
+        string model("fepa");
         float gridspace = 0.5;
         updateGlobalBox(model, globalBox, gridspace);
 
@@ -198,6 +206,8 @@ extern "C"
 
         float* pos = posArray.getArray();
         int nbParticle = posArray->getNbItems();
+
+        compteBBox(pos, nbParticle);
 
         vector<float> filteredPos;
         vector<unsigned int> filteredIds;
