@@ -3,6 +3,8 @@ include(ExternalProject)
 
 # Damaris configuration library
 find_package(Damaris REQUIRED)
+include_directories(${DAMARIS_INCLUDE_DIR})
+list(APPEND DEP_LIBRARIES ${DAMARIS_LIBRARY})
 
 add_definitions(-DPARALLEL)
 list(APPEND DEP_LIBRARIES "stdc++" "rt" "dl")
@@ -22,8 +24,7 @@ else(VisIt_FOUND)
     message(STATUS "VisIt not found")
 endif(VisIt_FOUND)
 
-
-include_directories(${DAMARIS_INCLUDE_DIR})
+add_subdirectory(flowvr)
 
 set(GROMACS_COMPILATION_OPTIONS -DGMX_MPI=ON -DGMX_CPU_ACCELERATION:STRING=SSE4.1 -DGMX_OPENMP:BOOL=TRUE -DGMX_THREAD_MPI=OFF -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}/examples/gromacs -DCMAKE_BUILD_TYPE:STRING=Release -DFFTWF_LIBRARY:PATH=${FFTW_PREFIX}/lib/libfftw3f.so)
 
@@ -52,7 +53,7 @@ add_library                 (mod_dflow_gromacs  MODULE dflow.cpp)
 
 
 target_link_libraries       (treatment
-    ${libraries} decaf_transport decaf_datamodel ${DAMARIS_LIBRARY} ${DEP_LIBRARIES})
+    ${libraries} decaf_transport decaf_datamodel ${DEP_LIBRARIES})
 target_link_libraries       (dflow_gromacs
     ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 target_link_libraries       (targetmanager
