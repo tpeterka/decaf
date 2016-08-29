@@ -75,18 +75,17 @@ float distance(float* p1, float* p2)
 }
 
 std::set<int> filterIds;
-std::vector<int> arrayIds = {  109, 110, 111, 112, 113, 114,
-                               115, 116, 117, 118, 119, 120
-                            }; //HARD CODED for SimpleWater example
+std::vector<int> arrayIds; //HARD CODED for SimpleWater example
 
 std::vector<Target> targets;
 
 float distanceValidTarget = 0.5;
-float maxTotalForces = 1.f;
+float maxTotalForces = 3.f;
+std::string model;
 
-void loadTargets(std::string profile)
+void loadTargets()
 {
-    if(profile.compare(std::string("SimplePeptideWater")) == 0)
+    if(model.compare(std::string("SimplePeptideWater")) == 0)
     {
         Target target;
         target.target[0] = 4.0;
@@ -117,7 +116,7 @@ void loadTargets(std::string profile)
                       115, 116, 117, 118, 119, 120
                    }; //HARD CODED for SimpleWater example
     }
-    else if(profile.compare(std::string("fepa")) == 0)
+    else if(model.compare(std::string("fepa")) == 0)
     {
         Target target;
         target.target[0] = 50.649998;
@@ -161,7 +160,7 @@ void loadTargets(std::string profile)
         targets.push_back(target);
 
         //Ids for ENT and FE residues
-        for(int i = 69901; i <= 69953; i++)
+        for(int i = 69900; i <= 69952; i++)
         {
             filterIds.insert(i);
             arrayIds.push_back(i);
@@ -182,8 +181,7 @@ void target(Decaf* decaf)
 
     int iteration = 0;
 
-    string model("fepa");
-    loadTargets(model);
+    loadTargets();
 
     unsigned int currentTarget = 0;
 
@@ -246,8 +244,8 @@ void target(Decaf* decaf)
                 break;
             }
         }
-        fprintf(stderr, "Target position : %f %f %f\n", targetPos[0], targetPos[1], targetPos[2]);
-
+        fprintf(stderr, "[%i/%u] Target position : %f %f %f\n", currentTarget, targets.size(), targetPos[0], targetPos[1], targetPos[2]);
+        fprintf(stderr, "[%i/%u] Distance to target : %f\n", currentTarget, targets.size(), dist);
         // Computing the force direction
         float force[3];
         force[0] = targetPos[0] - avg[0];
@@ -330,6 +328,15 @@ int main(int argc,
     //make_wflow(workflow);
     Workflow::make_wflow_from_json(workflow, "wflow_gromacs.json");
 
+    if(argc != 4)
+    {
+        fprintf(stderr, "Usage : targetmanager profile maxforce disttotarget\n");
+        return 0;
+    }
+
+    model = string(argv[1]);
+    maxTotalForces = atof(argv[2]);
+    distanceValidTarget = atof(argv[3]);
 
     // run decaf
     run(workflow);

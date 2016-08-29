@@ -1,7 +1,7 @@
 From a63f12d76fff8c375040d0deccf7080da5417c98 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 25 Aug 2016 17:37:16 -0500
-Subject: [PATCH 1/2] Add decaf to Gromacs with steering
+Subject: [PATCH 1/8] Add decaf to Gromacs with steering
 
 ---
  CMakeLists.txt          |  25 ++++++
@@ -713,7 +713,7 @@ index 60ef80e..edccc3c 100644
 From 05d83d33a65f5f4d27f4c19c54738e11b6aaf3e4 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 25 Aug 2016 18:12:00 -0500
-Subject: [PATCH 2/2] Fix the double MPI_Init
+Subject: [PATCH 2/8] Fix the double MPI_Init
 
 ---
  src/gmxlib/network.c | 2 +-
@@ -732,6 +732,287 @@ index 252bf44..9cd986f 100644
  #endif
  #endif
    (void) MPI_Comm_size( dca_get_com(decaf), &mpi_num_nodes );
+-- 
+2.1.4
+
+
+From 6106361ba816e1b706fb4c4bae4202574f239e46 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Mon, 29 Aug 2016 10:37:24 -0500
+Subject: [PATCH 3/8] Fix data type
+
+---
+ src/mdlib/sim_util.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index edccc3c..455a319 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -148,7 +148,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+ 
+             // Saving the Ids that we will use at each iteration
+             size_t size;
+-            float* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
++            int* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
+             cr->forceIds = (int*)malloc(size * sizeof(int));
+             cr->nbIds = size;
+             memcpy(cr->forceIds, arrayIds, size * sizeof(int));
+-- 
+2.1.4
+
+
+From d199667645a0052c4691aa8eac5d999bc2352e74 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Mon, 29 Aug 2016 10:56:26 -0500
+Subject: [PATCH 4/8] Add debug message
+
+---
+ src/mdlib/sim_util.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index 455a319..f4178de 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -111,6 +111,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+ 
+     if(cr->iteration % cr->stepDecaf == 0)
+     {
++        fprintf(stderr, "Receiving data...\n");
+         //Getting the information from the Graph
+         unsigned int nb_data = 0;
+         bca_constructdata* in_data = dca_get(cr->decaf, &nb_data);
+@@ -121,6 +122,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+             return; // No steering available
+         }
+ 
++        fprintf(stderr,"Retrieving the force field\n");
+         bca_field fieldForce = bca_get_arrayfield(in_data[0], "force", bca_FLOAT);
+ 
+         if(!fieldForce)
+@@ -132,13 +134,18 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+         size_t size;
+         float* arrayForce = bca_get_array(fieldForce, bca_FLOAT, &size);
+ 
++        fprintf(stderr, "Reception of the array force of size %zu\n", size);
++
+         //We copy the force so we can apply it when not in a decaf iteration
+         if( cr->force == NULL )
+             cr->force = (float*)malloc(size * sizeof(float));
+         memcpy(cr->force, arrayForce, size * sizeof(float));
+ 
++        fprintf(stderr, "Copy of the force in local buffer done\n");
++
+         if(!cr->forceIds) //We have not received the IDs yet
+         {
++            fprintf(stderr, "Reception of the buffer of IDs\n");
+             bca_field fieldIds = bca_get_arrayfield(in_data[0], "ids", bca_INT);
+             if(!fieldIds)
+             {
+@@ -149,6 +156,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+             // Saving the Ids that we will use at each iteration
+             size_t size;
+             int* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
++            fprintf(stderr, "Rception of a force filter of size %zu\n", size);
+             cr->forceIds = (int*)malloc(size * sizeof(int));
+             cr->nbIds = size;
+             memcpy(cr->forceIds, arrayIds, size * sizeof(int));
+@@ -166,6 +174,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+     // Appying the forces if we have everything required
+     if(cr->force && cr->forceIds)
+     {
++        fprintf(stderr, "Applying force at iteration %i\n", cr->iteration);
+         int i;
+         for(i = 0; i < cr->nbIds; i++)
+         {
+@@ -191,6 +200,7 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+                 forces[local_index][2] += fz;
+             }
+         }
++        fprintf(stderr, "Force applied for iteration %i\n", cr->iteration);
+     }
+     cr->iteration += 1;
+ }
+-- 
+2.1.4
+
+
+From f54a92f3cbb6058fc4db49352255121233a1fbb6 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Mon, 29 Aug 2016 11:01:24 -0500
+Subject: [PATCH 5/8] Not apply forces
+
+---
+ src/mdlib/sim_util.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index f4178de..50bb15d 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -195,9 +195,9 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+                 float fy = 1000.0 * cr->force[1];
+                 float fz = 1000.0 * cr->force[2];
+ 
+-                forces[local_index][0] += fx;
+-                forces[local_index][1] += fy;
+-                forces[local_index][2] += fz;
++                //forces[local_index][0] += fx;
++                //forces[local_index][1] += fy;
++                //forces[local_index][2] += fz;
+             }
+         }
+         fprintf(stderr, "Force applied for iteration %i\n", cr->iteration);
+-- 
+2.1.4
+
+
+From 53ac9a08766456e0e3acb6f95e3dd69a8d4c4cf0 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Mon, 29 Aug 2016 11:12:30 -0500
+Subject: [PATCH 6/8] apply forces
+
+---
+ src/mdlib/sim_util.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index 50bb15d..f4178de 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -195,9 +195,9 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+                 float fy = 1000.0 * cr->force[1];
+                 float fz = 1000.0 * cr->force[2];
+ 
+-                //forces[local_index][0] += fx;
+-                //forces[local_index][1] += fy;
+-                //forces[local_index][2] += fz;
++                forces[local_index][0] += fx;
++                forces[local_index][1] += fy;
++                forces[local_index][2] += fz;
+             }
+         }
+         fprintf(stderr, "Force applied for iteration %i\n", cr->iteration);
+-- 
+2.1.4
+
+
+From 02deacb994cbd49e73d41c3e31ce3b54fe4eaa7d Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Mon, 29 Aug 2016 11:18:09 -0500
+Subject: [PATCH 7/8] Remove debug messages
+
+---
+ src/mdlib/sim_util.c | 10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/src/mdlib/sim_util.c b/src/mdlib/sim_util.c
+index f4178de..455a319 100644
+--- a/src/mdlib/sim_util.c
++++ b/src/mdlib/sim_util.c
+@@ -111,7 +111,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+ 
+     if(cr->iteration % cr->stepDecaf == 0)
+     {
+-        fprintf(stderr, "Receiving data...\n");
+         //Getting the information from the Graph
+         unsigned int nb_data = 0;
+         bca_constructdata* in_data = dca_get(cr->decaf, &nb_data);
+@@ -122,7 +121,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+             return; // No steering available
+         }
+ 
+-        fprintf(stderr,"Retrieving the force field\n");
+         bca_field fieldForce = bca_get_arrayfield(in_data[0], "force", bca_FLOAT);
+ 
+         if(!fieldForce)
+@@ -134,18 +132,13 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+         size_t size;
+         float* arrayForce = bca_get_array(fieldForce, bca_FLOAT, &size);
+ 
+-        fprintf(stderr, "Reception of the array force of size %zu\n", size);
+-
+         //We copy the force so we can apply it when not in a decaf iteration
+         if( cr->force == NULL )
+             cr->force = (float*)malloc(size * sizeof(float));
+         memcpy(cr->force, arrayForce, size * sizeof(float));
+ 
+-        fprintf(stderr, "Copy of the force in local buffer done\n");
+-
+         if(!cr->forceIds) //We have not received the IDs yet
+         {
+-            fprintf(stderr, "Reception of the buffer of IDs\n");
+             bca_field fieldIds = bca_get_arrayfield(in_data[0], "ids", bca_INT);
+             if(!fieldIds)
+             {
+@@ -156,7 +149,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+             // Saving the Ids that we will use at each iteration
+             size_t size;
+             int* arrayIds = bca_get_array(fieldIds, bca_INT, &size);
+-            fprintf(stderr, "Rception of a force filter of size %zu\n", size);
+             cr->forceIds = (int*)malloc(size * sizeof(int));
+             cr->nbIds = size;
+             memcpy(cr->forceIds, arrayIds, size * sizeof(int));
+@@ -174,7 +166,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+     // Appying the forces if we have everything required
+     if(cr->force && cr->forceIds)
+     {
+-        fprintf(stderr, "Applying force at iteration %i\n", cr->iteration);
+         int i;
+         for(i = 0; i < cr->nbIds; i++)
+         {
+@@ -200,7 +191,6 @@ void steer_from_decaf(t_commrec *cr, rvec *forces)
+                 forces[local_index][2] += fz;
+             }
+         }
+-        fprintf(stderr, "Force applied for iteration %i\n", cr->iteration);
+     }
+     cr->iteration += 1;
+ }
+-- 
+2.1.4
+
+
+From b621eaf1cf4ac4647f9ea7596d893ffd63531483 Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Mon, 29 Aug 2016 13:00:42 -0500
+Subject: [PATCH 8/8] Add the option of the decaf steps
+
+---
+ src/kernel/mdrun.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/kernel/mdrun.c b/src/kernel/mdrun.c
+index c974ab6..33034aa 100644
+--- a/src/kernel/mdrun.c
++++ b/src/kernel/mdrun.c
+@@ -408,6 +408,7 @@ int main(int argc,char *argv[])
+   int  nstepout=100;
+   int  nthreads=0; /* set to determine # of threads automatically */
+   int  resetstep=-1;
++  int  nstepdecaf=10;
+   
+   rvec realddxyz={0,0,0};
+   const char *ddno_opt[ddnoNR+1] =
+@@ -435,6 +436,8 @@ int main(int argc,char *argv[])
+ #endif
+     { "-npme",    FALSE, etINT, {&npme},
+       "Number of separate nodes to be used for PME, -1 is guess" },
++    { "-nstepdecaf",    FALSE, etINT, {&nstepdecaf},
++      "Output decaf data everu nstepdecaf iteration" },
+     { "-ddorder", FALSE, etENUM, {ddno_opt},
+       "DD node order" },
+     { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
+@@ -554,7 +557,7 @@ int main(int argc,char *argv[])
+   cr->forceIds = NULL;    // Ids of atoms to steer
+   cr->nbIds = 0;
+   cr->force = NULL;       // force vector to apply
+-  cr->stepDecaf = 100;    // Do a get/put every stepDecaf iteration
++  cr->stepDecaf = nstepdecaf;    // Do a get/put every stepDecaf iteration
+   cr->firstStep = true;   // Marker to signal the first time we call Decaf.
+                           // Needed not to do a get on the first iteration.
+   cr->iteration = 0;      // step in the simulation loop
 -- 
 2.1.4
 

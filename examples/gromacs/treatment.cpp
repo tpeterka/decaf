@@ -79,9 +79,11 @@ typedef struct
 
 std::vector<Target> targets;
 
-void loadTargets(std::string profile)
+std::string model;
+
+void loadTargets()
 {
-    if(profile.compare(std::string("SimplePeptideWater")) == 0)
+    if(model.compare(std::string("SimplePeptideWater")) == 0)
     {
         Target target;
         target.target[0] = 4.0;
@@ -108,7 +110,7 @@ void loadTargets(std::string profile)
                        115, 116, 117, 118, 119, 120
                     }; //HARD CODED for SimpleWater example
     }
-    else if(profile.compare(std::string("fepa")) == 0)
+    else if(model.compare(std::string("fepa")) == 0)
     {
         Target target;
         target.target[0] = 50.649998;
@@ -152,7 +154,7 @@ void loadTargets(std::string profile)
         targets.push_back(target);
 
         //Ids for ENT and FE residues
-        for(int i = 69901; i <= 69953; i++)
+        for(int i = 69900; i <= 69952; i++)
         {
             filterIds.insert(i);
         }
@@ -297,8 +299,7 @@ void treatment1(Decaf* decaf)
 
     int iteration = 0;
 
-    string model("fepa");
-    loadTargets(model);
+    loadTargets();
 
     while (decaf->get(in_data))
     {
@@ -347,6 +348,8 @@ void treatment1(Decaf* decaf)
                 ArrayFieldu idsField = in_data[0]->getFieldData<ArrayFieldu>("ids");
                 unsigned int* ids = idsField.getArray();
 
+                fprintf(stderr, "Morton received : %i, filter size : %u\n", nbMorton, filterIds.size());
+
                 for(int i = 0; i < nbMorton; i++)
                 {
                     if(filterIds.count(ids[i]) == 0)
@@ -381,9 +384,6 @@ void treatment1(Decaf* decaf)
                     localy = y - lExtends[1];
                     localz = z - lExtends[2];
 
-                    //GRID(localx,localy,localz) = 1; // TODO : get the full formulation
-                    //grid[lineariseCoord(localx,localy,localz,lExtends[3],lExtends[4],lExtends[5])] += 1;
-                    //fprintf(stderr,"%i %i %i\n", localx, localy, localz);
                     updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5],1);
                 }
 
@@ -540,9 +540,17 @@ int main(int argc,
          char** argv)
 {
     fprintf(stderr, "Hello treatment\n");
+
+    if(argc != 2)
+    {
+        fprintf(stderr, "Usage : treatment profile\n");
+        exit(0);
+    }
+
+    model = string(argv[1]);
+
     // define the workflow
     Workflow workflow;
-    //make_wflow(workflow);
     Workflow::make_wflow_from_json(workflow, "wflow_gromacs.json");
 
 
