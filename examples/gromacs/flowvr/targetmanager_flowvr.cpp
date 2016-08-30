@@ -45,6 +45,8 @@ using namespace boost;
 flowvr::ModuleAPI* Module;
 flowvr::BufferPool* pOutPool;
 flowvr::OutputPort *outPositions;
+flowvr::OutputPort *outTargets;
+flowvr::OutputPort *outSelection;
 flowvr::StampInfo StampType("TypePositions",flowvr::TypeInt::create()); 	//0 = No filtering, 1 or 2 = filtered data. We swap between 1 and 2 when a new filter arrive
 
 enum targetType {
@@ -88,6 +90,8 @@ std::vector<Target> targets;
 float distanceValidTarget = 0.5;
 float maxTotalForces = 3.f;
 std::string model;
+
+int nbHomeAtoms = -1;
 
 void loadTargets()
 {
@@ -166,13 +170,15 @@ void loadTargets()
         targets.push_back(target);
 
         //Ids for ENT and FE residues
-        for(int i = 69900; i <= 69952; i++)
+        for(int i = 69901; i <= 69952; i++)
         {
             filterIds.insert(i);
             arrayIds.push_back(i);
         }
     }
 }
+
+std::vector<float> targetsArray;
 
 
 // consumer
@@ -262,9 +268,10 @@ void target(Decaf* decaf)
 
         // Computing the force intensity
         float maxForcesPerAtom = maxTotalForces / (float)filterIds.size();
-        force[0] = force[0] * maxForcesPerAtom;
-        force[1] = force[1] * maxForcesPerAtom;
-        force[2] = force[2] * maxForcesPerAtom;
+        //force[0] = force[0] * maxForcesPerAtom;
+        //force[1] = force[1] * maxForcesPerAtom;
+        //force[2] = force[2] * maxForcesPerAtom;
+        bzero(force, 3 * sizeof(float));
         fprintf(stderr, "Force emitted : %f %f %f\n", force[0], force[1], force[2]);
 
         // Generating the data model
@@ -293,19 +300,28 @@ void target(Decaf* decaf)
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
 
+        // We don't know the total number of atoms
+        // without the copies from the redistribution
+        if(nbHomeAtoms < 0)
+        {
+            for(unsigned int i = 0; i < nbAtoms; i++)
+                nbHomeAtoms = max(nbHomeAtoms, (int)ids[i]);
+            nbHomeAtoms++; // The IDs start at 0
+        }
+
         flowvr::MessageWrite msgPos;
-        msgPos.data = pOutPool->alloc(Module->getAllocator(), nbAtoms * 3 * sizeof(float));
+        msgPos.data = pOutPool->alloc(Module->getAllocator(), nbHomeAtoms * 3 * sizeof(float));
         float* atompos = (float*)(msgPos.data.writeAccess());
 
         //Move all the position outside of the cone of vision
-        for(unsigned int i = 0; i < nbAtoms * 3; i++)
+        for(unsigned int i = 0; i < nbHomeAtoms * 3; i++)
             atompos[i] = 100000.0f;
 
         //Putting all the non water atom positions
         for(unsigned int i = 0; i < nbAtoms; i++)
         {
             //HARD CODED FOR FEPA
-            if(ids[i] <= 17433 || ids[i] >= 69902)
+            if(ids[i] <= 17432 || ids[i] >= 69901)
             {
                 atompos[3*ids[i]] = pos[3*i];
                 atompos[3*ids[i]+1] = pos[3*i+1];
@@ -315,6 +331,30 @@ void target(Decaf* decaf)
         msgPos.stamps.write(StampType, 0);
 
         Module->put(outPositions, msgPos);
+
+        //Putting the target positions
+        if(targetsArray.empty())
+        {
+            for(unsigned int i = 0; i < targets.size(); i++)
+            {
+                targetsArray.push_back(targets[i].target[0]);
+                targetsArray.push_back(targets[i].target[1]);
+                targetsArray.push_back(targets[i].target[2]);
+            }
+        }
+
+        flowvr::MessageWrite msgTargets;
+        msgTargets.data = pOutPool->alloc(Module->getAllocator(), targetsArray.size() * sizeof(float));
+        memcpy(msgTargets.data.writeAccess(), &targetsArray[0], msgTargets.data.getSize());
+
+        Module->put(outTargets, msgTargets);
+
+        //Putting the current position of the steered group
+        flowvr::MessageWrite msgPosSelection;
+        msgPosSelection.data = pOutPool->alloc(Module->getAllocator(), 3 * sizeof(float));
+        memcpy(msgPosSelection.data.writeAccess(), avg, msgPosSelection.data.getSize());
+
+        Module->put(outSelection, msgPosSelection);
 
         iteration++;
     }
@@ -351,10 +391,13 @@ void run(Workflow& workflow)                             // workflow
     //FlowVR initialization
     outPositions = new flowvr::OutputPort("outPos");
     outPositions->stamps->add(&StampType);
+    outTargets = new flowvr::OutputPort("outTargets");
+    outSelection = new flowvr::OutputPort("outSelection");
 
     std::vector<flowvr::Port*> ports;
     ports.push_back(outPositions);
-    std::vector<flowvr::Trace*> traces;
+    ports.push_back(outTargets);
+    ports.push_back(outSelection);
 
     //Module = flowvr::initModule(ports, traces, string("decaf"));
     Module = flowvr::initModule(ports);

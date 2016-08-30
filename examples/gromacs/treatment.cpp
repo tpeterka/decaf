@@ -154,7 +154,7 @@ void loadTargets()
         targets.push_back(target);
 
         //Ids for ENT and FE residues
-        for(int i = 69900; i <= 69952; i++)
+        for(int i = 69901; i <= 69952; i++)
         {
             filterIds.insert(i);
         }
