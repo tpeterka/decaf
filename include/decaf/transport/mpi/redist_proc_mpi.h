@@ -53,7 +53,8 @@ namespace decaf
         virtual void redistribute(pConstructData& data, RedistRole role);
 
         bool initialized_;    // Index of the first item in the global array
-        int destination_;
+        int destination_;     // Rank of the first destination to send data (starting at 0)
+        int nbSends_;         // Number of identicaf message to send to different destinations
         int nbReceptions_;
     };
 

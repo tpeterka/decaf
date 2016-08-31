@@ -37,6 +37,22 @@
 
 #include <decaf/workflow.hpp>
 
+#include "flowvr/module.h"
+
+flowvr::ModuleAPI* Module;
+flowvr::OutputPort* outPos;
+flowvr::BufferPool* pOutPool;
+
+//Stamps pos positions
+flowvr::StampInfo StampType("TypePositions",flowvr::TypeInt::create()); 	//0 = No filtering, 1 or 2 = filtered data. We swap between 1 and 2 when a new filter arrive
+flowvr::StampInfo StampNb("nbData",flowvr::TypeInt::create());              //Number of atoms send after filtering. For now, the atoms are not removed.
+flowvr::StampInfo StampForceId("stampForceIdPos",flowvr::TypeInt::create());//Id of the forces applied to the simulation for these positions
+flowvr::StampInfo StampTimeSim("stampTimeIt",flowvr::TypeFloat::create());	//Time elapsed during the simulation
+flowvr::StampInfo StampSimIt("stampSimIt",flowvr::TypeInt::create());       //Current iteration of the simulation
+flowvr::StampInfo StampSimT("stampSimT",flowvr::TypeFloat::create());       //Current time of the simulation
+flowvr::StampInfo StampBox("stampBox",flowvr::TypeArray::create(9,flowvr::TypeFloat::create()));  //Global bounding box of the simulation from Gromacs
+
+
 //#include "wflow_gromacs.hpp"                         // defines the workflow for this example
 
 using namespace decaf;
@@ -154,11 +170,10 @@ void loadTargets()
         targets.push_back(target);
 
         //Ids for ENT and FE residues
-        for(int i = 69901; i <= 69952; i++)
+        for(int i = 69900; i <= 69952; i++)
         {
             filterIds.insert(i);
         }
-        //filterIds.insert(69952);
     }
 
 
@@ -349,6 +364,8 @@ void treatment1(Decaf* decaf)
                 ArrayFieldu idsField = in_data[0]->getFieldData<ArrayFieldu>("ids");
                 unsigned int* ids = idsField.getArray();
 
+                fprintf(stderr, "Morton received : %i, filter size : %u\n", nbMorton, filterIds.size());
+
                 for(int i = 0; i < nbMorton; i++)
                 {
                     if(filterIds.count(ids[i]) == 0)
@@ -456,6 +473,7 @@ void treatment1(Decaf* decaf)
 
             damaris_write("space", grid );
             damaris_end_iteration();
+
         }
 
         decaf->put(in_data[0]);
@@ -469,6 +487,10 @@ void treatment1(Decaf* decaf)
     delete [] rmesh_z;
 
     delete [] grid;
+
+    Module->close();
+
+    if(pOutPool) delete pOutPool;
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "Treatment terminating\n");
@@ -490,9 +512,9 @@ void run(Workflow& workflow)                             // workflow
 
     srand(time(NULL) + rank * size_world + nameLen);
 
-    fprintf(stderr, "treatment rank %i\n", rank);
+    fprintf(stderr, "treatment_flowvr rank %i\n", rank);
 
-    // create decaf
+    // Decaf initialization
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
     //Initalizing the Damaris context
@@ -520,6 +542,27 @@ void run(Workflow& workflow)                             // workflow
         fprintf(stderr, "ERROR during the initialization of Damaris. Abording.\n");
         MPI_Abort(MPI_COMM_WORLD, 0);
     }
+
+    //FlowVR initialization
+    outPos = new flowvr::OutputPort("outPos");
+    outPos->stamps->add(&StampType);
+    outPos->stamps->add(&StampNb);
+    outPos->stamps->add(&StampForceId);
+    outPos->stamps->add(&StampTimeSim);
+    outPos->stamps->add(&StampSimIt);
+    outPos->stamps->add(&StampSimT);
+    outPos->stamps->add(&StampBox);
+
+    std::vector<flowvr::Port*> ports;
+    ports.push_back(outPos);
+
+    Module = flowvr::initModule(ports);
+    if(Module == NULL){
+        fprintf(stderr, "Erreur : Module treatment_flowvr non initialise.");
+        return ;
+    }
+
+    pOutPool = new flowvr::BufferPool();
 
 
     // start the task

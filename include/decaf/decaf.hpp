@@ -77,6 +77,8 @@ namespace decaf
         // return a pointer to a dataflow, identified by its index in the workflow structure
         Dataflow* dataflow(int i)  { return dataflows[i]; }
 
+        void clearBuffers(TaskType role);
+
         // return a handle for this node's producer or consumer communicator
         CommHandle prod_comm_handle() { return out_dataflows[0]->prod_comm_handle();    }
         CommHandle con_comm_handle()  { return node_in_dataflows[0]->con_comm_handle(); }
@@ -397,6 +399,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                     if (ready_types[i] & DECAF_LINK)
                     {
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
+                        fprintf(stderr, "Forwarding a quit message by a link\n");
                     }
                 }
             }
@@ -773,6 +776,15 @@ Decaf::my_link(int workflow_id)
             return i;
     }
     return -1;
+}
+
+// Clear the buffers of the output dataflows
+void
+decaf::
+Decaf::clearBuffers(TaskType role)
+{
+    for(unsigned int i = 0; i < out_dataflows.size(); i++)
+        out_dataflows[i]->clearBuffers(role);
 }
 
 // pybind11 python bindings

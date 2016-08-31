@@ -6,24 +6,47 @@ RedistProcMPI::computeGlobal(pConstructData& data, RedistRole role)
 {
     if( !initialized_ && role == DECAF_REDIST_SOURCE )
     {
-        if(nbSources_ % nbDests_ != 0)
+        if(nbSources_ > nbDests_ && nbSources_ % nbDests_ != 0)
         {
             std::cerr<<"ERROR : the number of destination does not divide the number of sources. Aborting."<<std::endl;
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
+        else if(nbSources_ < nbDests_ && nbDests_ % nbSources_ != 0)
+        {
+            std::cerr<<"ERROR : the number of sources does not divide the number of destinations. Aborting."<<std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 0);
+        }
+
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
-        destination_ = floor(source_rank / (nbSources_ / nbDests_));
+        if(nbSources_ >= nbDests_) //N to M case (gather)
+        {
+            destination_ = floor(source_rank / (nbSources_ / nbDests_));
+            nbSends_ = 1;
+        }
+        else // M to N case (broadcast)
+        {
+            nbSends_ = nbDests_ / nbSources_;
+            destination_ = source_rank * nbSends_;
+        }
         initialized_ = true;
     }
     if(!initialized_ && role == DECAF_REDIST_DEST )
     {
-        if(nbSources_ % nbDests_ != 0)
+        if(nbSources_ > nbDests_ && nbSources_ % nbDests_ != 0)
         {
             std::cerr<<"ERROR : the number of destination does not divide the number of sources. Aborting."<<std::endl;
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
-        nbReceptions_ = nbSources_ / nbDests_;
+        else if(nbSources_ < nbDests_ && nbDests_ % nbSources_ != 0)
+        {
+            std::cerr<<"ERROR : the number of sources does not divide the number of destinations. Aborting."<<std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 0);
+        }
+        if(nbSources_ > nbDests_)
+            nbReceptions_ = nbSources_ / nbDests_;
+        else
+            nbReceptions_ = 1;
         initialized_ = true;
     }
 
@@ -43,15 +66,18 @@ RedistProcMPI::redistribute(pConstructData &data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
-        if(rank_ == local_dest_rank_ + destination_)
-            transit = data;
-        else
+        for(unsigned int i = 0; i < nbSends_; i++)
         {
-            MPI_Request req;
-            reqs.push_back(req);
-            MPI_Isend(data->getOutSerialBuffer(),  data->getOutSerialBufferSize(),
-                      MPI_BYTE,  local_dest_rank_ + destination_,
-                      send_data_tag, communicator_,&reqs.back());
+            if(rank_ == local_dest_rank_ + destination_ + i)
+                transit = data;
+            else
+            {
+                MPI_Request req;
+                reqs.push_back(req);
+                MPI_Isend(data->getOutSerialBuffer(),  data->getOutSerialBufferSize(),
+                          MPI_BYTE,  local_dest_rank_ + destination_ + i,
+                          send_data_tag, communicator_,&reqs.back());
+            }
         }
         send_data_tag = (send_data_tag == INT_MAX ? MPI_DATA_TAG : send_data_tag + 1);
     }
@@ -64,7 +90,10 @@ RedistProcMPI::redistribute(pConstructData &data, RedistRole role)
         else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
             data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
         transit.reset();              // we don't need it anymore, clean for the next iteration
-        nbReceptions_ = nbSources_ / nbDests_ - 1;
+        if(nbSources_ > nbDests_)
+            nbReceptions_ = nbSources_ / nbDests_ - 1;
+        else
+            nbReceptions_ = 0; // Broadcast case : we got the only data we will receive
     }
 
     // only consumer ranks are left

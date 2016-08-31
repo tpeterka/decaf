@@ -23,12 +23,14 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/gromacs/libmod_dflow_gromacs.
 w = nx.DiGraph()
 w.add_node("gmx", start_proc=0, nprocs=4, func='gmx')
 w.add_node("treatment",  start_proc=6, nprocs=2, func='treatment')
-w.add_edge("gmx", "treatment", start_proc=4, nprocs=2, func='dflow', path=mod_path,
+w.add_node("target",  start_proc=9, nprocs=1, func='target')
+w.add_edge("gmx", "treatment", start_proc=4, nprocs=2, func='dflow_morton_fepa', path=mod_path,
            prod_dflow_redist='proc', dflow_con_redist='block')
+w.add_edge("treatment", "target", start_proc=8, nprocs=1, func='dflow_simple', path=mod_path,
+           prod_dflow_redist='proc', dflow_con_redist='proc')
+w.add_edge("target", "gmx", start_proc=10, nprocs=1, func='dflow_simple', path=mod_path,
+           prod_dflow_redist='proc', dflow_con_redist='proc')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-
-#wf.workflow(w,                               # nx workflow graph
-#            run_path)                        # run path
 
 wf.workflowToJson(w, mod_path, "wflow_gromacs.json")
