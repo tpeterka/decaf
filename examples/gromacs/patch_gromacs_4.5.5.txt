@@ -1,7 +1,7 @@
 From a63f12d76fff8c375040d0deccf7080da5417c98 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 25 Aug 2016 17:37:16 -0500
-Subject: [PATCH 1/8] Add decaf to Gromacs with steering
+Subject: [PATCH 1/9] Add decaf to Gromacs with steering
 
 ---
  CMakeLists.txt          |  25 ++++++
@@ -713,7 +713,7 @@ index 60ef80e..edccc3c 100644
 From 05d83d33a65f5f4d27f4c19c54738e11b6aaf3e4 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Thu, 25 Aug 2016 18:12:00 -0500
-Subject: [PATCH 2/8] Fix the double MPI_Init
+Subject: [PATCH 2/9] Fix the double MPI_Init
 
 ---
  src/gmxlib/network.c | 2 +-
@@ -739,7 +739,7 @@ index 252bf44..9cd986f 100644
 From 6106361ba816e1b706fb4c4bae4202574f239e46 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 29 Aug 2016 10:37:24 -0500
-Subject: [PATCH 3/8] Fix data type
+Subject: [PATCH 3/9] Fix data type
 
 ---
  src/mdlib/sim_util.c | 2 +-
@@ -765,7 +765,7 @@ index edccc3c..455a319 100644
 From d199667645a0052c4691aa8eac5d999bc2352e74 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 29 Aug 2016 10:56:26 -0500
-Subject: [PATCH 4/8] Add debug message
+Subject: [PATCH 4/9] Add debug message
 
 ---
  src/mdlib/sim_util.c | 10 ++++++++++
@@ -841,7 +841,7 @@ index 455a319..f4178de 100644
 From f54a92f3cbb6058fc4db49352255121233a1fbb6 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 29 Aug 2016 11:01:24 -0500
-Subject: [PATCH 5/8] Not apply forces
+Subject: [PATCH 5/9] Not apply forces
 
 ---
  src/mdlib/sim_util.c | 6 +++---
@@ -871,7 +871,7 @@ index f4178de..50bb15d 100644
 From 53ac9a08766456e0e3acb6f95e3dd69a8d4c4cf0 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 29 Aug 2016 11:12:30 -0500
-Subject: [PATCH 6/8] apply forces
+Subject: [PATCH 6/9] apply forces
 
 ---
  src/mdlib/sim_util.c | 6 +++---
@@ -901,7 +901,7 @@ index 50bb15d..f4178de 100644
 From 02deacb994cbd49e73d41c3e31ce3b54fe4eaa7d Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 29 Aug 2016 11:18:09 -0500
-Subject: [PATCH 7/8] Remove debug messages
+Subject: [PATCH 7/9] Remove debug messages
 
 ---
  src/mdlib/sim_util.c | 10 ----------
@@ -977,7 +977,7 @@ index f4178de..455a319 100644
 From b621eaf1cf4ac4647f9ea7596d893ffd63531483 Mon Sep 17 00:00:00 2001
 From: Matthieu Dreher <mdreher@anl.gov>
 Date: Mon, 29 Aug 2016 13:00:42 -0500
-Subject: [PATCH 8/8] Add the option of the decaf steps
+Subject: [PATCH 8/9] Add the option of the decaf steps
 
 ---
  src/kernel/mdrun.c | 5 ++++-
@@ -1013,6 +1013,33 @@ index c974ab6..33034aa 100644
    cr->firstStep = true;   // Marker to signal the first time we call Decaf.
                            // Needed not to do a get on the first iteration.
    cr->iteration = 0;      // step in the simulation loop
+-- 
+2.1.4
+
+
+From 664b4e6b622242fff03eeaf159cef4ef8d0138bb Mon Sep 17 00:00:00 2001
+From: Matthieu Dreher <mdreher@anl.gov>
+Date: Wed, 31 Aug 2016 13:42:46 -0500
+Subject: [PATCH 9/9] Remove the MPI_Finalized from Gromacs and replace it in
+ mdrun instead
+
+---
+ src/gmxlib/network.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/gmxlib/network.c b/src/gmxlib/network.c
+index 9cd986f..f536fdd 100644
+--- a/src/gmxlib/network.c
++++ b/src/gmxlib/network.c
+@@ -959,7 +959,7 @@ void gmx_finalize_decaf(dca_decaf decaf)
+   if (debug)
+     fprintf(debug,"Will call MPI_Finalize now\n");
+ 
+-  ret = MPI_Finalize();
++  //ret = MPI_Finalize();
+   if (debug)
+     fprintf(debug,"Return code from MPI_Finalize = %d\n",ret);
+ #endif
 -- 
 2.1.4
 

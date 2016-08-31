@@ -175,8 +175,6 @@ void loadTargets()
             filterIds.insert(i);
             arrayIds.push_back(i);
         }
-        //filterIds.insert(69952);
-        //arrayIds.push_back(69952);
     }
 }
 
@@ -403,7 +401,6 @@ void run(Workflow& workflow)                             // workflow
     ports.push_back(outTargets);
     ports.push_back(outSelection);
 
-    //Module = flowvr::initModule(ports, traces, string("decaf"));
     Module = flowvr::initModule(ports);
 
     if(Module == NULL){

@@ -160,7 +160,7 @@ void loadTargets()
         targets.push_back(target);
 
         //Ids for ENT and FE residues
-        for(int i = 69900; i <= 69952; i++)
+        for(int i = 69901; i <= 69952; i++)
         {
             filterIds.insert(i);
             arrayIds.push_back(i);
@@ -209,15 +209,17 @@ void target(Decaf* decaf)
 
         float avg[3];
         bzero(avg, 3 * sizeof(float));
+        int count = 0;
 
         // Filtering the data to select only the steered complex
         for(unsigned int i = 0; i < nbAtoms; i++)
         {
             if(filterIds.count(ids[i]) != 0)
             {
-                avg[0] += pos[3*i];
-                avg[1] += pos[3*i+1];
-                avg[2] += pos[3*i+2];
+                avg[0] = avg[0] + pos[3*i];
+                avg[1] = avg[1] + pos[3*i+1];
+                avg[2] = avg[2] + pos[3*i+2];
+                count++;
             }
         }
 
