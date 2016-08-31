@@ -175,6 +175,8 @@ void loadTargets()
             filterIds.insert(i);
             arrayIds.push_back(i);
         }
+        //filterIds.insert(69952);
+        //arrayIds.push_back(69952);
     }
 }
 
@@ -221,22 +223,24 @@ void target(Decaf* decaf)
 
         float avg[3];
         bzero(avg, 3 * sizeof(float));
+        int count = 0;
 
         // Filtering the data to select only the steered complex
         for(unsigned int i = 0; i < nbAtoms; i++)
         {
             if(filterIds.count(ids[i]) != 0)
             {
-                avg[0] += pos[3*i];
-                avg[1] += pos[3*i+1];
-                avg[2] += pos[3*i+2];
+                avg[0] = avg[0] + pos[3*i];
+                avg[1] = avg[1] + pos[3*i+1];
+                avg[2] = avg[2] + pos[3*i+2];
+                count++;
             }
         }
 
         // Computing the average position of the steered system
-        avg[0] = avg[0] / (float)filterIds.size();
-        avg[1] = avg[1] / (float)filterIds.size();
-        avg[2] = avg[2] / (float)filterIds.size();
+        avg[0] = avg[0] / (float)count;
+        avg[1] = avg[1] / (float)count;
+        avg[2] = avg[2] / (float)count;
 
         fprintf(stderr, "Average position : %f %f %f\n", avg[0], avg[1], avg[2]);
 
@@ -268,10 +272,10 @@ void target(Decaf* decaf)
 
         // Computing the force intensity
         float maxForcesPerAtom = maxTotalForces / (float)filterIds.size();
-        //force[0] = force[0] * maxForcesPerAtom;
-        //force[1] = force[1] * maxForcesPerAtom;
-        //force[2] = force[2] * maxForcesPerAtom;
-        bzero(force, 3 * sizeof(float));
+        force[0] = force[0] * maxForcesPerAtom;
+        force[1] = force[1] * maxForcesPerAtom;
+        force[2] = force[2] * maxForcesPerAtom;
+        //bzero(force, 3 * sizeof(float));
         fprintf(stderr, "Force emitted : %f %f %f\n", force[0], force[1], force[2]);
 
         // Generating the data model

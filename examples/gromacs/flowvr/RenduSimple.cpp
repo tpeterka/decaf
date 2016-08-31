@@ -1184,7 +1184,7 @@ void doMainDisplay()
         glPushMatrix();
         glTranslatef(posSelection[0],posSelection[1],posSelection[2]);
         glColor4f(0.f, 1.f, 0.f,  1);
-        glutWireSphere(1.0f,10,10);
+        glutWireSphere(3.0f,10,10);
         glPopMatrix();
     }
 

@@ -158,6 +158,7 @@ void loadTargets()
         {
             filterIds.insert(i);
         }
+        //filterIds.insert(69952);
     }
 
 
@@ -347,8 +348,6 @@ void treatment1(Decaf* decaf)
 
                 ArrayFieldu idsField = in_data[0]->getFieldData<ArrayFieldu>("ids");
                 unsigned int* ids = idsField.getArray();
-
-                fprintf(stderr, "Morton received : %i, filter size : %u\n", nbMorton, filterIds.size());
 
                 for(int i = 0; i < nbMorton; i++)
                 {

@@ -200,7 +200,7 @@ void computeMorton(Dataflow* dataflow, pConstructData in_data, string& model, fl
     float* pos = posArray.getArray();
     int nbParticle = posArray->getNbItems();
 
-    compteBBox(pos, nbParticle);
+    //compteBBox(pos, nbParticle);
 
     vector<float> filteredPos;
     vector<unsigned int> filteredIds;
