@@ -11,8 +11,9 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simplefield.hpp>
+#include <decaf/data_model/arrayfield.hpp>
+#include <decaf/data_model/blockfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -31,13 +32,6 @@ using namespace std;
 // consumer
 void tessellate(Decaf* decaf, MPI_Comm comm)
 {
-    // TODO: get input data
-    // vector< shared_ptr<ConstructData> > in_data;
-    // while (decaf->get(in_data))
-    // {
-    //     // TODO: process input data
-    // }
-
     // this first test just creates and tessellates some synthetic data to demostrate that
     // tess (a diy program) can be run as a decaf node task
 
@@ -65,6 +59,31 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
     vector<pConstructData> in_data;
     while (decaf->get(in_data))
     {
+
+        ArrayFieldf xyzpos = in_data[0]->getFieldData<ArrayFieldf>("xyz_pos");
+        if(!xyzpos)
+        {
+            fprintf(stderr, "ERROR tessellate: unable to find the field required \"xyz_pos\" "
+                    "in the data model.\n");
+            return;
+        }
+
+        BlockField block = in_data[0]->getFieldData<BlockField>("domain_block");
+        if(!block)
+        {
+            fprintf(stderr, "ERROR tessellate: unable to find the field required \"domain_block\" "
+                    "in the data model.\n");
+            return;
+        }
+
+        float* xyz = xyzpos.getArray();
+        Block<3>* blk = block.getBlock();
+        float* global_box = blk->getGlobalBBox(); // min and size (not min and max)
+        float* local_box = blk->getLocalBBox();   // min and size (not min and size)
+
+        // TODO: use the positions I got from decaf
+        // don't free anything that I get from decaf, its smart pointers take care of it
+
         // init diy
         diy::mpi::communicator    world(comm);
         diy::FileStorage          storage("./DIY.XXXXXX");

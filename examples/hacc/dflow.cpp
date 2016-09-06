@@ -16,7 +16,9 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/data_model/pconstructtype.h>
+#include <decaf/data_model/simplefield.hpp>
+#include <decaf/data_model/arrayfield.hpp>
+#include <decaf/data_model/blockfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -38,7 +40,63 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
-        dataflow->put(in_data, DECAF_LINK);
+        ArrayFieldf xposArray = in_data->getFieldData<ArrayFieldf>("x_pos");
+        if(!xposArray)
+        {
+            fprintf(stderr, "ERROR dflow: unable to find the field required \"x_pos\" "
+                    "in the data model.\n");
+            return;
+        }
+        ArrayFieldf yposArray = in_data->getFieldData<ArrayFieldf>("y_pos");
+        if(!yposArray)
+        {
+            fprintf(stderr, "ERROR dflow: unable to find the field required \"y_pos\" "
+                    "in the data model.\n");
+            return;
+        }
+        ArrayFieldf zposArray = in_data->getFieldData<ArrayFieldf>("z_pos");
+        if(!zposArray)
+        {
+            fprintf(stderr, "ERROR dflow: unable to find the field required \"z_pos\" "
+                    "in the data model.\n");
+            return;
+        }
+
+
+        float* xpos = xposArray.getArray();
+        float* ypos = yposArray.getArray();
+        float* zpos = zposArray.getArray();
+        assert (xposArray->getNbItems() == yposArray->getNbItems() &&
+                xposArray->getNbItems() == zposArray->getNbItems());
+        int nbParticle = xposArray->getNbItems();
+
+        float* xyzpos = new float[nbParticle *3];
+        for (int i = 0; i < nbParticle; i++)
+        {
+            xyzpos[3 * i    ] = xpos[i];
+            xyzpos[3 * i + 1] = ypos[i];
+            xyzpos[3 * i + 2] = zpos[i];
+        }
+
+
+        BlockField block = in_data->getFieldData<BlockField>("domain_block");
+        if(!block)
+        {
+            fprintf(stderr, "ERROR dflow: unable to find the field required \"domain_block\" "
+                    "in the data model.\n");
+            return;
+        }
+
+        pConstructData container;
+        ArrayFieldf xyz_pos(xyzpos, 3 * nbParticle, 3, true); // true = decaf will free xyzpos
+        container->appendData(string("xyz_pos"), xyz_pos,
+                              DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+        container->appendData("domain_block", block,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
+        dataflow->put(container, DECAF_LINK);
     }
 } // extern "C"
 

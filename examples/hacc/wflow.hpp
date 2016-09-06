@@ -112,7 +112,7 @@ void make_wflow(Workflow& workflow)
     link.nprocs = 1;
     link.func = "dflow";
     link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
+    link.prod_dflow_redist = "proc";
+    link.dflow_con_redist = "block";
     workflow.links.push_back(link);
 }
