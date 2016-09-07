@@ -179,7 +179,7 @@ RedistMPI::splitSystemData(pConstructData& data, RedistRole role)
     }
 }
 
-// collective redistribution protocol
+// redistribution protocol
 void
 decaf::
 RedistMPI::redistribute(pConstructData& data, RedistRole role)
@@ -340,6 +340,7 @@ RedistMPI::redistributeCollective(pConstructData& data, RedistRole role)
     }
 }
 
+// point to point redistribution protocol
 void
 decaf::
 RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)

@@ -38,7 +38,7 @@ extern "C"
     // dataflow just forwards everything that comes its way in this example
     void dflow(void* args,                          // arguments to the callback
                Dataflow* dataflow,                  // dataflow
-               pConstructData in_data)   // input data
+               pConstructData in_data)              // input data
     {
         ArrayFieldf xposArray = in_data->getFieldData<ArrayFieldf>("x_pos");
         if(!xposArray)
@@ -62,6 +62,7 @@ extern "C"
             return;
         }
 
+        fprintf(stderr, "dflow: number of particles = %d\n", xposArray->getNbItems());
 
         float* xpos = xposArray.getArray();
         float* ypos = yposArray.getArray();

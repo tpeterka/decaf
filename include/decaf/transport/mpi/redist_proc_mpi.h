@@ -28,15 +28,22 @@ namespace decaf
 
         RedistProcMPI() :
             RedistMPI() {}
-        RedistProcMPI(int rankSource,
-                       int nbSources,
-                       int rankDest,
-                       int nbDests,
-                       CommHandle communicator,
-                       RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
-                       MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
-        RedistMPI(rankSource, nbSources, rankDest, nbDests, communicator, commMethod, mergeMethod) {}
-        virtual ~RedistProcMPI() {}
+    RedistProcMPI(int rankSource,
+                  int nbSources,
+                  int rankDest,
+                  int nbDests,
+                  CommHandle communicator,
+                  RedistCommMethod commMethod  = DECAF_REDIST_COLLECTIVE,
+                  MergeMethod mergeMethod = DECAF_REDIST_MERGE_STEP) :
+            RedistMPI(rankSource,
+                      nbSources,
+                      rankDest,
+                      nbDests,
+                      communicator,
+                      commMethod,
+                      mergeMethod),
+                initialized_(false){}
+            virtual ~RedistProcMPI() {}
 
     protected:
 

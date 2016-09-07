@@ -55,7 +55,8 @@ void prod(Decaf* decaf)
         fprintf(stderr, "producer timestep %d\n", timestep);
 
         // mins and sizes, not mins and maxs
-        vector<unsigned int> extendsBlock = {0, 0, 0, npts, npts, npts};
+        vector<unsigned int> extendsBlock = {0, 0, 0,
+                                             (unsigned)npts, (unsigned)npts, (unsigned)npts};
         vector<float> bboxBlock = {0.0, 0.0, 0.0, (float)npts, float(npts), float(npts)};
 
         // describe to decaf the global and local domain
