@@ -1,6 +1,7 @@
 //---------------------------------------------------------------------------
 //
-// temporary producer to be replaced by hacc
+// temporary producer taking the place of the HACC simulation
+// generates synthetic particles and sends them to the rest of the workflow
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -31,7 +32,7 @@ using namespace std;
 void prod(Decaf* decaf)
 {
     // hacc produces 3 arrays of position coordinates
-    // we're just making up some synthetic data here
+    // we're making up some synthetic data instead
 
     // number of points, randomly placed in a box of size [0, npts - 1]^3
     int npts = 10;
@@ -39,6 +40,7 @@ void prod(Decaf* decaf)
     float* y = new float[npts];
     float* z = new float[npts];
 
+    srand(decaf->world->rank());
     for (unsigned i = 0; i < npts; ++i)
     {
         float t = (float) rand() / RAND_MAX;
@@ -76,6 +78,10 @@ void prod(Decaf* decaf)
         ArrayFieldf y_pos(y, npts, 1, false);
         ArrayFieldf z_pos(z, npts, 1, false);
 
+        // debug
+        // for (int i = 0; i < npts; i++)
+        //     fprintf(stderr, "%.3f %.3f %.3f\n", x[i], y[i], z[i]);
+
         // push the fields into a container
         pConstructData container;
         container->appendData(string("x_pos"), x_pos,
@@ -101,10 +107,13 @@ void prod(Decaf* decaf)
     decaf->terminate();
 }
 
-// every user application needs to implement the following run function with this signature
-// run(Workflow&) in the global namespace
-void run(Workflow& workflow)
+int main(int argc,
+         char** argv)
 {
+    // define the workflow
+    Workflow workflow;
+    make_wflow(workflow);
+
     MPI_Init(NULL, NULL);
 
     // create decaf
@@ -116,19 +125,7 @@ void run(Workflow& workflow)
     // cleanup
     delete decaf;
     MPI_Finalize();
-}
 
-// test driver for debugging purposes
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
-{
-    // define the workflow
-    Workflow workflow;
-    make_wflow(workflow);
-
-    // run decaf
-    run(workflow);
-
+    fprintf(stderr, "finished prod\n");
     return 0;
 }

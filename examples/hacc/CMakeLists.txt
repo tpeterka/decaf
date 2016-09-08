@@ -13,14 +13,16 @@ if(Boost_FOUND)
   message("Building HACC (mpmd) example")
   include_directories(${Boost_INCLUDE_DIRS} ${TESS_INCLUDE_DIR} ${DIY_INCLUDE_DIR})
 
-  add_executable              (hacc_prod          prod.cpp) #remove after testing; call hacc instead
+  add_executable              (hacc_prod          prod.cpp)
   add_executable              (tess               tess.cpp)
   add_executable              (dense              dense.cpp)
-  add_executable              (hacc_dflow         dflow.cpp)
-  add_library                 (mod_hacc_dflow     MODULE dflow.cpp)
+  add_executable              (hacc_dflow         dflow1.cpp)
+  add_executable              (tess_dflow         dflow2.cpp)
+  add_library                 (mod_hacc_dflow     MODULE dflow1.cpp)
+  add_library                 (mod_tess_dflow     MODULE dflow2.cpp)
 
-  target_link_libraries       (hacc_prod #remove after testing; only temporary
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+  target_link_libraries       (hacc_prod
+                              ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
   if                          (${serial} MATCHES "CGAL")
     include                   (${CGAL_USE_FILE})
     add_definitions           (${CGAL_CXX_FLAGS_INIT})
@@ -63,18 +65,26 @@ if(Boost_FOUND)
                                ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
   target_link_libraries       (mod_hacc_dflow
                                ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+  target_link_libraries       (tess_dflow
+                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+  target_link_libraries       (mod_tess_dflow
+                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
 
   # .SO file extension on Linux/Mac OS
   set_target_properties       (mod_hacc_dflow PROPERTIES SUFFIX ".so")
+  set_target_properties       (mod_tess_dflow PROPERTIES SUFFIX ".so")
 
   # Don't add a 'lib' prefix to the shared library
   set_target_properties       (mod_hacc_dflow PROPERTIES PREFIX "")
+  set_target_properties       (mod_tess_dflow PROPERTIES PREFIX "")
 
   install                     (TARGETS
                                hacc_prod # remove hacc_prod after testing
                                tess dense
                                hacc_dflow
                                mod_hacc_dflow
+                               tess_dflow
+                               mod_tess_dflow
                                DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/hacc/
                                PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                                GROUP_READ GROUP_WRITE GROUP_EXECUTE

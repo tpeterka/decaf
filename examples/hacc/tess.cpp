@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// tessellation module
+// tessellation
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -84,6 +84,12 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         // TODO: use the positions I got from decaf
         // don't free anything that I get from decaf, its smart pointers take care of it
 
+        // debug
+        int nbParticle = xyzpos->getNbItems();
+        // fprintf(stderr, "nbParticle=%d\n", nbParticle);
+        // for (int i = 0; i < nbParticle; i++)
+        //     fprintf(stderr, "%.3f %.3f %.3f\n", xyz[3*i], xyz[3*i+1], xyz[3*i+2]);
+
         // init diy
         diy::mpi::communicator    world(comm);
         diy::FileStorage          storage("./DIY.XXXXXX");
@@ -130,17 +136,20 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
         decaf->put(container);
-    }
+    } // decaf event loop
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "tessellation terminating\n");
     decaf->terminate();
 }
 
-// every user application needs to implement the following run function with this signature
-// run(Workflow&) in the global namespace
-void run(Workflow& workflow)
+int main(int argc,
+         char** argv)
 {
+    // define the workflow
+    Workflow workflow;
+    make_wflow(workflow);
+
     MPI_Init(NULL, NULL);
 
     // create decaf
@@ -152,19 +161,7 @@ void run(Workflow& workflow)
     // cleanup
     delete decaf;
     MPI_Finalize();
-}
 
-// test driver for debugging purposes
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
-{
-    // define the workflow
-    Workflow workflow;
-    make_wflow(workflow);
-
-    // run decaf
-    run(workflow);
-
+    fprintf(stderr, "finished prod\n");
     return 0;
 }

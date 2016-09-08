@@ -298,6 +298,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         }
         case DECAF_PROC_DECOMP:
         {
+
             redist_dflow_con_ = new RedistProcMPI(sizes_.dflow_start,
                                                   sizes_.dflow_size,
                                                   sizes_.con_start,
@@ -336,6 +337,9 @@ Dataflow::~Dataflow()
     if (is_con())
         delete con_comm_;
     if (redist_dflow_con_)
+        // TODO: Following crashes on my mac, for the hacc example, in rank 8 (dflow)
+        // but not on other machines so far. Will see if it happens in other contexts,
+        // or if it is just my outdated software stack -- TP
         delete redist_dflow_con_;
     if (redist_prod_dflow_)
         delete redist_prod_dflow_;

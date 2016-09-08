@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// density estimation module
+// density estimation
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -131,10 +131,13 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
     decaf->terminate();
 }
 
-// every user application needs to implement the following run function with this signature
-// run(Workflow&) in the global namespace
-void run(Workflow& workflow)
+int main(int argc,
+         char** argv)
 {
+    // define the workflow
+    Workflow workflow;
+    make_wflow(workflow);
+
     MPI_Init(NULL, NULL);
 
     // create decaf
@@ -146,19 +149,7 @@ void run(Workflow& workflow)
     // cleanup
     delete decaf;
     MPI_Finalize();
-}
 
-// test driver for debugging purposes
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
-{
-    // define the workflow
-    Workflow workflow;
-    make_wflow(workflow);
-
-    // run decaf
-    run(workflow);
-
+    fprintf(stderr, "finished dense\n");
     return 0;
 }

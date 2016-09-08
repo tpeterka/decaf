@@ -1,11 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// 2-node producer-consumer coupling example
-//
-// prod (4 procs) - con (2 procs)
-//
-// entire workflow takes 8 procs (2 dataflow procs between prod and con)
-// this file contains the dataflow (2 procs) and the global workflow, run function
+// dataflow between prod and tess
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -35,10 +30,10 @@ using namespace std;
 // link callback function
 extern "C"
 {
-    // dataflow just forwards everything that comes its way in this example
-    void dflow(void* args,                          // arguments to the callback
-               Dataflow* dataflow,                  // dataflow
-               pConstructData in_data)              // input data
+    // dataflow gets 3 arrays, repackages them into one, and sends it
+    void dflow1(void* args,                          // arguments to the callback
+                Dataflow* dataflow,                  // dataflow
+                pConstructData in_data)              // input data
     {
         ArrayFieldf xposArray = in_data->getFieldData<ArrayFieldf>("x_pos");
         if(!xposArray)
@@ -62,8 +57,6 @@ extern "C"
             return;
         }
 
-        fprintf(stderr, "dflow: number of particles = %d\n", xposArray->getNbItems());
-
         float* xpos = xposArray.getArray();
         float* ypos = yposArray.getArray();
         float* zpos = zposArray.getArray();
@@ -77,8 +70,9 @@ extern "C"
             xyzpos[3 * i    ] = xpos[i];
             xyzpos[3 * i + 1] = ypos[i];
             xyzpos[3 * i + 2] = zpos[i];
+            // debug
+            // fprintf(stderr, "%.3f %.3f %.3f\n", xyzpos[3*i], xyzpos[3*i+1], xyzpos[3*i+2]);
         }
-
 
         BlockField block = in_data->getFieldData<BlockField>("domain_block");
         if(!block)
@@ -101,10 +95,13 @@ extern "C"
     }
 } // extern "C"
 
-// every user application needs to implement the following run function with this signature
-// run(Workflow&) in the global namespace
-void run(Workflow& workflow)
+int main(int argc,
+         char** argv)
 {
+    // define the workflow
+    Workflow workflow;
+    make_wflow(workflow);
+
     MPI_Init(NULL, NULL);
 
     // create decaf
@@ -113,19 +110,7 @@ void run(Workflow& workflow)
     // cleanup
     delete decaf;
     MPI_Finalize();
-}
 
-// test driver for debugging purposes
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
-{
-    // define the workflow
-    Workflow workflow;
-    make_wflow(workflow);
-
-    // run decaf
-    run(workflow);
-
+    fprintf(stderr, "finished dflow1\n");
     return 0;
 }

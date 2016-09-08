@@ -231,9 +231,6 @@ Decaf::Decaf(CommHandle world_comm,
     out_dataflows.resize(unique_out_dataflows.size()); // copy set to vector
     copy(unique_out_dataflows.begin(), unique_out_dataflows.end(), out_dataflows.begin());
 
-
-    //MPI_Barrier(MPI_COMM_WORLD); // Matthieu : TO REMOVE?
-
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
     for (size_t i = 0; i < workflow_.nodes.size(); i++)
@@ -249,6 +246,9 @@ decaf::
 Decaf::~Decaf()
 {
     for (size_t i = 0; i < dataflows.size(); i++)
+        // TODO: Following crashes on my mac, for the hacc example, in rank 8 (dflow)
+        // but not on other machines so far. Will see if it happens in other contexts,
+        // or if it is just my outdated software stack -- TP
         delete dataflows[i];
     delete world;
 }
