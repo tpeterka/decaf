@@ -28,7 +28,8 @@ namespace decaf
 
         RedistProcMPI() :
             RedistMPI() {}
-    RedistProcMPI(int rankSource,
+
+        RedistProcMPI(int rankSource,
                   int nbSources,
                   int rankDest,
                   int nbDests,
@@ -43,7 +44,9 @@ namespace decaf
                       commMethod,
                       mergeMethod),
                 initialized_(false){}
-            virtual ~RedistProcMPI() {}
+
+        virtual ~RedistProcMPI() {}
+
 
     protected:
 

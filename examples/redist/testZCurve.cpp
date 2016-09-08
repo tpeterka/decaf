@@ -235,7 +235,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         container->appendData(std::string("pos"), array,
-                             DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                             DECAF_POS, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component->process(container, decaf::DECAF_REDIST_SOURCE);

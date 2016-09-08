@@ -1638,13 +1638,13 @@ ConstructData::setData(std::shared_ptr<void> data)
         else // We still update the number of items
             nbItems_ = getNbItemsField(it->second);
 
-        if(getFlag(it->second) == DECAF_ZCURVEKEY)
+        if(getFlag(it->second) == DECAF_POS)
         {
             bZCurveKey = true;
             zCurveKey = getBaseData(it->second);
         }
 
-        if(getFlag(it->second) == DECAF_ZCURVEINDEX)
+        if(getFlag(it->second) == DECAF_MORTON)
         {
             bZCurveIndex = true;
             zCurveIndex = getBaseData(it->second);
@@ -1725,13 +1725,13 @@ ConstructData::updateMetaData()
         else if(getScope(it->second) != DECAF_SYSTEM && getScope(it->second) != DECAF_SHARED && getNbItemsField(it->second) > 0)// We still update the number of items
             nbItems_ = getNbItemsField(it->second);
 
-        if(getFlag(it->second) == DECAF_ZCURVEKEY)
+        if(getFlag(it->second) == DECAF_POS)
         {
             bZCurveKey_ = true;
             zCurveKey_ = getBaseData(it->second);
         }
 
-        if(getFlag(it->second) == DECAF_ZCURVEINDEX)
+        if(getFlag(it->second) == DECAF_MORTON)
         {
             bZCurveIndex_ = true;
             zCurveIndex_ = getBaseData(it->second);

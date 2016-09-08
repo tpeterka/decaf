@@ -314,3 +314,22 @@ BOOST_CLASS_EXPORT_GUID(decaf::VertToTetData,"VertToTetData")
 
 #endif
 
+
+
+
+
+
+typedef struct
+{
+    unsigned int index[4];
+}  tet;
+
+typedef struct
+{
+    unsigned int nbPos;
+    float* pos;
+
+    unsigned int nbTets;
+    tet* tets;
+} block;
+

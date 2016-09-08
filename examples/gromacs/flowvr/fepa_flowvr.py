@@ -70,7 +70,7 @@ class DoubleBufferedFilterIt(flowvrapp.Filter):
     self.addPort('order', direction = 'in', messagetype = 'stamps')
 
 #Module declaration
-decafmodule = Module("decaf", cmdline = "mpirun -n 4 mdrun_mpi_4.5.5_decaf -v -s "+modelTpr+" : -n 2 dflow_gromacs : -n 2 treatment fepa : -n 1 dflow_gromacs : -n 1 targetmanager_flowvr fepa 2.0 0.5 : -n 1 dflow_gromacs")
+decafmodule = Module("decaf", cmdline = "mpirun -n 4 mdrun_mpi_4.5.5_decaf -v -s "+modelTpr+" : -n 2 dflow_gromacs : -n 2 treatment fepa : -n 1 dflow_gromacs : -n 1 targetmanager_flowvr fepa 1.5 0.5 : -n 1 dflow_gromacs")
 decafmodule.addPort("outPos")
 decafmodule.addPort("outTargets")
 decafmodule.addPort("outSelection")

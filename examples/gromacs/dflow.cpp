@@ -258,13 +258,13 @@ void computeMorton(Dataflow* dataflow, pConstructData in_data, string& model, fl
 
     pConstructData container;
     container->appendData("pos", filterPosField,
-                          DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                          DECAF_POS, DECAF_PRIVATE,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
     container->appendData("domain_block", globalBox,
                           DECAF_NOFLAG, DECAF_SHARED,
                           DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
     container->appendData("morton", mortonField,
-                          DECAF_ZCURVEINDEX, DECAF_PRIVATE,
+                          DECAF_MORTON, DECAF_PRIVATE,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
     container->appendData("ids", filterIdsField,
                           DECAF_NOFLAG, DECAF_PRIVATE,

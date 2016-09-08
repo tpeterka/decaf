@@ -436,7 +436,7 @@ int main(int argc,
                 std::make_shared<ArrayConstructData<float> >(
                     block->particles, block->num_particles * 3, 3, false, container->getMap());
         container->appendData("pos", pos,
-                              DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                              DECAF_POS, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         //Num tets
