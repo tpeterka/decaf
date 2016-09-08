@@ -85,7 +85,7 @@ extern "C"
         pConstructData container;
         ArrayFieldf xyz_pos(xyzpos, 3 * nbParticle, 3, true); // true = decaf will free xyzpos
         container->appendData(string("xyz_pos"), xyz_pos,
-                              DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                              DECAF_POS, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         container->appendData("domain_block", block,
                               DECAF_NOFLAG, DECAF_PRIVATE,
