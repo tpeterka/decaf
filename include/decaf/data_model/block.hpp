@@ -2,6 +2,7 @@
 #define DECAF_BLOCK_HPP
 
 #include <vector>
+#include <iostream>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/serialization.hpp>
 

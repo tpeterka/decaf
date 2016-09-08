@@ -19,6 +19,7 @@ RedistProcMPI::computeGlobal(pConstructData& data, RedistRole role)
 
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
+
         if(nbSources_ >= nbDests_) //N to M case (gather)
         {
             destination_ = floor(source_rank / (nbSources_ / nbDests_));
@@ -64,11 +65,11 @@ void
 decaf::
 RedistProcMPI::redistribute(pConstructData &data, RedistRole role)
 {
-    if(role == DECAF_REDIST_SOURCE)
+    if (role == DECAF_REDIST_SOURCE)
     {
-        for(unsigned int i = 0; i < nbSends_; i++)
+        for (unsigned int i = 0; i < nbSends_; i++)
         {
-            if(rank_ == local_dest_rank_ + destination_ + i)
+            if (rank_ == local_dest_rank_ + destination_ + i)
                 transit = data;
             else
             {
@@ -85,15 +86,16 @@ RedistProcMPI::redistribute(pConstructData &data, RedistRole role)
     // check if we have something in transit to/from self
     if (role == DECAF_REDIST_DEST && !transit.empty())
     {
-        if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+        if (mergeMethod_ == DECAF_REDIST_MERGE_STEP)
             data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
         else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
-            data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
+            data->unserializeAndStore(transit->getOutSerialBuffer(),
+                                      transit->getOutSerialBufferSize());
         transit.reset();              // we don't need it anymore, clean for the next iteration
-        if(nbSources_ > nbDests_)
+        if (nbSources_ > nbDests_)
             nbReceptions_ = nbSources_ / nbDests_ - 1;
         else
-            nbReceptions_ = 0; // Broadcast case : we got the only data we will receive
+            nbReceptions_ = 0;        // Broadcast case : we got the only data we will receive
     }
 
     // only consumer ranks are left
@@ -103,27 +105,26 @@ RedistProcMPI::redistribute(pConstructData &data, RedistRole role)
         {
             MPI_Status status;
             MPI_Probe(MPI_ANY_SOURCE, recv_data_tag, communicator_, &status);
-            int nbytes; // number of bytes in the message
+            int nbytes;                           // number of bytes in the message
             MPI_Get_count(&status, MPI_BYTE, &nbytes);
             data->allocate_serial_buffer(nbytes); // allocate necessary space
             MPI_Recv(data->getInSerialBuffer(), nbytes, MPI_BYTE, status.MPI_SOURCE,
                      recv_data_tag, communicator_, &status);
 
-            if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+            if (mergeMethod_ == DECAF_REDIST_MERGE_STEP)
                 data->merge();
-            else if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+            else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
                 //data->unserializeAndStore();
                 data->unserializeAndStore(data->getInSerialBuffer(), nbytes);
             else
             {
-                std::cout<<"ERROR : merge method not specified. Abording."<<std::endl;
+                fprintf(stderr, "ERROR: merge method not specified. Aborting.\n");
                 MPI_Abort(MPI_COMM_WORLD, 0);
             }
         }
         recv_data_tag = (recv_data_tag == INT_MAX ? MPI_DATA_TAG : recv_data_tag + 1);
 
-        if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+        if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
             data->mergeStoredData();
     }
-
 }
