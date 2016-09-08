@@ -354,7 +354,7 @@ void testBlockSplitingArray1D()
             std::make_shared<ArrayConstructData<float> >(
                 particles, numParticles * 3, 3, false, container->getMap());
     container->appendData("pos", pos,
-                          DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                          DECAF_POS, DECAF_PRIVATE,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
 

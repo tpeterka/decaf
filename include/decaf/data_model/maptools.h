@@ -10,8 +10,8 @@ namespace decaf {
 enum ConstructTypeFlag {
     DECAF_NOFLAG = 0x0,     // No specific information on the data field
     DECAF_NBITEM = 0x1,     // Field represents the number of item in the collection
-    DECAF_ZCURVEKEY = 0x2,  // Field that can be used as a key for the ZCurve (position)
-    DECAF_ZCURVEINDEX = 0x4 // Field that can be used as the index for the ZCurve (hilbert code)
+    DECAF_POS = 0x2,  // Field that can be used as a key for the ZCurve (position)
+    DECAF_MORTON = 0x4 // Field that can be used as the index for the ZCurve (hilbert code)
 };
 
 enum ConstructTypeScope {

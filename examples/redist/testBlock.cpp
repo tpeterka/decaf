@@ -255,7 +255,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         container->appendData(string("pos"), array,
-                             DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                             DECAF_POS, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         container->appendData("domain_block", domainData,
                              DECAF_NOFLAG, DECAF_PRIVATE,

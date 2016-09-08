@@ -209,7 +209,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                             DECAF_NOFLAG, DECAF_SHARED,
                             DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         container1->appendData(std::string("pos"), array1,
-                            DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                            DECAF_POS, DECAF_PRIVATE,
                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component1->process(container1, decaf::DECAF_REDIST_SOURCE);
@@ -227,7 +227,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
                             DECAF_NOFLAG, DECAF_SHARED,
                             DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         container2->appendData(std::string("pos"), array2,
-                            DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                            DECAF_POS, DECAF_PRIVATE,
                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component2->process(container2, decaf::DECAF_REDIST_SOURCE);

@@ -93,7 +93,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
 
 
         container->appendData(std::string("index"), array,
-                             DECAF_ZCURVEKEY, DECAF_PRIVATE,
+                             DECAF_POS, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
         component->process(container, decaf::DECAF_REDIST_SOURCE);
