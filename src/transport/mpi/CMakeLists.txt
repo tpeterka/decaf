@@ -1,7 +1,7 @@
 find_package            (Boost COMPONENTS serialization REQUIRED)
 include_directories     (${Boost_INCLUDE_DIRS})
 
-add_library             (decaf_transport SHARED     ../redist_comp.cpp
+add_library             (bredala_transport SHARED     ../redist_comp.cpp
                                                     redist_mpi.cpp
                                                     redist_count_mpi.cpp
                                                     redist_round_mpi.cpp
@@ -9,9 +9,9 @@ add_library             (decaf_transport SHARED     ../redist_comp.cpp
                                                     redist_block_mpi.cpp
                                                     redist_proc_mpi.cpp)
 
-target_link_libraries   (decaf_transport            ${libraries} ${Boost_LIBRARIES} decaf_datamodel)
+target_link_libraries   (bredala_transport            ${libraries} ${Boost_LIBRARIES} bredala_datamodel)
 
-install                 (TARGETS decaf_transport
+install                 (TARGETS bredala_transport
                         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/
                         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                         GROUP_READ GROUP_WRITE GROUP_EXECUTE

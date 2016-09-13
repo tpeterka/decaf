@@ -22,7 +22,7 @@ if(Boost_FOUND)
   add_library                 (mod_tess_dflow     MODULE dflow2.cpp)
 
   target_link_libraries       (hacc_prod
-                              ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+                              ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   if                          (${serial} MATCHES "CGAL")
     include                   (${CGAL_USE_FILE})
     add_definitions           (${CGAL_CXX_FLAGS_INIT})
@@ -33,16 +33,16 @@ if(Boost_FOUND)
                                ${TESS_LIBRARY}
                                ${CGAL_LIBRARY}
                                ${CGAL_3RD_PARTY_LIBRARIES}
-                               decaf_transport
-                               decaf_datamodel)
+                               bredala_transport
+                               bredala_datamodel)
     target_link_libraries     (dense
                                ${libraries}
                                ${Boost_LIBRARIES}
                                ${TESS_LIBRARY}
                                ${CGAL_LIBRARY}
                                ${CGAL_3RD_PARTY_LIBRARIES}
-                               decaf_transport
-                               decaf_datamodel)
+                               bredala_transport
+                               bredala_datamodel)
   add_definitions             (-DTESS_CGAL_ALLOW_SPATIAL_SORT)
   add_definitions             (-DTESS_USE_CGAL)
   else                        ()
@@ -51,24 +51,24 @@ if(Boost_FOUND)
                                ${Boost_LIBRARIES}
                                ${TESS_LIBRARY}
                                ${QHull_LIBRARY}
-                               decaf_transport
-                               decaf_datamodel)
+                               bredala_transport
+                               bredala_datamodel)
     target_link_libraries     (dense
                                ${libraries}
                                ${Boost_LIBRARIES}
                                ${TESS_LIBRARY}
                                ${QHull_LIBRARY}
-                               decaf_transport
-                               decaf_datamodel)
+                               bredala_transport
+                               bredala_datamodel)
   endif                       ()
   target_link_libraries       (hacc_dflow
-                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+                               ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_hacc_dflow
-                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+                               ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries       (tess_dflow
-                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+                               ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_tess_dflow
-                               ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+                               ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   # .SO file extension on Linux/Mac OS
   set_target_properties       (mod_hacc_dflow PROPERTIES SUFFIX ".so")

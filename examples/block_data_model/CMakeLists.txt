@@ -9,7 +9,7 @@ if(Boost_FOUND AND DIY_INCLUDE_DIRS AND TESS_LIBRARY AND TESS_INCLUDE_DIRS)
     include_directories(${Boost_INCLUDE_DIRS})
     include_directories(${DIY_INCLUDE_DIRS} ${TESS_INCLUDE_DIRS})
     add_executable              (block_data_model block_data_model.cpp)
-    target_link_libraries       (block_data_model     ${libraries} ${Boost_LIBRARIES} ${TESS_LIBRARY} decaf_transport decaf_datamodel)
+    target_link_libraries       (block_data_model     ${libraries} ${Boost_LIBRARIES} ${TESS_LIBRARY} bredala_transport bredala_datamodel)
 
     install(TARGETS block_data_model
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/block_data_model/

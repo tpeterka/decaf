@@ -10,11 +10,11 @@ if(Boost_FOUND)
   add_library(py_cycle_4nodes  MODULE ../cycle_4nodes.cpp)
 
   target_link_libraries(py_linear_2nodes
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries(py_linear_3nodes
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries(py_cycle_4nodes
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   # following copied from
   # http://pybind11.readthedocs.org/en/latest/cmake.html#cmake

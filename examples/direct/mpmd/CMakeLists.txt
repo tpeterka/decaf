@@ -15,13 +15,13 @@ if(Boost_FOUND)
   add_library                 (mod_dflow          MODULE dflow.cpp)
 
   target_link_libraries       (prod
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries       (con
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries       (dflow
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_dflow
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   # .SO file extension on Linux/Mac OS
   set_target_properties(mod_dflow PROPERTIES SUFFIX ".so")

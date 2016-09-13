@@ -8,7 +8,7 @@ if(Boost_FOUND)
   add_library(py_lammps MODULE ../lammps.cpp)
 
   target_link_libraries(py_lammps
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   # following copied from
   # http://pybind11.readthedocs.org/en/latest/cmake.html#cmake
