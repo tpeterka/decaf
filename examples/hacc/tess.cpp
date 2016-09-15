@@ -32,28 +32,6 @@ using namespace std;
 // consumer
 void tessellate(Decaf* decaf, MPI_Comm comm)
 {
-    // this first test just creates and tessellates some synthetic data to demostrate that
-    // tess (a diy program) can be run as a decaf node task
-
-    int tot_blocks  = 8;                      // total number of blocks in the domain
-    int mem_blocks  = -1;                     // max blocks in memory
-    int dsize[3]    = {11, 11, 11};           // domain grid size
-    float jitter    = 2.0;                    // max amount to randomly displace particles
-    int wrap        = 0;                      // wraparound neighbors flag
-    int num_threads = 1;                      // threads diy can use
-    char outfile[256];                        // output file name
-    strcpy(outfile, "del.out");
-    double times[TESS_MAX_TIMES];             // timing
-
-    // data extents
-    typedef     diy::ContinuousBounds         Bounds;
-    Bounds domain;
-    for(int i = 0; i < 3; i++)
-    {
-        domain.min[i] = 0;
-        domain.max[i] = dsize[i] - 1.0;
-    }
-
     // event loop
     // TODO: verify that all of the below can run iteratively, only tested for one time step
     vector<pConstructData> in_data;
@@ -76,19 +54,27 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
             return;
         }
 
-        float* xyz = xyzpos.getArray();
-        Block<3>* blk = block.getBlock();
-        float* global_box = blk->getGlobalBBox(); // min and size (not min and max)
-        float* local_box = blk->getLocalBBox();   // min and size (not min and size)
+        float* xyz        = xyzpos.getArray();      // points
+        Block<3>* blk     = block.getBlock();       // domain and block info
+        float* global_box = blk->getGlobalBBox();   // min and size (not min and max)
+        float* local_box  = blk->getLocalBBox();    // min and size (not min and size)
+        int nbParticle    = xyzpos->getNbItems();   // number of particles in this process
+        int tot_blocks    = 8;                      // total number of blocks in the domain
+        int mem_blocks    = -1;                     // max blocks in memory
+        int wrap          = 0;                      // wraparound neighbors flag
+        int num_threads   = 1;                      // threads diy can use
+        char outfile[256];                          // output file name
+        strcpy(outfile, "del.out");
+        double times[TESS_MAX_TIMES];               // timing
 
-        // TODO: use the positions I got from decaf
-        // don't free anything that I get from decaf, its smart pointers take care of it
-
-        // debug
-        int nbParticle = xyzpos->getNbItems();
-        // fprintf(stderr, "nbParticle=%d\n", nbParticle);
-        // for (int i = 0; i < nbParticle; i++)
-        //     fprintf(stderr, "%.3f %.3f %.3f\n", xyz[3*i], xyz[3*i+1], xyz[3*i+2]);
+        // data extents
+        typedef     diy::ContinuousBounds         Bounds;
+        Bounds domain;
+        for(int i = 0; i < 3; i++)
+        {
+            domain.min[i] = global_box[i];
+            domain.max[i] = global_box[i] + global_box[3 + i] - 1.0;
+        }
 
         // init diy
         diy::mpi::communicator    world(comm);
@@ -102,7 +88,7 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
                                          &save_block,
                                          &load_block);
         diy::RoundRobinAssigner   assigner(world.size(), tot_blocks);
-        AddAndGenerate            create(master, jitter);
+        AddBlock                  create(master);
 
         // decompose
         std::vector<int> my_gids;
@@ -113,6 +99,30 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         if (wrap)
             wraps.assign(3, true);
         diy::decompose(3, world.rank(), domain, assigner, create, share_face, wraps, ghosts);
+
+        // put all the points into the first local block
+        // tess will sort them among the blocks anyway
+        for (size_t i = 0; i < master.size(); i++)
+        {
+            dblock_t* b = (dblock_t*)(master.block(i));
+            if (i == 0)
+            {
+                b->particles = (float *)malloc(nbParticle * 3 * sizeof(float));
+                b->num_orig_particles = b->num_particles = nbParticle;
+                for (int i = 0; i < 3 * nbParticle; i++)
+                    b->particles[i] = xyz[i];
+            }
+            // all blocks, even the empty ones need the box bounds set prior to doing the exchange
+            for (int i = 0; i < 3; ++i)
+            {
+                b->box.min[i] = domain.min[i];
+                b->box.max[i] = domain.max[i];
+            }
+        }
+
+
+        // sort and distribute particles to regular blocks
+        tess_exchange(master, assigner, times);
 
         // tessellate
         quants_t quants;
