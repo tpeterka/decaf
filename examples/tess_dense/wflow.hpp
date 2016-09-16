@@ -35,9 +35,9 @@ void make_wflow(Workflow& workflow)
     }
 
     string path1 = string(prefix , strlen(prefix));
-    path1.append(string("/examples/hacc/mod_hacc_dflow.so"));
+    path1.append(string("/examples/tess_dense/mod_points_dflow.so"));
     string path2 = string(prefix , strlen(prefix));
-    path2.append(string("/examples/hacc/mod_tess_dflow.so"));
+    path2.append(string("/examples/tess_dense/mod_tess_dflow.so"));
 
     // fill workflow nodes
     WorkflowNode node;
@@ -87,34 +87,4 @@ void make_wflow(Workflow& workflow)
     link.prod_dflow_redist = "proc";
     link.dflow_con_redist = "proc";
     workflow.links.push_back(link);
-
-    // a temporary test of just prod and tess
-    // WorkflowNode node;
-    // node.out_links.clear();                        // prod
-    // node.in_links.clear();
-    // node.out_links.push_back(0);
-    // node.start_proc = 0;
-    // node.nprocs = 8;
-    // node.func = "hacc";
-    // workflow.nodes.push_back(node);
-
-    // node.out_links.clear();                        // tess
-    // node.in_links.clear();
-    // node.in_links.push_back(0);
-    // node.start_proc = 9;
-    // node.nprocs = 1;
-    // node.func = "tessellate";
-    // workflow.nodes.push_back(node);
-
-    // // fill workflow links
-    // WorkflowLink link;
-    // link.prod = 0;                                // prod->tess
-    // link.con = 1;
-    // link.start_proc = 8;
-    // link.nprocs = 1;
-    // link.func = "dflow1";
-    // link.path = path;
-    // link.prod_dflow_redist = "proc";
-    // link.dflow_con_redist = "block";
-    // workflow.links.push_back(link);
 }

@@ -1,6 +1,5 @@
 //---------------------------------------------------------------------------
 //
-// temporary producer taking the place of the HACC simulation
 // generates synthetic particles and sends them to the rest of the workflow
 //
 // Tom Peterka
