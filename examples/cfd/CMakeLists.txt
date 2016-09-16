@@ -11,9 +11,9 @@ if(Boost_FOUND)
   add_executable              (cfd     cfd.cpp cfd_kernel.cpp)
   add_library                 (mod_cfd MODULE cfd.cpp cfd_kernel.cpp)
   target_link_libraries       (cfd
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_cfd
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   install(TARGETS cfd mod_cfd
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/cfd/

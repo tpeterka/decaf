@@ -7,9 +7,9 @@ if(FLOWVR_FOUND)
     add_executable              (treatment_flowvr          treatment_flowvr.cpp)
     add_executable              (targetmanager_flowvr      targetmanager_flowvr.cpp)
     target_link_libraries       (treatment_flowvr
-            ${libraries} decaf_transport decaf_datamodel ${DEP_LIBRARIES})
+            ${libraries} bredala_transport bredala_datamodel ${DEP_LIBRARIES})
     target_link_libraries       (targetmanager_flowvr
-            ${libraries} decaf_transport decaf_datamodel ${DEP_LIBRARIES})
+            ${libraries} bredala_transport bredala_datamodel ${DEP_LIBRARIES})
 
     install(TARGETS treatment_flowvr targetmanager_flowvr
         DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/gromacs/

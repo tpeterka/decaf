@@ -6,7 +6,7 @@ if(Boost_FOUND)
 
   include_directories(${Boost_INCLUDE_DIRS})
   cython_add_module( py_cfd driver.pyx )
-  target_link_libraries( py_cfd ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+  target_link_libraries( py_cfd ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   install(TARGETS py_cfd
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/cfd/python/

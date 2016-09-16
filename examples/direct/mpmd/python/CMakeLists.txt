@@ -10,11 +10,11 @@ if(Boost_FOUND)
   add_library(py_linear_2nodes_con   MODULE ../../linear_2nodes.cpp)
 
   target_link_libraries(py_linear_2nodes_prod
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries(py_linear_2nodes_dflow
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
   target_link_libraries(py_linear_2nodes_con
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   # following copied from
   # http://pybind11.readthedocs.org/en/latest/cmake.html#cmake

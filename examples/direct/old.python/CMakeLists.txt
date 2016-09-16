@@ -8,15 +8,15 @@ if(Boost_FOUND)
 
   cython_add_module(py_linear_2nodes driver_linear_2nodes.pyx)
   target_link_libraries(py_linear_2nodes
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   cython_add_module(py_linear_3nodes driver_linear_3nodes.pyx)
   target_link_libraries(py_linear_3nodes
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   # cython_add_module(py_cycle_4nodes driver_cycle_4nodes.pyx)
   # target_link_libraries(py_cycle_4nodes
-  #   ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+  #   ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   install(TARGETS py_linear_2nodes
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/python/

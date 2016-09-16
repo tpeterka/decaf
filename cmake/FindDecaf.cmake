@@ -5,7 +5,7 @@ FIND_PATH(DECAF_CXX_INCLUDE_DIR decaf.hpp HINTS
   /opt/local/include/decaf
   /sw/include/decaf
 )
-FIND_LIBRARY(DECAF_CXX_DATA_MODEL_LIBRARY NAMES decaf_datamodel HINTS
+FIND_LIBRARY(DECAF_CXX_DATA_MODEL_LIBRARY NAMES bredala_datamodel HINTS
   ${DECAF_PREFIX}/lib
   /usr/lib
   /usr/local/lib
@@ -13,7 +13,7 @@ FIND_LIBRARY(DECAF_CXX_DATA_MODEL_LIBRARY NAMES decaf_datamodel HINTS
   /sw/lib
 )
 
-FIND_LIBRARY(DECAF_CXX_DATA_TRANSPORT_LIBRARY NAMES decaf_transport HINTS
+FIND_LIBRARY(DECAF_CXX_DATA_TRANSPORT_LIBRARY NAMES bredala_transport HINTS
   ${DECAF_PREFIX}/lib
   /usr/lib
   /usr/local/lib
