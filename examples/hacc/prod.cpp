@@ -74,9 +74,9 @@ void prod(Decaf* decaf)
         domainBlock->ghostSize_ = 0;
 
         // define the fields of the data model
-        ArrayFieldf x_pos(x, npts, 1, false);
-        ArrayFieldf y_pos(y, npts, 1, false);
-        ArrayFieldf z_pos(z, npts, 1, false);
+        ArrayFieldf x_pos(x, npts, 1, true);
+        ArrayFieldf y_pos(y, npts, 1, true);
+        ArrayFieldf z_pos(z, npts, 1, true);
 
         // debug
         // for (int i = 0; i < npts; i++)

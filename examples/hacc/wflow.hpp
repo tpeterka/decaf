@@ -75,7 +75,7 @@ void make_wflow(Workflow& workflow)
     link.func = "dflow1";
     link.path = path1;
     link.prod_dflow_redist = "proc";
-    link.dflow_con_redist = "block";
+    link.dflow_con_redist = "proc";
     workflow.links.push_back(link);
 
     link.prod = 1;                                // tess->dense
@@ -84,8 +84,8 @@ void make_wflow(Workflow& workflow)
     link.nprocs = 2;
     link.func = "dflow2";
     link.path = path2;
-    link.prod_dflow_redist = "count";        // TODO: change to proc when receiving actual data
-    link.dflow_con_redist = "count";         // TODO: change to proc when sending actual data
+    link.prod_dflow_redist = "proc";
+    link.dflow_con_redist = "proc";
     workflow.links.push_back(link);
 
     // a temporary test of just prod and tess
