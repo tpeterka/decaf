@@ -14,30 +14,39 @@ if(Boost_FOUND)
 
   TARGET_LINK_LIBRARIES(RedistBCA bca)
 
-  add_executable(linear_2nodes_c linear_2nodes_c.c)
-  add_executable(linear_3nodes_c linear_3nodes_c.c)
-  add_executable(cycle_4nodes_c cycle_4nodes_c.c)
-  add_library(mod_dflow_direct  MODULE dflow.cpp)
+  INSTALL(TARGETS SimpleBCA  RedistBCA
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/C/)
+  
+  INSTALL(FILES REDIST_TEST 
+	  DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/C/
+    	  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+    	  GROUP_READ GROUP_WRITE GROUP_EXECUTE
+    	  WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-  target_link_libraries(linear_2nodes_c bca dca)
-  target_link_libraries(linear_3nodes_c bca dca)
-  target_link_libraries(cycle_4nodes_c bca dca)
-  target_link_libraries(mod_dflow_direct
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+  if( NOT ${bredala_only} )
+    add_executable(linear_2nodes_c linear_2nodes_c.c)
+    add_executable(linear_3nodes_c linear_3nodes_c.c)
+    add_executable(cycle_4nodes_c cycle_4nodes_c.c)
+    add_library(mod_dflow_direct  MODULE dflow.cpp)
 
-  INSTALL(TARGETS SimpleBCA  RedistBCA linear_2nodes_c
-    linear_3nodes_c mod_dflow_direct
-    cycle_4nodes_c
-    DESTINATION examples/C/)
+    target_link_libraries(linear_2nodes_c bca dca)
+    target_link_libraries(linear_3nodes_c bca dca)
+    target_link_libraries(cycle_4nodes_c bca dca)
+    target_link_libraries(mod_dflow_direct
+      ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
-  INSTALL(FILES REDIST_TEST LINEAR_2NODES_TEST LINEAR_3NODES_TEST CYCLE_4NODES_TEST
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/C/
-    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-    GROUP_READ GROUP_WRITE GROUP_EXECUTE
-    WORLD_READ WORLD_WRITE WORLD_EXECUTE)
+    INSTALL(TARGETS linear_2nodes_c
+      linear_3nodes_c mod_dflow_direct
+      cycle_4nodes_c
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/C/)
 
+    INSTALL(FILES REDIST_TEST LINEAR_2NODES_TEST LINEAR_3NODES_TEST CYCLE_4NODES_TEST
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/C/
+      PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+      GROUP_READ GROUP_WRITE GROUP_EXECUTE
+      WORLD_READ WORLD_WRITE WORLD_EXECUTE)
+
+    add_subdirectory(mpmd)
+  endif(NOT  ${bredala_only})
 endif(Boost_FOUND)
-
-add_subdirectory(mpmd)
-
 

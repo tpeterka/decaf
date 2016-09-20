@@ -53,13 +53,13 @@ add_library                 (mod_dflow_gromacs  MODULE dflow.cpp)
 
 
 target_link_libraries       (treatment
-    ${libraries} decaf_transport decaf_datamodel ${DEP_LIBRARIES})
+    ${libraries} bredala_transport bredala_datamodel ${DEP_LIBRARIES})
 target_link_libraries       (dflow_gromacs
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 target_link_libraries       (targetmanager
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 target_link_libraries       (mod_dflow_gromacs
-    ${libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 target_link_libraries       (prod_c_gromacs bca dca)
 
 set_target_properties (treatment PROPERTIES LINK_FLAGS "-Wl,-export-dynamic")

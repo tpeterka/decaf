@@ -35,10 +35,10 @@ if [ $num_nodes -lt 1 ]; then
 fi
 
 # executables
-exe1=./hacc_prod
-exe2=./hacc_dflow
+exe1=./points
+exe2=./points_dflow
 exe3=./tess
-exe4=./hacc_dflow
+exe4=./tess_dflow
 exe5=./dense
 
 # mpmd command

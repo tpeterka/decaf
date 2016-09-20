@@ -27,9 +27,9 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
     add_executable          (lammps            lammps.cpp)
     add_library             (mod_lammps MODULE lammps.cpp)
     target_link_libraries   (lammps
-      ${lammps_libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+      ${lammps_libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
     target_link_libraries   (mod_lammps
-      ${lammps_libraries} ${Boost_LIBRARIES} decaf_transport decaf_datamodel)
+      ${lammps_libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
     # .SO file extension on Linux/Mac OS
     set_target_properties(mod_lammps PROPERTIES SUFFIX ".so")
