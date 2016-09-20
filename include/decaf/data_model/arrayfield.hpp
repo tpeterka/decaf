@@ -88,6 +88,11 @@ public:
         return ptr_->getArray();
     }
 
+    int getArraySize()
+    {
+        return ptr_->getSize();
+    }
+
     virtual int getNbItems()
     {
         return ptr_->getNbItems();
