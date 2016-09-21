@@ -36,9 +36,9 @@ fi
 
 # executables
 exe1=./points
-exe2=./points_dflow
+exe2=./pts_dflow
 exe3=./tess
-exe4=./tess_dflow
+exe4=./pts_dflow
 exe5=./dense
 
 # mpmd command

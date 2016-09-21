@@ -1,12 +1,12 @@
 {
     "workflow" :
     {
-	"path" : "/examples/direct/mod_linear_2nodes.so",
+	"path" : "/examples/tess_dense/mod_pts_dflow.so",
 	"nodes" : [
 	    {
 		"start_proc" : 0 ,
 		"nprocs" : 8 ,
-		"func" : "prod" 
+		"func" : "prod"
 	    },
 	    {
 		"start_proc" : 12 ,
@@ -17,24 +17,24 @@
 		"start_proc" : 16 ,
 		"nprocs" : 2 ,
 		"func" : "density_estimate"
-	    }	    
+	    }
 	],
 	"edges" : [
 	    {
 		"start_proc" : 8 ,
 		"nprocs" : 4 ,
-		"func" : "dflow" ,
-		"prod_dflow_redist" : "count" ,
-		"dflow_con_redist" : "count"
+		"func" : "dflow1" ,
+		"prod_dflow_redist" : "proc" ,
+		"dflow_con_redist" : "proc"
 		"source" : 0 ,
 		"target" : 1
 	    },
 	    {
 		"start_proc" : 14 ,
 		"nprocs" : 2 ,
-		"func" : "dflow" ,
-		"prod_dflow_redist" : "count" ,
-		"dflow_con_redist" : "count"
+		"func" : "dflow2" ,
+		"prod_dflow_redist" : "proc" ,
+		"dflow_con_redist" : "proc"
 		"source" : 1 ,
 		"target" : 2
 	    },

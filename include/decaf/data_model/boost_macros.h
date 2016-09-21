@@ -10,6 +10,8 @@
 // mdreher@anl.gov
 //
 //--------------------------------------------------------------------------
+#ifndef _BOOST_MACROS
+#define _BOOST_MACROS
 
 #include <boost/serialization/export.hpp>
 //#include "blockconstructdata.hpp"
@@ -66,3 +68,4 @@ BOOST_CLASS_EXPORT_GUID(decaf::Array3DConstructData<int>,"ArrayNDimConstructData
 BOOST_CLASS_EXPORT_GUID(decaf::Array3DConstructData<double>,"ArrayNDimConstructData<double3>")
 #endif
 
+#endif

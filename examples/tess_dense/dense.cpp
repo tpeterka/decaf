@@ -26,135 +26,33 @@
 #include "tess/tess.h"
 #include "tess/tess.hpp"
 #include "tess/dense.hpp"
+#include "block_serialization.hpp"
 
 // using namespace decaf;
 using namespace std;
 
-void get_in_data(vector<pConstructData>& in_data)
+// fill blocks with incoming data
+// TODO: for now just prints some of the data; need to add to blocks in the master
+void fill_blocks(vector<pConstructData>& in_data)
 {
     // TOOD: get blocks as input args and fill them with the in_data
     // for now just printing it
 
     // only using first message in in_data (in_data[0])
-    // don't know what it means to have more inputs than one, yet
-
-    SimpleFieldi si;
-    ArrayFieldf  af;
-    ArrayFieldi  ai;
-
-    si = in_data[0]->getFieldData<SimpleFieldi>(string("gid"));
-    if (si)
-        fprintf(stderr, "gid %d\n", si.getData());
-    else
-        fprintf(stderr, "Error: null pointer for gid in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("mins");
+    ArrayField<dblock_t> af = in_data[0]->getFieldData<ArrayField<dblock_t> >("blocks_array");
     if (af)
     {
-        float* mins = af.getArray();
-        fprintf(stderr, "mins [%.3f %.3f %.3f]\n", mins[0], mins[1], mins[2]);
+        dblock_t* b = af.getArray();
+
+        for (int i = 0; i < af.getNbItems(); i++)
+        {
+            fprintf(stderr, "block gid = %d\n", b[i].gid);
+
+            // TODO: print the rest of the fields
+        }
+        // TODO: add the blocks to the master
     } else
-        fprintf(stderr, "Error: null pointer for mins in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("maxs");
-    if (af)
-    {
-        float* maxs = af.getArray();
-        fprintf(stderr, "maxs [%.3f %.3f %.3f]\n", maxs[0], maxs[1], maxs[2]);
-    } else
-        fprintf(stderr, "Error: null pointer for maxs in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("box_min");
-    if (af)
-    {
-        float* box_min = af.getArray();
-        fprintf(stderr, "box_min [%.3f %.3f %.3f]\n", box_min[0], box_min[1], box_min[2]);
-    } else
-        fprintf(stderr, "Error: null pointer for box_min in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("box_max");
-    if (af)
-    {
-        float* box_max = af.getArray();
-        fprintf(stderr, "box_max [%.3f %.3f %.3f]\n", box_max[0], box_max[1], box_max[2]);
-    } else
-        fprintf(stderr, "Error: null pointer for box_max in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("data_bounds_min");
-    if (af)
-    {
-        float* data_bounds_min = af.getArray();
-        fprintf(stderr, "data_bounds_min [%.3f %.3f %.3f]\n",
-                data_bounds_min[0], data_bounds_min[1], data_bounds_min[2]);
-    } else
-        fprintf(stderr, "Error: null pointer for data_bounds_min in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("data_bounds_max");
-    if (af)
-    {
-        float* data_bounds_max = af.getArray();
-        fprintf(stderr, "data_bounds_max [%.3f %.3f %.3f]\n",
-                data_bounds_max[0], data_bounds_max[1], data_bounds_max[2]);
-    } else
-        fprintf(stderr, "Error: null pointer for data_bounds_max in dense\n");
-
-    si = in_data[0]->getFieldData<SimpleFieldi>(string("num_orig_particles"));
-    if (si)
-        fprintf(stderr, "num_orig_particles %d\n", si.getData());
-    else
-        fprintf(stderr, "Error: null pointer for num_orig_particles in dense\n");
-
-    si = in_data[0]->getFieldData<SimpleFieldi>(string("num_particles"));
-    if (si)
-        fprintf(stderr, "num_particles %d\n", si.getData());
-    else
-        fprintf(stderr, "Error: null pointer for num_particles in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("particles");
-    if (af)
-    {
-        // not printing the particles, but could to check them
-        float* particles = af.getArray();
-    } else
-        fprintf(stderr, "Error: null pointer for particles in dense\n");
-
-    // TODO: get rem_gids and rem_lids once they are added correctly by tess
-
-    si = in_data[0]->getFieldData<SimpleFieldi>(string("num_grid_pts"));
-    if (si)
-        fprintf(stderr, "num_grid_pts %d\n", si.getData());
-    else
-        fprintf(stderr, "Error: null pointer for num_grid_pts in dense\n");
-
-    af = in_data[0]->getFieldData<ArrayFieldf>("density");
-    if (af)
-    {
-        // not printing the density, which is empty anyway
-        float* density = af.getArray();
-    } else
-        fprintf(stderr, "Error: null pointer for density in dense\n");
-
-    si = in_data[0]->getFieldData<SimpleFieldi>(string("complete"));
-    if (si)
-        fprintf(stderr, "complete %d\n", si.getData());
-    else
-        fprintf(stderr, "Error: null pointer for complete in dense\n");
-
-    si = in_data[0]->getFieldData<SimpleFieldi>(string("num_tets"));
-    if (si)
-        fprintf(stderr, "num_tets %d\n", si.getData());
-    else
-        fprintf(stderr, "Error: null pointer for num_tets in dense\n");
-
-    // TODO: get tets once they are added correctly by tess
-
-    ai = in_data[0]->getFieldData<ArrayFieldi>("vert_to_tet");
-    if (ai)
-    {
-        // not printing the density, which is empty anyway
-        int* density = ai.getArray();
-    } else
-        fprintf(stderr, "Error: null pointer for vert_to_tet in dense\n");
+        fprintf(stderr, "Error: null pointer for array of blocks in dense\n");
 }
 
 // consumer
@@ -223,8 +121,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         diy::RoundRobinAssigner   assigner(world.size(), -1);  // tot_blocks found by read_blocks
 
         // fill blocks with incoming data
-        // TODO: add blocks to args, for now just printing the in_data
-        get_in_data(in_data);
+        fill_blocks(in_data);
 
         // read the tessellation
         diy::io::read_blocks(infile, world, assigner, master, &load_block_light);

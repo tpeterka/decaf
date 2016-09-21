@@ -22,110 +22,35 @@
 #include <mpi.h>
 #include <map>
 #include <cstdlib>
+#include <string.h>
 
 #include "wflow.hpp"                         // defines the workflow for this example
 #include "tess/tess.h"
 #include "tess/tess.hpp"
+#include "block_serialization.hpp"
 
-// using namespace decaf;
 using namespace std;
 
-void fill_container(pConstructData& c,       // decaf container
-                    diy::Master& master)     // diy master
+// a light copy of small data (quantities, bounding boxes, etc) and pointer to the heavy data
+// (particles, tets)
+void copy_block(dblock_t& dest, dblock_t* src)
 {
-    // TODO: only doing first block for now; need to learn how to send multiple blocks
-    dblock_t* b = (dblock_t*)master.block(0);
-
-    SimpleFieldi gid(b->gid);
-    c->appendData(string("gid"), gid,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldf mins(b->mins, 3, 1, false); // true = decaf will free; TODO: crashes when true
-    c->appendData(string("mins"), mins,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldf maxs(b->mins, 3, 1, false);
-    c->appendData(string("maxs"), mins,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldf box_min(b->box.min, DIY_MAX_DIM, 1, false);
-    c->appendData(string("box_min"), box_min,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldf box_max(b->box.max, DIY_MAX_DIM, 1, false);
-    c->appendData(string("box_max"), box_max,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldf data_bounds_min(b->data_bounds.min, DIY_MAX_DIM, 1, false);
-    c->appendData(string("data_bounds_min"), data_bounds_min,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldf data_bounds_max(b->data_bounds.max, DIY_MAX_DIM, 1, false);
-    c->appendData(string("data_bounds_max"), data_bounds_max,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    SimpleFieldi num_orig_particles(b->num_orig_particles);
-    c->appendData(string("num_orig_particles"), num_orig_particles,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    SimpleFieldi num_particles(b->num_particles);
-    c->appendData(string("num_particles"), num_particles,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldf particles(b->particles, 3 * b->num_particles, 3, false);
-    c->appendData(string("particles"), particles,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    // TODO: following causes errors
-    // how does decaf know size of my array?
-    // and if it knows it, then why do I need to specify it?
-    // and why can't I send less than the full length?
-
-    // ArrayFieldi rem_gids(b->rem_gids, b->num_particles - b->num_orig_particles, 1, false);
-    // c->appendData(string("rem_gids"), rem_gids,
-    //               DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-    // ArrayFieldi rem_lids(b->rem_lids, b->num_particles - b->num_orig_particles, 1, false);
-    // c->appendData(string("rem_lids"), rem_lids,
-    //               DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    SimpleFieldi num_grid_pts(b->num_grid_pts);
-    c->appendData(string("num_grid_pts"), num_grid_pts,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    // num_grid_pts is 0 because density not computed yet at this stage of the workflow
-    // but it doesn't cost anything to include an empty density field
-    ArrayFieldf density(b->density, b->num_grid_pts, 1, false);
-    c->appendData(string("density"), density,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    SimpleFieldi complete(b->complete);
-    c->appendData(string("complete"), complete,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    SimpleFieldi num_tets(b->num_tets);
-    c->appendData(string("num_tets"), num_tets,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    // TODO: following causes errors
-    // how does decaf know how to serialize a single tet?
-    // and why doesn't it like the size of my array?
-    // ArrayField<tet_t> tets(b->tets, b->num_tets, 1, false);
-    // c->appendData(string("tets"), tets,
-    //               DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    ArrayFieldi vert_to_tet(b->vert_to_tet, b->num_particles, 1, false);
-    c->appendData(string("vert_to_tet"), vert_to_tet,
-                  DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-
-    // TODO: following causes errors in number of items
-    // append diy link
-    // diy::Link* link = master.link(0);             // TODO, only block 0 for now
-    // vector<diy::BlockID> neighbors_;
-    // for (size_t i = 0; i < link->size(); i++)
-    //     neighbors_.push_back(link->target(i));
-    // VectorField<diy::BlockID> neighbors(neighbors_, 1);
-    // c->appendData(string("neighbors"), neighbors,
-    //               DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+    dest.gid                  = src->gid;
+    memcpy(dest.mins,         src->mins,                 3 * sizeof(float));
+    memcpy(dest.maxs,         src->maxs,                 3 * sizeof(float));
+    memcpy(&dest.box,         &src->box,                 sizeof(bb_c_t));
+    memcpy(&dest.data_bounds, &src->data_bounds,         sizeof(bb_c_t));
+    dest.num_orig_particles   = src->num_orig_particles;
+    dest.num_particles        = src->num_particles;
+    dest.particles            = src->particles;          // shallow copy, pointer only
+    dest.rem_gids             = src->rem_gids;           // shallow
+    dest.rem_lids             = src->rem_lids;           // shallow
+    dest.num_grid_pts         = src->num_grid_pts;
+    dest.density              = src->density;            // shallow
+    dest.complete             = src->complete;
+    dest.num_tets             = src->num_tets;
+    dest.tets                 = src->tets;               // shallow
+    dest.vert_to_tet          = src->vert_to_tet;        // shallow
 }
 
 // consumer
@@ -237,10 +162,15 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
 
         // fill containers for the blocks and send them
         pConstructData container;
-
-        // TODO: following not out-of-core safe; should be done in foreach instead
-        fill_container(container, master);
-
+        vector<dblock_t> blocks(master.size());
+        for (size_t i = 0; i < master.size(); i++)
+        {
+            copy_block(blocks[i], (dblock_t*)master.block(i));
+            ArrayField<dblock_t> blocks_array(&blocks[i], master.size(), 1, false);
+            container->appendData(string("blocks_array"), blocks_array,
+                                  DECAF_NOFLAG, DECAF_PRIVATE,
+                                  DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+        }
         decaf->put(container);
     } // decaf event loop
 
