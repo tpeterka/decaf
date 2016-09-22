@@ -566,7 +566,7 @@ decaf::
 Decaf::src_type(pConstructData in_data)   // input message
 {
     shared_ptr<SimpleConstructData<TaskType> > ptr =
-            in_data->getTypedData<SimpleConstructData<TaskType> >(string("src_type"));
+            in_data->getTypedData<SimpleConstructData<TaskType> >("src_type");
     if (ptr)
     {
         return ptr->getData();
@@ -580,7 +580,7 @@ int
 decaf::
 Decaf::link_id(pConstructData in_data)   // input message
 {
-    shared_ptr<SimpleConstructData<int> > ptr = in_data->getTypedData<SimpleConstructData<int> >(string("link_id"));
+    shared_ptr<SimpleConstructData<int> > ptr = in_data->getTypedData<SimpleConstructData<int> >("link_id");
     if (ptr)
     {
         return ptr->getData();
@@ -595,7 +595,7 @@ int
 decaf::
 Decaf::dest_id(pConstructData in_data)   // input message
 {
-    shared_ptr<SimpleConstructData<int> > ptr = in_data->getTypedData<SimpleConstructData<int> >(string("dest_id"));
+    shared_ptr<SimpleConstructData<int> > ptr = in_data->getTypedData<SimpleConstructData<int> >("dest_id");
     if (ptr)
     {
         return ptr->getData();

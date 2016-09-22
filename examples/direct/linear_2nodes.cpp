@@ -41,7 +41,7 @@ void prod(Decaf* decaf)
         //    make_shared<SimpleConstructData<int> >(timestep);
         SimpleFieldi data(timestep);
         pConstructData container;
-        container->appendData(string("var"), data,
+        container->appendData("var", data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
@@ -67,7 +67,7 @@ void con(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >(string("var"));
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
             if (field)
                 sum += field.getData();
             else

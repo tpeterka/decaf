@@ -42,7 +42,7 @@ void prod(Decaf* decaf)
         SimpleFieldi data(timestep);
 
         pConstructData container;
-        container->appendData(string("var"), data,
+        container->appendData("var", data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 

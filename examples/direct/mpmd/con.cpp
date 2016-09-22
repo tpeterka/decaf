@@ -42,7 +42,7 @@ void con(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi>(string("var"));
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi>("var");
             if (field)
                 sum += field.getData();
             else

@@ -11,12 +11,33 @@
 using namespace std;
 using namespace decaf;
 
+// Serialization and deserialization of custom type
+typedef struct
+{
+    float x;
+    float y;
+    float z;
+    unsigned int id;
+} particle;
+
+// Macro for serialization
+BOOST_IS_BITWISE_SERIALIZABLE(particle) // Useful if the structure
+BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<particle>,"ArrayConstructData<particle>")
+typedef ArrayField<particle> ArrayFieldp;
+
 void printArray(float* array, unsigned int size)
 {
     fprintf(stderr,"[ ");
     for(unsigned int i = 0; i < size; i++)
         fprintf(stderr, "%f ", array[i]);
     fprintf(stderr, "]\n");
+}
+
+void printArrayPart(particle* array, unsigned int size)
+{
+    for(unsigned int i = 0; i < size; i++)
+        fprintf(stderr, "Id %u : %f %f %f\n", array[i].id, array[i].x, array[i].y, array[i].z);
+
 }
 
 // Simple serialization and deserialization of common data types
@@ -38,13 +59,13 @@ void simpleDataModelCreation()
 
     pConstructData container;
 
-    container->appendData(string("simple"), simplefield,
+    container->appendData("simple", simplefield,
                           DECAF_NOFLAG, DECAF_SHARED,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
-    container->appendData(string("vector"), vectorfield,
+    container->appendData("vector", vectorfield,
                           DECAF_NOFLAG, DECAF_PRIVATE,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
-    container->appendData(string("array"), arrayfield,
+    container->appendData("array", arrayfield,
                           DECAF_NOFLAG, DECAF_PRIVATE,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
@@ -77,6 +98,7 @@ void simpleDataModelCreation()
     else
     {
         vector<float> data = othervectorfield.getVector();
+        fprintf(stderr, "Printing vector data : \n");
         printArray(&data[0], data.size());
     }
 
@@ -89,23 +111,12 @@ void simpleDataModelCreation()
     else
     {
         float* data = otherarrayfield.getArray();
+        fprintf(stderr, "Printing array data : \n");
         printArray(&data[0], otherarrayfield.getArraySize());
     }
 }
 
-// Serialization and deserialization of custom type
-typedef struct
-{
-    float x;
-    float y;
-    float z;
-    unsigned int id;
-} particle;
 
-// Macro for serialization
-BOOST_IS_BITWISE_SERIALIZABLE(particle) // Useful if the structure
-BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<particle>,"ArrayConstructData<particle>")
-typedef decaf::ArrayConstructData<particle> ArrayFieldp;
 
 
 void customDataModel()
@@ -120,6 +131,36 @@ void customDataModel()
     }
 
     ArrayFieldp arrayfield(simplearray, ARRAYSIZE, 1, false);
+
+    pConstructData container;
+    container->appendData("array", arrayfield,
+                          DECAF_NOFLAG, DECAF_PRIVATE,
+                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
+    // Serialization
+    container->serialize();
+
+    //Retrieving the serialized buffer
+    unsigned int bufferSize = container->getOutSerialBufferSize();
+    char* buffer = container->getOutSerialBuffer();
+
+    // Creating a new data model and using the buffer
+    pConstructData newcontainer;
+    newcontainer->merge(buffer, bufferSize);
+
+    ArrayFieldp otherarrayfield = newcontainer->getFieldData<ArrayFieldp>("array");
+    if(!otherarrayfield)
+    {
+        fprintf(stderr, "ERROR : unable to retrieve the field \"array\"\n");
+        exit(1);
+    }
+    else
+    {
+        particle* data = otherarrayfield.getArray();
+        fprintf(stderr, "Printing particle data : \n");
+        printArrayPart(&data[0], otherarrayfield.getArraySize());
+    }
+
 }
 
 
@@ -138,6 +179,7 @@ int main(int argc,
     srand(time(NULL) + rank * size_world + nameLen);
 
     simpleDataModelCreation();
+    customDataModel();
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();

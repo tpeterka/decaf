@@ -68,6 +68,19 @@ public:
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
                     ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+    bool appendData(const char* name,
+                    std::shared_ptr<BaseConstructData>  data,
+                    ConstructTypeFlag flags = DECAF_NOFLAG,
+                    ConstructTypeScope scope =  DECAF_PRIVATE,
+                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
+
+    bool appendData(const char* name,
+                    BaseField& data,
+                    ConstructTypeFlag flags = DECAF_NOFLAG,
+                    ConstructTypeScope scope =  DECAF_PRIVATE,
+                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
     
     bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
@@ -165,10 +178,10 @@ public:
     const std::vector<std::string>& getSplitOrder();
 
     template<typename T>
-    std::shared_ptr<T> getTypedData(std::string key);
+    std::shared_ptr<T> getTypedData(const char* key);
 
     template<typename T>
-    T getFieldData(std::string key);
+    T getFieldData(const char* key);
 
     void updateNbItems();
 
@@ -205,7 +218,7 @@ protected:
 template<typename T>
 std::shared_ptr<T>
 decaf::
-ConstructData::getTypedData(std::string key)
+ConstructData::getTypedData(const char* key)
 {
     std::shared_ptr<BaseConstructData> field = this->getData(key);
     if(!field)
@@ -224,7 +237,7 @@ ConstructData::getTypedData(std::string key)
 template<typename T>
 T
 decaf::
-ConstructData::getFieldData(std::string key)
+ConstructData::getFieldData(const char* key)
 {
     std::shared_ptr<BaseConstructData> field = this->getData(key);
     if(!field)

@@ -84,7 +84,7 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
 
                 VectorFliedd data(x, 3 * natoms, 3);
 
-                container->appendData(string("pos"), data,
+                container->appendData("pos", data,
                                       DECAF_NOFLAG, DECAF_PRIVATE,
                                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
             }
@@ -92,7 +92,7 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
             {
                 vector<double> pos;
                 VectorFliedd data(pos, 3);
-                container->appendData(string("pos"), data,
+                container->appendData("pos", data,
                                       DECAF_NOFLAG, DECAF_PRIVATE,
                                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
             }
@@ -119,7 +119,7 @@ void print(Decaf* decaf)
         // get the values
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            VectorFliedd pos = in_data[i]->getFieldData<VectorFliedd>(string("pos"));
+            VectorFliedd pos = in_data[i]->getFieldData<VectorFliedd>("pos");
             if (pos)
             {
                 // debug
