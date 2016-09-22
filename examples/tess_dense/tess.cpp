@@ -71,7 +71,7 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     fprintf(stderr, "complete %d num_tets %d\n", src->complete, src->num_tets);
     fprintf(stderr, "particles:\n");
     for (int i = 0; i < src->num_particles; i++)
-        fprintf(stderr, "[%.3f %.3f %.3f] ",
+        fprintf(stderr, "gid=%d i=%d [%.3f %.3f %.3f] ", src->gid, i,
                 src->particles[3 * i], src->particles[3 * i + 1], src->particles[3 * i + 2]);
     fprintf(stderr, "\n");
 }

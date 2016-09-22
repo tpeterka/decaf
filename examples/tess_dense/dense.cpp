@@ -59,9 +59,9 @@ void fill_blocks(vector<pConstructData>& in_data)
                     b[i].num_orig_particles, b[i].num_particles);
             fprintf(stderr, "complete %d num_tets %d\n", b[i].complete, b[i].num_tets);
             fprintf(stderr, "particles:\n");
-            for (int i = 0; i < b[i].num_particles; i++)
-                fprintf(stderr, "[%.3f %.3f %.3f] ",
-                        b[i].particles[3 * i], b[i].particles[3 * i + 1], b[i].particles[3 * i + 2]);
+            for (int j = 0; j < b[i].num_particles; j++)
+                fprintf(stderr, "gid=%d j=%d [%.3f %.3f %.3f] ", b[i].gid, j,
+                        b[i].particles[3 * j], b[i].particles[3 * j + 1], b[i].particles[3 * j + 2]);
             fprintf(stderr, "\n");
 
             // TODO: print the rest of the fields
