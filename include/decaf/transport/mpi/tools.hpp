@@ -35,7 +35,8 @@ int CommSize(CommHandle comm)
 size_t DatatypeSize(CommDatatype dtype)
 {
     MPI_Aint extent;
-    MPI_Type_extent(dtype, &extent);
+    MPI_Aint lb;
+    MPI_Type_get_extent(dtype, &lb, &extent);
     return extent;
 }
 

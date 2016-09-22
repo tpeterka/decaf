@@ -54,7 +54,10 @@ if(Boost_FOUND)
     add_executable              (testmem testmem.cpp)
     target_link_libraries       (testmem     ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
-    install(TARGETS testboost testzcurve testround test2count testblock testproc testmem
+    add_executable              (testserialization testSerialization.cpp)
+    target_link_libraries       (testserialization     ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+
+    install(TARGETS testboost testzcurve testround test2count testblock testproc testmem testserialization
             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/bredala/
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
             )

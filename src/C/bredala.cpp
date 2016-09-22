@@ -480,7 +480,7 @@ extern "C"
         case bca_INT:
         {
             SimpleFieldi field = (*container_)->getFieldData<SimpleFieldi>(
-                        string(name));
+                        name);
             if(field)
                 return box(new SimpleFieldi(field.getPtr()));
             else
@@ -490,7 +490,7 @@ extern "C"
         case bca_FLOAT:
         {
             SimpleFieldf field = (*container_)->getFieldData<SimpleFieldf>(
-                        string(name));
+                        name);
             if(field)
                 return box(new SimpleFieldf(field.getPtr()));
             else
@@ -500,7 +500,7 @@ extern "C"
         case bca_DOUBLE:
         {
             SimpleFieldd field = (*container_)->getFieldData<SimpleFieldd>(
-                        string(name));
+                        name);
             if(field)
                 return box(new SimpleFieldd(field.getPtr()));
             else
@@ -510,7 +510,7 @@ extern "C"
         case bca_CHAR:
         {
             SimpleField<char> field = (*container_)->getFieldData<SimpleField<char> >(
-                        string(name));
+                        name);
             if(field)
                 return box(new SimpleField<char>(field.getPtr()));
             else
@@ -520,7 +520,7 @@ extern "C"
         case bca_UNSIGNED:
         {
             SimpleFieldu field = (*container_)->getFieldData<SimpleFieldu>(
-                        string(name));
+                        name);
             if(field)
                 return box(new SimpleFieldu(field.getPtr()));
             else
@@ -547,7 +547,7 @@ extern "C"
         case bca_INT:
         {
             ArrayFieldi field = (*container_)->getFieldData<ArrayFieldi>(
-                        string(name));
+                        name);
             if(field)
                 return box(new ArrayFieldi(field.getPtr()));
             else
@@ -557,7 +557,7 @@ extern "C"
         case bca_FLOAT:
         {
             ArrayFieldf field = (*container_)->getFieldData<ArrayFieldf>(
-                        string(name));
+                        name);
             if(field)
                 return box(new ArrayFieldf(field.getPtr()));
             else
@@ -567,7 +567,7 @@ extern "C"
         case bca_DOUBLE:
         {
             ArrayFieldd field = (*container_)->getFieldData<ArrayFieldd>(
-                        string(name));
+                        name);
             if(field)
                 return box(new ArrayFieldd(field.getPtr()));
             else
@@ -577,7 +577,7 @@ extern "C"
         case bca_CHAR:
         {
             ArrayField<char> field = (*container_)->getFieldData<ArrayField<char> >(
-                        string(name));
+                        name);
             if(field)
                 return box(new ArrayField<char>(field.getPtr()));
             else
@@ -587,7 +587,7 @@ extern "C"
         case bca_UNSIGNED:
         {
             ArrayFieldu field = (*container_)->getFieldData<ArrayFieldu>(
-                        string(name));
+                        name);
             if(field)
                 return box(new ArrayFieldu(field.getPtr()));
             else
@@ -610,7 +610,7 @@ extern "C"
     {
          pConstructData* container_ = unbox(container);
 
-         BlockField field = (*container_)->getFieldData<BlockField>(string(name));
+         BlockField field = (*container_)->getFieldData<BlockField>(name);
          if(field)
              return box(new BlockField(field.getPtr()));
          else

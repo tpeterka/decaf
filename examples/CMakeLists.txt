@@ -16,7 +16,9 @@ if(NOT ${bredala_only} )
   if                          (tess_dense)
     add_subdirectory          (tess_dense)
   endif                       ()
-  if                          (gromacs)
+
+  message("Value of Gromacs : ${gromacs_example}")
+  if                          (${gromacs_example})
     add_subdirectory          (gromacs)
   endif                       ()
 

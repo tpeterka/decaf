@@ -57,7 +57,7 @@ void node_a(Decaf* decaf)
             // get the values and add them
             for (size_t i = 0; i < in_data.size(); i++)
             {
-                ArrayFieldi field = in_data[i]->getFieldData<ArrayFieldi >(string("vars"));
+                ArrayFieldi field = in_data[i]->getFieldData<ArrayFieldi >("vars");
                 if(field)
                     sum += field.getArray()[0];
                 else
@@ -70,7 +70,7 @@ void node_a(Decaf* decaf)
         // the data in this example is just the timestep, add it to a container
         SimpleFieldi data(timestep);
         pConstructData container;
-        container->appendData(string("var"), data,
+        container->appendData("var", data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
@@ -95,7 +95,7 @@ void node_b(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >(string("var"));
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
             if(field)
                 sum += field.getData();
             else
@@ -113,7 +113,7 @@ void node_b(Decaf* decaf)
         // append the array to a container
         ArrayFieldi data(sums, 4, 1, false);
         pConstructData container;
-        container->appendData(string("vars"), data,
+        container->appendData("vars", data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
@@ -140,7 +140,7 @@ void node_c(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >(string("var"));
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
             if(field)
                 sum += field.getData();
             else
@@ -152,7 +152,7 @@ void node_c(Decaf* decaf)
         // append the sum to a container
         SimpleFieldi data(sum);
         pConstructData container;
-        container->appendData(string("var"), data,
+        container->appendData("var", data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
@@ -177,7 +177,7 @@ void node_d(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >(string("var"));
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
             if(field)
                 sum += field.getData();
             else

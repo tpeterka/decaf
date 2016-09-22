@@ -99,7 +99,7 @@ ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int inde
 
 bool
 decaf::
-ConstructData::appendData(std::string name,
+ConstructData::appendData(string name,
                 std::shared_ptr<BaseConstructData>  data,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
@@ -123,6 +123,52 @@ ConstructData::appendData(std::string name,
 bool
 decaf::
 ConstructData::appendData(std::string name,
+                BaseField&  data,
+                ConstructTypeFlag flags,
+                ConstructTypeScope scope,
+                ConstructTypeSplitPolicy splitFlag,
+                ConstructTypeMergePolicy mergeFlag)
+{
+    std::pair<std::map<std::string, datafield>::iterator,bool> ret;
+    datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
+    ret = container_->insert(std::pair<std::string, datafield>(name, newEntry));
+
+    if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+    {
+        std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+        merge_order_.clear();
+        split_order_.clear();
+    }
+
+    return ret.second && updateMetaData();
+}
+
+bool
+decaf::
+ConstructData::appendData(const char* name,
+                std::shared_ptr<BaseConstructData>  data,
+                ConstructTypeFlag flags,
+                ConstructTypeScope scope,
+                ConstructTypeSplitPolicy splitFlag,
+                ConstructTypeMergePolicy mergeFlag)
+{
+    std::pair<std::map<std::string, datafield>::iterator,bool> ret;
+    datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
+    ret = container_->insert(std::pair<std::string, datafield>(name, newEntry));
+
+    if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+    {
+        std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+        merge_order_.clear();
+        split_order_.clear();
+    }
+
+    return ret.second && updateMetaData();
+}
+
+bool
+decaf::
+ConstructData::appendData(const char* name,
                 BaseField&  data,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
