@@ -28,7 +28,6 @@
 #include "tess/dense.hpp"
 #include "block_serialization.hpp"
 
-// using namespace decaf;
 using namespace std;
 
 // fill blocks with incoming data
@@ -39,14 +38,31 @@ void fill_blocks(vector<pConstructData>& in_data)
     // for now just printing it
 
     // only using first message in in_data (in_data[0])
-    ArrayField<dblock_t> af = in_data[0]->getFieldData<ArrayField<dblock_t> >("blocks_array");
+    ArrayField<SerBlock> af = in_data[0]->getFieldData<ArrayField<SerBlock> >("blocks_array");
     if (af)
     {
-        dblock_t* b = af.getArray();
+        SerBlock* b = af.getArray();
 
         for (int i = 0; i < af.getNbItems(); i++)
         {
-            fprintf(stderr, "block gid = %d\n", b[i].gid);
+            fprintf(stderr, "dense: lid=%d gid=%d\n", i, b[i].gid);
+            fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
+                    b[i].mins[0], b[i].mins[1], b[i].mins[2],
+                    b[i].maxs[0], b[i].maxs[1], b[i].maxs[2]);
+            fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+                    b[i].box.min[0], b[i].box.min[1], b[i].box.min[2],
+                    b[i].box.max[0], b[i].box.max[1], b[i].box.max[2]);
+            fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+                    b[i].data_bounds.min[0], b[i].data_bounds.min[1], b[i].data_bounds.min[2],
+                    b[i].data_bounds.max[0], b[i].data_bounds.max[1], b[i].data_bounds.max[2]);
+            fprintf(stderr, "num_orig_particles %d num_particles %d\n",
+                    b[i].num_orig_particles, b[i].num_particles);
+            fprintf(stderr, "complete %d num_tets %d\n", b[i].complete, b[i].num_tets);
+            fprintf(stderr, "particles:\n");
+            for (int i = 0; i < b[i].num_particles; i++)
+                fprintf(stderr, "[%.3f %.3f %.3f] ",
+                        b[i].particles[3 * i], b[i].particles[3 * i + 1], b[i].particles[3 * i + 2]);
+            fprintf(stderr, "\n");
 
             // TODO: print the rest of the fields
         }
@@ -54,6 +70,8 @@ void fill_blocks(vector<pConstructData>& in_data)
     } else
         fprintf(stderr, "Error: null pointer for array of blocks in dense\n");
 }
+
+
 
 // consumer
 void density_estimate(Decaf* decaf, MPI_Comm comm)

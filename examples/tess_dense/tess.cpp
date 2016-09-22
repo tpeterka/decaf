@@ -33,24 +33,47 @@ using namespace std;
 
 // a light copy of small data (quantities, bounding boxes, etc) and pointer to the heavy data
 // (particles, tets)
-void copy_block(dblock_t& dest, dblock_t* src)
+void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
 {
-    dest.gid                  = src->gid;
-    memcpy(dest.mins,         src->mins,                 3 * sizeof(float));
-    memcpy(dest.maxs,         src->maxs,                 3 * sizeof(float));
-    memcpy(&dest.box,         &src->box,                 sizeof(bb_c_t));
-    memcpy(&dest.data_bounds, &src->data_bounds,         sizeof(bb_c_t));
-    dest.num_orig_particles   = src->num_orig_particles;
-    dest.num_particles        = src->num_particles;
-    dest.particles            = src->particles;          // shallow copy, pointer only
-    dest.rem_gids             = src->rem_gids;           // shallow
-    dest.rem_lids             = src->rem_lids;           // shallow
-    dest.num_grid_pts         = src->num_grid_pts;
-    dest.density              = src->density;            // shallow
-    dest.complete             = src->complete;
-    dest.num_tets             = src->num_tets;
-    dest.tets                 = src->tets;               // shallow
-    dest.vert_to_tet          = src->vert_to_tet;        // shallow
+    dest->gid                  = src->gid;
+    memcpy(dest->mins,         src->mins,                 3 * sizeof(float));
+    memcpy(dest->maxs,         src->maxs,                 3 * sizeof(float));
+    memcpy(&dest->box,         &src->box,                 sizeof(bb_c_t));
+    memcpy(&dest->data_bounds, &src->data_bounds,         sizeof(bb_c_t));
+    dest->num_orig_particles   = src->num_orig_particles;
+    dest->num_particles        = src->num_particles;
+    dest->particles            = src->particles;          // shallow copy, pointer only
+    dest->rem_gids             = src->rem_gids;           // shallow
+    dest->rem_lids             = src->rem_lids;           // shallow
+    dest->complete             = src->complete;
+    dest->num_tets             = src->num_tets;
+    dest->tets                 = src->tets;               // shallow
+    dest->vert_to_tet          = src->vert_to_tet;        // shallow
+
+    // get link
+    diy::Link* link = master.link(lid);
+    for (size_t i = 0; i < link->size(); i++)
+        dest->neighbors.push_back(link->target(i));
+
+    // debug
+    fprintf(stderr, "tess: lid=%d gid=%d\n", lid, src->gid);
+    fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
+            src->mins[0], src->mins[1], src->mins[2],
+            src->maxs[0], src->maxs[1], src->maxs[2]);
+    fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+            src->box.min[0], src->box.min[1], src->box.min[2],
+            src->box.max[0], src->box.max[1], src->box.max[2]);
+    fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+            src->data_bounds.min[0], src->data_bounds.min[1], src->data_bounds.min[2],
+            src->data_bounds.max[0], src->data_bounds.max[1], src->data_bounds.max[2]);
+    fprintf(stderr, "num_orig_particles %d num_particles %d\n",
+            src->num_orig_particles, src->num_particles);
+    fprintf(stderr, "complete %d num_tets %d\n", src->complete, src->num_tets);
+    fprintf(stderr, "particles:\n");
+    for (int i = 0; i < src->num_particles; i++)
+        fprintf(stderr, "[%.3f %.3f %.3f] ",
+                src->particles[3 * i], src->particles[3 * i + 1], src->particles[3 * i + 2]);
+    fprintf(stderr, "\n");
 }
 
 // consumer
@@ -162,11 +185,11 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
 
         // fill containers for the blocks and send them
         pConstructData container;
-        vector<dblock_t> blocks(master.size());
+        vector<SerBlock> ser_blocks(master.size());
         for (size_t i = 0; i < master.size(); i++)
         {
-            copy_block(blocks[i], (dblock_t*)master.block(i));
-            ArrayField<dblock_t> blocks_array(&blocks[i], master.size(), 1, false);
+            copy_block(&ser_blocks[i], (dblock_t*)master.block(i), master, i);
+            ArrayField<SerBlock> blocks_array(&ser_blocks[i], master.size(), 1, false);
             container->appendData(string("blocks_array"), blocks_array,
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
