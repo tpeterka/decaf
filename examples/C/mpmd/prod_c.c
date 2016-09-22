@@ -41,7 +41,7 @@ void prod(dca_decaf decaf)
         bca_constructdata container = bca_create_constructdata();
 
         bca_append_field( container, "var", field, bca_NOFLAG, bca_PRIVATE,
-                          bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE);
+                          bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE, false);
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
         dca_put(decaf, container);

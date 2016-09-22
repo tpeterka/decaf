@@ -118,7 +118,7 @@ void runParallelRedistBlock(
 
         if(!bca_append_field(container, "pos", field_array,
                              bca_ZCURVEKEY, bca_PRIVATE,
-                             bca_SPLIT_DEFAULT, bca_MERGE_DEFAULT))
+                             bca_SPLIT_DEFAULT, bca_MERGE_DEFAULT, false))
         {
             fprintf(stderr, "Abord. Unable to append the array in the container\n");
             MPI_Abort(MPI_COMM_WORLD, 2);
@@ -127,7 +127,7 @@ void runParallelRedistBlock(
         // Convention name to respect
         if(!bca_append_field(container, "domain_block", field_block,
                              bca_ZCURVEKEY, bca_PRIVATE,
-                             bca_SPLIT_KEEP_VALUE, bca_MERGE_FIRST_VALUE))
+                             bca_SPLIT_KEEP_VALUE, bca_MERGE_FIRST_VALUE, false))
         {
             fprintf(stderr, "Abord. Unable to append the block in the container\n");
             MPI_Abort(MPI_COMM_WORLD, 2);
@@ -232,7 +232,7 @@ void runParallelRedistCount(int rank_source, int nb_sources,
 
         if(!bca_append_field(container, "array", field_array,
                              bca_NOFLAG, bca_PRIVATE,
-                             bca_SPLIT_DEFAULT, bca_MERGE_DEFAULT))
+                             bca_SPLIT_DEFAULT, bca_MERGE_DEFAULT, false))
         {
             fprintf(stderr, "Abord. Unable to append the array in the container\n");
             MPI_Abort(MPI_COMM_WORLD, 2);

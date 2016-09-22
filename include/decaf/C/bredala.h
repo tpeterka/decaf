@@ -123,13 +123,13 @@ extern "C" {
     bca_create_constructdata();
 
     bool
-    bca_append_field(   bca_constructdata container,
+    bca_append_field(bca_constructdata container,
                         const char* name,
                         bca_field field,
                         bca_ConstructTypeFlag flag,
                         bca_ConstructTypeScope scope,
                         bca_ConstructTypeSplitPolicy split,
-                        bca_ConstructTypeMergePolicy merge);
+                        bca_ConstructTypeMergePolicy merge, bool force);
 
     bca_field
     bca_create_simplefield(void* data,

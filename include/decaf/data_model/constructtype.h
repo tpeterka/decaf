@@ -60,27 +60,31 @@ public:
                     ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
+                    bool force = false);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
 
     bool appendData(std::string name,
                     BaseField&  data,
                     ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
+                    bool force = false);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
     bool appendData(const char* name,
                     std::shared_ptr<BaseConstructData>  data,
                     ConstructTypeFlag flags = DECAF_NOFLAG,
                     ConstructTypeScope scope =  DECAF_PRIVATE,
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
+                    bool force = false);
 
     bool appendData(const char* name,
                     BaseField& data,
                     ConstructTypeFlag flags = DECAF_NOFLAG,
                     ConstructTypeScope scope =  DECAF_PRIVATE,
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
+                    bool force = false);
     
     bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
@@ -92,6 +96,8 @@ public:
                     std::shared_ptr<BaseConstructData>  data);
 
     int getNbFields();
+
+    bool isCoherent();
 
     std::shared_ptr<std::map<std::string, datafield> > getMap();
 
@@ -201,7 +207,7 @@ protected:
         ar & BOOST_SERIALIZATION_NVP(nbItems_);
     }
 
-    bool updateMetaData();
+    bool updateMetaData(bool force);
 
     std::string out_serial_buffer_;
     std::string in_serial_buffer_;
@@ -212,6 +218,7 @@ protected:
     std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
     std::vector<std::vector<int> > rangeItems_;
     bool bSystem_;
+    bool isCoherent_;
 };
 
 //Have to define it here because of the template

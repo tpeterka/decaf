@@ -60,8 +60,10 @@ const std::vector<string> &decaf::ConstructData::getSplitOrder()
 
 
 decaf::
-ConstructData::ConstructData() : BaseData(), nbFields_(0), bZCurveIndex_(false), zCurveIndex_(NULL),
-                                 bZCurveKey_(false), zCurveKey_(NULL), bSystem_(false)
+ConstructData::ConstructData() :
+    BaseData(), nbFields_(0), bZCurveIndex_(false),
+    zCurveIndex_(NULL), bZCurveKey_(false), zCurveKey_(NULL),
+    bSystem_(false), isCoherent_(true)
 {
     container_ = std::make_shared<std::map<std::string, datafield> >();
     //data_ = static_pointer_cast<void>(container_);
@@ -71,6 +73,8 @@ bool
 decaf::
 ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int index)
 {
+    assert(isCoherent_);
+
     if(index >= nbItems_)
     {
 	std::cout<<"ERROR : Trying to extract an item out of range (requesting "<<index<<", "<<nbItems_<<" in the container)."<<std::endl;
@@ -104,7 +108,8 @@ ConstructData::appendData(string name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                ConstructTypeMergePolicy mergeFlag,
+                bool force)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
@@ -117,7 +122,18 @@ ConstructData::appendData(string name,
         split_order_.clear();
     }
 
-    return ret.second && updateMetaData();
+    if(!ret.second)
+    {
+        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+        return false;
+    }
+
+    isCoherent_ = updateMetaData(force);
+
+    if(isCoherent_ || (force && !isCoherent_))
+        return true;
+    else
+        return false;
 }
 
 bool
@@ -127,7 +143,8 @@ ConstructData::appendData(std::string name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                ConstructTypeMergePolicy mergeFlag,
+                bool force)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
@@ -140,7 +157,18 @@ ConstructData::appendData(std::string name,
         split_order_.clear();
     }
 
-    return ret.second && updateMetaData();
+    if(!ret.second)
+    {
+        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+        return false;
+    }
+
+    isCoherent_ = updateMetaData(force);
+
+    if(isCoherent_ || (force && !isCoherent_))
+        return true;
+    else
+        return false;
 }
 
 bool
@@ -150,7 +178,8 @@ ConstructData::appendData(const char* name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                ConstructTypeMergePolicy mergeFlag,
+                bool force)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
@@ -163,7 +192,18 @@ ConstructData::appendData(const char* name,
         split_order_.clear();
     }
 
-    return ret.second && updateMetaData();
+    if(!ret.second)
+    {
+        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+        return false;
+    }
+
+    isCoherent_ = updateMetaData(force);
+
+    if(isCoherent_ || (force && !isCoherent_))
+        return true;
+    else
+        return false;
 }
 
 bool
@@ -173,7 +213,8 @@ ConstructData::appendData(const char* name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                ConstructTypeMergePolicy mergeFlag,
+                bool force)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
@@ -186,7 +227,18 @@ ConstructData::appendData(const char* name,
         split_order_.clear();
     }
 
-    return ret.second && updateMetaData();
+    if(!ret.second)
+    {
+        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+        return false;
+    }
+
+    isCoherent_ = updateMetaData(force);
+
+    if(isCoherent_ || (force && !isCoherent_))
+        return true;
+    else
+        return false;
 }
 
 bool
@@ -204,10 +256,17 @@ ConstructData::removeData(std::string name)
             split_order_.clear();
         }
 
-        return updateMetaData();
+        return updateMetaData(false);
     }
 
     return false;
+}
+
+bool
+decaf::
+ConstructData::isCoherent()
+{
+    return isCoherent_;
 }
 
 bool
@@ -219,7 +278,7 @@ ConstructData::updateData(std::string name,
     if(it != container_->end())
     {
         std::get<3>(it->second) = data;
-        return updateMetaData();
+        return updateMetaData(false);
     }
     else
     {
@@ -320,7 +379,7 @@ bool
 decaf::
 ConstructData::isSplitable()
 {
-    return nbItems_ > 1;
+    return isCoherent_ && nbItems_ > 0;
 }
 
 std::vector< std::shared_ptr<BaseData> >
@@ -335,6 +394,11 @@ ConstructData::split(const std::vector<int>& range)
         std::shared_ptr<ConstructData> construct =
                 dynamic_pointer_cast<ConstructData>(result.back());
         result_maps.push_back(construct->getMap());
+    }
+
+    if(!isCoherent_){
+        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+        return result;
     }
 
     //Sanity check
@@ -440,6 +504,11 @@ ConstructData::split(const std::vector<int>& range,
         result_maps.push_back(buffers[i]->getMap());
     }
 
+    if(!isCoherent_){
+        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+        return ;
+    }
+
     //Sanity check
     int totalRange = 0;
     for(unsigned int i = 0; i < range.size(); i++)
@@ -510,7 +579,7 @@ ConstructData::split(const std::vector<int>& range,
     for(unsigned int i = 0; i < range.size(); i++)
     {
         buffers[i]->updateNbItems();
-        buffers[i]->updateMetaData();
+        buffers[i]->updateMetaData(false);
     }
 
     return;
@@ -529,6 +598,11 @@ ConstructData::split(
         std::shared_ptr<ConstructData> construct =
                 dynamic_pointer_cast<ConstructData>(result.back());
         result_maps.push_back(construct->getMap());
+    }
+
+    if(!isCoherent_){
+        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+        return result;
     }
 
     //Sanity check
@@ -637,6 +711,11 @@ ConstructData::split(const std::vector<std::vector<int> >& range,
         result_maps.push_back(buffers[i]->getMap());
     }
 
+    if(!isCoherent_){
+        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+        return;
+    }
+
     //Sanity check
     int totalItems = 0;
     for(unsigned int i = 0; i < range.size(); i++)
@@ -709,7 +788,7 @@ ConstructData::split(const std::vector<std::vector<int> >& range,
     for(unsigned int i = 0; i < range.size(); i++)
     {
         buffers[i]->updateNbItems();
-        buffers[i]->updateMetaData();
+        buffers[i]->updateMetaData(false);
     }
 
     return ;
@@ -928,6 +1007,11 @@ ConstructData::split(const std::vector<Block<3> >& range)
         result_maps.push_back(construct->getMap());
     }
 
+    if(!isCoherent_){
+        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+        return result;
+    }
+
     //Preparing the ranges if some fields are not splitable with a block
     bool computeRanges = false;
     std::vector<std::vector<int> > rangeItems;
@@ -1099,6 +1183,11 @@ ConstructData::split(
         result_maps.push_back(buffers.at(i)->getMap());
     }
 
+    if(!isCoherent_){
+        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+        return ;
+    }
+
     //Preparing the ranges if some fields are not splitable with a block
     bool computeRanges = false;
     if(rangeItems_.empty())
@@ -1194,7 +1283,7 @@ ConstructData::split(
     for(unsigned int i = 0; i < range.size(); i++)
     {
         buffers[i]->updateNbItems();
-        buffers[i]->updateMetaData();
+        buffers[i]->updateMetaData(false);
         //std::cout<<"Nombre d'item apres update : "<<buffers.at(i)->getNbItems()<<std::endl;
     }
     assert(buffers.size() == range.size());
@@ -1308,7 +1397,8 @@ ConstructData::merge(shared_ptr<BaseData> other)
         }
     }
 
-    return updateMetaData();
+    isCoherent_ =  updateMetaData(true);
+    return isCoherent_;
 }
 
 bool
@@ -1411,7 +1501,8 @@ ConstructData::merge(char* buffer, int size)
 	
     }
     
-    return updateMetaData();
+    isCoherent_ =  updateMetaData(true);
+    return isCoherent_;
 }
 
 bool
@@ -1425,86 +1516,87 @@ bool
 decaf::
 ConstructData::mergeStoredData()
 {
-    	//We have stored all the part, now we can merge in one time all the partial parts
-    	if(merge_order_.size() > 0) //We have a priority list
+    //We have stored all the part, now we can merge in one time all the partial parts
+    if(merge_order_.size() > 0) //We have a priority list
+    {
+        for(unsigned int i = 0; i < merge_order_.size(); i++)
         {
-            for(unsigned int i = 0; i < merge_order_.size(); i++)
+            std::map<std::string, datafield>::iterator dataLocal
+                    = container_->find(merge_order_.at(i));
+
+            if(dataLocal == container_->end())
             {
-                std::map<std::string, datafield>::iterator dataLocal
-                        = container_->find(merge_order_.at(i));
-
-		if(dataLocal == container_->end())
-                {
-                    std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
+                std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
                         <<"merge the data not found in the map."<<std::endl;
-                    return false;
-                }
+                return false;
+            }
 
-		std::vector<std::shared_ptr<BaseConstructData> > partialFields;
-		for(unsigned int i = 0; i < partialData.size(); i++)
-		{
-                    std::map<std::string, datafield>::iterator dataOther
+            std::vector<std::shared_ptr<BaseConstructData> > partialFields;
+            for(unsigned int i = 0; i < partialData.size(); i++)
+            {
+                std::map<std::string, datafield>::iterator dataOther
                         = partialData.at(i)->find(merge_order_.at(i));
 
-                    if(dataOther == partialData.at(i)->end())
-                    {
-                        std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
-                            <<"merge the data not found in the map."<<std::endl;
-                        return false;
-                    }
-		    partialFields.push_back(getBaseData(dataOther->second));
-		}
-
-                if(! getBaseData(dataLocal->second)->merge(partialFields,
-                                                    container_,
-                                                    getMergePolicy(dataLocal->second)) )
+                if(dataOther == partialData.at(i)->end())
                 {
-                    std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
+                    std::cerr<<"ERROR : field \""<<merge_order_.at(i)<<"\" provided by the user to "
+                            <<"merge the data not found in the map."<<std::endl;
                     return false;
                 }
-                //getBaseData(dataLocal->second)->setMap(container_);
-                getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
+                partialFields.push_back(getBaseData(dataOther->second));
             }
-        }
-	else  // No priority, we merge in the field order
-        {
-            for(std::map<std::string, datafield>::iterator it = container_->begin();
-                it != container_->end(); it++)
+
+            if(! getBaseData(dataLocal->second)->merge(partialFields,
+                                                       container_,
+                                                       getMergePolicy(dataLocal->second)) )
             {
-		std::vector<std::shared_ptr<BaseConstructData> > partialFields;
-                for(unsigned int i = 0; i < partialData.size(); i++)
-                {
-                    std::map<std::string, datafield>::iterator dataOther
+                std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
+                return false;
+            }
+            //getBaseData(dataLocal->second)->setMap(container_);
+            getNbItemsField(dataLocal->second) = getBaseData(dataLocal->second)->getNbItems();
+        }
+    }
+    else  // No priority, we merge in the field order
+    {
+        for(std::map<std::string, datafield>::iterator it = container_->begin();
+            it != container_->end(); it++)
+        {
+            std::vector<std::shared_ptr<BaseConstructData> > partialFields;
+            for(unsigned int i = 0; i < partialData.size(); i++)
+            {
+                std::map<std::string, datafield>::iterator dataOther
                         = partialData.at(i)->find(it->first);
 
-		    // No need to check the return, we have done it already in unserializeAndStore()
-                    partialFields.push_back(getBaseData(dataOther->second));
-                }
-//		unsigned int totalItems = getBaseData(it->second)->getNbItems();
-//		if(it->first == "pos")
-//			std::cout<<"Nombre d'items dans le moule de base : "<<totalItems<<", nombre de fields : "<<partialFields.size()<<std::endl;
-                if(! getBaseData(it->second)->merge(partialFields,
-                                                    container_,
-                                                    getMergePolicy(it->second)) )
-                {
-                    std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has been corrupted."<<std::endl;
-                    return false;
-                }
-                //getBaseData(it->second)->setMap(container_);
-                getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
-/*		if(it->first == "pos")
-		{
-			std::cout<<"Merging "<<it->first<<" with "<<partialFields[0]->getNbItems()<<" items."<<std::endl;
-			for(unsigned int i = 0 ; i < partialFields.size(); i++)
-				totalItems += partialFields[i]->getNbItems();
-			std::cout<<"Somme theorique apres merge : "<<totalItems<<std::endl;
-			std::cout<<"Somme effective apres merge : "<<getBaseData(it->second)->getNbItems()<<std::endl;
-		}
-*/		
+                // No need to check the return, we have done it already in unserializeAndStore()
+                partialFields.push_back(getBaseData(dataOther->second));
             }
+            //		unsigned int totalItems = getBaseData(it->second)->getNbItems();
+            //		if(it->first == "pos")
+            //			std::cout<<"Nombre d'items dans le moule de base : "<<totalItems<<", nombre de fields : "<<partialFields.size()<<std::endl;
+            if(! getBaseData(it->second)->merge(partialFields,
+                                                container_,
+                                                getMergePolicy(it->second)) )
+            {
+                std::cout<<"Error while merging the field \""<<it->first<<"\". The original map has been corrupted."<<std::endl;
+                return false;
+            }
+            //getBaseData(it->second)->setMap(container_);
+            getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+            /*		if(it->first == "pos")
+        {
+            std::cout<<"Merging "<<it->first<<" with "<<partialFields[0]->getNbItems()<<" items."<<std::endl;
+            for(unsigned int i = 0 ; i < partialFields.size(); i++)
+                totalItems += partialFields[i]->getNbItems();
+            std::cout<<"Somme theorique apres merge : "<<totalItems<<std::endl;
+            std::cout<<"Somme effective apres merge : "<<getBaseData(it->second)->getNbItems()<<std::endl;
         }
+*/		
+        }
+    }
 
-	return updateMetaData();
+    isCoherent_ =  updateMetaData(true);
+    return isCoherent_;
 }
 
 void 
@@ -1710,7 +1802,9 @@ ConstructData::setData(std::shared_ptr<void> data)
     zCurveKey_ = zCurveKey;
     zCurveIndex_ = zCurveIndex;
 
-    return true;
+    isCoherent_ = updateMetaData(false);
+
+    return isCoherent_;
 
 }
 
@@ -1743,7 +1837,7 @@ ConstructData::getData(std::string key)
 
 bool
 decaf::
-ConstructData::updateMetaData()
+ConstructData::updateMetaData(bool force)
 {
     //Checking is the map is valid and updating the informations
     nbItems_ = 0;
@@ -1763,6 +1857,12 @@ ConstructData::updateMetaData()
         // with another number of items, we can't split automatically
         if(nbItems_ > 1 && getNbItemsField(it->second) > 1 && nbItems_ != getNbItemsField(it->second))
         {
+            if(force)
+            {
+                std::cout<<"WARNING : forcing the data model to be incoherent. "
+                         <<"The data model won't be splittable or mergeable."<<std::endl;
+                return false;
+            }
             std::cout<<"ERROR : can not add new field with "<<getNbItemsField(it->second)<<" items."
                     <<" The current map has "<<nbItems_<<" items. The number of items "
                     <<"of the new field should be 1 or "<<nbItems_<<std::endl;
@@ -1815,5 +1915,5 @@ ConstructData::softClean()
 	getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
     }
 
-    updateMetaData();
+    updateMetaData(false);
 }

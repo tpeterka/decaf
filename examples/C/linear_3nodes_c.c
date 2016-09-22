@@ -38,7 +38,7 @@ void node0(dca_decaf decaf)
 
         if(!bca_append_field(container, "var", field,
                              bca_NOFLAG, bca_PRIVATE,
-                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE))
+                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE, false))
         {
             fprintf(stderr, "ERROR : unable to append the field \"var\" in the container\n");
         }
@@ -94,7 +94,7 @@ void node1(dca_decaf decaf)
 
         if(!bca_append_field(container, "var", field,
                              bca_NOFLAG, bca_PRIVATE,
-                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE))
+                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE, false))
         {
             fprintf(stderr, "ERROR : unable to append the field \"var\" in the container\n");
         }

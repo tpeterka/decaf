@@ -30,12 +30,12 @@ int main()
     printf("OK.\n");
 
     printf("Append simple field in the container...");
-    if(bca_append_field(container, "simple", field_simple, bca_NOFLAG,bca_SHARED,bca_SPLIT_DEFAULT,bca_MERGE_DEFAULT))
+    if(bca_append_field(container, "simple", field_simple, bca_NOFLAG,bca_SHARED,bca_SPLIT_DEFAULT,bca_MERGE_DEFAULT, false))
         printf("OK\n");
     else
         printf("FAILED\n");
     printf("Append array field in the container...");
-    if(bca_append_field(container, "array", field_array, bca_NOFLAG,bca_PRIVATE,bca_SPLIT_DEFAULT,bca_MERGE_DEFAULT))
+    if(bca_append_field(container, "array", field_array, bca_NOFLAG,bca_PRIVATE,bca_SPLIT_DEFAULT,bca_MERGE_DEFAULT, false))
         printf("OK\n");
     else
         printf("FAILED\n");
