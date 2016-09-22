@@ -16,10 +16,8 @@ if(Boost_FOUND)
   add_executable              (points             prod.cpp)
   add_executable              (tess               tess.cpp)
   add_executable              (dense              dense.cpp)
-  add_executable              (points_dflow       dflow1.cpp)
-  add_executable              (tess_dflow         dflow2.cpp)
-  add_library                 (mod_points_dflow   MODULE dflow1.cpp)
-  add_library                 (mod_tess_dflow     MODULE dflow2.cpp)
+  add_executable              (pts_dflow          dflow.cpp)
+  add_library                 (mod_pts_dflow      MODULE dflow.cpp)
 
   target_link_libraries       (points
                               ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
@@ -61,31 +59,23 @@ if(Boost_FOUND)
                                bredala_transport
                                bredala_datamodel)
   endif                       ()
-  target_link_libraries       (points_dflow
+  target_link_libraries       (pts_dflow
                                ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
-  target_link_libraries       (mod_points_dflow
-                               ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
-  target_link_libraries       (tess_dflow
-                               ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
-  target_link_libraries       (mod_tess_dflow
+  target_link_libraries       (mod_pts_dflow
                                ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 
   # .SO file extension on Linux/Mac OS
-  set_target_properties       (mod_points_dflow PROPERTIES SUFFIX ".so")
-  set_target_properties       (mod_tess_dflow PROPERTIES SUFFIX ".so")
+  set_target_properties       (mod_pts_dflow PROPERTIES SUFFIX ".so")
 
   # Don't add a 'lib' prefix to the shared library
-  set_target_properties       (mod_points_dflow PROPERTIES PREFIX "")
-  set_target_properties       (mod_tess_dflow PROPERTIES PREFIX "")
+  set_target_properties       (mod_pts_dflow PROPERTIES PREFIX "")
 
   install                     (TARGETS
                                points
                                tess
                                dense
-                               points_dflow
-                               mod_points_dflow
-                               tess_dflow
-                               mod_tess_dflow
+                               pts_dflow
+                               mod_pts_dflow
                                DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/tess_dense/
                                PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                                GROUP_READ GROUP_WRITE GROUP_EXECUTE

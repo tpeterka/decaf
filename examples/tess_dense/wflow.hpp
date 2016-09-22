@@ -34,10 +34,8 @@ void make_wflow(Workflow& workflow)
         exit(1);
     }
 
-    string path1 = string(prefix , strlen(prefix));
-    path1.append(string("/examples/tess_dense/mod_points_dflow.so"));
-    string path2 = string(prefix , strlen(prefix));
-    path2.append(string("/examples/tess_dense/mod_tess_dflow.so"));
+    string path = string(prefix , strlen(prefix));
+    path.append(string("/examples/tess_dense/mod_pts_dflow.so"));
 
     // fill workflow nodes
     WorkflowNode node;
@@ -73,7 +71,7 @@ void make_wflow(Workflow& workflow)
     link.start_proc = 8;
     link.nprocs = 4;
     link.func = "dflow1";
-    link.path = path1;
+    link.path = path;
     link.prod_dflow_redist = "proc";
     link.dflow_con_redist = "proc";
     workflow.links.push_back(link);
@@ -83,7 +81,7 @@ void make_wflow(Workflow& workflow)
     link.start_proc = 14;
     link.nprocs = 2;
     link.func = "dflow2";
-    link.path = path2;
+    link.path = path;
     link.prod_dflow_redist = "proc";
     link.dflow_con_redist = "proc";
     workflow.links.push_back(link);

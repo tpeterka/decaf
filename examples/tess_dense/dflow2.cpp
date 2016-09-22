@@ -23,6 +23,7 @@
 #include <cstdlib>
 
 #include "wflow.hpp"                                // defines the workflow for this example
+#include "block_serialization.hpp"
 
 using namespace decaf;
 using namespace std;
