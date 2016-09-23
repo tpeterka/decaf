@@ -14,6 +14,7 @@
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/arrayfield.hpp>
+#include <decaf/data_model/vectorfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -31,12 +32,8 @@
 using namespace std;
 
 // fill blocks with incoming data
-// TODO: for now just prints some of the data; need to add to blocks in the master
-void fill_blocks(vector<pConstructData>& in_data)
+void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assigner& assigner)
 {
-    // TOOD: get blocks as input args and fill them with the in_data
-    // for now just printing it
-
     // only using first message in in_data (in_data[0])
     ArrayField<SerBlock> af = in_data[0]->getFieldData<ArrayField<SerBlock> >("blocks_array");
     if (af)
@@ -45,33 +42,100 @@ void fill_blocks(vector<pConstructData>& in_data)
 
         for (int i = 0; i < af.getNbItems(); i++)
         {
-            fprintf(stderr, "dense: lid=%d gid=%d\n", i, b[i].gid);
-            fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
-                    b[i].mins[0], b[i].mins[1], b[i].mins[2],
-                    b[i].maxs[0], b[i].maxs[1], b[i].maxs[2]);
-            fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
-                    b[i].box.min[0], b[i].box.min[1], b[i].box.min[2],
-                    b[i].box.max[0], b[i].box.max[1], b[i].box.max[2]);
-            fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
-                    b[i].data_bounds.min[0], b[i].data_bounds.min[1], b[i].data_bounds.min[2],
-                    b[i].data_bounds.max[0], b[i].data_bounds.max[1], b[i].data_bounds.max[2]);
-            fprintf(stderr, "num_orig_particles %d num_particles %d\n",
-                    b[i].num_orig_particles, b[i].num_particles);
-            fprintf(stderr, "complete %d num_tets %d\n", b[i].complete, b[i].num_tets);
-            fprintf(stderr, "particles:\n");
-            for (int j = 0; j < b[i].num_particles; j++)
-                fprintf(stderr, "gid=%d j=%d [%.3f %.3f %.3f] ", b[i].gid, j,
-                        b[i].particles[3 * j], b[i].particles[3 * j + 1], b[i].particles[3 * j + 2]);
-            fprintf(stderr, "\n");
+            dblock_t* d = (dblock_t*)create_block();
 
-            // TODO: print the rest of the fields
+#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+
+            // copy values from SerBlock b* to diy block d*
+            d->gid                  = b[i].gid;
+            memcpy(d->mins,         b[i].mins,                 3 * sizeof(float));
+            memcpy(d->maxs,         b[i].maxs,                 3 * sizeof(float));
+            memcpy(&d->box,         &b[i].box,                 sizeof(bb_c_t));
+            memcpy(&d->data_bounds, &b[i].data_bounds,         sizeof(bb_c_t));
+            d->num_orig_particles   = b[i].num_orig_particles;
+            d->num_particles        = b[i].num_particles;
+            d->particles            = b[i].particles;          // shallow copy, pointer only
+            d->rem_gids             = b[i].rem_gids;           // shallow
+            d->rem_lids             = b[i].rem_lids;           // shallow
+            d->complete             = b[i].complete;
+            d->num_tets             = b[i].num_tets;
+            d->tets                 = b[i].tets;               // shallow
+            d->vert_to_tet          = b[i].vert_to_tet;        // shallow
+            d->num_grid_pts         = 0;
+            d->density              = NULL;
+
+#else  // or this version is a deep copy of all items, but easier to program
+
+            // copy serialized buffer to diy block
+            diy::MemoryBuffer bb;
+            bb.buffer.resize(b[i].diy_bb.size());
+            // debug
+            // fprintf(stderr, "diy_bb.size()=%ld\n", b[i].diy_bb.size());
+            copy(b[i].diy_bb.begin(), b[i].diy_bb.end(), bb.buffer.begin()); // TODO: swap instead?
+            load_block_light(d, bb);
+
+#endif
+            // copy link
+            diy::MemoryBuffer lb;
+            lb.buffer.resize(b[i].diy_lb.size());
+            // debug
+            // fprintf(stderr, "diy_lb.size()=%ld\n", b[i].diy_lb.size());
+            copy(b[i].diy_lb.begin(), b[i].diy_lb.end(), lb.buffer.begin()); // TODO: swap instead?
+            diy::Link* link = diy::LinkFactory::load(lb);
+            link->fix(assigner);
+
+            // add the block to the master
+            master.add(d->gid, d, link);
+
+            // debug
+            // fprintf(stderr, "dense: lid=%d gid=%d\n", i, d->gid);
+            // fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
+            //         d->mins[0], d->mins[1], d->mins[2],
+            //         d->maxs[0], d->maxs[1], d->maxs[2]);
+            // fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+            //         d->box.min[0], d->box.min[1], d->box.min[2],
+            //         d->box.max[0], d->box.max[1], d->box.max[2]);
+            // fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+            //         d->data_bounds.min[0], d->data_bounds.min[1], d->data_bounds.min[2],
+            //         d->data_bounds.max[0], d->data_bounds.max[1], d->data_bounds.max[2]);
+            // fprintf(stderr, "num_orig_particles %d num_particles %d\n",
+            //         d->num_orig_particles, d->num_particles);
+            // fprintf(stderr, "complete %d num_tets %d\n", d->complete, d->num_tets);
+
+            // fprintf(stderr, "particles:\n");
+            // for (int j = 0; j < d->num_particles; j++)
+            //     fprintf(stderr, "gid=%d j=%d [%.3f %.3f %.3f] ", d->gid, j,
+            //             d->particles[3 * j], d->particles[3 * j + 1], d->particles[3 * j + 2]);
+            // fprintf(stderr, "\n");
+
+            // fprintf(stderr, "rem_gids:\n");
+            // for (int j = 0; j < d->num_particles - d->num_orig_particles; j++)
+            //     fprintf(stderr, "gid=%d j=%d rem_gid=%d ", d->gid, j, d->rem_gids[j]);
+            // fprintf(stderr, "\n");
+
+            // fprintf(stderr, "rem_lids:\n");
+            // for (int j = 0; j < d->num_particles - d->num_orig_particles; j++)
+            //     fprintf(stderr, "gid=%d j=%d rem_lid=%d ", d->gid, j, d->rem_lids[j]);
+            // fprintf(stderr, "\n");
+
+            // fprintf(stderr, "tets:\n");
+            // for (int j = 0; j < d->num_tets; j++)
+            //     fprintf(stderr, "gid=%d tet[%d]=[%d %d %d %d; %d %d %d %d] ",
+            //             d->gid, j,
+            //             d->tets[j].verts[0], d->tets[j].verts[1],
+            //             d->tets[j].verts[2], d->tets[j].verts[3],
+            //             d->tets[j].tets[0], d->tets[j].tets[1],
+            //             d->tets[j].tets[2], d->tets[j].tets[3]);
+            // fprintf(stderr, "\n");
+
+            // fprintf(stderr, "vert_to_tet:\n");
+            // for (int j = 0; j < d->num_particles; j++)
+            //     fprintf(stderr, "gid=%d vert_to_tet[%d]=%d ", d->gid, j, d->vert_to_tet[j]);
+            // fprintf(stderr, "\n");
         }
-        // TODO: add the blocks to the master
     } else
         fprintf(stderr, "Error: null pointer for array of blocks in dense\n");
 }
-
-
 
 // consumer
 void density_estimate(Decaf* decaf, MPI_Comm comm)
@@ -125,6 +189,9 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         times[INPUT_TIME] = MPI_Wtime() - times[INPUT_TIME];
         times[COMP_TIME] = MPI_Wtime();
 
+        // following must match tess.cpp
+        int tot_blocks    = 8;                      // total number of blocks in the domain
+
         // init diy
         diy::mpi::communicator    world(comm);
         diy::FileStorage          storage("./DIY.XXXXXX");
@@ -136,14 +203,17 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
                                          &storage,
                                          &save_block,
                                          &load_block);
-        diy::RoundRobinAssigner   assigner(world.size(), -1);  // tot_blocks found by read_blocks
+        // DEPRECATED: for reading file
+        // diy::RoundRobinAssigner   assigner(world.size(), -1);  // tot_blocks found by read_blocks
+
+        diy::RoundRobinAssigner   assigner(world.size(), tot_blocks);
 
         // fill blocks with incoming data
-        fill_blocks(in_data);
+        fill_blocks(in_data, master, assigner);
 
-        // read the tessellation
-        diy::io::read_blocks(infile, world, assigner, master, &load_block_light);
-        tot_blocks = assigner.nblocks();
+        // DEPRECATED: read the tessellation
+        // diy::io::read_blocks(infile, world, assigner, master, &load_block_light);
+        // tot_blocks = assigner.nblocks();
 
         // get global block quantities
         nblocks = master.size();                    // local number of blocks

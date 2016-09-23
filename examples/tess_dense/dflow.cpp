@@ -99,7 +99,6 @@ extern "C"
                 Dataflow* dataflow,                  // dataflow
                 pConstructData in_data)              // input data
     {
-        fprintf(stderr, "dflow2\n");
         dataflow->put(in_data, DECAF_LINK);
     }
 

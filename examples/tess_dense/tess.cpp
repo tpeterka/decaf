@@ -29,12 +29,17 @@
 #include "tess/tess.hpp"
 #include "block_serialization.hpp"
 
+#include <diy/serialization.hpp>
+
 using namespace std;
 
 // a light copy of small data (quantities, bounding boxes, etc) and pointer to the heavy data
 // (particles, tets)
 void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
 {
+
+#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+
     dest->gid                  = src->gid;
     memcpy(dest->mins,         src->mins,                 3 * sizeof(float));
     memcpy(dest->maxs,         src->maxs,                 3 * sizeof(float));
@@ -50,30 +55,78 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     dest->tets                 = src->tets;               // shallow
     dest->vert_to_tet          = src->vert_to_tet;        // shallow
 
-    // get link
-    diy::Link* link = master.link(lid);
-    for (size_t i = 0; i < link->size(); i++)
-        dest->neighbors.push_back(link->target(i));
+#else  // or this version is a deep copy of all items, but easier to program
+
+    // copy (deep) block to binary buffer
+    diy::MemoryBuffer bb;
+    save_block_light(master.block(lid), bb);
+    // debug
+    // fprintf(stderr, "1: tess: lid=%d gid=%d bb.size()=%ld\n", lid, src->gid, bb.buffer.size());
+    dest->diy_bb.resize(bb.buffer.size());
+    copy(bb.buffer.begin(), bb.buffer.end(), dest->diy_bb.begin());
+
+ #endif
+
+    // copy (deep) link to binary buffer
+    diy::MemoryBuffer lb;
+    diy::LinkFactory::save(lb, master.link(lid));
+    dest->diy_lb.resize(lb.buffer.size());
+    // debug
+    // fprintf(stderr, "2: tess: lid=%d gid=%d lb.size()=%ld\n", lid, src->gid, lb.buffer.size());
+    copy(lb.buffer.begin(), lb.buffer.end(), dest->diy_lb.begin());
+
+
+    // TODO: use swap instead of copy?
 
     // debug
-    fprintf(stderr, "tess: lid=%d gid=%d\n", lid, src->gid);
-    fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
-            src->mins[0], src->mins[1], src->mins[2],
-            src->maxs[0], src->maxs[1], src->maxs[2]);
-    fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
-            src->box.min[0], src->box.min[1], src->box.min[2],
-            src->box.max[0], src->box.max[1], src->box.max[2]);
-    fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
-            src->data_bounds.min[0], src->data_bounds.min[1], src->data_bounds.min[2],
-            src->data_bounds.max[0], src->data_bounds.max[1], src->data_bounds.max[2]);
-    fprintf(stderr, "num_orig_particles %d num_particles %d\n",
-            src->num_orig_particles, src->num_particles);
-    fprintf(stderr, "complete %d num_tets %d\n", src->complete, src->num_tets);
-    fprintf(stderr, "particles:\n");
-    for (int i = 0; i < src->num_particles; i++)
-        fprintf(stderr, "gid=%d i=%d [%.3f %.3f %.3f] ", src->gid, i,
-                src->particles[3 * i], src->particles[3 * i + 1], src->particles[3 * i + 2]);
-    fprintf(stderr, "\n");
+    // fprintf(stderr, "tess: lid=%d gid=%d\n", lid, src->gid);
+    // fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
+    //         src->mins[0], src->mins[1], src->mins[2],
+    //         src->maxs[0], src->maxs[1], src->maxs[2]);
+    // fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+    //         src->box.min[0], src->box.min[1], src->box.min[2],
+    //         src->box.max[0], src->box.max[1], src->box.max[2]);
+    // fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+    //         src->data_bounds.min[0], src->data_bounds.min[1], src->data_bounds.min[2],
+    //         src->data_bounds.max[0], src->data_bounds.max[1], src->data_bounds.max[2]);
+    // fprintf(stderr, "num_orig_particles %d num_particles %d\n",
+    //         src->num_orig_particles, src->num_particles);
+    // fprintf(stderr, "complete %d num_tets %d\n", src->complete, src->num_tets);
+
+    // fprintf(stderr, "particles:\n");
+    // for (int j = 0; j < src->num_particles; j++)
+    //     fprintf(stderr, "gid=%d j=%d [%.3f %.3f %.3f] ", src->gid, j,
+    //             src->particles[3 * j], src->particles[3 * j + 1], src->particles[3 * j + 2]);
+    // fprintf(stderr, "\n");
+
+    // fprintf(stderr, "rem_gids:\n");
+    // for (int j = 0; j < src->num_particles - src->num_orig_particles; j++)
+    //     fprintf(stderr, "gid=%d j=%d rem_gid=%d ", src->gid, j, src->rem_gids[j]);
+    // fprintf(stderr, "\n");
+
+    // fprintf(stderr, "rem_lids:\n");
+    // for (int j = 0; j < src->num_particles - src->num_orig_particles; j++)
+    //     fprintf(stderr, "gid=%d j=%d rem_lid=%d ", src->gid, j, src->rem_lids[j]);
+    // fprintf(stderr, "\n");
+
+    // fprintf(stderr, "tets:\n");
+    // for (int j = 0; j < src->num_tets; j++)
+    //     fprintf(stderr, "gid=%d tet[%d]=[%d %d %d %d; %d %d %d %d] ",
+    //             src->gid, j,
+    //             src->tets[j].verts[0], src->tets[j].verts[1],
+    //             src->tets[j].verts[2], src->tets[j].verts[3],
+    //             src->tets[j].tets[0], src->tets[j].tets[1],
+    //             src->tets[j].tets[2], src->tets[j].tets[3]);
+    // fprintf(stderr, "\n");
+
+    // fprintf(stderr, "vert_to_tet:\n");
+    // for (int j = 0; j < src->num_particles; j++)
+    //     fprintf(stderr, "gid=%d vert_to_tet[%d]=%d ", src->gid, j, src->vert_to_tet[j]);
+    // fprintf(stderr, "\n");
+
+    // fprintf(stderr, "neighbors:\n");
+    // for (size_t j = 0; j < dest->neighbors.size(); j++)
+    //     fprintf(stderr, "gid=%d neighbors[%ld]=%d ", src->gid, j, dest->neighbors[j]);
 }
 
 // consumer
@@ -177,14 +230,16 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         timing(times, TOT_TIME, -1, world);
         tess(master, quants, times);
 
-        // output
-        // TODO: remove the file save when sending the tessellation through the workflow instead
-        tess_save(master, outfile, times);
+        // DEPRECATED: save file
+        // tess_save(master, outfile, times);
+
+        // timing stats
         timing(times, -1, TOT_TIME, world);
         tess_stats(master, quants, times);
 
         // fill containers for the blocks and send them
         pConstructData container;
+
         vector<SerBlock> ser_blocks(master.size());
         for (size_t i = 0; i < master.size(); i++)
         {
@@ -194,6 +249,7 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
                                   DECAF_NOFLAG, DECAF_PRIVATE,
                                   DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         }
+
         decaf->put(container);
     } // decaf event loop
 
