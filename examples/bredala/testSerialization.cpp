@@ -163,6 +163,70 @@ void customDataModel()
 
 }
 
+void incoherentDataModel()
+{
+    float array1[ARRAYSIZE];
+    float array2[ARRAYSIZE*2];
+
+    for(unsigned int i = 0; i < ARRAYSIZE; i++)
+    {
+        array1[i]       = (float)rand() / (float)RAND_MAX;
+        array2[2*i]     = (float)rand() / (float)RAND_MAX;
+        array2[2*i+1]   = (float)rand() / (float)RAND_MAX;
+
+    }
+
+    ArrayFieldf array1field(array1, ARRAYSIZE, 1, false);
+    ArrayFieldf array2field(array2, ARRAYSIZE*2, 1, false);
+
+    pConstructData container;
+    //Forcing append the fields as the data model is incoherent
+    container->appendData("array1", array1field,
+                          DECAF_NOFLAG, DECAF_PRIVATE,
+                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT,
+                          true);
+    container->appendData("array2", array2field,
+                          DECAF_NOFLAG, DECAF_PRIVATE,
+                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT,
+                          true);
+    // Serialization
+    container->serialize();
+
+    //Retrieving the serialized buffer
+    unsigned int bufferSize = container->getOutSerialBufferSize();
+    char* buffer = container->getOutSerialBuffer();
+
+    // Creating a new data model and using the buffer
+    pConstructData newcontainer;
+    newcontainer->merge(buffer, bufferSize);
+
+    ArrayFieldf otherarrayfield = newcontainer->getFieldData<ArrayFieldf>("array1");
+    if(!otherarrayfield)
+    {
+        fprintf(stderr, "ERROR : unable to retrieve the field \"array1\"\n");
+        exit(1);
+    }
+    else
+    {
+        float* data = otherarrayfield.getArray();
+        fprintf(stderr, "Printing array1 data : \n");
+        printArray(&data[0], otherarrayfield.getArraySize());
+    }
+
+    otherarrayfield = newcontainer->getFieldData<ArrayFieldf>("array2");
+    if(!otherarrayfield)
+    {
+        fprintf(stderr, "ERROR : unable to retrieve the field \"array2\"\n");
+        exit(1);
+    }
+    else
+    {
+        float* data = otherarrayfield.getArray();
+        fprintf(stderr, "Printing array2 data : \n");
+        printArray(&data[0], otherarrayfield.getArraySize());
+    }
+}
+
 
 int main(int argc,
          char** argv)
@@ -180,6 +244,7 @@ int main(int argc,
 
     simpleDataModelCreation();
     customDataModel();
+    incoherentDataModel();
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();

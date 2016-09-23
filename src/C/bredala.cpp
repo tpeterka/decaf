@@ -447,17 +447,19 @@ extern "C"
                         bca_ConstructTypeFlag flag,
                         bca_ConstructTypeScope scope,
                         bca_ConstructTypeSplitPolicy split,
-                        bca_ConstructTypeMergePolicy merge)
+                        bca_ConstructTypeMergePolicy merge,
+                        bool force)
     {
         pConstructData* container_ = unbox(container);
         BaseField* field_ = unbox(field);
         return (*container_)->appendData(
-                    string(name),
+                    name,
                     *field_,
                     (decaf::ConstructTypeFlag)flag,
                     (decaf::ConstructTypeScope)scope,
                     (decaf::ConstructTypeSplitPolicy)split,
-                    (decaf::ConstructTypeMergePolicy)merge);
+                    (decaf::ConstructTypeMergePolicy)merge,
+                    force);
     }
 
     void bca_free_constructdata(bca_constructdata data)
