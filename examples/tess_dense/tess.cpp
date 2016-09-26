@@ -38,7 +38,7 @@ using namespace std;
 void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
 {
 
-#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
 
     dest->gid                  = src->gid;
     memcpy(dest->mins,         src->mins,                 3 * sizeof(float));
@@ -242,14 +242,12 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
 
         vector<SerBlock> ser_blocks(master.size());
         for (size_t i = 0; i < master.size(); i++)
-        {
             copy_block(&ser_blocks[i], (dblock_t*)master.block(i), master, i);
-            ArrayField<SerBlock> blocks_array(&ser_blocks[i], master.size(), 1, false);
-            container->appendData(string("blocks_array"), blocks_array,
-                                  DECAF_NOFLAG, DECAF_PRIVATE,
-                                  DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-        }
 
+        ArrayField<SerBlock> blocks_array(&ser_blocks[0], master.size(), 1, false);
+        container->appendData(string("blocks_array"), blocks_array,
+                              DECAF_NOFLAG, DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         decaf->put(container);
     } // decaf event loop
 

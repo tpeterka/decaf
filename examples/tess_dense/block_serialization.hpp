@@ -23,7 +23,7 @@ using namespace std;
 // derived from tess dblock_t with some fields removed and others added
 struct SerBlock {
 
-#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
 
     int           gid;                // global block id
     float         mins[3], maxs[3];   // block extents
@@ -50,7 +50,7 @@ struct SerBlock {
 
 BOOST_SERIALIZATION_SPLIT_FREE(SerBlock)
 
-#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
 
 BOOST_IS_BITWISE_SERIALIZABLE(bb_c_t)
 BOOST_IS_BITWISE_SERIALIZABLE(tet_t)
@@ -63,7 +63,7 @@ namespace boost
     namespace serialization
     {
 
-#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
 
         template<class Archive>
         void serialize(Archive& ar, bb_c_t& b, const unsigned int)
@@ -78,7 +78,7 @@ namespace boost
         void save(Archive& ar, const SerBlock& b, unsigned int)
         {
 
-#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
 
             ar & BOOST_SERIALIZATION_NVP(b.gid);
             ar & BOOST_SERIALIZATION_NVP(b.mins);
@@ -92,8 +92,8 @@ namespace boost
                                                        b.num_particles - b.num_orig_particles);
 
             // TODO: following sometimes crashes for no apparent reason
-            // ar & boost::serialization::make_array<int>(b.rem_lids,
-            //                                            b.num_particles - b.num_orig_particles);
+            ar & boost::serialization::make_array<int>(b.rem_lids,
+                                                       b.num_particles - b.num_orig_particles);
 
             ar & BOOST_SERIALIZATION_NVP(b.complete);
             ar & BOOST_SERIALIZATION_NVP(b.num_tets);
@@ -112,7 +112,7 @@ namespace boost
         void load(Archive& ar, SerBlock& b, unsigned int)
         {
 
-#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
 
             ar & BOOST_SERIALIZATION_NVP(b.gid);
             ar & BOOST_SERIALIZATION_NVP(b.mins);
@@ -128,9 +128,9 @@ namespace boost
                                                        b.num_particles - b.num_orig_particles);
 
             // TODO: following sometimes crashes for no apparent reason
-            // b.rem_lids = new int[b.num_particles - b.num_orig_particles];
-            // ar & boost::serialization::make_array<int>(b.rem_lids,
-            //                                            b.num_particles - b.num_orig_particles);
+            b.rem_lids = new int[b.num_particles - b.num_orig_particles];
+            ar & boost::serialization::make_array<int>(b.rem_lids,
+                                                       b.num_particles - b.num_orig_particles);
 
             ar & BOOST_SERIALIZATION_NVP(b.complete);
             ar & BOOST_SERIALIZATION_NVP(b.num_tets);

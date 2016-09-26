@@ -44,7 +44,7 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
         {
             dblock_t* d = (dblock_t*)create_block();
 
-#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
 
             // copy values from SerBlock b* to diy block d*
             d->gid                  = b[i].gid;
