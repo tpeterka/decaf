@@ -38,7 +38,7 @@ using namespace std;
 void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
 {
 
-#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
 
     dest->gid                  = src->gid;
     memcpy(dest->mins,         src->mins,                 3 * sizeof(float));
@@ -63,7 +63,9 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     // debug
     // fprintf(stderr, "1: tess: lid=%d gid=%d bb.size()=%ld\n", lid, src->gid, bb.buffer.size());
     dest->diy_bb.resize(bb.buffer.size());
-    copy(bb.buffer.begin(), bb.buffer.end(), dest->diy_bb.begin());
+    // DEPRECATED; swap instead of copy
+    // copy(bb.buffer.begin(), bb.buffer.end(), dest->diy_bb.begin());
+    swap(bb.buffer, dest->diy_bb);
 
  #endif
 
@@ -71,12 +73,9 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     diy::MemoryBuffer lb;
     diy::LinkFactory::save(lb, master.link(lid));
     dest->diy_lb.resize(lb.buffer.size());
-    // debug
-    // fprintf(stderr, "2: tess: lid=%d gid=%d lb.size()=%ld\n", lid, src->gid, lb.buffer.size());
-    copy(lb.buffer.begin(), lb.buffer.end(), dest->diy_lb.begin());
-
-
-    // TODO: use swap instead of copy?
+    // DEPRECATED; swap instead of copy
+    // copy(lb.buffer.begin(), lb.buffer.end(), dest->diy_lb.begin());
+    swap(lb.buffer, dest->diy_lb);
 
     // debug
     // fprintf(stderr, "tess: lid=%d gid=%d\n", lid, src->gid);
@@ -123,10 +122,6 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     // for (int j = 0; j < src->num_particles; j++)
     //     fprintf(stderr, "gid=%d vert_to_tet[%d]=%d ", src->gid, j, src->vert_to_tet[j]);
     // fprintf(stderr, "\n");
-
-    // fprintf(stderr, "neighbors:\n");
-    // for (size_t j = 0; j < dest->neighbors.size(); j++)
-    //     fprintf(stderr, "gid=%d neighbors[%ld]=%d ", src->gid, j, dest->neighbors[j]);
 }
 
 // consumer
@@ -230,8 +225,8 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         timing(times, TOT_TIME, -1, world);
         tess(master, quants, times);
 
-        // DEPRECATED: save file
-        // tess_save(master, outfile, times);
+        // debug: save file
+        tess_save(master, outfile, times);
 
         // timing stats
         timing(times, -1, TOT_TIME, world);

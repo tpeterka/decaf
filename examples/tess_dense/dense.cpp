@@ -44,7 +44,7 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
         {
             dblock_t* d = (dblock_t*)create_block();
 
-#if 1 // this version is a shallow copy of the heavy data items, but more verbose programming
+#if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
 
             // copy values from SerBlock b* to diy block d*
             d->gid                  = b[i].gid;
@@ -69,18 +69,18 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
             // copy serialized buffer to diy block
             diy::MemoryBuffer bb;
             bb.buffer.resize(b[i].diy_bb.size());
-            // debug
-            // fprintf(stderr, "diy_bb.size()=%ld\n", b[i].diy_bb.size());
-            copy(b[i].diy_bb.begin(), b[i].diy_bb.end(), bb.buffer.begin()); // TODO: swap instead?
+            // DEPRECATED; swap instead of copy
+            // copy(b[i].diy_bb.begin(), b[i].diy_bb.end(), bb.buffer.begin());
+            swap(b[i].diy_bb, bb.buffer);
             load_block_light(d, bb);
 
 #endif
             // copy link
             diy::MemoryBuffer lb;
             lb.buffer.resize(b[i].diy_lb.size());
-            // debug
-            // fprintf(stderr, "diy_lb.size()=%ld\n", b[i].diy_lb.size());
-            copy(b[i].diy_lb.begin(), b[i].diy_lb.end(), lb.buffer.begin()); // TODO: swap instead?
+            // DEPRECATED; swap instead of copy
+            // copy(b[i].diy_lb.begin(), b[i].diy_lb.end(), lb.buffer.begin());
+            swap(b[i].diy_lb, lb.buffer);
             diy::Link* link = diy::LinkFactory::load(lb);
             link->fix(assigner);
 
