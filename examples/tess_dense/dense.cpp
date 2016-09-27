@@ -200,7 +200,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
                                          &storage,
                                          &save_block,
                                          &load_block);
-        // DEPRECATED: for reading file
+        // debug: for reading file
         // diy::RoundRobinAssigner   assigner(world.size(), -1);  // tot_blocks found by read_blocks
 
         diy::RoundRobinAssigner   assigner(world.size(), tot_blocks);

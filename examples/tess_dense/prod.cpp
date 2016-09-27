@@ -34,7 +34,7 @@ void prod(Decaf* decaf)
     // we're making up some synthetic data instead
 
     // number of points, randomly placed in a box of size [0, npts - 1]^3
-    int npts = 10;
+    int npts = 20;
 
     srand(decaf->world->rank());
 
