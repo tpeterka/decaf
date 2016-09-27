@@ -69,8 +69,6 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
             // copy serialized buffer to diy block
             diy::MemoryBuffer bb;
             bb.buffer.resize(b[i].diy_bb.size());
-            // DEPRECATED; swap instead of copy
-            // copy(b[i].diy_bb.begin(), b[i].diy_bb.end(), bb.buffer.begin());
             swap(b[i].diy_bb, bb.buffer);
             load_block_light(d, bb);
 
@@ -78,8 +76,6 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
             // copy link
             diy::MemoryBuffer lb;
             lb.buffer.resize(b[i].diy_lb.size());
-            // DEPRECATED; swap instead of copy
-            // copy(b[i].diy_lb.begin(), b[i].diy_lb.end(), lb.buffer.begin());
             swap(b[i].diy_lb, lb.buffer);
             diy::Link* link = diy::LinkFactory::load(lb);
             link->fix(assigner);
@@ -232,6 +228,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         // write file
         // NB: all blocks need to be in memory; WriteGrid is not diy2'ed yet
         times[OUTPUT_TIME] = MPI_Wtime();
+        sprintf(outfile, "dense%d.raw", step);
         WriteGrid(maxblocks, tot_blocks, outfile, project, glo_num_idx, eps, data_mins, data_maxs,
                   num_given_bounds, given_mins, given_maxs, master, assigner);
         MPI_Barrier(comm);

@@ -35,17 +35,21 @@ void prod(Decaf* decaf)
 
     // number of points, randomly placed in a box of size [0, npts - 1]^3
     int npts = 10;
-    float* x = new float[npts];
-    float* y = new float[npts];
-    float* z = new float[npts];
 
     srand(decaf->world->rank());
 
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 1; timestep++)
+    for (int timestep = 0; timestep < 3; timestep++)
     {
         // create the synthetic points for the timestep
         fprintf(stderr, "producer timestep %d\n", timestep);
+
+        // the point arrays need to be allocated inside the loop because
+        // decaf will automatically free them at the end of the loop after sending
+        // (smart pointer reference counting)
+        float* x = new float[npts];
+        float* y = new float[npts];
+        float* z = new float[npts];
         for (unsigned i = 0; i < npts; ++i)
         {
             float t = (float) rand() / RAND_MAX;

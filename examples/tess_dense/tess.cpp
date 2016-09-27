@@ -60,11 +60,7 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     // copy (deep) block to binary buffer
     diy::MemoryBuffer bb;
     save_block_light(master.block(lid), bb);
-    // debug
-    // fprintf(stderr, "1: tess: lid=%d gid=%d bb.size()=%ld\n", lid, src->gid, bb.buffer.size());
     dest->diy_bb.resize(bb.buffer.size());
-    // DEPRECATED; swap instead of copy
-    // copy(bb.buffer.begin(), bb.buffer.end(), dest->diy_bb.begin());
     swap(bb.buffer, dest->diy_bb);
 
  #endif
@@ -73,8 +69,6 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     diy::MemoryBuffer lb;
     diy::LinkFactory::save(lb, master.link(lid));
     dest->diy_lb.resize(lb.buffer.size());
-    // DEPRECATED; swap instead of copy
-    // copy(lb.buffer.begin(), lb.buffer.end(), dest->diy_lb.begin());
     swap(lb.buffer, dest->diy_lb);
 
     // debug
@@ -229,7 +223,7 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         tess(master, quants, times);
 
         // debug: save file
-        tess_save(master, outfile, times);
+        // tess_save(master, outfile, times);
 
         // timing stats
         timing(times, -1, TOT_TIME, world);
