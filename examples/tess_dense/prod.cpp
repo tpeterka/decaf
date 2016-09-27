@@ -40,20 +40,21 @@ void prod(Decaf* decaf)
     float* z = new float[npts];
 
     srand(decaf->world->rank());
-    for (unsigned i = 0; i < npts; ++i)
-    {
-        float t = (float) rand() / RAND_MAX;
-        x[i] = t * (npts - 1);
-        t = (float) rand() / RAND_MAX;
-        y[i] = t * (npts - 1);
-        t = (float) rand() / RAND_MAX;
-        z[i] = t * (npts - 1);
-    }
 
     // produce data for some number of timesteps
     for (int timestep = 0; timestep < 1; timestep++)
     {
+        // create the synthetic points for the timestep
         fprintf(stderr, "producer timestep %d\n", timestep);
+        for (unsigned i = 0; i < npts; ++i)
+        {
+            float t = (float) rand() / RAND_MAX;
+            x[i] = t * (npts - 1);
+            t = (float) rand() / RAND_MAX;
+            y[i] = t * (npts - 1);
+            t = (float) rand() / RAND_MAX;
+            z[i] = t * (npts - 1);
+        }
 
         // mins and sizes, not mins and maxs
         vector<unsigned int> extendsBlock = {0, 0, 0,

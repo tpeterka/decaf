@@ -140,8 +140,6 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
 // consumer
 void density_estimate(Decaf* decaf, MPI_Comm comm)
 {
-    // this first test just does a density estimation of a tessellation read from a file
-
     // set some default arguments
     int tot_blocks       = 2;                   // global number of blocks
     float mass           = 1.0;                 // particle mass
@@ -152,7 +150,6 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
     int glo_num_idx[3]   = {512, 512, 512};     // global grid number of points
     int num_threads      = 1;                   // threads diy can use
     int mem_blocks       = -1;                  // max blocks in memory
-    char infile[256]     = "del.out";           // input file name
     char outfile[256]    = "dense.raw";         // output file name
 
     int nblocks;                                // my local number of blocks
@@ -176,9 +173,13 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
 
     // event loop
     // TODO: verify that all of the below can run iteratively, only tested for one time step
+    static int step = 0;
+
     vector<pConstructData> in_data;
     while (decaf->get(in_data))
     {
+        fprintf(stderr, "dense: getting data for step %d\n", step);
+
         // timing
         double times[DENSE_MAX_TIMES];               // timing
         MPI_Barrier(comm);
@@ -211,8 +212,8 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         // fill blocks with incoming data
         fill_blocks(in_data, master, assigner);
 
-        // DEPRECATED: read the tessellation
-        // diy::io::read_blocks(infile, world, assigner, master, &load_block_light);
+        // debug: read the tessellation
+        // diy::io::read_blocks("del.out", world, assigner, master, &load_block_light);
         // tot_blocks = assigner.nblocks();
 
         // get global block quantities
@@ -241,7 +242,9 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         times[TOTAL_TIME] = MPI_Wtime() - times[TOTAL_TIME];
 
         dense_stats(times, master, grid_step_size, grid_phys_mins, glo_num_idx);
-    }
+
+        step++;
+    } // decaf event loop
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "density estimation terminating\n");

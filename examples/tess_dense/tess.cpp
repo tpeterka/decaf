@@ -127,11 +127,14 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
 // consumer
 void tessellate(Decaf* decaf, MPI_Comm comm)
 {
+    static int step = 0;
+
     // event loop
     // TODO: verify that all of the below can run iteratively, only tested for one time step
     vector<pConstructData> in_data;
     while (decaf->get(in_data))
     {
+        fprintf(stderr, "tess: getting data for step %d\n", step);
 
         ArrayFieldf xyzpos = in_data[0]->getFieldData<ArrayFieldf>("xyz_pos");
         if(!xyzpos)
@@ -244,6 +247,8 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         decaf->put(container);
+
+        step++;
     } // decaf event loop
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
