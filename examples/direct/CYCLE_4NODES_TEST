@@ -63,13 +63,7 @@ fi
 
 if [ "$ARCH" = "BGQ" ]; then
 
-# temporary fix, should be in the bgclang wrapper instead
-# don't set this in .bashrc for the login node; bad things happen
-# only set it here so that it goes straight to the compute node
-my_LD_LIBRARY_PATH=/bgsys/drivers/toolchain/V1R2M4_base_4.7.2/gnu-linux-4.7.2/powerpc64-bgq-linux/lib:$LD_LIBRARY_PATH
-
-
-qsub -n $num_nodes --env LD_LIBRARY_PATH=$my_LD_LIBRARY_PATH:DECAF_PREFIX=$DECAF_PREFIX --mode c$ppn -A SDAV -t 60 $exe
+qsub -n $num_nodes --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:DECAF_PREFIX=$DECAF_PREFIX --mode c$ppn -A SDAV -t 60 $exe
 
 # how to trace ld paths for debugging dynamic libraries not being found
 # qsub -n $num_nodes --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:LD_DEBUG=libs:LD_VERBOSE=1:LD_TRACE_LOADED_OBJECTS=1 --mode c$ppn -A SDAV -t 60 $exe

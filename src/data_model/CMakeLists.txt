@@ -1,12 +1,5 @@
-# find_package            (Boost COMPONENTS serialization REQUIRED)
-# include_directories     (${Boost_INCLUDE_DIRS})
-
-# DEPRECATED, don't force shared; let the user decide
-# add_library             (bredala_datamodel SHARED     constructtype.cpp
-# morton.cpp maptools.cpp)
-
-add_library             (bredala_datamodel     constructtype.cpp
-  morton.cpp maptools.cpp)
+add_library             (bredala_datamodel SHARED     constructtype.cpp
+morton.cpp maptools.cpp)
 
 target_link_libraries   (bredala_datamodel 
   ${libraries} ${EXTRA_FLAGS} ${Boost_LIBRARIES})
