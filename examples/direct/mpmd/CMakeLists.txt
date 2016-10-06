@@ -2,12 +2,12 @@ if                          (python_examples)
   add_subdirectory          (python)
 endif                       (python_examples)
 
-find_package                (Boost COMPONENTS serialization REQUIRED)
+# find_package                (Boost COMPONENTS serialization REQUIRED)
 
-if(Boost_FOUND)
+# if(Boost_FOUND)
 
   message("Building direct mpmd example")
-  include_directories(${Boost_INCLUDE_DIRS})
+  # include_directories(${Boost_INCLUDE_DIRS})
 
   add_executable              (prod               prod.cpp)
   add_executable              (con                con.cpp)
@@ -15,13 +15,13 @@ if(Boost_FOUND)
   add_library                 (mod_dflow          MODULE dflow.cpp)
 
   target_link_libraries       (prod
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (con
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (dflow
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_dflow
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel)
 
   # .SO file extension on Linux/Mac OS
   set_target_properties(mod_dflow PROPERTIES SUFFIX ".so")
@@ -41,4 +41,4 @@ if(Boost_FOUND)
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
     WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-endif(Boost_FOUND)
+# endif(Boost_FOUND)

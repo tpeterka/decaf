@@ -1,6 +1,5 @@
-find_package            (Boost COMPONENTS serialization REQUIRED)
-
-include_directories     (${Boost_INCLUDE_DIRS})
+# find_package            (Boost COMPONENTS serialization REQUIRED)
+# include_directories     (${Boost_INCLUDE_DIRS})
 
 # DEPRECATED, don't force shared; let the user decide
 # add_library             (bredala_datamodel SHARED     constructtype.cpp

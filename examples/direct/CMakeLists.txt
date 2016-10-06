@@ -1,14 +1,14 @@
-# add_subdirectory            (mpmd)
-# if                          (python_examples)
-#   add_subdirectory          (python)
-# endif                       (python_examples)
+add_subdirectory            (mpmd)
+if                          (python_examples)
+  add_subdirectory          (python)
+endif                       (python_examples)
 
-find_package            (Boost COMPONENTS serialization REQUIRED)
+# find_package            (Boost COMPONENTS serialization REQUIRED)
 
-if(Boost_FOUND)
+# if(Boost_FOUND)
 
   message("Building direct example")
-  include_directories(${Boost_INCLUDE_DIRS})
+  # include_directories(${Boost_INCLUDE_DIRS})
 
   add_executable              (linear_2nodes             linear_2nodes.cpp)
   add_executable              (linear_3nodes             linear_3nodes.cpp)
@@ -18,17 +18,17 @@ if(Boost_FOUND)
   add_library                 (mod_cycle_4nodes   MODULE cycle_4nodes.cpp)
 
   target_link_libraries       (linear_2nodes 
-    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (linear_3nodes
-    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (cycle_4nodes
-    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_linear_2nodes
-    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_linear_3nodes
-    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
+    ${libraries} bredala_transport bredala_datamodel)
   target_link_libraries       (mod_cycle_4nodes
-    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
+    ${libraries} bredala_transport bredala_datamodel)
 
   # .SO file extension on Linux/Mac OS
   set_target_properties(mod_linear_2nodes PROPERTIES SUFFIX ".so")
@@ -56,4 +56,4 @@ if(Boost_FOUND)
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
     WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-endif(Boost_FOUND)
+# endif(Boost_FOUND)
