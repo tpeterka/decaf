@@ -1,5 +1,4 @@
-
-find_package(Boost COMPONENTS serialization REQUIRED)
+find_package            (Boost COMPONENTS serialization REQUIRED)
 
 if(Boost_FOUND)
 

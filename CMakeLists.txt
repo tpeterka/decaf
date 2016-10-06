@@ -5,6 +5,7 @@ option                      (transport_mpi      "Build Decaf with MPI transport 
 option                      (tess_dense         "Build tessellation density estimator example" OFF)
 option                      (gromacs_example    "Build Gromacs example"                        OFF)
 option			    (bredala_only	"Build only Bredala libraries and exameples"   OFF)
+option			    (bgq	        "Build on BG/Q"				       OFF)
 
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -16,20 +17,32 @@ endif                       ()
 
 # C++11
 set                         (CMAKE_CXX_STANDARD        11)
-if                          ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-                             "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
-  set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
-  set                       (CMAKE_EXE_LINKER_FLAGS     "-lc++")
-  set                       (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
-  set                       (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
-else                        ()
-  set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif                       ()
+  if                        ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
+                            "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
+    set                     (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    set                     (CMAKE_EXE_LINKER_FLAGS     "-lc++")
+    set                     (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
+    set                     (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
+  else                      ()
+   set                      (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  endif                     ()
+
+
+# machine-specific builds
+if			    (bgq)
+  add_definitions	    (-DBGQ)
+  set                       (CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} -fPIC")
+  set                       (CMAKE_MODULE_LINKER_FLAGS  "${CMAKE_MODULE_LINKER_FLAGS} -fPIC")
+  set                       (EXTRA_FLAGS "-dynamic")
+endif			    (bgq)
+
 
 # MPI
 if                          (transport_mpi)
   find_package              (MPI REQUIRED)
-  set                       (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
+  if                        (NOT bgq)
+    set                     (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
+  endif                     ()
   add_definitions           (-DTRANSPORT_MPI)
 endif                       (transport_mpi)
 

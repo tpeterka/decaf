@@ -22,8 +22,10 @@
 #    message("FFS not found. Skipping FFS based redistribution example")
 #endif(FFS_FOUND)
 
-find_package(Boost COMPONENTS serialization)
+find_package            (Boost COMPONENTS serialization REQUIRED)
+
 if(Boost_FOUND)
+
     message("Building boost based redistribution example")
     include_directories(${Boost_INCLUDE_DIRS})
 

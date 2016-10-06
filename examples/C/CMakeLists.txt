@@ -1,4 +1,5 @@
-find_package(Boost COMPONENTS serialization REQUIRED)
+find_package            (Boost COMPONENTS serialization REQUIRED)
+
 if(Boost_FOUND)
 
   message("Building C examples")
@@ -48,5 +49,6 @@ if(Boost_FOUND)
 
     add_subdirectory(mpmd)
   endif(NOT  ${bredala_only})
+
 endif(Boost_FOUND)
 

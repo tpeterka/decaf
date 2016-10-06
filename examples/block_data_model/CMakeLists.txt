@@ -1,4 +1,3 @@
-
 find_package(Boost COMPONENTS serialization REQUIRED)
 
 # DIY

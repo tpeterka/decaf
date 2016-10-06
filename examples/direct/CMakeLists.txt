@@ -1,16 +1,14 @@
-add_subdirectory            (mpmd)
-if                          (python_examples)
-  add_subdirectory          (python)
-endif                       (python_examples)
+# add_subdirectory            (mpmd)
+# if                          (python_examples)
+#   add_subdirectory          (python)
+# endif                       (python_examples)
 
-find_package(Boost COMPONENTS serialization REQUIRED)
+find_package            (Boost COMPONENTS serialization REQUIRED)
 
 if(Boost_FOUND)
 
   message("Building direct example")
   include_directories(${Boost_INCLUDE_DIRS})
-  message("Boost_INCLUDE_DIRS=" ${Boost_INCLUDE_DIRS})
-  message("Boost_LIBRARIES=" ${Boost_LIBRARIES})
 
   add_executable              (linear_2nodes             linear_2nodes.cpp)
   add_executable              (linear_3nodes             linear_3nodes.cpp)
@@ -19,18 +17,18 @@ if(Boost_FOUND)
   add_library                 (mod_linear_3nodes  MODULE linear_3nodes.cpp)
   add_library                 (mod_cycle_4nodes   MODULE cycle_4nodes.cpp)
 
-  target_link_libraries       (linear_2nodes
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+  target_link_libraries       (linear_2nodes 
+    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
   target_link_libraries       (linear_3nodes
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
   target_link_libraries       (cycle_4nodes
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
   target_link_libraries       (mod_linear_2nodes
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
   target_link_libraries       (mod_linear_3nodes
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
   target_link_libraries       (mod_cycle_4nodes
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel ${Boost_LIBRARIES})
 
   # .SO file extension on Linux/Mac OS
   set_target_properties(mod_linear_2nodes PROPERTIES SUFFIX ".so")

@@ -2,7 +2,7 @@ if                          (python_examples)
   add_subdirectory          (python)
 endif                       (python_examples)
 
-find_package(Boost COMPONENTS serialization REQUIRED)
+find_package                (Boost COMPONENTS serialization REQUIRED)
 
 if(Boost_FOUND)
 

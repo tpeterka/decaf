@@ -3,6 +3,7 @@
 # endif                       (python_examples)
 
 find_package                  (Boost COMPONENTS serialization REQUIRED)
+
 if                            (${serial} MATCHES "CGAL")
   find_package                (CGAL)
   find_package                (Boost)
