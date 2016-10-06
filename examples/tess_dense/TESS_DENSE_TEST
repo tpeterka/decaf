@@ -62,7 +62,16 @@ mpiexec -l $mpmd
 fi
 
 if [ "$ARCH" = "BGQ" ]; then
-echo "TODO"
+
+# temporary fix, should be in the bgclang wrapper instead
+# don't set this in .bashrc for the login node; bad things happen
+# only set it here so that it goes straight to the compute node
+my_LD_LIBRARY_PATH=/bgsys/drivers/toolchain/V1R2M4_base_4.7.2/gnu-linux-4.7.2/powerpc64-bgq-linux/lib:$LD_LIBRARY_PATH
+
+# TODO: fixme
+# BGQ mpmd mode is done differently
+qsub -n $num_nodes --env LD_LIBRARY_PATH=$my_LD_LIBRARY_PATH:DECAF_PREFIX=$DECAF_PREFIX --mode c$ppn -A SDAV -t 60 $mpmd
+
 fi
 
 if [ "$ARCH" = "CRAY" ]; then
