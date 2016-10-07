@@ -11,8 +11,8 @@
 # tpeterka@mcs.anl.gov
 #
 #----------------------------------------------------------------------------
-ARCH=MAC_OSX
-#ARCH=LINUX
+#ARCH=MAC_OSX
+ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
 #ARCH=CRAY
@@ -58,7 +58,9 @@ mpiexec -l $mpmd
 fi
 
 if [ "$ARCH" = "BGQ" ]; then
-echo "TODO"
+
+qsub -n $num_nodes --mode script -A SDAV -t 10 ./bgq_run.py
+
 fi
 
 if [ "$ARCH" = "CRAY" ]; then
