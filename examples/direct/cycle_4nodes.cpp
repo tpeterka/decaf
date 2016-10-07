@@ -216,8 +216,6 @@ extern "C"
     }
 } // extern "C"
 
-// every user application needs to implement the following run function with this signature
-// run(Workflow&) in the global namespace
 void run(Workflow& workflow)                     // workflow
 {
     MPI_Init(NULL, NULL);
