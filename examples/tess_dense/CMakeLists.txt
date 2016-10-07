@@ -75,7 +75,7 @@ install                     (TARGETS
                             GROUP_READ GROUP_WRITE GROUP_EXECUTE
                             WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-install                     (FILES TESS_DENSE_TEST
+install                     (FILES TESS_DENSE_TEST  bgq_run.py bgq_mapfile
                             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/tess_dense/
                             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                             GROUP_READ GROUP_WRITE GROUP_EXECUTE
