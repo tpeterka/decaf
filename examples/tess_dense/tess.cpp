@@ -212,7 +212,6 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
             }
         }
 
-
         // sort and distribute particles to regular blocks
         tess_exchange(master, assigner, times);
 
