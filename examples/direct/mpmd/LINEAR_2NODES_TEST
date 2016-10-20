@@ -11,8 +11,8 @@
 # tpeterka@mcs.anl.gov
 #
 #----------------------------------------------------------------------------
-ARCH=MAC_OSX
-#ARCH=LINUX
+#ARCH=MAC_OSX
+ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
 #ARCH=CRAY
@@ -37,6 +37,9 @@ exe1=./prod
 exe2=./dflow
 exe3=./con
 
+# timeout (minutes)
+time=10
+
 # mpmd command
 mpmd="-n $np1 $exe1 : -n $np2 $exe2 : -n $np3 $exe3"
 
@@ -58,7 +61,9 @@ mpiexec -l $mpmd
 fi
 
 if [ "$ARCH" = "BGQ" ]; then
-echo "TODO"
+
+qsub -n $num_nodes --mode script -A SDAV -t $time --env NUM_PROCS=$num_procs:PPN=$ppn:TIME=$time:EXE1=$exe1 ./bgq_run.py
+
 fi
 
 if [ "$ARCH" = "CRAY" ]; then

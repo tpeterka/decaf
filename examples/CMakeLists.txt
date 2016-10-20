@@ -28,5 +28,5 @@ if(NOT ${bredala_only} )
 endif(NOT ${bredala_only})
 
 add_subdirectory            (bredala)
-add_subdirectory            (C)
+# add_subdirectory            (C)
 

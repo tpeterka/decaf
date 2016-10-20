@@ -244,7 +244,6 @@ void run(Workflow& workflow)                     // workflow
 }
 
 // test driver for debugging purposes
-// normal entry point is run(), called by python
 int main(int argc,
          char** argv)
 {
