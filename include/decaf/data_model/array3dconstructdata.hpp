@@ -17,7 +17,7 @@
 namespace decaf {
 
 
-//Tool function to extract the overlap between to intervale
+//Tool function to extract the overlap between two intervale
 bool hasOverlap(unsigned int baseMin, unsigned int baseMax,
                 unsigned int otherMin, unsigned int otherMax,
                 unsigned int & overlapMin, unsigned int & overlapMax)
@@ -30,6 +30,7 @@ bool hasOverlap(unsigned int baseMin, unsigned int baseMax,
     return true;
 }
 
+//TODO : pack the copies if possible with boost API
 template<typename T>
 void copy3DArray(boost::multi_array<T, 3>* dest, Block<3>& blockDest,
                  boost::multi_array<T, 3>* src, Block<3>& blockSrc)
@@ -55,12 +56,12 @@ void copy3DArray(boost::multi_array<T, 3>* dest, Block<3>& blockDest,
 template<typename T>
 class Array3DConstructData : public BaseConstructData {
 public:
-    Array3DConstructData(mapConstruct map = mapConstruct())
-        : BaseConstructData(map), value_(NULL), isOwner_(false){}
+    Array3DConstructData(bool isCountable = false, mapConstruct map = mapConstruct())
+        : BaseConstructData(map), value_(NULL), isOwner_(false){ bCountable_ = isCountable; }
 
     Array3DConstructData(boost::multi_array<T, 3> *value, Block<3> block = Block<3>(),
-                           bool isOwner = false, mapConstruct map = mapConstruct()) :
-        BaseConstructData(map), value_(value), block_(block), isOwner_(isOwner){}
+                           bool isOwner = false, bool isCountable = false, mapConstruct map = mapConstruct()) :
+        BaseConstructData(map), value_(value), block_(block), isOwner_(isOwner){ bCountable_ = isCountable; }
 
     virtual ~Array3DConstructData()
     {
@@ -114,6 +115,17 @@ public:
         std::vector<std::shared_ptr<BaseConstructData> > result;
         std::cout<<"ERROR : the spliting of a n-dimension array is not implemted yet."<<std::endl;
         return result;
+    }
+
+    virtual void split(
+            const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
+        std::cout<<"ERROR : the spliting of a n-dimension array with buffers is not implemented yet."<<std::endl;
+        return ;
     }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
@@ -185,13 +197,15 @@ public:
 
                 Block<3> subBlock = block_;
 
-                subBlock.setLocalExtends({xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin});
-                subBlock.setLocalBBox({ subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
-                                        subBlock.globalBBox_[1] + ymin * subBlock.gridspace_,
-                                        subBlock.globalBBox_[2] + zmin * subBlock.gridspace_,
-                                        (xmax - xmin) * subBlock.gridspace_,
-                                        (ymax - ymin) * subBlock.gridspace_,
-                                        (zmax - zmin) * subBlock.gridspace_});
+                std::vector<unsigned int> localExtends = {xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin};
+                std::vector<float> localBBox = { subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
+                                                 subBlock.globalBBox_[1] + ymin * subBlock.gridspace_,
+                                                 subBlock.globalBBox_[2] + zmin * subBlock.gridspace_,
+                                                 (xmax - xmin) * subBlock.gridspace_,
+                                                 (ymax - ymin) * subBlock.gridspace_,
+                                                 (zmax - zmin) * subBlock.gridspace_};
+                subBlock.setLocalExtends(localExtends);
+                subBlock.setLocalBBox(localBBox);
 
                 // Updating the own information as well
                 if(range.at(i).hasOwnExtends_)

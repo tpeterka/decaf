@@ -60,31 +60,27 @@ public:
                     ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
-                    bool force = false);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
 
     bool appendData(std::string name,
                     BaseField&  data,
                     ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
                     ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
-                    bool force = false);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
     bool appendData(const char* name,
                     std::shared_ptr<BaseConstructData>  data,
                     ConstructTypeFlag flags = DECAF_NOFLAG,
                     ConstructTypeScope scope =  DECAF_PRIVATE,
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
-                    bool force = false);
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
 
     bool appendData(const char* name,
                     BaseField& data,
                     ConstructTypeFlag flags = DECAF_NOFLAG,
                     ConstructTypeScope scope =  DECAF_PRIVATE,
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT,
-                    bool force = false);
+                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
     
     bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
@@ -114,6 +110,10 @@ public:
     virtual bool isSplitable();
 
     virtual bool isSystem();
+
+    bool isCountable();
+
+    bool isPartiallyCountable();
 
     // Inherited from baseconstruct
     virtual std::vector< std::shared_ptr<BaseData> > split(
@@ -207,7 +207,7 @@ protected:
         ar & BOOST_SERIALIZATION_NVP(nbItems_);
     }
 
-    bool updateMetaData(bool force);
+    bool updateMetaData();
 
     std::string out_serial_buffer_;
     std::string in_serial_buffer_;
@@ -218,7 +218,8 @@ protected:
     std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
     std::vector<std::vector<int> > rangeItems_;
     bool bSystem_;
-    bool isCoherent_;
+    bool bCountable_;
+    bool bPartialCountable_;
 };
 
 //Have to define it here because of the template

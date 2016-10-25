@@ -121,7 +121,7 @@ void node_b(Decaf* decaf)
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
 
-        delete sums;
+        delete [] sums;
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

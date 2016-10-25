@@ -382,9 +382,11 @@ public:
                 }
                 break;
             }
-            case DECAF_SPLIT_SEGMENTED:
+            case DECAF_SPLIT_SEGMENTED: // TODO : readapt the segments to
             {
-                //Sanity check
+                // TODO : remake the segments so it reflects the new meaning of the ranges
+                std::cerr<<"ERROR : DECAF_SPLIT_SEGMENTED in not implemented for split by range"<<std::endl;
+                return result;
 
 
                 //typename std::vector<T>::iterator it = value_.begin();

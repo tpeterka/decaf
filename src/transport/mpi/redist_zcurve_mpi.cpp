@@ -160,6 +160,12 @@ RedistZCurveMPI::computeGlobal(pConstructData& data, RedistRole role)
         // If we don't have the global bounding box, we compute it once
         if(!bBBox_)
         {
+            if(!data->isCountable())
+            {
+                std::cout<<"ERROR : Trying to redistribute the data with respect to a ZCurve "
+                         <<"but the data is not fully countable. Abording."<<std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 0);
+            }
 
             if(!data->hasZCurveKey())
             {

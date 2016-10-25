@@ -76,7 +76,7 @@ void node_a(dca_decaf decaf)
 
         if(!bca_append_field(container, "var", field,
                              bca_NOFLAG, bca_PRIVATE,
-                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE, false))
+                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE))
         {
             fprintf(stderr, "ERROR : unable to append the field \"var\" in the container\n");
         }
@@ -140,7 +140,7 @@ void node_b(dca_decaf decaf)
         bca_constructdata container = bca_create_constructdata();
         bca_append_field(container, "vars", field,
                          bca_NOFLAG, bca_PRIVATE,
-                         bca_SPLIT_DEFAULT, bca_MERGE_APPEND_VALUES, false);
+                         bca_SPLIT_DEFAULT, bca_MERGE_APPEND_VALUES);
 
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
@@ -195,7 +195,7 @@ void node_c(dca_decaf decaf)
 
         if(!bca_append_field(container, "var", field,
                              bca_NOFLAG, bca_PRIVATE,
-                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE, false))
+                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE))
         {
             fprintf(stderr, "ERROR : unable to append the field \"var\" in the container\n");
         }
@@ -252,7 +252,7 @@ void node_d(dca_decaf decaf)
 
         if(!bca_append_field(container, "var", field,
                              bca_NOFLAG, bca_PRIVATE,
-                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE, false))
+                             bca_SPLIT_KEEP_VALUE, bca_MERGE_ADD_VALUE))
         {
             fprintf(stderr, "ERROR : unable to append the field \"var\" in the container\n");
         }

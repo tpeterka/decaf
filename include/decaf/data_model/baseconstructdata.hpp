@@ -69,12 +69,18 @@ namespace decaf {
 class BaseConstructData {
 public:
     BaseConstructData(mapConstruct map = mapConstruct()) :
-        map_(map){}
+        map_(map), bCountable_(true){}
+
     virtual ~BaseConstructData(){}
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
+    }
+
+    virtual bool isCountable()
+    {
+        return bCountable_;
     }
 
     virtual int getNbItems() = 0;
@@ -126,8 +132,10 @@ public:
 
     void setMap(mapConstruct map){ map_ = map; }
     mapConstruct getMap(){ return map_; }
+
 protected:
     mapConstruct map_;
+    bool bCountable_;
 
 };
 

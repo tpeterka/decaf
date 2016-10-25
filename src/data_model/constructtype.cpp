@@ -63,7 +63,7 @@ decaf::
 ConstructData::ConstructData() :
     BaseData(), nbFields_(0), bZCurveIndex_(false),
     zCurveIndex_(NULL), bZCurveKey_(false), zCurveKey_(NULL),
-    bSystem_(false), isCoherent_(true)
+    bSystem_(false), bCountable_(true), bPartialCountable_(true)
 {
     container_ = std::make_shared<std::map<std::string, datafield> >();
     //data_ = static_pointer_cast<void>(container_);
@@ -73,7 +73,7 @@ bool
 decaf::
 ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int index)
 {
-    assert(isCoherent_);
+    assert(isCountable_);
 
     if(index >= nbItems_)
     {
@@ -84,18 +84,19 @@ ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int inde
     bool result;
     for(std::map<std::string, datafield>::iterator it = container_->begin(); it != container_->end(); it++)
     {
-	std::map<std::string, datafield>::iterator itDest = dest->container_->find(it->first);
-	if(itDest == dest->container_->end())
-	{
-		std::cout<<"ERROR : The field "<<it->first<<" is not available in the destination container."<<std::endl;
-		return false;
-	}	
-	std::shared_ptr<BaseConstructData> fieldDest = getBaseData(itDest->second);
-	result = getBaseData(it->second)->appendItem(fieldDest, index, getMergePolicy(it->second));
-	
-	if(!result)
-	    return false;
-	getNbItemsField(itDest->second) = getNbItemsField(itDest->second) + 1;
+        std::map<std::string, datafield>::iterator itDest = dest->container_->find(it->first);
+        if(itDest == dest->container_->end())
+        {
+            std::cout<<"ERROR : The field "<<it->first<<" is not available in the destination container."<<std::endl;
+            return false;
+        }
+        std::shared_ptr<BaseConstructData> fieldDest = getBaseData(itDest->second);
+        result = getBaseData(it->second)->appendItem(fieldDest, index, getMergePolicy(it->second));
+
+        if(!result)
+            return false;
+
+        getNbItemsField(itDest->second) = getNbItemsField(itDest->second) + 1;
     }
 
     return true;
@@ -108,8 +109,7 @@ ConstructData::appendData(string name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag,
-                bool force)
+                ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
@@ -128,12 +128,7 @@ ConstructData::appendData(string name,
         return false;
     }
 
-    isCoherent_ = updateMetaData(force);
-
-    if(isCoherent_ || (force && !isCoherent_))
-        return true;
-    else
-        return false;
+    return updateMetaData();
 }
 
 bool
@@ -143,8 +138,7 @@ ConstructData::appendData(std::string name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag,
-                bool force)
+                ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
@@ -163,12 +157,7 @@ ConstructData::appendData(std::string name,
         return false;
     }
 
-    isCoherent_ = updateMetaData(force);
-
-    if(isCoherent_ || (force && !isCoherent_))
-        return true;
-    else
-        return false;
+    return updateMetaData();
 }
 
 bool
@@ -178,8 +167,7 @@ ConstructData::appendData(const char* name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag,
-                bool force)
+                ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
@@ -198,12 +186,7 @@ ConstructData::appendData(const char* name,
         return false;
     }
 
-    isCoherent_ = updateMetaData(force);
-
-    if(isCoherent_ || (force && !isCoherent_))
-        return true;
-    else
-        return false;
+    return updateMetaData();
 }
 
 bool
@@ -213,8 +196,7 @@ ConstructData::appendData(const char* name,
                 ConstructTypeFlag flags,
                 ConstructTypeScope scope,
                 ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag,
-                bool force)
+                ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
@@ -233,12 +215,7 @@ ConstructData::appendData(const char* name,
         return false;
     }
 
-    isCoherent_ = updateMetaData(force);
-
-    if(isCoherent_ || (force && !isCoherent_))
-        return true;
-    else
-        return false;
+    return updateMetaData();
 }
 
 bool
@@ -256,7 +233,7 @@ ConstructData::removeData(std::string name)
             split_order_.clear();
         }
 
-        return updateMetaData(false);
+        return updateMetaData();
     }
 
     return false;
@@ -264,9 +241,16 @@ ConstructData::removeData(std::string name)
 
 bool
 decaf::
-ConstructData::isCoherent()
+ConstructData::isCountable()
 {
-    return isCoherent_;
+    return bCountable_;
+}
+
+bool
+decaf::
+ConstructData::isPartiallyCountable()
+{
+    return bPartialCountable_;
 }
 
 bool
@@ -278,7 +262,7 @@ ConstructData::updateData(std::string name,
     if(it != container_->end())
     {
         std::get<3>(it->second) = data;
-        return updateMetaData(false);
+        return updateMetaData();
     }
     else
     {
@@ -379,7 +363,7 @@ bool
 decaf::
 ConstructData::isSplitable()
 {
-    return isCoherent_ && nbItems_ > 0;
+    return bCountable_ && nbItems_ > 0;
 }
 
 std::vector< std::shared_ptr<BaseData> >
@@ -396,8 +380,9 @@ ConstructData::split(const std::vector<int>& range)
         result_maps.push_back(construct->getMap());
     }
 
-    if(!isCoherent_){
-        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+    if(!bCountable_)
+    {
+        fprintf(stderr,"ERROR : trying to split non countable data model.\n");
         return result;
     }
 
@@ -504,9 +489,10 @@ ConstructData::split(const std::vector<int>& range,
         result_maps.push_back(buffers[i]->getMap());
     }
 
-    if(!isCoherent_){
-        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
-        return ;
+    if(!bCountable_)
+    {
+        fprintf(stderr,"ERROR : trying to split non countable data model.\n");
+        return;
     }
 
     //Sanity check
@@ -579,7 +565,7 @@ ConstructData::split(const std::vector<int>& range,
     for(unsigned int i = 0; i < range.size(); i++)
     {
         buffers[i]->updateNbItems();
-        buffers[i]->updateMetaData(false);
+        buffers[i]->updateMetaData();
     }
 
     return;
@@ -600,8 +586,9 @@ ConstructData::split(
         result_maps.push_back(construct->getMap());
     }
 
-    if(!isCoherent_){
-        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+    if(!bCountable_)
+    {
+        fprintf(stderr,"ERROR : trying to split non countable data model.\n");
         return result;
     }
 
@@ -615,8 +602,6 @@ ConstructData::split(
                  <<getNbItems()<<")"<<std::endl;
         return result;
     }
-
-    std::cout<<"Total number of item to split : "<<totalItems<<std::endl;
 
     //Splitting data
     if(split_order_.size() > 0) //Splitting from the user order
@@ -711,8 +696,9 @@ ConstructData::split(const std::vector<std::vector<int> >& range,
         result_maps.push_back(buffers[i]->getMap());
     }
 
-    if(!isCoherent_){
-        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
+    if(!bCountable_)
+    {
+        fprintf(stderr,"ERROR : trying to split non countable data model.\n");
         return;
     }
 
@@ -788,7 +774,7 @@ ConstructData::split(const std::vector<std::vector<int> >& range,
     for(unsigned int i = 0; i < range.size(); i++)
     {
         buffers[i]->updateNbItems();
-        buffers[i]->updateMetaData(false);
+        buffers[i]->updateMetaData();
     }
 
     return ;
@@ -1007,11 +993,6 @@ ConstructData::split(const std::vector<Block<3> >& range)
         result_maps.push_back(construct->getMap());
     }
 
-    if(!isCoherent_){
-        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
-        return result;
-    }
-
     //Preparing the ranges if some fields are not splitable with a block
     bool computeRanges = false;
     std::vector<std::vector<int> > rangeItems;
@@ -1037,30 +1018,38 @@ ConstructData::split(const std::vector<Block<3> >& range)
                 splitFields = getBaseData(data->second)->split(range, result_maps, getSplitPolicy(data->second));
             else
             {
+                // Checking if the field is countable
+                if(!bPartialCountable_ || !getBaseData(data->second)->isCountable())
+                {
+                    std::cerr<<"ERROR : The field \""<<data->first<<"\" is not splitable by "
+                            <<"block and is not countable. Aborting the split."<<std::endl;
+                    return result;
+                }
+
                 if(!computeRanges)
                 {
-		  //The ranges by items have not been computed yet
-		  //We need the Morton key to compute them
-		  if(bZCurveIndex_)
+                    //The ranges by items have not been computed yet
+                    //We need the Morton key to compute them
+                    if(bZCurveIndex_)
                     {
-		      std::shared_ptr<ArrayConstructData<unsigned int> > posData =
-                        std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
-		      computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
-		      computeRanges = true;
+                        std::shared_ptr<ArrayConstructData<unsigned int> > posData =
+                                std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
+                        computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
+                        computeRanges = true;
                     }
-		  else if(bZCurveKey_)
+                    else if(bZCurveKey_)
                     {
-		      std::shared_ptr<ArrayConstructData<float> > posData =
-                        std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
-		      computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
-		      computeRanges = true;
+                        std::shared_ptr<ArrayConstructData<float> > posData =
+                                std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
+                        computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
+                        computeRanges = true;
                     }
-		  else
+                    else
                     {
-		      std::cerr<<"ERROR : The field \""<<split_order_.at(i)<<"\" is not splitable by "
-			       <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
+                        std::cerr<<"ERROR : The field \""<<split_order_.at(i)<<"\" is not splitable by "
+                                <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
 
-		      return result;
+                        return result;
                     }
 
                 }
@@ -1072,7 +1061,7 @@ ConstructData::split(const std::vector<Block<3> >& range)
             if(splitFields.size() != result.size())
             {
                 fprintf(stderr, "ERROR : A field was not split properly."
-                        " The number of chunks does not match the expected number of chunks\n");
+                                " The number of chunks does not match the expected number of chunks\n");
 
                 // Cleaning the result to avoid corrupt data
                 result.clear();
@@ -1085,12 +1074,12 @@ ConstructData::split(const std::vector<Block<3> >& range)
             {
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
                 construct->appendData(split_order_.at(i),
-                                         splitFields.at(j),
-                                         getFlag(data->second),
-                                         std::get<1>(data->second),
-                                         getSplitPolicy(data->second),
-                                         getMergePolicy(data->second)
-                                         );
+                                      splitFields.at(j),
+                                      getFlag(data->second),
+                                      std::get<1>(data->second),
+                                      getSplitPolicy(data->second),
+                                      getMergePolicy(data->second)
+                                      );
             }
         }
     }
@@ -1105,31 +1094,39 @@ ConstructData::split(const std::vector<Block<3> >& range)
                 splitFields = getBaseData(it->second)->split(range, result_maps, getSplitPolicy(it->second));
             else
             {
+                // Checking if the field is countable
+                if(!bPartialCountable_ || !getBaseData(it->second)->isCountable())
+                {
+                    std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
+                            <<"block and is not countable. Aborting the split."<<std::endl;
+                    return result;
+                }
+
                 if(!computeRanges)
                 {
-		  //The ranges by items have not been computed yet
-		  //We need the Morton key to compute them
-		  if(bZCurveIndex_)
+                    //The ranges by items have not been computed yet
+                    //We need the Morton key to compute them
+                    if(bZCurveIndex_)
                     {
-		      std::shared_ptr<ArrayConstructData<unsigned int> > posData =
-                        std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
-		      computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
-		      computeRanges = true;
+                        std::shared_ptr<ArrayConstructData<unsigned int> > posData =
+                                std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
+                        computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
+                        computeRanges = true;
                     }
-		  else if(bZCurveKey_)
+                    else if(bZCurveKey_)
                     {
-		      std::shared_ptr<ArrayConstructData<float> > posData =
-                        std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
-		      computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
-		      computeRanges = true;
+                        std::shared_ptr<ArrayConstructData<float> > posData =
+                                std::dynamic_pointer_cast<ArrayConstructData<float> >(zCurveKey_);
+                        computeIndexesFromBlocks(range, posData->getArray(), posData->getNbItems(), rangeItems);
+                        computeRanges = true;
                     }
-		  else
+                    else
                     {
-		      std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
-			       <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
+                        std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
+                                <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
 
-		      return result;
-		    }
+                        return result;
+                    }
                 }
 
                 splitFields = getBaseData(it->second)->split(rangeItems, result_maps, getSplitPolicy(it->second));
@@ -1151,12 +1148,12 @@ ConstructData::split(const std::vector<Block<3> >& range)
             {
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
                 construct->appendData(it->first,
-                                         splitFields.at(j),
-                                         getFlag(it->second),
-                                         std::get<1>(it->second),
-                                         getSplitPolicy(it->second),
-                                         getMergePolicy(it->second)
-                                         );
+                                      splitFields.at(j),
+                                      getFlag(it->second),
+                                      std::get<1>(it->second),
+                                      getSplitPolicy(it->second),
+                                      getMergePolicy(it->second)
+                                      );
             }
         }
     }
@@ -1181,11 +1178,6 @@ ConstructData::split(
     for(unsigned int i = 0; i < range.size(); i++)
     {
         result_maps.push_back(buffers.at(i)->getMap());
-    }
-
-    if(!isCoherent_){
-        fprintf(stderr,"ERROR : trying to split an incoherent data model.\n");
-        return ;
     }
 
     //Preparing the ranges if some fields are not splitable with a block
@@ -1235,6 +1227,15 @@ ConstructData::split(
         //getBaseData(it->second)->split(range, result_maps, fields, getSplitPolicy(it->second));
         else
         {
+            // Checking if the field is countable
+            if(!bPartialCountable_ || !getBaseData(it->second)->isCountable())
+            {
+                std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
+                        <<"block and is not countable. Aborting the split."<<std::endl;
+                return;
+            }
+
+            // Checking if we have already converted the Block into a list of items
             if(!computeRanges)
             {
                 //The ranges by items have not been computed yet
@@ -1258,8 +1259,6 @@ ConstructData::split(
                 {
                     std::cerr<<"ERROR : The field \""<<it->first<<"\" is not splitable by "
                             <<"block and the container doesn't have a field with the flag ZCURVE_KEY."<<std::endl;
-
-                    //return result;
                     return;
                 }
             }
@@ -1283,7 +1282,7 @@ ConstructData::split(
     for(unsigned int i = 0; i < range.size(); i++)
     {
         buffers[i]->updateNbItems();
-        buffers[i]->updateMetaData(false);
+        buffers[i]->updateMetaData();
         //std::cout<<"Nombre d'item apres update : "<<buffers.at(i)->getNbItems()<<std::endl;
     }
     assert(buffers.size() == range.size());
@@ -1309,15 +1308,18 @@ ConstructData::merge(shared_ptr<BaseData> other)
     //No data yet, we simply copy the data from the other map
     if(container_->empty())
     {
-        //TODO : DANGEROUS should use a copy function
         container_ = otherConstruct->container_;
+
+        //The rest of the values should be updated with updateMetaData()
         //data_ = static_pointer_cast<void>(container_);
-        nbItems_ = otherConstruct->nbItems_;
+        /*nbItems_ = otherConstruct->nbItems_;
         nbFields_ = otherConstruct->nbFields_;
         bZCurveKey_ = otherConstruct->bZCurveKey_;
         zCurveKey_ = otherConstruct->zCurveKey_;
         bZCurveIndex_ = otherConstruct->bZCurveIndex_;
         zCurveIndex_ = otherConstruct->zCurveIndex_;
+        bCountable_ = otherConstruct->bCountable_;
+        bPartialCountable_ = otherConstruct->bPartialCountable_;*/
     }
     else
     {
@@ -1397,8 +1399,7 @@ ConstructData::merge(shared_ptr<BaseData> other)
         }
     }
 
-    isCoherent_ =  updateMetaData(true);
-    return isCoherent_;
+    return updateMetaData();
 }
 
 bool
@@ -1501,8 +1502,7 @@ ConstructData::merge(char* buffer, int size)
 	
     }
     
-    isCoherent_ =  updateMetaData(true);
-    return isCoherent_;
+    return updateMetaData();
 }
 
 bool
@@ -1595,8 +1595,7 @@ ConstructData::mergeStoredData()
         }
     }
 
-    isCoherent_ =  updateMetaData(true);
-    return isCoherent_;
+    return  updateMetaData();
 }
 
 void 
@@ -1742,6 +1741,8 @@ ConstructData::purgeData()
     zCurveKey_.reset();
     zCurveIndex_.reset();
     splitable_ = false;
+    bCountable_ = true;
+    bPartialCountable_ = true;
 }
 
 bool
@@ -1802,10 +1803,7 @@ ConstructData::setData(std::shared_ptr<void> data)
     zCurveKey_ = zCurveKey;
     zCurveIndex_ = zCurveIndex;
 
-    isCoherent_ = updateMetaData(false);
-
-    return isCoherent_;
-
+    return updateMetaData();
 }
 
 bool
@@ -1837,7 +1835,7 @@ ConstructData::getData(std::string key)
 
 bool
 decaf::
-ConstructData::updateMetaData(bool force)
+ConstructData::updateMetaData()
 {
     //Checking is the map is valid and updating the informations
     nbItems_ = 0;
@@ -1845,30 +1843,34 @@ ConstructData::updateMetaData(bool force)
     bZCurveKey_ = false;
     bZCurveIndex_ = false;
     bSystem_ = true;
+    bCountable_ = true;
+    bPartialCountable_ = true;
 
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
     {
-        //std::cout<<"Checking the field "<<it->first<<std::endl;
-        //std::cout<<"Number of items in the data : "<<getBaseData(it->second)->getNbItems()<<std::endl;
-        //std::cout<<"Number of items in the map : "<<getNbItemsField(it->second)<<std::endl;
+        if(!getBaseData(it->second)->isCountable())
+        {
+            bCountable_ = false;
+        }
         // Checking that we can insert this data and keep spliting the data after
         // If we already have fields with several items and we insert a new field
         // with another number of items, we can't split automatically
-        if(nbItems_ > 1 && getNbItemsField(it->second) > 1 && nbItems_ != getNbItemsField(it->second))
+        else if(nbItems_ > 1 && getNbItemsField(it->second) > 1 && nbItems_ != getNbItemsField(it->second))
         {
-            if(force)
-            {
-                std::cout<<"WARNING : forcing the data model to be incoherent. "
-                         <<"The data model won't be splittable or mergeable."<<std::endl;
-                return false;
-            }
-            std::cout<<"ERROR : can not add new field with "<<getNbItemsField(it->second)<<" items."
+            /*std::cout<<"ERROR : can not add new field with "<<getNbItemsField(it->second)<<" items."
                     <<" The current map has "<<nbItems_<<" items. The number of items "
                     <<"of the new field should be 1 or "<<nbItems_<<std::endl;
-            return false;
+
+            return false;*/
+            std::cout<<"WARNING : The number of items among the countable field is incoherent."
+                     <<"Split functions may give corrupted results."<<std::endl;
+            bCountable_ = false;
+            bPartialCountable_ = false;
         }
-        else if(getScope(it->second) != DECAF_SYSTEM && getScope(it->second) != DECAF_SHARED && getNbItemsField(it->second) > 0)// We still update the number of items
+        else if(getScope(it->second) != DECAF_SYSTEM &&
+                getScope(it->second) != DECAF_SHARED &&
+                getNbItemsField(it->second) > 0)// We still update the number of items
             nbItems_ = getNbItemsField(it->second);
 
         if(getFlag(it->second) == DECAF_POS)
@@ -1900,7 +1902,7 @@ ConstructData::updateNbItems()
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
     {
-	getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+        getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
     }
 }
 
@@ -1911,9 +1913,9 @@ ConstructData::softClean()
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
     {
-	getBaseData(it->second)->softClean();
-	getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
+        getBaseData(it->second)->softClean();
+        getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
     }
 
-    updateMetaData(false);
+    updateMetaData();
 }
