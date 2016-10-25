@@ -16,20 +16,14 @@ endif                       ()
 
 # C++11
 set                         (CMAKE_CXX_STANDARD        11)
-if                          ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-                             "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") #Syntax for CMAKE 3.+
-  set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
-  set                       (CMAKE_EXE_LINKER_FLAGS     "-lc++")
-  set                       (CMAKE_MODULE_LINKER_FLAGS  "-lc++")
-  set                       (CMAKE_SHARED_LINKER_FLAGS  "-lc++")
-else                        ()
-  set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif                       ()
+set                         (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 # MPI
 if                          (transport_mpi)
   find_package              (MPI REQUIRED)
-  set                       (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
+  if                        (NOT bgq)
+    set                     (transport_libraries        ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
+  endif                     ()
   add_definitions           (-DTRANSPORT_MPI)
 endif                       (transport_mpi)
 
@@ -64,9 +58,13 @@ else                        ()
   set                       (python_examples             OFF)
 endif                       ()
 
+# Boost
+find_package                (Boost COMPONENTS serialization REQUIRED)
+
 # Set include directories
 set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")
-include_directories         (${CMAKE_CURRENT_BINARY_DIR}
+include_directories         (${Boost_INCLUDE_DIRS}
+                             ${CMAKE_CURRENT_BINARY_DIR}
                              ${CMAKE_CURRENT_SOURCE_DIR}
                              ${CMAKE_CURRENT_SOURCE_DIR}/include
                              SYSTEM ${MPI_INCLUDE_PATH})

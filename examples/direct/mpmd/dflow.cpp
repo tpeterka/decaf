@@ -25,7 +25,7 @@
 #include <map>
 #include <cstdlib>
 
-//#include "wflow.hpp"                         // defines the workflow for this example
+#include "wflow.hpp"                         // defines the workflow for this example
 
 using namespace decaf;
 using namespace std;
@@ -42,10 +42,14 @@ extern "C"
     }
 } // extern "C"
 
-// every user application needs to implement the following run function with this signature
-// run(Workflow&) in the global namespace
-void run(Workflow& workflow)                             // workflow
+int main(int argc,
+         char** argv)
 {
+    // define the workflow
+    Workflow workflow;
+    make_wflow(workflow);
+    // Workflow::make_wflow_from_json(workflow, "linear2.json");
+
     MPI_Init(NULL, NULL);
 
     // create decaf
@@ -54,20 +58,6 @@ void run(Workflow& workflow)                             // workflow
     // cleanup
     delete decaf;
     MPI_Finalize();
-}
-
-// test driver for debugging purposes
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
-{
-    // define the workflow
-    Workflow workflow;
-    //make_wflow(workflow);
-    Workflow::make_wflow_from_json(workflow, "linear2.json");
-
-    // run decaf
-    run(workflow);
 
     return 0;
 }

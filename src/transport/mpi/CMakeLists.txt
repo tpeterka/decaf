@@ -1,6 +1,3 @@
-find_package            (Boost COMPONENTS serialization REQUIRED)
-include_directories     (${Boost_INCLUDE_DIRS})
-
 add_library             (bredala_transport SHARED     ../redist_comp.cpp
                                                     redist_mpi.cpp
                                                     redist_count_mpi.cpp
@@ -9,7 +6,8 @@ add_library             (bredala_transport SHARED     ../redist_comp.cpp
                                                     redist_block_mpi.cpp
                                                     redist_proc_mpi.cpp)
 
-target_link_libraries   (bredala_transport            ${libraries} ${Boost_LIBRARIES} bredala_datamodel)
+target_link_libraries   (bredala_transport 
+  ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${Boost_LIBRARIES})
 
 install                 (TARGETS bredala_transport
                         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/

@@ -13,7 +13,8 @@
 #include "decaf/transport/redist_comp.h"
 #include <sys/time.h>
 
-double timeGlobalRedist = 0.0;
+// DEPRECATED, for experiments in Bredala paper only
+// double timeGlobalRedist = 0.0;
 
 
 int decaf::RedistComp::getRankSource()

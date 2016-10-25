@@ -121,7 +121,8 @@ void node_b(Decaf* decaf)
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
 
-        delete [] sums;
+        delete[] sums;
+
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -216,8 +217,6 @@ extern "C"
     }
 } // extern "C"
 
-// every user application needs to implement the following run function with this signature
-// run(Workflow&) in the global namespace
 void run(Workflow& workflow)                     // workflow
 {
     MPI_Init(NULL, NULL);
@@ -246,7 +245,6 @@ void run(Workflow& workflow)                     // workflow
 }
 
 // test driver for debugging purposes
-// normal entry point is run(), called by python
 int main(int argc,
          char** argv)
 {

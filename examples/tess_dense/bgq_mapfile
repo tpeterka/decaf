@@ -1,0 +1,22 @@
+#mpmdbegin 0-7
+#mpmdcmd ./points
+#mpmdend
+
+#mpmdbegin 8-11
+#mpmdcmd ./pts_dflow
+#mpmdend
+
+#mpmdbegin 12-13
+#mpmdcmd ./tess
+#mpmdend
+
+#mpmdbegin 14-15
+#mpmdcmd ./pts_dflow
+#mpmdend
+
+#mpmdbegin 16-17
+#mpmdcmd ./dense
+#mpmdend
+
+#mapping ABCDET
+

@@ -63,7 +63,10 @@ fi
 
 if [ "$ARCH" = "BGQ" ]; then
 
-qsub -n $num_nodes --mode c$ppn -A SDAV -t 60 $exe
+qsub -n $num_nodes --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:DECAF_PREFIX=$DECAF_PREFIX --mode c$ppn -A SDAV -t 60 $exe
+
+# how to trace ld paths for debugging dynamic libraries not being found
+# qsub -n $num_nodes --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:LD_DEBUG=libs:LD_VERBOSE=1:LD_TRACE_LOADED_OBJECTS=1 --mode c$ppn -A SDAV -t 60 $exe
 
 fi
 

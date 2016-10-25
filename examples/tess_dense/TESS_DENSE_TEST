@@ -41,6 +41,9 @@ exe3=./tess
 exe4=./pts_dflow
 exe5=./dense
 
+# timeout (minutes)
+time=30
+
 # mpmd command
 mpmd="-n $np1 $exe1 : -n $np2 $exe2 : -n $np3 $exe3 : -n $np4 $exe4 : -n $np5 $exe5"
 
@@ -62,7 +65,9 @@ mpiexec -l $mpmd
 fi
 
 if [ "$ARCH" = "BGQ" ]; then
-echo "TODO"
+
+qsub -n $num_nodes --mode script -A SDAV -t $time --env NUM_PROCS=$num_procs:PPN=$ppn:TIME=$time:EXE1=$exe1 ./bgq_run.py
+
 fi
 
 if [ "$ARCH" = "CRAY" ]; then

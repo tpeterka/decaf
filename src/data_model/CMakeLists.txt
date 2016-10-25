@@ -1,9 +1,8 @@
-find_package            (Boost COMPONENTS serialization REQUIRED)
-include_directories     (${Boost_INCLUDE_DIRS})
-
 add_library             (bredala_datamodel SHARED     constructtype.cpp
 morton.cpp maptools.cpp)
-target_link_libraries   (bredala_datamodel            ${libraries} ${Boost_LIBRARIES})
+
+target_link_libraries   (bredala_datamodel 
+  ${libraries} ${EXTRA_FLAGS} ${Boost_LIBRARIES})
 
 install(TARGETS bredala_datamodel
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/

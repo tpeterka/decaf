@@ -12,6 +12,7 @@ using namespace decaf;
 using namespace std;
 
 
+// DEPRECATE, for experiments in Bredala paper only
 double timeGlobalSplit = 0.0;
 double timeGlobalBuild = 0.0;
 double timeGlobalMerge = 0.0;

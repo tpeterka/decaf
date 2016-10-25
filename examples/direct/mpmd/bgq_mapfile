@@ -1,0 +1,14 @@
+#mpmdbegin 0-3
+#mpmdcmd ./prod
+#mpmdend
+
+#mpmdbegin 4-5
+#mpmdcmd ./dflow
+#mpmdend
+
+#mpmdbegin 6-7
+#mpmdcmd ./con
+#mpmdend
+
+#mapping ABCDET
+
