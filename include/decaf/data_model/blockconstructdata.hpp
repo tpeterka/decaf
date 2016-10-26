@@ -10,7 +10,7 @@ class BlockConstructData : public BaseConstructData {
 public:
 
     BlockConstructData(Block<3> block = Block<3>(), mapConstruct map = mapConstruct())
-        : BaseConstructData(map), value_(block){}
+        : BaseConstructData(map, false), value_(block){}
 
     virtual ~BlockConstructData(){}
 

@@ -56,12 +56,12 @@ void copy3DArray(boost::multi_array<T, 3>* dest, Block<3>& blockDest,
 template<typename T>
 class Array3DConstructData : public BaseConstructData {
 public:
-    Array3DConstructData(bool isCountable = false, mapConstruct map = mapConstruct())
-        : BaseConstructData(map), value_(NULL), isOwner_(false){ bCountable_ = isCountable; }
+    Array3DConstructData(mapConstruct map = mapConstruct(), bool bCountable = false)
+        : BaseConstructData(map, bCountable), value_(NULL), isOwner_(false){}
 
     Array3DConstructData(boost::multi_array<T, 3> *value, Block<3> block = Block<3>(),
-                           bool isOwner = false, bool isCountable = false, mapConstruct map = mapConstruct()) :
-        BaseConstructData(map), value_(value), block_(block), isOwner_(isOwner){ bCountable_ = isCountable; }
+                           bool isOwner = false, mapConstruct map = mapConstruct(), bool bCountable = false) :
+        BaseConstructData(map, bCountable), value_(value), block_(block), isOwner_(isOwner){}
 
     virtual ~Array3DConstructData()
     {

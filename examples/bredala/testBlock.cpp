@@ -241,7 +241,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         shared_ptr<ArrayConstructData<float> > array =
                 make_shared<ArrayConstructData<float> >( pos, 3*nbParticule, 3, false, container->getMap() );
         shared_ptr<SimpleConstructData<int> > data  =
-                make_shared<SimpleConstructData<int> >( nbParticule, container->getMap());
+                make_shared<SimpleConstructData<int> >( nbParticule, container->getMap(), true); // countable
         shared_ptr<BlockConstructData> domainData =
                         make_shared<BlockConstructData>(domainBlock, container->getMap());
 
@@ -258,7 +258,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
                              DECAF_POS, DECAF_PRIVATE,
                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         container->appendData("domain_block", domainData,
-                             DECAF_NOFLAG, DECAF_PRIVATE,
+                             DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
         cout<<"End of construction of the data model."<<endl;
         cout<<"Number of particles in the data model : "<<container->getNbItems()<<endl;

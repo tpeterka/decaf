@@ -224,6 +224,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         //Sending to the first
         std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
         std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+        data->setCountable(true);   // SimpleData are not countable by default but this data is a counter
 
         pConstructData container = std::make_shared<ConstructData>();
 

@@ -8,27 +8,27 @@ namespace decaf {
 template<typename T>
 class VectorConstructData : public BaseConstructData {
 public:
-    VectorConstructData(mapConstruct map = mapConstruct())
-        : BaseConstructData(map){}
+    VectorConstructData(mapConstruct map = mapConstruct(), bool bCountable = true)
+        : BaseConstructData(map, bCountable){}
 
-    VectorConstructData(std::vector<T>& value, int element_per_items, mapConstruct map = mapConstruct()) :
-                       BaseConstructData(map), value_(value),
+    VectorConstructData(std::vector<T>& value, int element_per_items, mapConstruct map = mapConstruct(), bool bCountable = true) :
+                       BaseConstructData(map, bCountable), value_(value),
                        element_per_items_(element_per_items){}
     VectorConstructData(typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end,
-                       int element_per_items, mapConstruct map = mapConstruct()) :
-        element_per_items_(element_per_items), BaseConstructData(map)
+                       int element_per_items, mapConstruct map = mapConstruct(), bool bCountable = true) :
+        element_per_items_(element_per_items), BaseConstructData(map, bCountable)
     {
         value_ = std::vector<T>(begin, end);
     }
-    VectorConstructData(T* Vector, int size, int element_per_items, mapConstruct map = mapConstruct()) :
-                        element_per_items_(element_per_items), BaseConstructData(map)
+    VectorConstructData(T* Vector, int size, int element_per_items, mapConstruct map = mapConstruct(), bool bCountable = true) :
+                        element_per_items_(element_per_items), BaseConstructData(map, bCountable)
     {
         value_.resize(size);
         value_ = std::vector<T>(Vector, Vector + size);
     }
 
-    VectorConstructData(int element_per_items, int capacity, mapConstruct map = mapConstruct()) :
-                        element_per_items_(element_per_items), BaseConstructData(map)
+    VectorConstructData(int element_per_items, int capacity, mapConstruct map = mapConstruct(), bool bCountable = true) :
+                        element_per_items_(element_per_items), BaseConstructData(map, bCountable)
     {
         value_.reserve(capacity * element_per_items_);
     }

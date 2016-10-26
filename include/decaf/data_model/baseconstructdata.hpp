@@ -68,19 +68,25 @@ namespace decaf {
 
 class BaseConstructData {
 public:
-    BaseConstructData(mapConstruct map = mapConstruct()) :
-        map_(map), bCountable_(true){}
+    BaseConstructData(mapConstruct map = mapConstruct(), bool bCountable = true) :
+        map_(map), bCountable_(bCountable){}
 
     virtual ~BaseConstructData(){}
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
+        ar & BOOST_SERIALIZATION_NVP(bCountable_);
     }
 
     virtual bool isCountable()
     {
         return bCountable_;
+    }
+
+    virtual bool setCountable(bool bCountable)
+    {
+        bCountable_ = bCountable;
     }
 
     virtual int getNbItems() = 0;

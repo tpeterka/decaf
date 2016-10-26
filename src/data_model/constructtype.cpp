@@ -78,8 +78,8 @@ ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int inde
 
     if(index >= nbItems_)
     {
-	std::cout<<"ERROR : Trying to extract an item out of range (requesting "<<index<<", "<<nbItems_<<" in the container)."<<std::endl;
-	return false;
+        std::cout<<"ERROR : Trying to extract an item out of range (requesting "<<index<<", "<<nbItems_<<" in the container)."<<std::endl;
+        return false;
     }
 
     bool result;
@@ -106,11 +106,11 @@ ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int inde
 bool
 decaf::
 ConstructData::appendData(string name,
-                std::shared_ptr<BaseConstructData>  data,
-                ConstructTypeFlag flags,
-                ConstructTypeScope scope,
-                ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                          std::shared_ptr<BaseConstructData>  data,
+                          ConstructTypeFlag flags,
+                          ConstructTypeScope scope,
+                          ConstructTypeSplitPolicy splitFlag,
+                          ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
@@ -135,11 +135,11 @@ ConstructData::appendData(string name,
 bool
 decaf::
 ConstructData::appendData(std::string name,
-                BaseField&  data,
-                ConstructTypeFlag flags,
-                ConstructTypeScope scope,
-                ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                          BaseField&  data,
+                          ConstructTypeFlag flags,
+                          ConstructTypeScope scope,
+                          ConstructTypeSplitPolicy splitFlag,
+                          ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
@@ -164,11 +164,11 @@ ConstructData::appendData(std::string name,
 bool
 decaf::
 ConstructData::appendData(const char* name,
-                std::shared_ptr<BaseConstructData>  data,
-                ConstructTypeFlag flags,
-                ConstructTypeScope scope,
-                ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                          std::shared_ptr<BaseConstructData>  data,
+                          ConstructTypeFlag flags,
+                          ConstructTypeScope scope,
+                          ConstructTypeSplitPolicy splitFlag,
+                          ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data, splitFlag, mergeFlag);
@@ -193,11 +193,11 @@ ConstructData::appendData(const char* name,
 bool
 decaf::
 ConstructData::appendData(const char* name,
-                BaseField&  data,
-                ConstructTypeFlag flags,
-                ConstructTypeScope scope,
-                ConstructTypeSplitPolicy splitFlag,
-                ConstructTypeMergePolicy mergeFlag)
+                          BaseField&  data,
+                          ConstructTypeFlag flags,
+                          ConstructTypeScope scope,
+                          ConstructTypeSplitPolicy splitFlag,
+                          ConstructTypeMergePolicy mergeFlag)
 {
     std::pair<std::map<std::string, datafield>::iterator,bool> ret;
     datafield newEntry = make_tuple(flags, scope, data->getNbItems(), data.getBasePtr(), splitFlag, mergeFlag);
@@ -257,7 +257,7 @@ ConstructData::isPartiallyCountable()
 bool
 decaf::
 ConstructData::updateData(std::string name,
-                std::shared_ptr<BaseConstructData>  data)
+                          std::shared_ptr<BaseConstructData>  data)
 {
     std::map<std::string, datafield>::iterator it = container_->find(name);
     if(it != container_->end())
@@ -268,7 +268,7 @@ ConstructData::updateData(std::string name,
     else
     {
         std::cerr<<"ERROR : field \'"<<name<<"\' not found in the map. "
-                 <<"Unable to update the map."<<std::endl;
+                <<"Unable to update the map."<<std::endl;
         return false;
     }
 
@@ -393,7 +393,7 @@ ConstructData::split(const std::vector<int>& range)
         totalRange+= range.at(i);
     if(totalRange != getNbItems()){
         fprintf(stderr, "ERROR : The number of items in the ranges (%d) does not match the "
-                "number of items of the object (%d)\n", totalRange, getNbItems());
+                        "number of items of the object (%d)\n", totalRange, getNbItems());
         return result;
     }
 
@@ -418,7 +418,7 @@ ConstructData::split(const std::vector<int>& range)
             if(splitFields.size() != result.size())
             {
                 fprintf(stderr, "ERROR : A field was not split properly."
-                        " The number of chunks does not match the expected number of chunks\n");
+                                " The number of chunks does not match the expected number of chunks\n");
 
                 // Cleaning the result to avoid corrupt data
                 result.clear();
@@ -431,12 +431,12 @@ ConstructData::split(const std::vector<int>& range)
             {
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
                 construct->appendData(split_order_.at(i),
-                                         splitFields.at(j),
-                                         getFlag(data->second),
-                                         std::get<1>(data->second),
-                                         getSplitPolicy(data->second),
-                                         getMergePolicy(data->second)
-                                         );
+                                      splitFields.at(j),
+                                      getFlag(data->second),
+                                      std::get<1>(data->second),
+                                      getSplitPolicy(data->second),
+                                      getMergePolicy(data->second)
+                                      );
             }
         }
     }
@@ -453,7 +453,7 @@ ConstructData::split(const std::vector<int>& range)
             if(splitFields.size() != result.size())
             {
                 fprintf(stderr, "ERROR : A field was not split properly."
-                        " The number of chunks does not match the expected number of chunks\n");
+                                " The number of chunks does not match the expected number of chunks\n");
 
                 // Cleaning the result to avoid corrupt data
                 result.clear();
@@ -466,12 +466,12 @@ ConstructData::split(const std::vector<int>& range)
             {
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
                 construct->appendData(it->first,
-                                         splitFields.at(i),
-                                         getFlag(it->second),
-                                         std::get<1>(it->second),
-                                         getSplitPolicy(it->second),
-                                         getMergePolicy(it->second)
-                                         );
+                                      splitFields.at(i),
+                                      getFlag(it->second),
+                                      std::get<1>(it->second),
+                                      getSplitPolicy(it->second),
+                                      getMergePolicy(it->second)
+                                      );
             }
         }
     }
@@ -502,7 +502,7 @@ ConstructData::split(const std::vector<int>& range,
         totalRange+= range.at(i);
     if(totalRange > getNbItems()){
         fprintf(stderr, "ERROR : The number of items in the ranges (%d) does not match the "
-                "number of items of the object (%d)\n", totalRange, getNbItems());
+                        "number of items of the object (%d)\n", totalRange, getNbItems());
         return ;
     }
 
@@ -599,8 +599,8 @@ ConstructData::split(
         totalItems+= range.at(i).size();
     if(totalItems != getNbItems()){
         std::cout<<"ERROR : The number of items in the ranges ("<<totalItems
-                 <<") does not match the number of items of the object ("
-                 <<getNbItems()<<")"<<std::endl;
+                <<") does not match the number of items of the object ("
+               <<getNbItems()<<")"<<std::endl;
         return result;
     }
 
@@ -625,7 +625,7 @@ ConstructData::split(
             if(splitFields.size() != result.size())
             {
                 fprintf(stderr, "ERROR : A field was not split properly."
-                        " The number of chunks does not match the expected number of chunks\n");
+                                " The number of chunks does not match the expected number of chunks\n");
 
                 // Cleaning the result to avoid corrupt data
                 result.clear();
@@ -638,12 +638,12 @@ ConstructData::split(
             {
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(j));
                 construct->appendData(split_order_.at(i),
-                                         splitFields.at(j),
-                                         getFlag(data->second),
-                                         std::get<1>(data->second),
-                                         getSplitPolicy(data->second),
-                                         getMergePolicy(data->second)
-                                         );
+                                      splitFields.at(j),
+                                      getFlag(data->second),
+                                      std::get<1>(data->second),
+                                      getSplitPolicy(data->second),
+                                      getMergePolicy(data->second)
+                                      );
             }
         }
     }
@@ -660,7 +660,7 @@ ConstructData::split(
             if(splitFields.size() != result.size())
             {
                 fprintf(stderr, "ERROR : A field was not split properly."
-                        " The number of chunks does not match the expected number of chunks\n");
+                                " The number of chunks does not match the expected number of chunks\n");
 
                 // Cleaning the result to avoid corrupt data
                 result.clear();
@@ -673,12 +673,12 @@ ConstructData::split(
             {
                 std::shared_ptr<ConstructData> construct = dynamic_pointer_cast<ConstructData>(result.at(i));
                 construct->appendData(it->first,
-                                         splitFields.at(i),
-                                         getFlag(it->second),
-                                         std::get<1>(it->second),
-                                         getSplitPolicy(it->second),
-                                         getMergePolicy(it->second)
-                                         );
+                                      splitFields.at(i),
+                                      getFlag(it->second),
+                                      std::get<1>(it->second),
+                                      getSplitPolicy(it->second),
+                                      getMergePolicy(it->second)
+                                      );
             }
         }
     }
@@ -689,7 +689,7 @@ ConstructData::split(
 void
 decaf::
 ConstructData::split(const std::vector<std::vector<int> >& range,
-            std::vector<pConstructData> buffers)
+                     std::vector<pConstructData> buffers)
 {
     std::vector< mapConstruct > result_maps;
     for(unsigned int i = 0; i < range.size(); i++)
@@ -703,17 +703,18 @@ ConstructData::split(const std::vector<std::vector<int> >& range,
         return;
     }
 
-    //Sanity check
-    int totalItems = 0;
+    // Sanity check
+    // REMOVED : some items may be duplicated for ghost regions for instance
+    /*int totalItems = 0;
     for(unsigned int i = 0; i < range.size(); i++)
         totalItems+= range.at(i).back();
 
     if(totalItems > getNbItems()){
         std::cout<<"ERROR : The number of items in the ranges ("<<totalItems
-                 <<") does not match the number of items of the object ("
-                 <<getNbItems()<<")"<<std::endl;
+                <<") does not match the number of items of the object ("
+               <<getNbItems()<<")"<<std::endl;
         return ;
-    }
+    }*/
 
     //std::cout<<"Total number of item to split : "<<totalItems<<std::endl;
 
@@ -873,34 +874,34 @@ computeIndexesFromBlocks(
     std::vector<unsigned int> sumPos(result.size(), 0);
     for(int i = 0; i < nbPos; i++)
     {
-	unsigned int x,y,z;
+        unsigned int x,y,z;
         Morton_3D_Decode_10bit(pos[i], x, y, z);
         bool particlesInBlock = false;
         for(unsigned int b = 0; b < blocks.size(); b++)
         {
             if(blocks[b].isInLocalBlock(x, y, z))
             {
-//                result[b].push_back(i);
-//                particlesInBlock = true;
-		// Case for the first element
-		if(result[b].empty())
-		{
-		    result[b].push_back(i);
-		    result[b].push_back(1);
-		}
-		// Case where the current position is following the previous one
-		else if(result[b].back() + (result[b])[result[b].size()-2] == i )
-		{
-			result[b].back() = result[b].back() + 1;
-		}
-		else
-		{
-		    result[b].push_back(i);
+                //                result[b].push_back(i);
+                //                particlesInBlock = true;
+                // Case for the first element
+                if(result[b].empty())
+                {
+                    result[b].push_back(i);
                     result[b].push_back(1);
-		}
+                }
+                // Case where the current position is following the previous one
+                else if(result[b].back() + (result[b])[result[b].size()-2] == i )
+                {
+                    result[b].back() = result[b].back() + 1;
+                }
+                else
+                {
+                    result[b].push_back(i);
+                    result[b].push_back(1);
+                }
 
-		sumPos[b] = sumPos[b] + 1;
-		particlesInBlock = true; 
+                sumPos[b] = sumPos[b] + 1;
+                particlesInBlock = true;
             }
         }
         if(!particlesInBlock)
@@ -914,8 +915,8 @@ computeIndexesFromBlocks(
     int total = 0;
     for(unsigned int i = 0; i < blocks.size(); i++)
     {
-	result[i].push_back(sumPos[i]);
-	total += sumPos[i];
+        result[i].push_back(sumPos[i]);
+        total += sumPos[i];
     }
     //printf("Somme des particules reparties : %u\n", total);
 
@@ -946,11 +947,11 @@ ConstructData::split(const std::vector<Block<3> >& range)
     {
         std::shared_ptr<ArrayConstructData<unsigned int> > posData =
             std::dynamic_pointer_cast<ArrayConstructData<unsigned int> >(zCurveIndex_);
-   
-	int nbMortons = posData->getNbItems(); 
-	unsigned int* morton = posData->getArray();    
+
+    int nbMortons = posData->getNbItems();
+    unsigned int* morton = posData->getArray();
         //Going through all the morton codes and pushing the items
-	for(int i = 0; i < nbMortons; i++)
+    for(int i = 0; i < nbMortons; i++)
         {
             unsigned int x,y,z;
             Morton_3D_Decode_10bit(morton[i], x, y, z);
@@ -959,10 +960,10 @@ ConstructData::split(const std::vector<Block<3> >& range)
             {
                 if(range[b].isInLocalBlock(x, y, z))
                 {
-		    this->appendItem(container[b],i);
-		}
-	    }
-	}
+            this->appendItem(container[b],i);
+        }
+        }
+    }
     }
     else
     {
@@ -970,7 +971,7 @@ ConstructData::split(const std::vector<Block<3> >& range)
     }
 
     for(unsigned int i = 0; i < container.size(); i++)
-	container.at(i)->updateMetaData();
+    container.at(i)->updateMetaData();
     return result;
 }
 */
@@ -1168,8 +1169,8 @@ ConstructData::split(const std::vector<Block<3> >& range)
 void
 decaf::
 ConstructData::split(
-            const std::vector<Block<3> >& range,
-            std::vector<pConstructData >& buffers)
+        const std::vector<Block<3> >& range,
+        std::vector<pConstructData >& buffers)
 {
     struct timeval begin;
     struct timeval end;
@@ -1272,10 +1273,10 @@ ConstructData::split(
         // Inserting the splitted field into the splitted results
         if(fields.size() != range.size())
         {
-                fprintf(stderr, "ERROR : A field was not split properly."
-                        " The number of chunks does not match the expected number of chunks\n");
+            fprintf(stderr, "ERROR : A field was not split properly."
+                            " The number of chunks does not match the expected number of chunks\n");
 
-                return;
+            return;
         }
 
     }
@@ -1338,7 +1339,7 @@ ConstructData::merge(shared_ptr<BaseData> other)
             if( otherIt == otherConstruct->getMap()->end())
             {
                 std::cout<<"Error : The field \""<<it->first<<"\" is present in the"
-                         <<"In the original map but not in the other one. Merge aborted."<<std::endl;
+                        <<"In the original map but not in the other one. Merge aborted."<<std::endl;
                 return false;
             }
             if( !getBaseData(otherIt->second)->canMerge(getBaseData(it->second)) )
@@ -1367,8 +1368,8 @@ ConstructData::merge(shared_ptr<BaseData> other)
                 }
 
                 if(! getBaseData(dataLocal->second)->merge(getBaseData(dataOther->second),
-                                                    container_,
-                                                    getMergePolicy(dataOther->second)) )
+                                                           container_,
+                                                           getMergePolicy(dataOther->second)) )
                 {
                     std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
                     return false;
@@ -1445,7 +1446,7 @@ ConstructData::merge(char* buffer, int size)
             if( otherIt == other->end())
             {
                 std::cout<<"Error : The field \""<<it->first<<"\" is present in the"
-                         <<"In the original map but not in the other one. Merge aborted."<<std::endl;
+                        <<"In the original map but not in the other one. Merge aborted."<<std::endl;
                 return false;
             }
             if( !getBaseData(otherIt->second)->canMerge(getBaseData(it->second)))
@@ -1472,8 +1473,8 @@ ConstructData::merge(char* buffer, int size)
                 }
 
                 if(! getBaseData(dataLocal->second)->merge(getBaseData(dataOther->second),
-                                                    container_,
-                                                    getMergePolicy(dataOther->second)) )
+                                                           container_,
+                                                           getMergePolicy(dataOther->second)) )
                 {
                     std::cout<<"Error while merging the field \""<<dataLocal->first<<"\". The original map has be corrupted."<<std::endl;
                     return false;
@@ -1500,7 +1501,7 @@ ConstructData::merge(char* buffer, int size)
                 getNbItemsField(it->second) = getBaseData(it->second)->getNbItems();
             }
         }
-	
+
     }
     
     return updateMetaData();
@@ -1625,7 +1626,7 @@ ConstructData::unserializeAndStore(char* buffer, int bufferSize)
     }
     // Otherwise unserialize and store the map. To be merged later on
     else
-    { 
+    {
         std::shared_ptr<std::map<std::string, datafield> > other;
         ia >> other;
 
@@ -1643,15 +1644,15 @@ ConstructData::unserializeAndStore(char* buffer, int bufferSize)
             if( otherIt == other->end())
             {
                 std::cout<<"Error : The field \""<<it->first<<"\" is present in the"
-                         <<"In the original map but not in the other one. Merge aborted."<<std::endl;
+                        <<"In the original map but not in the other one. Merge aborted."<<std::endl;
                 return ;
             }
             if( !getBaseData(otherIt->second)->canMerge(getBaseData(it->second)))
                 return ;
         }
 
-	// Storing for future merge. 
-	partialData.push_back(other);
+        // Storing for future merge.
+        partialData.push_back(other);
     }
 }
 
@@ -1663,7 +1664,7 @@ ConstructData::serialize()
     struct timeval end;
 
     gettimeofday(&begin, NULL);
-    out_serial_buffer_.resize(0);  
+    out_serial_buffer_.resize(0);
     boost::iostreams::back_insert_device<std::string> inserter(out_serial_buffer_);
     boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
     boost::archive::binary_oarchive oa(s);
@@ -1772,7 +1773,7 @@ ConstructData::setData(std::shared_ptr<void> data)
         {
             std::cout<<"ERROR : can't add new field with "<<getNbItemsField(it->second)<<" items."
                     <<" The current map has "<<nbItems<<" items. The number of items "
-                    <<"of the new filed should be 1 or "<<nbItems<<std::endl;
+                   <<"of the new filed should be 1 or "<<nbItems<<std::endl;
             return false;
         }
         else // We still update the number of items
@@ -1850,10 +1851,13 @@ ConstructData::updateMetaData()
     for(std::map<std::string, datafield>::iterator it = container_->begin();
         it != container_->end(); it++)
     {
-        if(!getBaseData(it->second)->isCountable())
+
+        // SYSTEM is not splitable anyway
+        if(!getBaseData(it->second)->isCountable() && getScope(it->second) != DECAF_SYSTEM)
         {
             bCountable_ = false;
         }
+
         // Checking that we can insert this data and keep spliting the data after
         // If we already have fields with several items and we insert a new field
         // with another number of items, we can't split automatically
@@ -1865,7 +1869,7 @@ ConstructData::updateMetaData()
 
             return false;*/
             std::cout<<"WARNING : The number of items among the countable field is incoherent."
-                     <<"Split functions may give corrupted results."<<std::endl;
+                    <<"Split functions may give corrupted results."<<std::endl;
             bCountable_ = false;
             bPartialCountable_ = false;
         }
