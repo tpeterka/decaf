@@ -305,7 +305,7 @@ void treatment1(Decaf* decaf)
     while (decaf->get(in_data))
     {
 
-        in_data[0]->printKeys();
+        //in_data[0]->printKeys();
 
         // get the atom positions
         if(iteration == 0 && !in_data[0]->hasData("domain_block"))
@@ -314,6 +314,7 @@ void treatment1(Decaf* decaf)
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
+        boost::multi_array<float, 3>* boostGrid = NULL;
         if(in_data[0]->hasData("domain_block"))
         {
             // Getting the grid info
@@ -425,8 +426,6 @@ void treatment1(Decaf* decaf)
 
             }
 
-            delete boostGrid;
-
             int counter = 0;
             for(unsigned int i = 0; i < lExtends[3]*lExtends[4]*lExtends[5]; i++)
             {
@@ -479,6 +478,8 @@ void treatment1(Decaf* decaf)
 
 
         decaf->put(in_data[0]);
+
+        if(boostGrid) delete boostGrid;
 
         iteration++;
     }

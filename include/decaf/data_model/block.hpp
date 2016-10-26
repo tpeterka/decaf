@@ -205,6 +205,133 @@ public:
         return true;
     }
 
+    bool doExtendsInclude(const Block<Dim> & other)
+    {
+        if(hasGlobalExtends_ && other.hasGlobalExtends_)
+        {
+            for(unsigned int i = 0; i < Dim; i++)
+                if(globalExtends_[i] > other.globalExtends_[i])
+                    return false;
+            for(unsigned int i = Dim; i < 2*Dim; i++)
+                if(globalExtends_[i-Dim]+globalExtends_[i] < other.globalExtends_[i-Dim] + other.globalExtends_[i])
+                    return false;
+        }
+
+        if(hasLocalExtends_ && other.hasLocalExtends_)
+        {
+            for(unsigned int i = 0; i < Dim; i++)
+                if(localExtends_[i] > other.localExtends_[i])
+                    return false;
+            for(unsigned int i = Dim; i < 2*Dim; i++)
+                if(localExtends_[i-Dim]+localExtends_[i] < other.localExtends_[i-Dim] + other.localExtends_[i])
+                    return false;
+        }
+
+        if(hasOwnExtends_ && other.hasOwnExtends_)
+        {
+            for(unsigned int i = 0; i < Dim; i++)
+                if(ownExtends_[i] > other.ownExtends_[i])
+                    return false;
+            for(unsigned int i = Dim; i < 2*Dim; i++)
+                if(ownExtends_[i-Dim]+ownExtends_[i] < other.ownExtends_[i-Dim] + other.ownExtends_[i])
+                    return false;
+        }
+    }
+
+    void makeExtendsUnion(const Block<Dim> & other)
+    {
+        for(unsigned i = 0; i < Dim; i++)
+        {
+            if(hasGlobalExtends_ && other.hasGlobalExtends_)
+            {
+                unsigned int origin = std::min(globalExtends_[i], other.globalExtends_[i]);
+                unsigned int delta = std::max(
+                            globalExtends_[i]+globalExtends_[Dim+i],
+                            other.globalExtends_[i]+other.globalExtends_[Dim+i]
+                            ) - origin;
+                globalExtends_[i] = origin;
+                globalExtends_[Dim+i] = delta;
+            }
+
+            if(hasLocalExtends_ && other.hasLocalExtends_)
+            {
+                unsigned int origin = std::min(localExtends_[i], other.localExtends_[i]);
+                unsigned int delta = std::max(
+                            localExtends_[i]+localExtends_[Dim+i],
+                            other.localExtends_[i]+other.localExtends_[Dim+i]
+                            ) - origin;
+                localExtends_[i] = origin;
+                localExtends_[Dim+i] = delta;
+            }
+
+            if(hasOwnExtends_ && other.hasOwnExtends_)
+            {
+                unsigned int origin = std::min(ownExtends_[i], other.ownExtends_[i]);
+                unsigned int delta = std::max(
+                            ownExtends_[i]+ownExtends_[Dim+i],
+                            other.ownExtends_[i]+other.ownExtends_[Dim+i]
+                            ) - origin;
+                ownExtends_[i] = origin;
+                ownExtends_[Dim+i] = delta;
+            }
+
+        }
+    }
+
+    void makeExtendsUnion(const Block<Dim> & other, Block<Dim> & result)
+    {
+        std::vector<unsigned int> global(2*Dim);
+        std::vector<unsigned int> local(2*Dim);
+        std::vector<unsigned int> own(2*Dim);
+
+        for(unsigned i = 0; i < Dim; i++)
+        {
+            if(hasGlobalExtends_ && other.hasGlobalExtends_)
+            {
+                unsigned int origin = std::min(globalExtends_[i], other.globalExtends_[i]);
+                unsigned int delta = std::max(
+                            globalExtends_[i]+globalExtends_[Dim+i],
+                            other.globalExtends_[i]+other.globalExtends_[Dim+i]
+                            ) - origin;
+                global[i] = origin;
+                global[Dim+i] = delta;
+            }
+
+            if(hasLocalExtends_ && other.hasLocalExtends_)
+            {
+                unsigned int origin = std::min(localExtends_[i], other.localExtends_[i]);
+                unsigned int delta = std::max(
+                            localExtends_[i]+localExtends_[Dim+i],
+                            other.localExtends_[i]+other.localExtends_[Dim+i]
+                            ) - origin;
+                local[i] = origin;
+                local[Dim+i] = delta;
+            }
+
+            if(hasOwnExtends_ && other.hasOwnExtends_)
+            {
+                unsigned int origin = std::min(ownExtends_[i], other.ownExtends_[i]);
+                unsigned int delta = std::max(
+                            ownExtends_[i]+ownExtends_[Dim+i],
+                            other.ownExtends_[i]+other.ownExtends_[Dim+i]
+                            ) - origin;
+                own[i] = origin;
+                own[Dim+i] = delta;
+            }
+        }
+
+        if(hasGlobalExtends_ && other.hasGlobalExtends_)
+            result.setGlobalExtends(global);
+
+        if(hasLocalExtends_ && other.hasLocalExtends_)
+            result.setLocalExtends(local);
+
+        if(hasOwnExtends_ && other.hasOwnExtends_)
+            result.setOwnExtends(own);
+    }
+
+
+
     void buildGhostRegions(unsigned int ghostSize)
     {
         assert(hasLocalExtends_ && hasLocalBBox_);

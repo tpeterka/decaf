@@ -241,7 +241,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         shared_ptr<ArrayConstructData<float> > array =
                 make_shared<ArrayConstructData<float> >( pos, 3*nbParticule, 3, false, container->getMap() );
         shared_ptr<SimpleConstructData<int> > data  =
-                make_shared<SimpleConstructData<int> >( nbParticule, container->getMap(), true); // countable
+                make_shared<SimpleConstructData<int> >( nbParticule, container->getMap());
         shared_ptr<BlockConstructData> domainData =
                         make_shared<BlockConstructData>(domainBlock, container->getMap());
 

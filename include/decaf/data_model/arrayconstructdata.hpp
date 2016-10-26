@@ -166,7 +166,7 @@ public:
         for(unsigned int i = 0; i < nbCopies; i++)
         {
 	    T* newArray = new T[nbItems * element_per_items_];	
-            result.push_back(std::make_shared<ArrayConstructData>(
+            result.push_back(std::make_shared<ArrayConstructData<T> >(
 					newArray,
 					0, // size
 					element_per_items_, 

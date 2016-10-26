@@ -10,13 +10,13 @@ template<typename T>
 class SimpleConstructData : public BaseConstructData {
 public:
 
-    SimpleConstructData(mapConstruct map = mapConstruct(), bool bCountable = false)
+    SimpleConstructData(mapConstruct map = mapConstruct(), bool bCountable = true)
         : BaseConstructData(map, bCountable){}
 
-    SimpleConstructData(const T& value, mapConstruct map = mapConstruct(), bool bCountable = false)
+    SimpleConstructData(const T& value, mapConstruct map = mapConstruct(), bool bCountable = true)
         : value_(value), BaseConstructData(map, bCountable){}
 
-    SimpleConstructData(T* value, mapConstruct map = mapConstruct(), bool bCountable = false)
+    SimpleConstructData(T* value, mapConstruct map = mapConstruct(), bool bCountable = true)
         : value_(*value), BaseConstructData(map, bCountable){}
 
     virtual ~SimpleConstructData(){}

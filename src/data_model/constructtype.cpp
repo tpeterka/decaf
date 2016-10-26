@@ -1852,7 +1852,7 @@ ConstructData::updateMetaData()
         it != container_->end(); it++)
     {
 
-        // SYSTEM is not splitable anyway
+        // SYSTEM is treated seperatly in the redistribution process
         if(!getBaseData(it->second)->isCountable() && getScope(it->second) != DECAF_SYSTEM)
         {
             bCountable_ = false;
@@ -1863,11 +1863,6 @@ ConstructData::updateMetaData()
         // with another number of items, we can't split automatically
         else if(nbItems_ > 1 && getNbItemsField(it->second) > 1 && nbItems_ != getNbItemsField(it->second))
         {
-            /*std::cout<<"ERROR : can not add new field with "<<getNbItemsField(it->second)<<" items."
-                    <<" The current map has "<<nbItems_<<" items. The number of items "
-                    <<"of the new field should be 1 or "<<nbItems_<<std::endl;
-
-            return false;*/
             std::cout<<"WARNING : The number of items among the countable field is incoherent."
                     <<"Split functions may give corrupted results."<<std::endl;
             bCountable_ = false;
