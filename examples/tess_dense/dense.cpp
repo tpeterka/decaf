@@ -253,7 +253,8 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    make_wflow(workflow);
+    // make_wflow(workflow);
+    Workflow::make_wflow_from_json(workflow, "tess_dense.json");
 
     MPI_Init(NULL, NULL);
 
