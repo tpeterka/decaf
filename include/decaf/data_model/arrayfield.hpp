@@ -32,10 +32,11 @@ public:
                int size,
                int element_per_items,
                bool owner = false,
-               mapConstruct map = mapConstruct())
+               mapConstruct map = mapConstruct(),
+               bool bCountable = true)
     {
         ptr_ = std::make_shared<ArrayConstructData<T> >
-                (array, size, element_per_items, owner, map);
+                (array, size, element_per_items, owner, map, bCountable);
     }
 
     ArrayField(T* array,
@@ -43,17 +44,19 @@ public:
                int element_per_items,
                int capacity,
                bool owner = false,
-               mapConstruct map = mapConstruct())
+               mapConstruct map = mapConstruct(),
+               bool bCountable = true)
     {
         ptr_ = std::make_shared<ArrayConstructData<T> >
-                ( array, size, element_per_items, capacity, owner, map);
+                ( array, size, element_per_items, capacity, owner, map, bCountable);
     }
 
     ArrayField(std::vector<std::pair<T*, unsigned int> > segments,
                int element_per_items,
-               mapConstruct map = mapConstruct())
+               mapConstruct map = mapConstruct(),
+               bool bCountable = true)
     {
-        ptr_ = std::make_shared<ArrayConstructData<T> >(segments, element_per_items, map);
+        ptr_ = std::make_shared<ArrayConstructData<T> >(segments, element_per_items, map, bCountable);
     }
 
     virtual ~ArrayField(){}

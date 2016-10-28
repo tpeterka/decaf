@@ -19,7 +19,7 @@
 #include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/arrayfield.hpp>
 #include <decaf/data_model/blockfield.hpp>
-//#include <decaf/data_model/array3dconstructdata.hpp>
+#include <decaf/data_model/array3dconstructdata.hpp>
 #include <boost/multi_array.hpp>
 #include <decaf/data_model/boost_macros.h>
 
@@ -304,6 +304,9 @@ void treatment1(Decaf* decaf)
 
     while (decaf->get(in_data))
     {
+
+        //in_data[0]->printKeys();
+
         // get the atom positions
         if(iteration == 0 && !in_data[0]->hasData("domain_block"))
         {
@@ -311,6 +314,7 @@ void treatment1(Decaf* decaf)
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
+        boost::multi_array<float, 3>* boostGrid = NULL;
         if(in_data[0]->hasData("domain_block"))
         {
             // Getting the grid info
@@ -338,6 +342,8 @@ void treatment1(Decaf* decaf)
                 grid = new int[lExtends[3]*lExtends[4]*lExtends[5]];
             bzero(grid, lExtends[3]*lExtends[4]*lExtends[5]*sizeof(int));
 
+            boost::multi_array<float, 3>* boostGrid = new boost::multi_array<float, 3>(boost::extents[lExtends[3]][lExtends[4]][lExtends[5]]);
+
             ArrayFieldu mortonField = in_data[0]->getFieldData<ArrayFieldu>("morton");
             if(mortonField)
             {
@@ -351,11 +357,20 @@ void treatment1(Decaf* decaf)
 
                 for(int i = 0; i < nbMorton; i++)
                 {
-                    if(filterIds.count(ids[i]) == 0)
-                        continue;
 
+                    // Building the density grid for the PATH finding
                     unsigned int x,y,z;
                     Morton_3D_Decode_10bit(morton[i], x, y, z);
+
+                    int localx, localy, localz;
+                    localx = x - lExtends[0];
+                    localy = y - lExtends[1];
+                    localz = z - lExtends[2];
+                    (*boostGrid)[localx][localy][localz] += 1.0f;
+
+                    //Building the density grid for visualization
+                    if(filterIds.count(ids[i]) == 0)
+                        continue;
 
                     // Checking if the particle should be here
                     if(!block->isInLocalBlock(x,y,z))
@@ -378,13 +393,15 @@ void treatment1(Decaf* decaf)
                         fprintf(stderr," Particle after recomputation : %u %u %u\n", cellX, cellY, cellZ);
                     }
 
-                    int localx, localy, localz;
-                    localx = x - lExtends[0];
-                    localy = y - lExtends[1];
-                    localz = z - lExtends[2];
-
                     updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5],1);
                 }
+
+                std::shared_ptr<Array3DConstructData<float> > fieldGrid =
+                        std::make_shared<Array3DConstructData<float> >(boostGrid, *block, false);
+
+                in_data[0]->appendData("grid", fieldGrid,
+                                       DECAF_NOFLAG, DECAF_PRIVATE,
+                                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
                 // Adding the cells of the targets
                 for(unsigned int i = 0; i < targets.size(); i++)
@@ -458,7 +475,11 @@ void treatment1(Decaf* decaf)
             damaris_end_iteration();
         }
 
+
+
         decaf->put(in_data[0]);
+
+        if(boostGrid) delete boostGrid;
 
         iteration++;
     }

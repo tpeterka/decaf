@@ -26,6 +26,13 @@ RedistRoundMPI::computeGlobal(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
+        if(!data->isCountable())
+        {
+            std::cout<<"ERROR : Trying to redistribute with round robin "
+                     <<"but the data is not fully countable. Abording."<<std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 0);
+        }
+
         int nbItems = data->getNbItems();
 
         if(nbSources_ == 1)

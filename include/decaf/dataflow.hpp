@@ -355,15 +355,15 @@ void
 decaf::
 Dataflow::put(pConstructData data, TaskType role)
 {
-    // encode type into message (producer/consumer or dataflow)
-    shared_ptr<SimpleConstructData<TaskType> > value  =
-        make_shared<SimpleConstructData<TaskType> >(role);
 
     // clear old identifiers
     data->removeData("src_type");
     data->removeData("link_id");
     data->removeData("dest_id");
 
+    // encode type into message (producer/consumer or dataflow)
+    shared_ptr<SimpleConstructData<TaskType> > value  =
+        make_shared<SimpleConstructData<TaskType> >(role);
     data->appendData(string("src_type"), value,
                     DECAF_NOFLAG, DECAF_SYSTEM,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);

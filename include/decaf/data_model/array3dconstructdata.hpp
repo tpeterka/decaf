@@ -17,7 +17,7 @@
 namespace decaf {
 
 
-//Tool function to extract the overlap between to intervale
+//Tool function to extract the overlap between two intervale
 bool hasOverlap(unsigned int baseMin, unsigned int baseMax,
                 unsigned int otherMin, unsigned int otherMax,
                 unsigned int & overlapMin, unsigned int & overlapMax)
@@ -30,6 +30,7 @@ bool hasOverlap(unsigned int baseMin, unsigned int baseMax,
     return true;
 }
 
+//TODO : pack the copies if possible with boost API
 template<typename T>
 void copy3DArray(boost::multi_array<T, 3>* dest, Block<3>& blockDest,
                  boost::multi_array<T, 3>* src, Block<3>& blockSrc)
@@ -55,12 +56,15 @@ void copy3DArray(boost::multi_array<T, 3>* dest, Block<3>& blockDest,
 template<typename T>
 class Array3DConstructData : public BaseConstructData {
 public:
-    Array3DConstructData(mapConstruct map = mapConstruct())
-        : BaseConstructData(map), value_(NULL), isOwner_(false){}
+    Array3DConstructData(mapConstruct map = mapConstruct(), bool bCountable = false)
+        : BaseConstructData(map, bCountable), value_(NULL), isOwner_(false){}
 
     Array3DConstructData(boost::multi_array<T, 3> *value, Block<3> block = Block<3>(),
-                           bool isOwner = false, mapConstruct map = mapConstruct()) :
-        BaseConstructData(map), value_(value), block_(block), isOwner_(isOwner){}
+                           bool isOwner = false, mapConstruct map = mapConstruct(), bool bCountable = false) :
+        BaseConstructData(map, bCountable), value_(value), block_(block), isOwner_(isOwner)
+    {
+        // Nothing to do
+    }
 
     virtual ~Array3DConstructData()
     {
@@ -80,7 +84,9 @@ public:
         ar & BOOST_SERIALIZATION_NVP(block_);
     }
 
-    virtual boost::multi_array<T, 3>* getArray(){ return value_; }
+    boost::multi_array<T, 3>* getArray(){ return value_; }
+
+    Block<3>& getBlock(){ return block_; }
 
     virtual int getNbItems(){ return value_->shape()[0] * value_->shape()[1] * value_->shape()[2]; }
 
@@ -92,8 +98,34 @@ public:
 
     virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result)
     {
-	std::cout<<"ERROR : prealloc multiple not available for 3d arrays."<<std::endl;
-	return;
+        // TODO : that's bullshit, redundant with the info from boost
+        Block<3> block;
+        std::vector<unsigned int> extends = {0, 0, 0, 1, 1, 1};
+        std::vector<float> box = {0.0, 0.0, 0.0, 1.0, 1.0, 1.0};
+        block.setGhostSizes(0);
+        block.setGlobalBBox(box);
+        block.setLocalBBox(box);
+        block.setOwnBBox(box);
+        block.setGlobalExtends(extends);
+        block.setLocalExtends(extends);
+        block.setOwnExtends(extends);
+        for(int i = 0; i < nbCopies; i++)
+        {
+            //Creating the new array with the correct shape
+            boost::multi_array<T, 3> *newArray = new boost::multi_array<T, 3>(boost::extents[1][1][1]);
+
+            result.push_back(
+                        std::make_shared<Array3DConstructData<T> >(
+                                newArray,
+                                block,
+                                true,
+                                mapConstruct(),
+                                bCountable_)
+                        );
+
+        }
+
+        return;
     }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
@@ -116,12 +148,22 @@ public:
         return result;
     }
 
+    virtual void split(
+            const std::vector<int>& range,
+            std::vector< mapConstruct >& partial_map,
+            std::vector<std::shared_ptr<BaseConstructData> >& fields,
+            ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
+    {
+        std::vector<std::shared_ptr<BaseConstructData> > result;
+        std::cout<<"ERROR : the spliting of a n-dimension array with buffers is not implemented yet."<<std::endl;
+        return ;
+    }
+
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector< Block<3> >& range,
             std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
-
         std::vector<std::shared_ptr<BaseConstructData> > result;
 
         for(unsigned int i = 0; i < range.size(); i++)
@@ -185,13 +227,15 @@ public:
 
                 Block<3> subBlock = block_;
 
-                subBlock.setLocalExtends({xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin});
-                subBlock.setLocalBBox({ subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
-                                        subBlock.globalBBox_[1] + ymin * subBlock.gridspace_,
-                                        subBlock.globalBBox_[2] + zmin * subBlock.gridspace_,
-                                        (xmax - xmin) * subBlock.gridspace_,
-                                        (ymax - ymin) * subBlock.gridspace_,
-                                        (zmax - zmin) * subBlock.gridspace_});
+                std::vector<unsigned int> localExtends = {xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin};
+                std::vector<float> localBBox = { subBlock.globalBBox_[0] + xmin * subBlock.gridspace_,
+                                                 subBlock.globalBBox_[1] + ymin * subBlock.gridspace_,
+                                                 subBlock.globalBBox_[2] + zmin * subBlock.gridspace_,
+                                                 (xmax - xmin) * subBlock.gridspace_,
+                                                 (ymax - ymin) * subBlock.gridspace_,
+                                                 (zmax - zmin) * subBlock.gridspace_};
+                subBlock.setLocalExtends(localExtends);
+                subBlock.setLocalBBox(localBBox);
 
                 // Updating the own information as well
                 if(range.at(i).hasOwnExtends_)
@@ -263,7 +307,6 @@ public:
                 std::shared_ptr<Array3DConstructData<T> > data = std::make_shared<Array3DConstructData<T> >(
                             subArray, subBlock, true);
 
-
                 result.push_back(data);
             }
 
@@ -279,6 +322,7 @@ public:
             std::vector<std::shared_ptr<BaseConstructData> >& fields,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
+        std::cerr<<"Hello function not implemented."<<std::endl;
 	return;
     }
 
@@ -291,7 +335,7 @@ public:
             case DECAF_MERGE_DEFAULT:
             {
                 //Getting the shape of the merged array
-                std::map<std::string, datafield>::iterator field = partial_map->find("domain_block");
+                /*std::map<std::string, datafield>::iterator field = partial_map->find("domain_block");
                 if(field == partial_map->end())
                 {
                     std::cerr<<"ERROR : unable to find the field \'domain_block\' "
@@ -303,12 +347,14 @@ public:
 
 
                 Block<3>& domain = domainBlock->getData();
-
+                */
                 std::shared_ptr<Array3DConstructData<T> >other_ =
                         std::dynamic_pointer_cast<Array3DConstructData<T> >(other);
+                //std::cerr<<"Extends of the domain block : "<<std::endl;
+                //domain.printExtends();
 
                 // Checking if the current array has the correct shape
-                if(block_.hasSameExtends(domain))
+                if(block_.doExtendsInclude(other_->block_))
                 {
                     // The block has already the correct shape, we simply add the
                     // values from the other array
@@ -316,19 +362,23 @@ public:
                 }
                 else
                 {
+                    //Merging the two domain
+                    Block<3> unionBlock;
+                    block_.makeExtendsUnion(other_->block_, unionBlock);
+
                     //Creating the new array with the correct shape
-                    boost::multi_array<T, 3> *newArray = new boost::multi_array<T, 3>(boost::extents[domain.localExtends_[3]][domain.localExtends_[4]][domain.localExtends_[5]]);
+                    boost::multi_array<T, 3> *newArray = new boost::multi_array<T, 3>(boost::extents[unionBlock.localExtends_[3]][unionBlock.localExtends_[4]][unionBlock.localExtends_[5]]);
 
                     //Adding the current array
-                    copy3DArray(newArray, domain, value_, block_);
+                    copy3DArray(newArray, unionBlock, value_, block_);
 
                     //Adding the other array
-                    copy3DArray(newArray, domain, other_->value_, other_->block_);
+                    copy3DArray(newArray, unionBlock, other_->value_, other_->block_);
 
                     //We can now replace the old array
                     if(isOwner_) delete value_;
-                    value_ = newArray; //TODO : check the memory of this, probably copy
-                    block_ = domain;
+                    value_ = newArray;
+                    block_ = unionBlock;
                     isOwner_ = true;
                 }
 

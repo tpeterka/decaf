@@ -20,19 +20,22 @@ public:
             std::cerr<<"ERROR : Unable to cast pointer to SimpleConstructData<T> when using a SimpleField."<<std::endl;
     }
 
-   SimpleField(mapConstruct map = mapConstruct())
+   SimpleField(mapConstruct map = mapConstruct(),
+               bool bCountable = true)
    {
-       ptr_ = std::make_shared<SimpleConstructData<T> >(map);
+       ptr_ = std::make_shared<SimpleConstructData<T> >(map, bCountable);
    }
 
-   SimpleField(const T& value, mapConstruct map = mapConstruct())
+   SimpleField(const T& value, mapConstruct map = mapConstruct(),
+               bool bCountable = true)
    {
-       ptr_ = std::make_shared<SimpleConstructData<T> >(value, map);
+       ptr_ = std::make_shared<SimpleConstructData<T> >(value, map, bCountable);
    }
 
-   SimpleField(T* value, mapConstruct map = mapConstruct())
+   SimpleField(T* value, mapConstruct map = mapConstruct(),
+               bool bCountable = true)
    {
-       ptr_ = std::make_shared<SimpleConstructData<T> >(value, map);
+       ptr_ = std::make_shared<SimpleConstructData<T> >(value, map, bCountable);
    }
 
    virtual ~SimpleField(){}

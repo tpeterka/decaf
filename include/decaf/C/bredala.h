@@ -129,7 +129,7 @@ extern "C" {
                         bca_ConstructTypeFlag flag,
                         bca_ConstructTypeScope scope,
                         bca_ConstructTypeSplitPolicy split,
-                        bca_ConstructTypeMergePolicy merge, bool force);
+                        bca_ConstructTypeMergePolicy merge);
 
     bca_field
     bca_create_simplefield(void* data,

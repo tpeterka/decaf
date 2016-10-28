@@ -183,12 +183,10 @@ void incoherentDataModel()
     //Forcing append the fields as the data model is incoherent
     container->appendData("array1", array1field,
                           DECAF_NOFLAG, DECAF_PRIVATE,
-                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT,
-                          true);
+                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
     container->appendData("array2", array2field,
                           DECAF_NOFLAG, DECAF_PRIVATE,
-                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT,
-                          true);
+                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
     // Serialization
     container->serialize();
 

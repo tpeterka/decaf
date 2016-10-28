@@ -20,25 +20,28 @@ public:
             std::cerr<<"ERROR : Unable to cast pointer to VectorConstructData<T> when using a VectorField."<<std::endl;
     }
 
-    VectorField(mapConstruct map = mapConstruct())
+    VectorField(mapConstruct map = mapConstruct(),
+                bool bCountable = true)
     {
-        ptr_ = std::make_shared<VectorConstructData<T> >(map);
+        ptr_ = std::make_shared<VectorConstructData<T> >(map, bCountable);
     }
 
-    VectorField(std::vector<T>& value, int element_per_items, mapConstruct map = mapConstruct())
+    VectorField(std::vector<T>& value, int element_per_items, mapConstruct map = mapConstruct(),
+                bool bCountable = true)
     {
-        ptr_ = std::make_shared<VectorConstructData<T> >(value, element_per_items, map);
+        ptr_ = std::make_shared<VectorConstructData<T> >(value, element_per_items, map, bCountable);
     }
 
     VectorField(typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end,
-                int element_per_items, mapConstruct map = mapConstruct())
+                int element_per_items, mapConstruct map = mapConstruct(), bool bCountable = true)
     {
-        ptr_ = std::make_shared<VectorConstructData<T> >(begin, end, element_per_items, map);
+        ptr_ = std::make_shared<VectorConstructData<T> >(begin, end, element_per_items, map, bCountable);
     }
 
-    VectorField(T* Vector, int size, int element_per_items, mapConstruct map = mapConstruct())
+    VectorField(T* Vector, int size, int element_per_items,
+                mapConstruct map = mapConstruct(), bool bCountable = true)
     {
-        ptr_ = std::make_shared<VectorConstructData<T> >(Vector, size, element_per_items, map);
+        ptr_ = std::make_shared<VectorConstructData<T> >(Vector, size, element_per_items, map, bCountable);
     }
 
     virtual ~VectorField(){}

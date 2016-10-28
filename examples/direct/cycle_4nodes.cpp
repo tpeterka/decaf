@@ -122,6 +122,7 @@ void node_b(Decaf* decaf)
         decaf->put(container);
 
         delete[] sums;
+
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

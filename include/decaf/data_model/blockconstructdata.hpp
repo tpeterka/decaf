@@ -10,7 +10,7 @@ class BlockConstructData : public BaseConstructData {
 public:
 
     BlockConstructData(Block<3> block = Block<3>(), mapConstruct map = mapConstruct())
-        : BaseConstructData(map), value_(block){}
+        : BaseConstructData(map, false), value_(block){}
 
     virtual ~BlockConstructData(){}
 
@@ -183,10 +183,13 @@ public:
             return false;
         }
 
+        Block<3>* otherBlock = other_->getBlock();
+
         switch(policy)
         {
             case DECAF_MERGE_DEFAULT:
             {
+                value_.makeUnion(*otherBlock);
                 return true;
                 break;
             }

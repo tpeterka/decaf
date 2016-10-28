@@ -10,22 +10,26 @@ template<typename T>
 class ArrayConstructData : public BaseConstructData {
 public:
 
-    ArrayConstructData(mapConstruct map = mapConstruct()) :
-        value_(nullptr), size_(0), element_per_items_(0), owner_(false), BaseConstructData(map), capacity_(0){}
+    ArrayConstructData(mapConstruct map = mapConstruct(), bool bCountable = true) :
+        value_(nullptr), size_(0), element_per_items_(0), owner_(false), BaseConstructData(map, bCountable), capacity_(0){}
 
-    ArrayConstructData(T* array, int size, int element_per_items, bool owner = false, mapConstruct map = mapConstruct()) :
+    ArrayConstructData(T* array, int size, int element_per_items, bool owner = false,
+                       mapConstruct map = mapConstruct(), bool bCountable = true) :
                         value_(array), element_per_items_(element_per_items),
                         size_(size), capacity_(size), owner_(owner),
-                        BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
+                        BaseConstructData(map, bCountable), isSegmented_(false),totalSegmentsSize_(0){}
 
-    ArrayConstructData(T* array, int size, int element_per_items, int capacity, bool owner = false, mapConstruct map = mapConstruct()) :
+    ArrayConstructData(T* array, int size, int element_per_items, int capacity, bool owner = false,
+                       mapConstruct map = mapConstruct(), bool bCountable = true) :
                         value_(array), element_per_items_(element_per_items),
                         size_(size), capacity_(capacity), owner_(owner),
-                        BaseConstructData(map), isSegmented_(false),totalSegmentsSize_(0){}
+                        BaseConstructData(map, bCountable), isSegmented_(false),totalSegmentsSize_(0){}
 
-    ArrayConstructData(std::vector<std::pair<T*, unsigned int> > segments, int element_per_items, mapConstruct map = mapConstruct()) :
+    ArrayConstructData(std::vector<std::pair<T*, unsigned int> > segments, int element_per_items,
+                       mapConstruct map = mapConstruct(), bool bCountable = true) :
                         value_(nullptr), element_per_items_(element_per_items),
-                        size_(0), capacity_(0), owner_(false), BaseConstructData(map), isSegmented_(true),
+                        size_(0), capacity_(0), owner_(false),
+                        BaseConstructData(map, bCountable), isSegmented_(true),
                         segments_(segments)
     {
         totalSegmentsSize_ = 0;
@@ -162,7 +166,7 @@ public:
         for(unsigned int i = 0; i < nbCopies; i++)
         {
 	    T* newArray = new T[nbItems * element_per_items_];	
-            result.push_back(std::make_shared<ArrayConstructData>(
+            result.push_back(std::make_shared<ArrayConstructData<T> >(
 					newArray,
 					0, // size
 					element_per_items_, 
@@ -382,9 +386,11 @@ public:
                 }
                 break;
             }
-            case DECAF_SPLIT_SEGMENTED:
+            case DECAF_SPLIT_SEGMENTED: // TODO : readapt the segments to
             {
-                //Sanity check
+                // TODO : remake the segments so it reflects the new meaning of the ranges
+                std::cerr<<"ERROR : DECAF_SPLIT_SEGMENTED in not implemented for split by range"<<std::endl;
+                return result;
 
 
                 //typename std::vector<T>::iterator it = value_.begin();
