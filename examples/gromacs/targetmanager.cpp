@@ -204,6 +204,9 @@ void target(Decaf* decaf)
             continue;
         }
 
+        std::shared_ptr<Array3DConstructData<float> > grid =
+                in_data[0]->getTypedData<Array3DConstructData<float> >("grid");
+
         unsigned int* ids = idsField.getArray();
 
         unsigned int nbAtoms = posField->getNbItems();
@@ -247,21 +250,80 @@ void target(Decaf* decaf)
                 break;
             }
         }
-        fprintf(stderr, "[%i/%u] Target position : %f %f %f\n", currentTarget, targets.size(), targetPos[0], targetPos[1], targetPos[2]);
-        fprintf(stderr, "[%i/%u] Distance to target : %f\n", currentTarget, targets.size(), dist);
-        // Computing the force direction
+        fprintf(stderr, "[%i/%u] Target position: %f %f %f\n", currentTarget, targets.size(), targetPos[0], targetPos[1], targetPos[2]);
+        fprintf(stderr, "[%i/%u] Distance to target: %f\n", currentTarget, targets.size(), dist);
+
         float force[3];
-        force[0] = targetPos[0] - avg[0];
-        force[1] = targetPos[1] - avg[1];
-        force[2] = targetPos[2] - avg[2];
 
-        normalize(force);
+        if(grid)
+        {
+            fprintf(stderr, "Grid available, we are using path finding.\n");
+            // Computing the force direction
+            force[0] = targetPos[0] - avg[0];
+            force[1] = targetPos[1] - avg[1];
+            force[2] = targetPos[2] - avg[2];
 
-        // Computing the force intensity
-        float maxForcesPerAtom = maxTotalForces / (float)filterIds.size();
-        force[0] = force[0] * maxForcesPerAtom;
-        force[1] = force[1] * maxForcesPerAtom;
-        force[2] = force[2] * maxForcesPerAtom;
+            normalize(force);
+
+            // Computing the force intensity
+            float maxForcesPerAtom = maxTotalForces / (float)filterIds.size();
+            force[0] = force[0] * maxForcesPerAtom;
+            force[1] = force[1] * maxForcesPerAtom;
+            force[2] = force[2] * maxForcesPerAtom;
+
+            //Block<3> block = grid->getBlock();
+
+            // Getting the grid info
+            BlockField blockField  = in_data[0]->getFieldData<BlockField>("domain_block");
+            if(!blockField)
+            {
+                fprintf(stderr, "ERROR: the field \'domain_block\' is not in the data model\n");
+                continue;
+            }
+            Block<3>* domainBlock = blockField.getBlock();
+
+            // We use the domain because we gather the full grid on 1 node
+
+            // Using the local coords because the 3D array is a local
+            // representation, not own representation
+            unsigned int avgIndex[3];
+            if(!domainBlock->getLocalPositionIndex(avg, avgIndex))
+            {
+                fprintf(stderr," ERROR: Unable to get the correct index of the tracked position\n");
+                continue;
+            }
+            unsigned int targetIndex[3];
+            if(!domainBlock->getLocalPositionIndex(targetPos,targetIndex))
+            {
+                fprintf(stderr," ERROR: Unable to get the correct index of the target position\n");
+                continue;
+            }
+
+            fprintf(stderr,"Track cell: [%u %u %u]\n", avgIndex[0], avgIndex[1], avgIndex[2]);
+            fprintf(stderr,"Target cell: [%u %u %u]\n", targetIndex[0], targetIndex[1], targetIndex[2]);
+
+            // Now we can do the path finding
+
+
+        }
+        else
+        {
+            fprintf(stderr, "Computing direct force\n");
+            // Computing the force direction
+            force[0] = targetPos[0] - avg[0];
+            force[1] = targetPos[1] - avg[1];
+            force[2] = targetPos[2] - avg[2];
+
+            normalize(force);
+
+            // Computing the force intensity
+            float maxForcesPerAtom = maxTotalForces / (float)filterIds.size();
+            force[0] = force[0] * maxForcesPerAtom;
+            force[1] = force[1] * maxForcesPerAtom;
+            force[2] = force[2] * maxForcesPerAtom;
+        }
+
+
         fprintf(stderr, "Force emitted : %f %f %f\n", force[0], force[1], force[2]);
 
         // Generating the data model

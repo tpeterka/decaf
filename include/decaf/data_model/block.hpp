@@ -14,7 +14,16 @@ class Block {
 public:
     Block() : hasGridspace_(false), hasGlobalBBox_(false), hasGlobalExtends_(false),
         hasLocalBBox_(false), hasLocalExtends_(false), ghostSize_(0),
-        hasOwnBBox_(false), hasOwnExtends_(false){}
+        hasOwnBBox_(false), hasOwnExtends_(false)
+    {
+        globalExtends_.resize(2*Dim);
+        localExtends_.resize(2*Dim);
+        ownExtends_.resize(2*Dim);
+
+        globalBBox_.resize(2*Dim);
+        localBBox_.resize(2*Dim);
+        ownBBox_.resize(2*Dim);
+    }
 
 
     template<class Archive>
@@ -96,41 +105,40 @@ public:
             return false;
         if(hasGlobalBBox_)
         {
-            globalExtends_.resize(6);
-            globalExtends_[0] = 0;
-            globalExtends_[1] = 0;
-            globalExtends_[2] = 0;
-            //Ceil because we count the number of cells
-            globalExtends_[3] = (unsigned int)(ceil(globalBBox_[3] / gridspace_));
-            globalExtends_[4] = (unsigned int)(ceil(globalBBox_[4] / gridspace_));
-            globalExtends_[5] = (unsigned int)(ceil(globalBBox_[5] / gridspace_));
+            globalExtends_.resize(2*Dim);
+            for(unsigned int i = 0; i < Dim; i++)
+            {
+                globalExtends_[i] = 0;
+                //Ceil because we count the number of cells
+                globalExtends_[Dim+i] = (unsigned int)(ceil(globalBBox_[Dim+i] / gridspace_));
+            }
             hasGlobalExtends_ = true;
 
         }
 
         if(hasLocalBBox_)
         {
-            localExtends_.resize(6);
-            localExtends_[0] = (unsigned int)(floor(localBBox_[0] / gridspace_));
-            localExtends_[1] = (unsigned int)(floor(localBBox_[1] / gridspace_));
-            localExtends_[2] = (unsigned int)(floor(localBBox_[2] / gridspace_));
-            //Ceil because we count the number of cells
-            localExtends_[3] = (unsigned int)(ceil(localBBox_[3] / gridspace_));
-            localExtends_[4] = (unsigned int)(ceil(localBBox_[4] / gridspace_));
-            localExtends_[5] = (unsigned int)(ceil(localBBox_[5] / gridspace_));
+            localExtends_.resize(2*Dim);
+            for(unsigned int i = 0; i < Dim; i++)
+            {
+                // TODO : here should be another value because of ghost region
+                localExtends_[i] = 0;
+                //Ceil because we count the number of cells
+                localExtends_[Dim+i] = (unsigned int)(ceil(localBBox_[Dim+i] / gridspace_));
+            }
             hasLocalExtends_ = true;
         }
 
         if(hasOwnBBox_)
         {
-            ownExtends_.resize(6);
-            ownExtends_[0] = (unsigned int)(floor(ownBBox_[0] / gridspace_));
-            ownExtends_[1] = (unsigned int)(floor(ownBBox_[1] / gridspace_));
-            ownExtends_[2] = (unsigned int)(floor(ownBBox_[2] / gridspace_));
-            //Ceil because we count the number of cells
-            ownExtends_[3] = (unsigned int)(ceil(ownBBox_[3] / gridspace_));
-            ownExtends_[4] = (unsigned int)(ceil(ownBBox_[4] / gridspace_));
-            ownExtends_[5] = (unsigned int)(ceil(ownBBox_[5] / gridspace_));
+            ownExtends_.resize(2*Dim);
+            for(unsigned int i = 0; i < Dim; i++)
+            {
+                // TODO : here should be another value because of ghost region
+                ownExtends_[i] = 0;
+                //Ceil because we count the number of cells
+                ownExtends_[Dim+i] = (unsigned int)(ceil(ownBBox_[Dim+i] / gridspace_));
+            }
             hasOwnExtends_ = true;
         }
 
@@ -139,6 +147,7 @@ public:
 
     bool isInGlobalBlock(float x, float y, float z) const
     {
+        if(!hasGlobalBBox_) return false;
         return x >= globalBBox_[0] && x <= globalBBox_[0] + globalBBox_[3] &&
                 y >= globalBBox_[1] && y <= globalBBox_[1] + globalBBox_[4] &&
                 z >= globalBBox_[2] && z <= globalBBox_[2] + globalBBox_[5];
@@ -146,6 +155,7 @@ public:
 
     bool isInLocalBlock(float x, float y, float z) const
     {
+        if(!hasLocalBBox_) return false;
         return x >= localBBox_[0] && x <= localBBox_[0] + localBBox_[3] &&
                 y >= localBBox_[1] && y <= localBBox_[1] + localBBox_[4] &&
                 z >= localBBox_[2] && z <= localBBox_[2] + localBBox_[5];
@@ -153,6 +163,7 @@ public:
 
     bool isInOwnBlock(float x, float y, float z) const
     {
+        if(!hasOwnBBox_) return false;
         return x >= ownBBox_[0] && x <= ownBBox_[0] + ownBBox_[3] &&
                 y >= ownBBox_[1] && y <= ownBBox_[1] + ownBBox_[4] &&
                 z >= ownBBox_[2] && z <= ownBBox_[2] + ownBBox_[5];
@@ -160,6 +171,7 @@ public:
 
     bool isInGlobalBlock(unsigned int x, unsigned int y, unsigned int z) const
     {
+        if(!hasGlobalExtends_) return false;
         return x >= globalExtends_[0] && x < globalExtends_[0] + globalExtends_[3] &&
                 y >= globalExtends_[1] && y < globalExtends_[1] + globalExtends_[4] &&
                 z >= globalExtends_[2] && z < globalExtends_[2] + globalExtends_[5];
@@ -167,6 +179,7 @@ public:
 
     bool isInLocalBlock(unsigned int x, unsigned int y, unsigned int z) const
     {
+        if(!hasLocalExtends_) return false;
         return x >= localExtends_[0] && x < localExtends_[0] + localExtends_[3] &&
                 y >= localExtends_[1] && y < localExtends_[1] + localExtends_[4] &&
                 z >= localExtends_[2] && z < localExtends_[2] + localExtends_[5];
@@ -174,6 +187,7 @@ public:
 
     bool isInOwnBlock(unsigned int x, unsigned int y, unsigned int z) const
     {
+        if(!hasOwnExtends_) return false;
         return x >= ownExtends_[0] && x < ownExtends_[0] + ownExtends_[3] &&
                 y >= ownExtends_[1] && y < ownExtends_[1] + ownExtends_[4] &&
                 z >= ownExtends_[2] && z < ownExtends_[2] + ownExtends_[5];
@@ -238,6 +252,18 @@ public:
         }
     }
 
+    void makeUnion(const Block<Dim> & other)
+    {
+        makeExtendsUnion(other);
+        makeBBoxUnion(other);
+    }
+
+    void makeUnion(const Block<Dim> & other, Block<Dim> & result)
+    {
+        makeExtendsUnion(other, result);
+        makeBBoxUnion(other, result);
+    }
+
     void makeExtendsUnion(const Block<Dim> & other)
     {
         for(unsigned i = 0; i < Dim; i++)
@@ -278,12 +304,32 @@ public:
         }
     }
 
+    void makeBBoxUnion(const Block<Dim> & other)
+    {
+        for(unsigned i = 0; i < Dim; i++)
+        {
+            if(hasGlobalBBox_ && other.hasGlobalBBox_)
+            {
+                globalBBox_[i] = std::min(globalBBox_[i], other.globalBBox_[i]);
+                globalBBox_[Dim+i] = std::max(globalBBox_[Dim+i], other.globalBBox_[Dim+i]);
+            }
+
+            if(hasLocalBBox_ && other.hasLocalBBox_)
+            {
+                localBBox_[i] = std::min(localBBox_[i], other.localBBox_[i]);
+                localBBox_[Dim+i] = std::max(localBBox_[Dim+i], other.localBBox_[Dim+i]);
+            }
+
+            if(hasOwnBBox_ && other.hasOwnBBox_)
+            {
+                ownBBox_[i] = std::min(ownBBox_[i], other.ownBBox_[i]);
+                ownBBox_[Dim+i] = std::max(ownBBox_[Dim+i], other.ownBBox_[Dim+i]);
+            }
+        }
+    }
+
     void makeExtendsUnion(const Block<Dim> & other, Block<Dim> & result)
     {
-        std::vector<unsigned int> global(2*Dim);
-        std::vector<unsigned int> local(2*Dim);
-        std::vector<unsigned int> own(2*Dim);
-
         for(unsigned i = 0; i < Dim; i++)
         {
             if(hasGlobalExtends_ && other.hasGlobalExtends_)
@@ -293,8 +339,9 @@ public:
                             globalExtends_[i]+globalExtends_[Dim+i],
                             other.globalExtends_[i]+other.globalExtends_[Dim+i]
                             ) - origin;
-                global[i] = origin;
-                global[Dim+i] = delta;
+                result.hasGlobalExtends_ = true;
+                result.globalExtends_[i] = origin;
+                result.globalExtends_[Dim+i] = delta;
             }
 
             if(hasLocalExtends_ && other.hasLocalExtends_)
@@ -304,8 +351,9 @@ public:
                             localExtends_[i]+localExtends_[Dim+i],
                             other.localExtends_[i]+other.localExtends_[Dim+i]
                             ) - origin;
-                local[i] = origin;
-                local[Dim+i] = delta;
+                result.hasLocalExtends_ = true;
+                result.localExtends_[i] = origin;
+                result.localExtends_[Dim+i] = delta;
             }
 
             if(hasOwnExtends_ && other.hasOwnExtends_)
@@ -315,22 +363,87 @@ public:
                             ownExtends_[i]+ownExtends_[Dim+i],
                             other.ownExtends_[i]+other.ownExtends_[Dim+i]
                             ) - origin;
-                own[i] = origin;
-                own[Dim+i] = delta;
+                result.hasOwnExtends_ = true;
+                result.ownExtends_[i] = origin;
+                result.ownExtends_[Dim+i] = delta;
             }
         }
-
-        if(hasGlobalExtends_ && other.hasGlobalExtends_)
-            result.setGlobalExtends(global);
-
-        if(hasLocalExtends_ && other.hasLocalExtends_)
-            result.setLocalExtends(local);
-
-        if(hasOwnExtends_ && other.hasOwnExtends_)
-            result.setOwnExtends(own);
     }
 
+    void makeBBoxUnion(const Block<Dim> & other, Block<Dim> & result)
+    {
+        for(unsigned i = 0; i < Dim; i++)
+        {
+            if(hasGlobalBBox_ && other.hasGlobalBBox_)
+            {
+                result.hasGlobalBBox_ = true;
+                result.globalBBox_[i] = std::min(globalBBox_[i], other.globalBBox_[i]);
+                result.globalBBox_[Dim+i] = std::max(globalBBox_[Dim+i], other.globalBBox_[Dim+i]);
+            }
 
+            if(hasLocalBBox_ && other.hasLocalBBox_)
+            {
+                result.hasLocalBBox_ = true;
+                result.localBBox_[i] = std::min(localBBox_[i], other.localBBox_[i]);
+                result.localBBox_[Dim+i] = std::max(localBBox_[Dim+i], other.localBBox_[Dim+i]);
+            }
+
+            if(hasOwnBBox_ && other.hasOwnBBox_)
+            {
+                result.hasOwnBBox_ = true;
+                result.ownBBox_[i] = std::min(ownBBox_[i], other.ownBBox_[i]);
+                result.ownBBox_[Dim+i] = std::max(ownBBox_[Dim+i], other.ownBBox_[Dim+i]);
+            }
+        }
+    }
+
+    // Expect the position in global space
+    // Return the position in the own index
+    bool getOwnPositionIndex(float* pos, unsigned int* index)
+    {
+        // TODO : test if the position is in the space
+
+        // Move the absolute coordinates to the own coordinates
+        for(unsigned int i = 0; i <  Dim; i++)
+        {
+            float offsetPos = pos[i] - ownBBox_[i];
+            index[i] = (unsigned int)(ceil(offsetPos / gridspace_));
+        }
+
+        return true;
+    }
+
+    // Expect the position in global space
+    // Return the position in the local index
+    bool getLocalPositionIndex(float* pos, unsigned int* index)
+    {
+        // TODO : test if the position is in the space
+
+        // Move the absolute coordinates to the own coordinates
+        for(unsigned int i = 0; i <  Dim; i++)
+        {
+            float offsetPos = pos[i] - localBBox_[i];
+            index[i] = (unsigned int)(ceil(offsetPos / gridspace_));
+        }
+
+        return true;
+    }
+
+    // Expect the position in global space
+    // Return the position in the local index
+    bool getGlobalPositionIndex(float* pos, unsigned int* index)
+    {
+        // TODO : test if the position is in the space
+
+        // Move the absolute coordinates to the own coordinates
+        for(unsigned int i = 0; i <  Dim; i++)
+        {
+            float offsetPos = pos[i] - globalBBox_[i];
+            index[i] = (unsigned int)(ceil(offsetPos / gridspace_));
+        }
+
+        return true;
+    }
 
     void buildGhostRegions(unsigned int ghostSize)
     {
@@ -346,7 +459,7 @@ public:
 
         //Updating the info of the localbox
         //Checking the minimum dimension if we don't go bellow 0
-        for(unsigned int i = 0; i < 3; i++)
+        for(unsigned int i = 0; i < Dim; i++)
         {
             if(localExtends_[i] >= ghostSize_)
                 //We can safely extend the region
@@ -356,17 +469,17 @@ public:
         }
 
         //Checking if with the ghost region we don't go outside of the global box
-        for(unsigned int i = 3; i < 6; i++)
+        for(unsigned int i = Dim; i < 2*Dim; i++)
         {
-            if(localExtends_[i-3] + localExtends_[i] + ghostSize_ <= globalExtends_[i])
+            if(localExtends_[i-Dim] + localExtends_[i] + ghostSize_ <= globalExtends_[i])
                 localExtends_[i] += ghostSize_;
             else
-                localExtends_[i] += globalExtends_[i] - localExtends_[i-3] - localExtends_[i];
+                localExtends_[i] += globalExtends_[i] - localExtends_[i-Dim] - localExtends_[i];
         }
 
-        for(unsigned int j = 0; j < 3; j++)
+        for(unsigned int j = 0; j < Dim; j++)
             localBBox_[j] = globalBBox_[j] + (float)localExtends_[j] * gridspace_;
-        for(unsigned int j = 3; j < 6; j++)
+        for(unsigned int j = Dim; j < 2*Dim; j++)
             localBBox_[j] = (float)(localExtends_[j]) * gridspace_;
 
     }

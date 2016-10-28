@@ -183,10 +183,13 @@ public:
             return false;
         }
 
+        Block<3>* otherBlock = other_->getBlock();
+
         switch(policy)
         {
             case DECAF_MERGE_DEFAULT:
             {
+                value_.makeUnion(*otherBlock);
                 return true;
                 break;
             }

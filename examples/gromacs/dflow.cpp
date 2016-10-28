@@ -263,7 +263,7 @@ void computeMorton(Dataflow* dataflow, pConstructData in_data, string& model, fl
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
     container->appendData("domain_block", globalBox,
                           DECAF_NOFLAG, DECAF_SHARED,
-                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_DEFAULT);
     container->appendData("morton", mortonField,
                           DECAF_MORTON, DECAF_PRIVATE,
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);

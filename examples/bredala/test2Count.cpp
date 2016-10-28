@@ -243,8 +243,8 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         component1->flush();    // We still need to flush if not doing a get/put
 
         fprintf(stderr, "===========================\n"
-                "Final Merged map has %d items\n"
-                "Final Merged map has %d fields\n",
+                "Final Merged map has %u items\n"
+                "Final Merged map has %zu fields\n",
                 result->getNbItems(), result->getMap()->size());
         result->printKeys();
         //printMap(*result);
@@ -262,8 +262,8 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
         component2->flush();    // We still need to flush if not doing a get/put
 
         fprintf(stderr, "===========================\n"
-                "Final Merged map has %d items\n"
-                "Final Merged map has %d fields\n",
+                "Final Merged map has %u items\n"
+                "Final Merged map has %zu fields\n",
                 result->getNbItems(), result->getMap()->size());
         result->printKeys();
         //printMap(*result);

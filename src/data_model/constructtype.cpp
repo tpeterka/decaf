@@ -74,7 +74,7 @@ bool
 decaf::
 ConstructData::appendItem(std::shared_ptr<ConstructData> dest, unsigned int index)
 {
-    assert(isCountable_);
+    assert(bCountable_);
 
     if(index >= nbItems_)
     {

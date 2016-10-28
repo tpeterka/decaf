@@ -84,7 +84,9 @@ public:
         ar & BOOST_SERIALIZATION_NVP(block_);
     }
 
-    virtual boost::multi_array<T, 3>* getArray(){ return value_; }
+    boost::multi_array<T, 3>* getArray(){ return value_; }
+
+    Block<3>& getBlock(){ return block_; }
 
     virtual int getNbItems(){ return value_->shape()[0] * value_->shape()[1] * value_->shape()[2]; }
 
