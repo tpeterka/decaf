@@ -43,7 +43,8 @@ namespace decaf
                       communicator,
                       commMethod,
                       mergeMethod),
-                initialized_(false){}
+                initializedSource_(false),
+                initializedRecep_(false){}
 
         virtual ~RedistProcMPI() {}
 
@@ -62,7 +63,8 @@ namespace decaf
         // be stored in the vector receivedChunks
         virtual void redistribute(pConstructData& data, RedistRole role);
 
-        bool initialized_;    // Index of the first item in the global array
+        bool initializedSource_;
+        bool initializedRecep_;
         int destination_;     // Rank of the first destination to send data (starting at 0)
         int nbSends_;         // Number of identicaf message to send to different destinations
         int nbReceptions_;

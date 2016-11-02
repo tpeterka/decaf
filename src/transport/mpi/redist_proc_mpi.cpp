@@ -4,7 +4,7 @@ void
 decaf::
 RedistProcMPI::computeGlobal(pConstructData& data, RedistRole role)
 {
-    if( !initialized_ && role == DECAF_REDIST_SOURCE )
+    if( !initializedSource_ && role == DECAF_REDIST_SOURCE )
     {
         if(nbSources_ > nbDests_ && nbSources_ % nbDests_ != 0)
         {
@@ -30,9 +30,9 @@ RedistProcMPI::computeGlobal(pConstructData& data, RedistRole role)
             nbSends_ = nbDests_ / nbSources_;
             destination_ = source_rank * nbSends_;
         }
-        initialized_ = true;
+        initializedSource_ = true;
     }
-    if(!initialized_ && role == DECAF_REDIST_DEST )
+    if(!initializedRecep_ && role == DECAF_REDIST_DEST )
     {
         if(nbSources_ > nbDests_ && nbSources_ % nbDests_ != 0)
         {
@@ -48,7 +48,7 @@ RedistProcMPI::computeGlobal(pConstructData& data, RedistRole role)
             nbReceptions_ = nbSources_ / nbDests_;
         else
             nbReceptions_ = 1;
-        initialized_ = true;
+        initializedRecep_ = true;
     }
 
 }
@@ -70,7 +70,9 @@ RedistProcMPI::redistribute(pConstructData &data, RedistRole role)
         for (unsigned int i = 0; i < nbSends_; i++)
         {
             if (rank_ == local_dest_rank_ + destination_ + i)
+            {
                 transit = data;
+            }
             else
             {
                 MPI_Request req;
