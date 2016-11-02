@@ -212,7 +212,6 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
             }
         }
 
-
         // sort and distribute particles to regular blocks
         tess_exchange(master, assigner, times);
 
@@ -255,7 +254,8 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    make_wflow(workflow);
+    // make_wflow(workflow);
+    Workflow::make_wflow_from_json(workflow, "tess_dense.json");
 
     MPI_Init(NULL, NULL);
 
