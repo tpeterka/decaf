@@ -216,11 +216,13 @@ public:
         {
             case DECAF_MERGE_DEFAULT:
             {
+                fprintf(stderr,"To be implemented\n");
                 return true;
                 break;
             }
             case DECAF_MERGE_FIRST_VALUE: //We don't have to do anything here
             {
+
                 return true;
                 break;
             }

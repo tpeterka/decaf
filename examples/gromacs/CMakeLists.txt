@@ -24,7 +24,19 @@ else(VisIt_FOUND)
     message(STATUS "VisIt not found")
 endif(VisIt_FOUND)
 
-add_subdirectory(flowvr)
+set(bin_suffix "")
+
+if(${gromacs_flowvr})
+    find_package(FlowVR REQUIRED)
+    add_definitions(-DFLOWVR)
+    add_subdirectory(flowvr)
+    include_directories(${FLOWVR_INCLUDE_DIR})
+    message(STATUS "FlowVR found: ${FLOWVR_INCLUDE_DIR}")
+    list(APPEND DEP_LIBRARIES ${FLOWVR_base_LIBRARY} ${FLOWVR_mod_LIBRARY})
+    set(bin_suffix "${bin_suffix}_flowvr")
+endif(${gromacs_flowvr})
+
+
 
 message(STATUS "Module path : ${CMAKE_MODULE_PATH}")
 
@@ -59,12 +71,13 @@ target_link_libraries       (treatment
 target_link_libraries       (dflow_gromacs
     ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 target_link_libraries       (targetmanager
-    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+    ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel ${DEP_LIBRARIES})
 target_link_libraries       (mod_dflow_gromacs
     ${libraries} ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
 target_link_libraries       (prod_c_gromacs bca dca)
 
 set_target_properties (treatment PROPERTIES LINK_FLAGS "-Wl,-export-dynamic")
+set_target_properties (targetmanager PROPERTIES OUTPUT_NAME "targetmanager${bin_suffix}")
 
   install(TARGETS treatment dflow_gromacs mod_dflow_gromacs prod_c_gromacs targetmanager
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/gromacs/
