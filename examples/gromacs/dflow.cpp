@@ -284,7 +284,7 @@ extern "C"
                pConstructData in_data)   // input data
     {
         string model("fepa");
-        float gridspace = 2.0;
+        float gridspace = 1.0;
         computeMorton(dataflow, in_data, model, gridspace);
 
     }

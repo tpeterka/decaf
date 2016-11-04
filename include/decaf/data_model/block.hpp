@@ -304,26 +304,30 @@ public:
         }
     }
 
+    // Used during the merge
     void makeBBoxUnion(const Block<Dim> & other)
     {
         for(unsigned i = 0; i < Dim; i++)
         {
             if(hasGlobalBBox_ && other.hasGlobalBBox_)
             {
+                float dMax = std::max(globalBBox_[i] + globalBBox_[Dim+i], other.globalBBox_[i] + other.globalBBox_[Dim+i]);
                 globalBBox_[i] = std::min(globalBBox_[i], other.globalBBox_[i]);
-                globalBBox_[Dim+i] = std::max(globalBBox_[Dim+i], other.globalBBox_[Dim+i]);
+                globalBBox_[Dim+i] = dMax - globalBBox_[i];
             }
 
             if(hasLocalBBox_ && other.hasLocalBBox_)
             {
+                float dMax = std::max(localBBox_[i] + localBBox_[Dim+i], other.localBBox_[i] + other.localBBox_[Dim+i]);
                 localBBox_[i] = std::min(localBBox_[i], other.localBBox_[i]);
-                localBBox_[Dim+i] = std::max(localBBox_[Dim+i], other.localBBox_[Dim+i]);
+                localBBox_[Dim+i] = dMax - localBBox_[i];
             }
 
             if(hasOwnBBox_ && other.hasOwnBBox_)
             {
+                float dMax = std::max(ownBBox_[i] + ownBBox_[Dim+i], other.ownBBox_[i] + other.ownBBox_[Dim+i]);
                 ownBBox_[i] = std::min(ownBBox_[i], other.ownBBox_[i]);
-                ownBBox_[Dim+i] = std::max(ownBBox_[Dim+i], other.ownBBox_[Dim+i]);
+                ownBBox_[Dim+i] = dMax - ownBBox_[i];
             }
         }
     }
@@ -377,22 +381,25 @@ public:
             if(hasGlobalBBox_ && other.hasGlobalBBox_)
             {
                 result.hasGlobalBBox_ = true;
+                float dMax = std::max(globalBBox_[i] + globalBBox_[Dim+i], other.globalBBox_[i] + other.globalBBox_[Dim+i]);
                 result.globalBBox_[i] = std::min(globalBBox_[i], other.globalBBox_[i]);
-                result.globalBBox_[Dim+i] = std::max(globalBBox_[Dim+i], other.globalBBox_[Dim+i]);
+                result.globalBBox_[Dim+i] = dMax - globalBBox_[i];
             }
 
             if(hasLocalBBox_ && other.hasLocalBBox_)
             {
                 result.hasLocalBBox_ = true;
+                float dMax = std::max(localBBox_[i] + localBBox_[Dim+i], other.localBBox_[i] + other.localBBox_[Dim+i]);
                 result.localBBox_[i] = std::min(localBBox_[i], other.localBBox_[i]);
-                result.localBBox_[Dim+i] = std::max(localBBox_[Dim+i], other.localBBox_[Dim+i]);
+                result.localBBox_[Dim+i] = dMax - localBBox_[i];
             }
 
             if(hasOwnBBox_ && other.hasOwnBBox_)
             {
                 result.hasOwnBBox_ = true;
+                float dMax = std::max(ownBBox_[i] + ownBBox_[Dim+i], other.ownBBox_[i] + other.ownBBox_[Dim+i]);
                 result.ownBBox_[i] = std::min(ownBBox_[i], other.ownBBox_[i]);
-                result.ownBBox_[Dim+i] = std::max(ownBBox_[Dim+i], other.ownBBox_[Dim+i]);
+                result.ownBBox_[Dim+i] = dMax - ownBBox_[i];
             }
         }
     }
@@ -407,9 +414,22 @@ public:
         for(unsigned int i = 0; i <  Dim; i++)
         {
             float offsetPos = pos[i] - ownBBox_[i];
-            index[i] = (unsigned int)(ceil(offsetPos / gridspace_));
+            index[i] = (unsigned int)(floor(offsetPos / gridspace_));
         }
 
+        return true;
+    }
+
+    // Expect the position index in Own index
+    // Return a position in the global space
+    bool getOwnPositionValue(unsigned int* index, float* pos)
+    {
+        assert(hasOwnBBox_);
+        for(unsigned int i = 0; i <  Dim; i++)
+        {
+            // 0.5 to get to the middle of the cell
+            pos[i] = ownBBox_[i] + ((float)index[i] + 0.5) * gridspace_;
+        }
         return true;
     }
 
@@ -423,9 +443,22 @@ public:
         for(unsigned int i = 0; i <  Dim; i++)
         {
             float offsetPos = pos[i] - localBBox_[i];
-            index[i] = (unsigned int)(ceil(offsetPos / gridspace_));
+            index[i] = (unsigned int)(floor(offsetPos / gridspace_));
         }
 
+        return true;
+    }
+
+    // Expect the position index in Local index
+    // Return a position in the global space
+    bool getLocalPositionValue(unsigned int* index, float* pos)
+    {
+        assert(hasLocalBBox_);
+        for(unsigned int i = 0; i <  Dim; i++)
+        {
+            // 0.5 to get to the middle of the cell
+            pos[i] = localBBox_[i] + ((float)index[i] + 0.5) * gridspace_;
+        }
         return true;
     }
 
@@ -439,9 +472,22 @@ public:
         for(unsigned int i = 0; i <  Dim; i++)
         {
             float offsetPos = pos[i] - globalBBox_[i];
-            index[i] = (unsigned int)(ceil(offsetPos / gridspace_));
+            index[i] = (unsigned int)(floor(offsetPos / gridspace_));
         }
 
+        return true;
+    }
+
+    // Expect the position index in Global index
+    // Return a position in the global space
+    bool getGlobalPositionValue(unsigned int* index, float* pos)
+    {
+        assert(hasGlobalBBox_);
+        for(unsigned int i = 0; i <  Dim; i++)
+        {
+            // 0.5 to get to the middle of the cell
+            pos[i] = globalBBox_[i] + ((float)index[i] + 0.5) * gridspace_;
+        }
         return true;
     }
 
