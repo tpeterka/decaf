@@ -39,7 +39,7 @@ void prod(Decaf* decaf)
     srand(decaf->world->rank());
 
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 3; timestep++)
+    for (int timestep = 0; timestep < 1; timestep++)
     {
         // create the synthetic points for the timestep
         fprintf(stderr, "producer timestep %d\n", timestep);
@@ -52,12 +52,31 @@ void prod(Decaf* decaf)
         float* z = new float[npts];
         for (unsigned i = 0; i < npts; ++i)
         {
-            float t = (float) rand() / RAND_MAX;
-            x[i] = t * (npts - 1);
-            t = (float) rand() / RAND_MAX;
-            y[i] = t * (npts - 1);
-            t = (float) rand() / RAND_MAX;
-            z[i] = t * (npts - 1);
+            // debug: test what happens when a point is duplicated or outside the domain
+            // if (i == 1)                  // duplicate point test
+            // {
+            //     x[i] = x[i - 1];
+            //     y[i] = y[i - 1];
+            //     z[i] = z[i - 1];
+            // }
+            if (i == npts  - 1)              // out of bounds test
+            {
+                float t = (float) rand() / RAND_MAX;
+                x[i] = npts;
+                t = (float) rand() / RAND_MAX;
+                y[i] = t * (npts - 1);
+                t = (float) rand() / RAND_MAX;
+                z[i] = t * (npts - 1);
+            }
+            else
+            {
+                float t = (float) rand() / RAND_MAX;
+                x[i] = t * (npts - 1);
+                t = (float) rand() / RAND_MAX;
+                y[i] = t * (npts - 1);
+                t = (float) rand() / RAND_MAX;
+                z[i] = t * (npts - 1);
+            }
         }
 
         // mins and sizes, not mins and maxs

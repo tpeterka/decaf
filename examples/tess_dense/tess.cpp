@@ -72,19 +72,19 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     swap(lb.buffer, dest->diy_lb);
 
     // debug
-    // fprintf(stderr, "tess: lid=%d gid=%d\n", lid, src->gid);
-    // fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
-    //         src->mins[0], src->mins[1], src->mins[2],
-    //         src->maxs[0], src->maxs[1], src->maxs[2]);
-    // fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
-    //         src->box.min[0], src->box.min[1], src->box.min[2],
-    //         src->box.max[0], src->box.max[1], src->box.max[2]);
-    // fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
-    //         src->data_bounds.min[0], src->data_bounds.min[1], src->data_bounds.min[2],
-    //         src->data_bounds.max[0], src->data_bounds.max[1], src->data_bounds.max[2]);
-    // fprintf(stderr, "num_orig_particles %d num_particles %d\n",
-    //         src->num_orig_particles, src->num_particles);
-    // fprintf(stderr, "complete %d num_tets %d\n", src->complete, src->num_tets);
+    fprintf(stderr, "tess: lid=%d gid=%d\n", lid, src->gid);
+    fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
+            src->mins[0], src->mins[1], src->mins[2],
+            src->maxs[0], src->maxs[1], src->maxs[2]);
+    fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+            src->box.min[0], src->box.min[1], src->box.min[2],
+            src->box.max[0], src->box.max[1], src->box.max[2]);
+    fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+            src->data_bounds.min[0], src->data_bounds.min[1], src->data_bounds.min[2],
+            src->data_bounds.max[0], src->data_bounds.max[1], src->data_bounds.max[2]);
+    fprintf(stderr, "num_orig_particles %d num_particles %d\n",
+            src->num_orig_particles, src->num_particles);
+    fprintf(stderr, "complete %d num_tets %d\n", src->complete, src->num_tets);
 
     // fprintf(stderr, "particles:\n");
     // for (int j = 0; j < src->num_particles; j++)
@@ -116,6 +116,53 @@ void copy_block(SerBlock* dest, dblock_t* src, diy::Master& master, int lid)
     // for (int j = 0; j < src->num_particles; j++)
     //     fprintf(stderr, "gid=%d vert_to_tet[%d]=%d ", src->gid, j, src->vert_to_tet[j]);
     // fprintf(stderr, "\n");
+}
+
+//
+// Deduplicate functionality: get rid of duplicate points, since downstream code can't handle them.
+//
+typedef     std::map<size_t, int>       DuplicateCountMap;
+
+struct DedupPoint
+{
+    float data[3];
+    bool	    operator<(const DedupPoint& other) const	    { return std::lexicographical_compare(data, data + 3, other.data, other.data + 3); }
+    bool	    operator==(const DedupPoint& other) const	    { return std::equal(data, data + 3, other.data); }
+};
+void deduplicate(dblock_t*                         b,
+                 const diy::Master::ProxyWithLink& cp,
+                 DuplicateCountMap&                count)
+{
+    if (!b->num_particles)
+        return;
+
+    // simple static_assert to ensure sizeof(Point) == sizeof(float[3]);
+    // necessary to make this hack work
+    typedef int static_assert_Point_size[sizeof(DedupPoint) == sizeof(float[3]) ? 1 : -1];
+    DedupPoint* bg  = (DedupPoint*) &b->particles[0];
+    DedupPoint* end = (DedupPoint*) &b->particles[3*b->num_particles];
+    std::sort(bg,end);
+
+    DedupPoint* out = bg + 1;
+    for (DedupPoint* it = bg + 1; it != end; ++it)
+    {
+        if (*it == *(it - 1))
+            count[out - bg - 1]++;
+        else
+        {
+            *out = *it;
+            ++out;
+        }
+    }
+    b->num_orig_particles = b->num_particles = out - bg;
+
+    if (!count.empty())
+    {
+        size_t total = 0;
+        for (DuplicateCountMap::const_iterator it = count.begin(); it != count.end(); ++it)
+            total += it->second;
+        std::cout << b->gid << ": Found " << count.size() << " particles that appear more than once, with " << total << " total extra copies\n";
+    }
 }
 
 // consumer
@@ -194,16 +241,65 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
 
         // put all the points into the first local block
         // tess will sort them among the blocks anyway
-        for (size_t i = 0; i < master.size(); i++)
+        // filter out any points out of the global domain
+        for (size_t k = 0; k < master.size(); k++)
         {
-            dblock_t* b = (dblock_t*)master.block(i);
-            if (i == 0)
+            dblock_t* b = (dblock_t*)master.block(k);
+
+            if (k == 0)
             {
-                b->particles = (float *)malloc(nbParticle * 3 * sizeof(float));
-                b->num_orig_particles = b->num_particles = nbParticle;
-                for (int i = 0; i < 3 * nbParticle; i++)
-                    b->particles[i] = xyz[i];
+                // count number of "good" particles (in bounds)
+                b->num_orig_particles = 0;
+                for (int i = 0; i < nbParticle; i++)
+                {
+                    bool skip = false;
+                    for (int j = 0; j < 3; ++j)
+                    {
+                        if (xyz[3 * i + j] < domain.min[j] || xyz[3 * i + j] > domain.max[j])
+                        {
+                            skip = true;
+                            break;
+                        }
+                    }
+                    if (!skip)
+                        b->num_orig_particles++;
+                }
+
+                // allocate and copy the particles into the block
+                if (b->num_orig_particles)
+                {
+                    b->particles = (float *)malloc(b->num_orig_particles * 3 * sizeof(float));
+                    int n = 0;
+                    for (int i = 0; i < nbParticle; i++)
+                    {
+                        bool skip = false;
+                        for (int j = 0; j < 3; ++j)
+                        {
+                            if (xyz[3 * i + j] < domain.min[j] || xyz[3 * i + j] > domain.max[j])
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                        if (!skip)
+                        {
+                            for (int j = 0; j < 3; ++j)
+                                b->particles[3 * n + j] = xyz[3 * i + j];
+                            n++;
+                        }
+                    }
+                }
+
+                b->num_particles = b->num_orig_particles;
             }
+            // realloc in case some particles were not used
+            // if (b->num_orig_particles != nbParticle)
+            //     b->particles = (float *)realloc(b->particles,
+            //                                     b->num_orig_particles * 3 * sizeof(float));
+
+            fprintf(stderr, "gid=%d num_orig_particles=%d num_particles=%d\n",
+                    b->gid, b->num_orig_particles, b->num_particles);
+
             // all blocks, even the empty ones need the box bounds set prior to doing the exchange
             for (int i = 0; i < 3; ++i)
             {
@@ -215,11 +311,32 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         // sort and distribute particles to regular blocks
         tess_exchange(master, assigner, times);
 
+        // clean up any duplicates and out of bounds particles
+        // DuplicateCountMap count;
+        // master.foreach([&](dblock_t* b, const diy::Master::ProxyWithLink& cp)
+        //                { deduplicate(b, cp, count); });
+
+        // debug
+        for (size_t i = 0; i < master.size(); i++)
+        {
+            dblock_t* b = (dblock_t*)master.block(i);
+            fprintf(stderr, "1: gid=%d num_orig_particles=%d num_particles=%d\n",
+                    b->gid, b->num_orig_particles, b->num_particles);
+        }
+
         // tessellate
         quants_t quants;
         timing(times, -1, -1, world);
         timing(times, TOT_TIME, -1, world);
         tess(master, quants, times);
+
+        // debug
+        for (size_t i = 0; i < master.size(); i++)
+        {
+            dblock_t* b = (dblock_t*)master.block(i);
+            fprintf(stderr, "2: gid=%d num_orig_particles=%d num_particles=%d\n",
+                    b->gid, b->num_orig_particles, b->num_particles);
+        }
 
         // debug: save file
         // tess_save(master, outfile, times);
