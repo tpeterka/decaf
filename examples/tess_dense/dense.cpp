@@ -48,10 +48,9 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
 
             // copy values from SerBlock b* to diy block d*
             d->gid                  = b[i].gid;
-            memcpy(d->mins,         b[i].mins,                 3 * sizeof(float));
-            memcpy(d->maxs,         b[i].maxs,                 3 * sizeof(float));
-            memcpy(&d->box,         &b[i].box,                 sizeof(bb_c_t));
-            memcpy(&d->data_bounds, &b[i].data_bounds,         sizeof(bb_c_t));
+            d->bounds               = b[i].bounds;
+            d->box                  = b[i].box;
+            d->data_bounds          = b[i].data_bounds;
             d->num_orig_particles   = b[i].num_orig_particles;
             d->num_particles        = b[i].num_particles;
             d->particles            = b[i].particles;          // shallow copy, pointer only
@@ -86,8 +85,8 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
             // debug
             // fprintf(stderr, "dense: lid=%d gid=%d\n", i, d->gid);
             // fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
-            //         d->mins[0], d->mins[1], d->mins[2],
-            //         d->maxs[0], d->maxs[1], d->maxs[2]);
+            //         d->bounds.min[0], d->bounds.min[1], d->bounds.min[2],
+            //         d->bounds.max[0], d->bounds.max[1], d->bounds.max[2]);
             // fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
             //         d->box.min[0], d->box.min[1], d->box.min[2],
             //         d->box.max[0], d->box.max[1], d->box.max[2]);

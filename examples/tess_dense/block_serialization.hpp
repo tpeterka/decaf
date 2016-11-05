@@ -27,8 +27,9 @@ struct SerBlock {
 
     int           gid;                // global block id
     float         mins[3], maxs[3];   // block extents
-    struct bb_c_t data_bounds;        // global data extents
-    struct bb_c_t box;	              // current box used in swap-reduce() when distributing particles
+    diy::Bounds<float> bounds;        // local block extents
+    diy::Bounds<float> data_bounds;   // global data extents
+    diy::Bounds<float> box;           // box in current round of point redistribution
     int           num_orig_particles; // number of original particles
     int           num_particles;      // current number of particles
     float*        particles;          // all particles, original plus those received from neighbors
@@ -81,10 +82,12 @@ namespace boost
 #if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
 
             ar & BOOST_SERIALIZATION_NVP(b.gid);
-            ar & BOOST_SERIALIZATION_NVP(b.mins);
-            ar & BOOST_SERIALIZATION_NVP(b.maxs);
+
+            // TODO: will boost understand diy:Bounds<float>?
+            ar & BOOST_SERIALIZATION_NVP(b.bounds);
             ar & BOOST_SERIALIZATION_NVP(b.box);
             ar & BOOST_SERIALIZATION_NVP(b.data_bounds);
+
             ar & BOOST_SERIALIZATION_NVP(b.num_orig_particles);
             ar & BOOST_SERIALIZATION_NVP(b.num_particles);
             ar & boost::serialization::make_array<float>(b.particles, 3 * b.num_particles);
@@ -115,10 +118,12 @@ namespace boost
 #if 0 // this version is a shallow copy of the heavy data items, but more verbose programming
 
             ar & BOOST_SERIALIZATION_NVP(b.gid);
-            ar & BOOST_SERIALIZATION_NVP(b.mins);
-            ar & BOOST_SERIALIZATION_NVP(b.maxs);
+
+            // TODO: will boost understand diy:Bounds<float>?
+            ar & BOOST_SERIALIZATION_NVP(b.bounds);
             ar & BOOST_SERIALIZATION_NVP(b.box);
             ar & BOOST_SERIALIZATION_NVP(b.data_bounds);
+
             ar & BOOST_SERIALIZATION_NVP(b.num_orig_particles);
             ar & BOOST_SERIALIZATION_NVP(b.num_particles);
             b.particles = new float[3 * b.num_particles];

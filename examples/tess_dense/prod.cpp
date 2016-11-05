@@ -53,13 +53,13 @@ void prod(Decaf* decaf)
         for (unsigned i = 0; i < npts; ++i)
         {
             // debug: test what happens when a point is duplicated or outside the domain
-            // if (i == 1)                  // duplicate point test
-            // {
-            //     x[i] = x[i - 1];
-            //     y[i] = y[i - 1];
-            //     z[i] = z[i - 1];
-            // }
-            if (i == npts  - 1)              // out of bounds test
+            if (i == 1)                           // duplicate point test
+            {
+                x[i] = x[i - 1];
+                y[i] = y[i - 1];
+                z[i] = z[i - 1];
+            }
+            else if (i == npts  - 1)              // out of bounds test
             {
                 float t = (float) rand() / RAND_MAX;
                 x[i] = npts;
