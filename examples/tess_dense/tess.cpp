@@ -256,7 +256,7 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
                     {
                         if (xyz[3 * i + j] < domain.min[j] || xyz[3 * i + j] > domain.max[j])
                         {
-                            fprintf(stderr, "skipping particle[%d]=%.3f\n", i, xyz[3 * i + j]);
+                            // fprintf(stderr, "skipping particle[%d]=%.3f\n", i, xyz[3 * i + j]);
                             skip = true;
                             break;
                         }
@@ -338,8 +338,17 @@ int main(int argc,
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
+    // timing
+    MPI_Barrier(decaf->con_comm_handle());
+    double t0 = MPI_Wtime();
+
     // start the task
     tessellate(decaf, decaf->con_comm_handle());
+
+    // timing
+    MPI_Barrier(decaf->con_comm_handle());
+    if (decaf->con_comm()->rank() == 0)
+        fprintf(stderr, "*** tess elapsed time = %.3lf s. ***\n", MPI_Wtime() - t0);
 
     // cleanup
     delete decaf;

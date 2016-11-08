@@ -136,7 +136,7 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
 void density_estimate(Decaf* decaf, MPI_Comm comm)
 {
     // set some default arguments
-    int tot_blocks       = 2;                   // global number of blocks
+    int tot_blocks       = 8;                   // global number of blocks
     float mass           = 1.0;                 // particle mass
     alg alg_type         = DENSE_TESS;          // tess or cic
     int num_given_bounds = 0;                   // number of given bounds
@@ -260,8 +260,20 @@ int main(int argc,
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
+    // timing
+    MPI_Barrier(decaf->con_comm_handle());
+    double t0 = MPI_Wtime();
+
     // start the task
     density_estimate(decaf, decaf->con_comm_handle());
+
+    // timing
+    MPI_Barrier(decaf->con_comm_handle());
+    if (decaf->con_comm()->rank() == 0)
+    {
+        fprintf(stderr, "*** dense elapsed time = %.3lf s. ***\n", MPI_Wtime() - t0);
+        fprintf(stderr, "*** workflow stopping time = %.3lf s. ***\n", MPI_Wtime());
+    }
 
     // cleanup
     delete decaf;
