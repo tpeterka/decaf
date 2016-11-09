@@ -67,7 +67,7 @@ unsigned int lineariseCoord(unsigned int x, unsigned int y, unsigned int z,
     return x + y*dx + z*dx*dy;
 }
 
-std::set<int> filterIds;
+std::set<int> filterIds; // Filter selecting the steered group
 
 #define MAX_SIZE_REQUEST 2048
 typedef struct
@@ -359,6 +359,7 @@ void treatment1(Decaf* decaf)
                 {
 
                     // Building the density grid for the PATH finding
+                    // No filtering for this grid as it's not for visualization
                     unsigned int x,y,z;
                     Morton_3D_Decode_10bit(morton[i], x, y, z);
 

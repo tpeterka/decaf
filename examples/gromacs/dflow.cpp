@@ -294,7 +294,7 @@ extern "C"
                pConstructData in_data)   // input data
     {
         string model("SimplePeptideWater");
-        float gridspace = 0.5;
+        float gridspace = 2.0;
         computeMorton(dataflow, in_data, model, gridspace);
 
     }

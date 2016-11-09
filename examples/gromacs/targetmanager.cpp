@@ -264,6 +264,8 @@ std::set<int> filterIds;
 std::vector<int> arrayIds; //HARD CODED for SimpleWater example
 
 std::vector<Target> targets;
+std::vector<Target> pathTargets;
+std::vector<Target> activePath;
 
 float distanceValidTarget = 0.5;
 float maxTotalForces = 3.f;
@@ -302,6 +304,8 @@ void loadTargets()
         arrayIds = {  109, 110, 111, 112, 113, 114,
                       115, 116, 117, 118, 119, 120
                    }; //HARD CODED for SimpleWater example
+
+        nbHomeAtoms = 2741;
     }
     else if(model.compare(std::string("fepa")) == 0)
     {
@@ -352,6 +356,110 @@ void loadTargets()
             filterIds.insert(i);
             arrayIds.push_back(i);
         }
+
+        nbHomeAtoms = 69953;
+    }
+}
+
+void cleanDuplicatesPath(vector<SquareGrid::Location>& path,
+                         vector<SquareGrid::Location>& cleanPath)
+{
+    cleanPath.push_back(path[0]);
+    int x1,x2,y1,y2,z1,z2;
+
+    std::tie (x1, y1, z1) = path[0];
+
+    for(unsigned int i = 0; i < path.size(); i++)
+    {
+        std::tie (x2, y2, z2) = path[i];
+        if(x2!=x1 || y2!=y1 || z2!=z1)
+            cleanPath.push_back(path[i]);
+    }
+}
+
+void generateFullTargetList(unsigned int activeTarget,
+                      unsigned int* indexPos,
+                      unsigned int* indexTarget,
+                      Block<3>* domainBlock,
+                      vector<SquareGrid::Location>& path)
+{
+    pathTargets.clear();
+
+    vector<SquareGrid::Location> cleanPath;
+    cleanDuplicatesPath(path, cleanPath);
+
+    // First part of the original path
+    for(unsigned int i = 0; i < activeTarget; i++)
+    {
+        pathTargets.push_back(targets[i]);
+        unsigned int index[3];
+        domainBlock->getGlobalPositionIndex(targets[i].target, index);
+        fprintf(stderr, "Location %u : [%i %i %i]\n",i,index[0],index[1],index[2]);
+    }
+
+    // Appending the custom path found
+    for(unsigned int i = 0; i < cleanPath.size(); i++)
+    {
+        int x, y, z;
+        std::tie (x, y, z) = cleanPath[i];
+        // We don't add the target which are or on the current position
+        // or the actual target because the user target is more precise
+        if((x!=indexPos[0] || y!=indexPos[1] || z!=indexPos[2]) &&
+           (x!=indexTarget[0] || y!=indexTarget[1] || z!=indexTarget[2]))
+        {
+            // Converting the index into spatial coords
+            Target newTarget;
+            newTarget.type = ABS;
+            unsigned int targetIndex[3];
+            targetIndex[0] = x;
+            targetIndex[1] = y;
+            targetIndex[2] = z;
+            domainBlock->getGlobalPositionValue(targetIndex, newTarget.target);
+
+            pathTargets.push_back(newTarget);
+            fprintf(stderr, "Location %u : [%i %i %i]\n",i+activeTarget,x,y,z);
+        }
+    }
+
+    // Second part of the original path
+    for(unsigned int i = activeTarget; i < targets.size(); i++)
+    {
+        unsigned int index[3];
+        domainBlock->getGlobalPositionIndex(targets[i].target, index);
+        fprintf(stderr, "Location %u : [%i %i %i]\n",pathTargets.size(),index[0],index[1],index[2]);
+        pathTargets.push_back(targets[i]);
+    }
+}
+
+void pathToTarget(vector<SquareGrid::Location>& path,
+                  Block<3>* domainBlock,
+                  unsigned int* indexPos,
+                  unsigned int* indexTarget)
+{
+    vector<SquareGrid::Location> cleanPath;
+    cleanDuplicatesPath(path, cleanPath);
+
+    for(unsigned int i = 0; i < cleanPath.size(); i++)
+    {
+        int x, y, z;
+        std::tie (x, y, z) = cleanPath[i];
+        // We don't add the target which are or on the current position
+        // or the actual target because the user target is more precise
+        if((x!=indexPos[0] || y!=indexPos[1] || z!=indexPos[2]) &&
+           (x!=indexTarget[0] || y!=indexTarget[1] || z!=indexTarget[2]))
+        {
+            // Converting the index into spatial coords
+            Target newTarget;
+            newTarget.type = ABS;
+            unsigned int targetIndex[3];
+            targetIndex[0] = x;
+            targetIndex[1] = y;
+            targetIndex[2] = z;
+            domainBlock->getGlobalPositionValue(targetIndex, newTarget.target);
+
+            activePath.push_back(newTarget);
+            //fprintf(stderr, "Location %u : [%i %i %i]\n",i+activeTarget,x,y,z);
+        }
     }
 }
 
@@ -370,6 +478,7 @@ void target(Decaf* decaf)
     loadTargets();
 
     unsigned int currentTarget = 0;
+    unsigned int currentPathTarget = 0;
     std::vector<float> targetsArray;
 
     while (decaf->get(in_data))
@@ -414,6 +523,7 @@ void target(Decaf* decaf)
         }
 
         // Computing the average position of the steered system
+        // We use count
         avg[0] = avg[0] / (float)count;
         avg[1] = avg[1] / (float)count;
         avg[2] = avg[2] / (float)count;
@@ -423,6 +533,7 @@ void target(Decaf* decaf)
         // Checking the position between the system and the target
         float* targetPos = targets[currentTarget].target;
         float dist = distance(avg, targetPos);
+        bool changedTarget = false;
         if(dist < distanceValidTarget)
         {
             //Changing the active target
@@ -435,6 +546,8 @@ void target(Decaf* decaf)
                 fprintf(stderr, "Steering terminated. Closing the app\n");
                 break;
             }
+
+            changedTarget = true;
         }
         fprintf(stderr, "[%i/%u] Target position: %f %f %f\n", currentTarget, targets.size(), targetPos[0], targetPos[1], targetPos[2]);
         fprintf(stderr, "[%i/%u] Distance to target: %f\n", currentTarget, targets.size(), dist);
@@ -444,20 +557,6 @@ void target(Decaf* decaf)
         if(grid)
         {
             fprintf(stderr, "Grid available, we are using path finding.\n");
-            // Computing the force direction
-            force[0] = targetPos[0] - avg[0];
-            force[1] = targetPos[1] - avg[1];
-            force[2] = targetPos[2] - avg[2];
-
-            normalize(force);
-
-            // Computing the force intensity
-            float maxForcesPerAtom = maxTotalForces / (float)filterIds.size();
-            force[0] = force[0] * maxForcesPerAtom;
-            force[1] = force[1] * maxForcesPerAtom;
-            force[2] = force[2] * maxForcesPerAtom;
-
-            //Block<3> block = grid->getBlock();
 
             // Getting the grid info
             BlockField blockField  = in_data[0]->getFieldData<BlockField>("domain_block");
@@ -488,87 +587,76 @@ void target(Decaf* decaf)
             fprintf(stderr,"Track cell: [%u %u %u]\n", avgIndex[0], avgIndex[1], avgIndex[2]);
             fprintf(stderr,"Target cell: [%u %u %u]\n", targetIndex[0], targetIndex[1], targetIndex[2]);
 
-            // Now we can do the path finding
-            //std::vector<NodePath> path;
-            //bool foundPath = findPath(grid->getArray(),
-            //              avgIndex,
-            //              targetIndex,
-            //              path)
-            boost::multi_array<float, 3> *densityGrid = grid->getArray();
-            GridWithWeights gridForest(
-                        densityGrid->shape()[0],
-                        densityGrid->shape()[1],
-                        densityGrid->shape()[2],
-                        densityGrid);
-            SquareGrid::Location start{avgIndex[0], avgIndex[1], avgIndex[2]};
-            SquareGrid::Location goal{targetIndex[0], targetIndex[1], targetIndex[2]};
-            unordered_map<SquareGrid::Location, SquareGrid::Location> came_from;
-            unordered_map<SquareGrid::Location, double> cost_so_far;
-            a_star_search(gridForest, start, goal, came_from, cost_so_far);
-            vector<SquareGrid::Location> path = reconstruct_path(start, goal, came_from);
-            fprintf(stderr, "Length of the path : %zu\n", path.size());
-            for(unsigned int i = 0; i < path.size(); i++)
+            if(iteration == 0 || changedTarget) //The active has changed, we new a new path
             {
-                int x, y, z;
-                std::tie (x, y, z) = path[i];
-                fprintf(stderr, "Location %u : [%i %i %i]\n",i,x,y,z);
+                activePath.clear();
 
-                // Converting the index into spatial coords
-                float targetCoord[3];
-                unsigned int targetIndex[3];
-                targetIndex[0] = x;
-                targetIndex[1] = y;
-                targetIndex[2] = z;
-                domainBlock->getGlobalPositionValue(targetIndex, targetCoord);
+                boost::multi_array<float, 3> *densityGrid = grid->getArray();
+                GridWithWeights gridForest(
+                            densityGrid->shape()[0],
+                            densityGrid->shape()[1],
+                            densityGrid->shape()[2],
+                            densityGrid);
+                SquareGrid::Location start{avgIndex[0], avgIndex[1], avgIndex[2]};
+                SquareGrid::Location goal{targetIndex[0], targetIndex[1], targetIndex[2]};
+                unordered_map<SquareGrid::Location, SquareGrid::Location> came_from;
+                unordered_map<SquareGrid::Location, double> cost_so_far;
+                a_star_search(gridForest, start, goal, came_from, cost_so_far);
+                vector<SquareGrid::Location> path = reconstruct_path(start, goal, came_from);
 
-                fprintf(stderr, "Intermediate target %u: [%f %f %f]\n", i, targetCoord[0], targetCoord[1], targetCoord[2]);
-            }
-            // We need at last 2 points (origin destination).
-            // If only one point, then the track is already in the target cell
-            bool foundPath = path.size() > 1;
-            foundPath=false;
-            if(foundPath && domainBlock->hasLocalBBox_)
-            {
-                fprintf(stderr, "We found a proper path. Adjusting the course.\n");
-                int x,y,z;
-                float targetCoord[3];
-                unsigned int targetIndex[3];
+                currentPathTarget = 0;
+                pathToTarget(path, domainBlock, avgIndex, targetIndex);
 
-                // Looking for the closest target > maxDistanceTarget
-                for(unsigned int i = 0; i < path.size(); i++)
+                if(activePath.size() > 2)
                 {
-                    std::tie (x, y, z) = path[1];   // Next sub target in line
-
-                    // Converting the index into spatial coords
-                    targetIndex[0] = x;
-                    targetIndex[1] = y;
-                    targetIndex[2] = z;
-                    domainBlock->getGlobalPositionValue(targetIndex, targetCoord);
-
-                    float dist = distance(avg, targetCoord);
-
-                    // No risk to go backward because the path starts at the tracking pos
-                    if(dist > distanceValidTarget)
+                    // Looking for the closest target > maxDistanceTarget
+                    for(unsigned int i = 1; i < activePath.size(); i++)
                     {
-                        fprintf(stderr," The closest non reached target is %u\n",i);
-                        break;
+                        float dist = distance(avg, activePath[i].target);
+
+                        // No risk to go backward because the path starts at the tracking pos
+                        if(dist > distanceValidTarget)
+                        {
+                            currentPathTarget = i;
+                            fprintf(stderr," The closest non reached target is %u\n",i);
+                            break;
+                        }
                     }
                 }
-
-                fprintf(stderr, "Intermediate target to reach: [%f %f %f]\n", targetCoord[0], targetCoord[1], targetCoord[2]);
-                force[0] = targetCoord[0] - avg[0];
-                force[1] = targetCoord[1] - avg[1];
-                force[2] = targetCoord[2] - avg[2];
+                else
+                    fprintf(stderr, "We have computed a path but the process failed.\n");
             }
+
+
+            float* targetPathPos;
+
+            // We have been through all the path
+            // Now aiming for the real target
+            if(currentPathTarget >= activePath.size())
+                targetPathPos = targets[currentTarget].target;
             else
             {
-                fprintf(stderr, "Was unable to find a proper path. Using direct mode instead\n");
-                // Computing the force direction
-                force[0] = targetPos[0] - avg[0];
-                force[1] = targetPos[1] - avg[1];
-                force[2] = targetPos[2] - avg[2];
+                targetPathPos = activePath[currentPathTarget].target;
+                float distPath = distance(avg, targetPathPos);
+                if(distPath < distanceValidTarget)
+                {
+                    //Changing the active target
+                    currentPathTarget++;
+                    fprintf(stderr, "Changing path target\n");
+                    if(currentPathTarget < activePath.size())
+                        targetPathPos = activePath[currentPathTarget].target;
+                    else
+                    {
+                        fprintf(stderr, "End of the path reached. We aim for the real target now\n");
+                        targetPathPos = targets[currentTarget].target;
+                    }
+                }
             }
 
+            fprintf(stderr, "Intermediate target to reach: [%f %f %f]\n", targetPathPos[0], targetPathPos[1], targetPathPos[2]);
+            force[0] = targetPathPos[0] - avg[0];
+            force[1] = targetPathPos[1] - avg[1];
+            force[2] = targetPathPos[2] - avg[2];
         }
         else
         {
@@ -621,16 +709,17 @@ void target(Decaf* decaf)
 
         // We don't know the total number of atoms
         // without the copies from the redistribution
-        if(nbHomeAtoms < 0)
-        {
-            for(unsigned int i = 0; i < nbAtoms; i++)
-                nbHomeAtoms = max(nbHomeAtoms, (int)ids[i]);
-            nbHomeAtoms++; // The IDs start at 0
-        }
+        //if(nbHomeAtoms < 0)
+        //{
+        //    for(unsigned int i = 0; i < nbAtoms; i++)
+        //        nbHomeAtoms = max(nbHomeAtoms, (int)ids[i]);
+        //    nbHomeAtoms++; // The IDs start at 0
+        //}
 
         flowvr::MessageWrite msgPos;
         msgPos.data = pOutPool->alloc(Module->getAllocator(), nbHomeAtoms * 3 * sizeof(float));
         float* atompos = (float*)(msgPos.data.writeAccess());
+        fprintf(stderr, "Sending %i atoms to the visualization\n", nbHomeAtoms);
 
         //Move all the position outside of the cone of vision
         for(unsigned int i = 0; i < nbHomeAtoms * 3; i++)
@@ -654,7 +743,17 @@ void target(Decaf* decaf)
         Module->put(outPositions, msgPos);
 
         //Putting the target positions
-        if(targetsArray.empty())
+        if(!pathTargets.empty())
+        {
+            targetsArray.clear();
+            for(unsigned int i = 0; i < pathTargets.size(); i++)
+            {
+                targetsArray.push_back(pathTargets[i].target[0]);
+                targetsArray.push_back(pathTargets[i].target[1]);
+                targetsArray.push_back(pathTargets[i].target[2]);
+            }
+        }
+        else if(targetsArray.empty())
         {
             for(unsigned int i = 0; i < targets.size(); i++)
             {
