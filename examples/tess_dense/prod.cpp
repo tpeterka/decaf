@@ -36,7 +36,8 @@ void prod(Decaf* decaf)
     // number of points, randomly placed in a box of size [0, npts - 1]^3
     int npts = 20;
 
-    srand(decaf->world->rank());
+    // add 1 to the rank because on some compilers, srand(0) = srand(1)
+    srand(decaf->world->rank() + 1);
 
     // produce data for some number of timesteps
     for (int timestep = 0; timestep < 1; timestep++)
@@ -53,30 +54,30 @@ void prod(Decaf* decaf)
         for (unsigned i = 0; i < npts; ++i)
         {
             // debug: test what happens when a point is duplicated or outside the domain
-            if (i == 1)                           // duplicate point test
-            {
-                x[i] = x[i - 1];
-                y[i] = y[i - 1];
-                z[i] = z[i - 1];
-            }
-            else if (i == npts  - 1)              // out of bounds test
-            {
-                float t = (float) rand() / RAND_MAX;
-                x[i] = npts;
-                t = (float) rand() / RAND_MAX;
-                y[i] = t * (npts - 1);
-                t = (float) rand() / RAND_MAX;
-                z[i] = t * (npts - 1);
-            }
-            else
-            {
+            // if (i == 1)                           // duplicate point test
+            // {
+            //     x[i] = x[i - 1];
+            //     y[i] = y[i - 1];
+            //     z[i] = z[i - 1];
+            // }
+            // else if (i == npts  - 1)              // out of bounds test
+            // {
+            //     float t = (float) rand() / RAND_MAX;
+            //     x[i] = npts;
+            //     t = (float) rand() / RAND_MAX;
+            //     y[i] = t * (npts - 1);
+            //     t = (float) rand() / RAND_MAX;
+            //     z[i] = t * (npts - 1);
+            // }
+            // else
+            // {
                 float t = (float) rand() / RAND_MAX;
                 x[i] = t * (npts - 1);
                 t = (float) rand() / RAND_MAX;
                 y[i] = t * (npts - 1);
                 t = (float) rand() / RAND_MAX;
                 z[i] = t * (npts - 1);
-            }
+            // }
         }
 
         // mins and sizes, not mins and maxs
@@ -136,7 +137,7 @@ int main(int argc,
     // define the workflow
     Workflow workflow;
     // make_wflow(workflow);
-    Workflow::make_wflow_from_json(workflow, "tess_dense.json");
+    Workflow::make_wflow_from_json(workflow, "/homes/tpeterka/software/decaf/install/examples/tess_dense/tess_dense.json");
 
     MPI_Init(NULL, NULL);
 

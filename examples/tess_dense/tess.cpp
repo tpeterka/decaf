@@ -132,6 +132,11 @@ void deduplicate(DBlock*                           b,
                  const diy::Master::ProxyWithLink& cp,
                  DuplicateCountMap&                count)
 {
+    // debug
+    // for (int i = 0; i < b->num_particles; i++)
+    //     fprintf(stderr, "%.3f %.3f %.3f\n", 
+    //             b->particles[3 * i], b->particles[3 * i + 1], b->particles[3 * i + 2]);
+
     if (!b->num_particles)
         return;
 
@@ -193,12 +198,16 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
             return;
         }
 
+        // 1 block per process in this example
+        int size;
+        MPI_Comm_size(comm, &size);
+        int tot_blocks    = size;                      // total number of blocks in the domain
+
         float* xyz        = xyzpos.getArray();      // points
         Block<3>* blk     = block.getBlock();       // domain and block info
         float* global_box = blk->getGlobalBBox();   // min and size (not min and max)
         float* local_box  = blk->getLocalBBox();    // min and size (not min and size)
         int nbParticle    = xyzpos->getNbItems();   // number of particles in this process
-        int tot_blocks    = 8;                      // total number of blocks in the domain
         int mem_blocks    = -1;                     // max blocks in memory
         int wrap          = 0;                      // wraparound neighbors flag
         int num_threads   = 1;                      // threads diy can use
@@ -236,6 +245,11 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         if (wrap)
             wraps.assign(3, true);
         diy::decompose(3, world.rank(), domain, assigner, create, share_face, wraps, ghosts);
+
+        // debug
+        // for (int i = 0; i < nbParticle; i++)
+        //     fprintf(stderr, "%.3f %.3f %.3f\n",
+        //            xyz[3 * i], xyz[3 * i + 1], xyz[3 * i + 2]);
 
         // put all the points into the first local block
         // tess will sort them among the blocks anyway
@@ -331,7 +345,7 @@ int main(int argc,
     // define the workflow
     Workflow workflow;
     // make_wflow(workflow);
-    Workflow::make_wflow_from_json(workflow, "tess_dense.json");
+    Workflow::make_wflow_from_json(workflow, "/homes/tpeterka/software/decaf/install/examples/tess_dense/tess_dense.json");
 
     MPI_Init(NULL, NULL);
 
