@@ -84,7 +84,7 @@ public:
         return bCountable_;
     }
 
-    virtual bool setCountable(bool bCountable)
+    virtual void setCountable(bool bCountable)
     {
         bCountable_ = bCountable;
     }

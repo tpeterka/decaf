@@ -137,15 +137,26 @@ int main(int argc,
     // define the workflow
     Workflow workflow;
     // make_wflow(workflow);
-    Workflow::make_wflow_from_json(workflow, "/homes/tpeterka/software/decaf/install/examples/tess_dense/tess_dense.json");
+    Workflow::make_wflow_from_json(workflow, "tess_dense.json");
 
     MPI_Init(NULL, NULL);
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
+    // timing
+    MPI_Barrier(decaf->prod_comm_handle());
+    double t0 = MPI_Wtime();
+    if (decaf->prod_comm()->rank() == 0)
+        fprintf(stderr, "*** workflow starting time = %.3lf s. ***\n", t0);
+
     // start the task
     prod(decaf);
+
+    // timing
+    MPI_Barrier(decaf->prod_comm_handle());
+    if (decaf->prod_comm()->rank() == 0)
+        fprintf(stderr, "*** prod. elapsed time = %.3lf s. ***\n", MPI_Wtime() - t0);
 
     // cleanup
     delete decaf;

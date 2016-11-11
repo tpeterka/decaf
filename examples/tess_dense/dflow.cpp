@@ -110,7 +110,7 @@ int main(int argc,
     // define the workflow
     Workflow workflow;
     // make_wflow(workflow);
-    Workflow::make_wflow_from_json(workflow, "/homes/tpeterka/software/decaf/install/examples/tess_dense/tess_dense.json");
+    Workflow::make_wflow_from_json(workflow, "tess_dense.json");
 
     MPI_Init(NULL, NULL);
 
