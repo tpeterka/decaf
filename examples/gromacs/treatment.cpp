@@ -67,6 +67,12 @@ unsigned int lineariseCoord(unsigned int x, unsigned int y, unsigned int z,
     return x + y*dx + z*dx*dy;
 }
 
+unsigned int lineariseCoordCol(unsigned int x, unsigned int y, unsigned int z,
+                            unsigned int dx, unsigned int dy, unsigned int dz)
+{
+    return z + y+dz + x*dz*dy;
+}
+
 std::set<int> filterIds; // Filter selecting the steered group
 
 #define MAX_SIZE_REQUEST 2048
@@ -287,6 +293,122 @@ void updateGrid(int* grid, int x, int y, int z, unsigned int DX, unsigned int DY
     }
 }
 
+void writeGrid(std::string filename, int* grid, unsigned int Dx, unsigned int Dy, unsigned int Dz)
+{
+    fprintf(stderr,"Writing to file the grid : %u %u %u\n", Dx,Dy,Dz);
+
+    std::ofstream file;
+    file.open(filename);
+    file<<"# vtk DataFile Version 2.0"<<std::endl;
+    file <<"Decaf grid"<<std::endl;
+    file<<"ASCII"<<std::endl;
+    file<<"DATASET STRUCTURED_POINTS"<<std::endl;
+    file<<"DIMENSIONS "<<Dx<<" "<<Dy<<" "<<Dz<<std::endl;
+    file<<"ASPECT_RATIO 1 1 1"<<std::endl;
+    file<<"ORIGIN 0 0 0"<<std::endl;
+    file<<"POINT_DATA "<<Dx*Dy*Dz<<std::endl;
+    file<<"SCALARS volume_scalars char 1"<<std::endl;
+    file<<"LOOKUP_TABLE default"<<std::endl;
+    for(unsigned int i = 0; i < Dz; i++)
+    {
+       for(unsigned int j = 0; j < Dy; j++)
+       {
+           for(unsigned int k = 0; k < Dx; k++)
+           {
+               file<<grid[lineariseCoord(k,j,i,Dx,Dy,Dy)]<<" ";
+               //file<<i+j+k<<" ";
+           }
+       }
+       file<<std::endl;
+    }
+    //for(unsigned int i = 0; i < Dx*Dy*Dz; i++)
+    //    file<<grid[i];
+
+    file.close();
+}
+
+void writeGrid3(std::string filename, int* grid, unsigned int Dx, unsigned int Dy, unsigned int Dz)
+{
+    std::ofstream file;
+    file.open(filename);
+    file<<"# vtk DataFile Version 2.0"<<std::endl;
+    file <<"Decaf grid"<<std::endl;
+    file<<"ASCII"<<std::endl;
+    file<<"DATASET RECTILINEAR_GRID"<<std::endl;
+    file<<"DIMENSIONS "<<Dx<<" "<<Dy<<" "<<Dz<<std::endl;
+    file<<"X_COORDINATES "<<Dx<<" float"<<std::endl;
+    for(unsigned int i = 0; i < Dx; i++)
+        file<<(float)i<<" ";
+    file<<std::endl;
+    file<<"Y_COORDINATES "<<Dx<<" float"<<std::endl;
+    for(unsigned int i = 0; i < Dy; i++)
+        file<<(float)i<<" ";
+    file<<std::endl;
+    file<<"Z_COORDINATES "<<Dx<<" float"<<std::endl;
+    for(unsigned int i = 0; i < Dz; i++)
+        file<<(float)i<<" ";
+    file<<std::endl;
+    file<<"ORIGIN 0 0 0"<<std::endl;
+    file<<"POINT_DATA "<<Dx*Dy*Dz<<std::endl;
+    file<<"SCALARS volume_scalars char 1"<<std::endl;
+    file<<"LOOKUP_TABLE default"<<std::endl;
+    for(unsigned int i = 0; i < Dz; i++)
+    {
+       for(unsigned int j = 0; j < Dy; j++)
+       {
+           for(unsigned int k = 0; k < Dx; k++)
+           {
+               file<<grid[lineariseCoord(k,j,i,Dz,Dy,Dz)]<<" ";
+               //file<<i+j+k<<" ";
+           }
+       }
+       file<<std::endl;
+    }
+    //for(unsigned int i = 0; i < Dx*Dy*Dz; i++)
+    //    file<<grid[i];
+
+    file.close();
+}
+
+void writeGrid2(std::string filename, int* grid, unsigned int Dx, unsigned int Dy, unsigned int Dz)
+{
+       std::ofstream file;
+       file.open(filename);
+       file <<"vtk output"<<std::endl;
+       file<<"ASCII"<<std::endl;
+       file<<"DATASET RECTILINEAR_GRID"<<std::endl;
+       file<<"DIMENSIONS "<<Dx<<" "<<Dy<<" "<<Dz<<std::endl;
+       file<<"X_COORDINATES "<<Dx<<" float"<<std::endl;
+       for(unsigned int i = 0; i < Dx; i++)
+           file<<(float)i<<" ";
+       file<<std::endl;
+       file<<"Y_COORDINATES "<<Dx<<" float"<<std::endl;
+       for(unsigned int i = 0; i < Dy; i++)
+           file<<(float)i<<" ";
+       file<<std::endl;
+       file<<"Z_COORDINATES "<<Dx<<" float"<<std::endl;
+       for(unsigned int i = 0; i < Dz; i++)
+           file<<(float)i<<" ";
+       file<<std::endl;
+       file<<"CELL_DATA 1"<<std::endl;
+       file<<"POINT_DATA "<<Dx*Dy*Dz<<std::endl;
+       file<<"FIELD FieldData 1"<<std::endl;
+       file<<"nodal 1 "<<Dx*Dy*Dz<<" int"<<std::endl;
+       for(unsigned int i = 0; i < Dx; i++)
+       {
+           for(unsigned int j = 0; j < Dy; j++)
+           {
+               for(unsigned int k = 0; k < Dz-1; k++)
+               {
+                   file<<grid[lineariseCoord(i,j,k,Dx,Dy,Dz)]<<" ";
+               }
+               file<<grid[lineariseCoord(i,j,Dz-1,Dx,Dy,Dz)];
+               file<<std::endl;
+           }
+       }
+       file.close();
+}
+
 
 // consumer
 void treatment1(Decaf* decaf)
@@ -301,6 +423,8 @@ void treatment1(Decaf* decaf)
     int iteration = 0;
 
     loadTargets();
+
+    bool hasWrite = false;
 
     while (decaf->get(in_data))
     {
@@ -370,8 +494,14 @@ void treatment1(Decaf* decaf)
                     (*boostGrid)[localx][localy][localz] += 1.0f;
 
                     //Building the density grid for visualization
-                    if(filterIds.count(ids[i]) == 0)
+                    //if(filterIds.count(ids[i]) == 0)
+                    //    continue;
+                    //HARD CODED FOR FEPA
+                    //17432 for the channel
+                    //69901 for the iron complex
+                    if(ids[i] > 17432 && ids[i] < 69901)
                         continue;
+
 
                     // Checking if the particle should be here
                     if(!block->isInLocalBlock(x,y,z))
@@ -424,6 +554,11 @@ void treatment1(Decaf* decaf)
                         updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5], 10);
                     }
                 }
+                if(!hasWrite)
+                {
+                    writeGrid("grid.vtk", grid, lExtends[3],lExtends[4],lExtends[5]);
+                    hasWrite = true;
+                }
 
             }
 
@@ -464,10 +599,12 @@ void treatment1(Decaf* decaf)
                     rmesh_y[i] = (double)(lExtends[1]) + (double)(i);
                 for(unsigned int i = 0; i < lExtends[5]; i++)
                     rmesh_z[i] = (double)(lExtends[2]) + (double)(i);
+                fprintf(stderr,"Giving to Damaris the grid : %u %u %u\n", lExtends[3],lExtends[4],lExtends[5]);
 
                 damaris_write("coord/x", rmesh_x);
                 damaris_write("coord/y", rmesh_y);
                 damaris_write("coord/z", rmesh_z);
+
             }
 
             // Normal data transmition to Damaris

@@ -135,6 +135,20 @@ struct Workflow                              // an entire workflow
   static void
   make_wflow_from_json( Workflow& workflow, const string& json_path )
   {
+
+    std::string json_filename = json_path;
+    if(json_filename.length() == 0)
+    {
+        fprintf(stderr, "No name filename provided for the JSON file. Falling back on the DECAF_JSON environment variable\n");
+        const char* env_path = std::getenv("DECAF_JSON");
+        if(env_path == NULL)
+        {
+            fprintf(stderr, "ERROR: The environment variable DECAF_JSON is not defined. Unable to find the workflow graph definition.\n");
+            exit(1);
+        }
+        json_filename = std::string(env_path);
+    }
+
     try {
 
       bpt::ptree root;
@@ -150,7 +164,7 @@ struct Workflow                              // an entire workflow
        * for more information.
        */
       
-      bpt::read_json( json_path, root );
+      bpt::read_json( json_filename, root );
 
       /* 
        * iterate over the list of nodes, creating and populating WorkflowNodes as we go

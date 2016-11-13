@@ -223,7 +223,8 @@ int main(int argc,
     link.dflow_con_redist = "count";
     workflow.links.push_back(link);*/
 
-    Workflow::make_wflow_from_json(workflow, "linear3.json");
+    //Workflow::make_wflow_from_json(workflow, "linear3.json");
+    Workflow::make_wflow_from_json(workflow, "");
 
     // run decaf
     run(workflow);

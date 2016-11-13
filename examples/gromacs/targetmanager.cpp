@@ -377,6 +377,39 @@ void cleanDuplicatesPath(vector<SquareGrid::Location>& path,
     }
 }
 
+void writeGrid(std::string filename, boost::multi_array<float, 3>* grid, unsigned int Dx, unsigned int Dy, unsigned int Dz)
+{
+    fprintf(stderr,"Writing to file the grid : %u %u %u\n", Dx,Dy,Dz);
+
+    std::ofstream file;
+    file.open(filename);
+    file<<"# vtk DataFile Version 2.0"<<std::endl;
+    file <<"Decaf grid"<<std::endl;
+    file<<"ASCII"<<std::endl;
+    file<<"DATASET STRUCTURED_POINTS"<<std::endl;
+    file<<"DIMENSIONS "<<Dx<<" "<<Dy<<" "<<Dz<<std::endl;
+    file<<"ASPECT_RATIO 1 1 1"<<std::endl;
+    file<<"ORIGIN 0 0 0"<<std::endl;
+    file<<"POINT_DATA "<<Dx*Dy*Dz<<std::endl;
+    file<<"SCALARS volume_scalars char 1"<<std::endl;
+    file<<"LOOKUP_TABLE default"<<std::endl;
+    for(unsigned int i = 0; i < Dz; i++)
+    {
+       for(unsigned int j = 0; j < Dy; j++)
+       {
+           for(unsigned int k = 0; k < Dx; k++)
+           {
+               file<<(*grid)[k][j][i]<<" ";
+           }
+       }
+       file<<std::endl;
+    }
+    //for(unsigned int i = 0; i < Dx*Dy*Dz; i++)
+    //    file<<grid[i];
+
+    file.close();
+}
+
 void generateFullTargetList(unsigned int activeTarget,
                       unsigned int* indexPos,
                       unsigned int* indexTarget,
@@ -480,6 +513,8 @@ void target(Decaf* decaf)
     unsigned int currentTarget = 0;
     unsigned int currentPathTarget = 0;
     std::vector<float> targetsArray;
+
+    bool hasWrite = false;
 
     while (decaf->get(in_data))
     {
@@ -597,6 +632,11 @@ void target(Decaf* decaf)
                             densityGrid->shape()[1],
                             densityGrid->shape()[2],
                             densityGrid);
+                if(!hasWrite)
+                {
+                    writeGrid("gridTarget.vtk", densityGrid, densityGrid->shape()[0],densityGrid->shape()[1],densityGrid->shape()[2]);
+                    hasWrite = true;
+                }
                 SquareGrid::Location start{avgIndex[0], avgIndex[1], avgIndex[2]};
                 SquareGrid::Location goal{targetIndex[0], targetIndex[1], targetIndex[2]};
                 unordered_map<SquareGrid::Location, SquareGrid::Location> came_from;
