@@ -46,8 +46,4 @@ if(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
     WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-  if                        (python_examples)
-    add_subdirectory        (python)
-  endif                     (python_examples)
-
 endif(LAMMPS_INCLUDE_DIR AND LAMMPS_LIBRARY AND FFTW_INCLUDE_DIR AND FFTW_LIBRARY)

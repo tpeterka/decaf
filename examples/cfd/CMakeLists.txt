@@ -1,7 +1,3 @@
-if                          (python_examples)
-  add_subdirectory          (python)
-endif                       (python_examples)
-
 message("Building cfd example")
 add_executable              (cfd     cfd.cpp cfd_kernel.cpp)
 add_library                 (mod_cfd MODULE cfd.cpp cfd_kernel.cpp)
