@@ -89,6 +89,7 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
+        fprintf(stderr, "Forwarding data in dflow\n");
         dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"
@@ -122,7 +123,7 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    char * prefix = getenv("DECAF_PREFIX");
+    /*char * prefix = getenv("DECAF_PREFIX");
     if(prefix == NULL)
     {
         fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. "
@@ -162,9 +163,9 @@ int main(int argc,
     link.path = path;
     link.prod_dflow_redist = "count";
     link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
+    workflow.links.push_back(link);*/
 
-    // Workflow::make_wflow_from_json(workflow, "linear2.json");
+    Workflow::make_wflow_from_json(workflow, "linear2.json");
 
     // run decaf
     run(workflow);

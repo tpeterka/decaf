@@ -94,6 +94,7 @@ namespace decaf
         Comm* con_comm_;                 // consumer communicator
         RedistComp* redist_prod_dflow_;  // Redistribution component between producer and dataflow
         RedistComp* redist_dflow_con_;   // Redestribution component between a dataflow and consumer
+        RedistComp* redist_prod_con_;    // Redistribution component between producer and consumer
         DecafSizes sizes_;               // sizes of communicators, time steps
         int err_;                        // last error
         CommTypeDecaf type_;             // whether this instance is producer, consumer,
@@ -101,6 +102,7 @@ namespace decaf
         int wflow_prod_id_;              // index of corresponding producer in the workflow
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
+        bool no_link;                    // True if the Dataflow doesn't have a Link
         };
 
 } // namespace
@@ -120,7 +122,9 @@ Dataflow::Dataflow(CommHandle world_comm,
     wflow_con_id_(con),
     redist_prod_dflow_(NULL),
     redist_dflow_con_(NULL),
-    type_(DECAF_OTHER_COMM)
+    redist_prod_con_(NULL),
+    type_(DECAF_OTHER_COMM),
+    no_link(false)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -178,8 +182,9 @@ Dataflow::Dataflow(CommHandle world_comm,
     }
 
     // producer and dataflow
-    if ((world_rank >= sizes_.prod_start && world_rank < sizes_.prod_start + sizes_.prod_size) ||
-        (world_rank >= sizes_.dflow_start && world_rank < sizes_.dflow_start + sizes_.dflow_size))
+    if (sizes_.dflow_size > 0 && (
+        (world_rank >= sizes_.prod_start && world_rank < sizes_.prod_start + sizes_.prod_size) ||
+        (world_rank >= sizes_.dflow_start && world_rank < sizes_.dflow_start + sizes_.dflow_size)))
     {
         switch(prod_dflow_redist)
         {
@@ -247,13 +252,14 @@ Dataflow::Dataflow(CommHandle world_comm,
     }
     else
     {
-        // fprintf(stderr, "No redistribution between producer and dflow needed.\n");
+        //fprintf(stderr, "No redistribution between producer and dflow needed.\n");
         redist_prod_dflow_ = NULL;
     }
 
     // consumer and dataflow
-    if ((world_rank >= sizes_.dflow_start && world_rank < sizes_.dflow_start + sizes_.dflow_size) ||
-        (world_rank >= sizes_.con_start && world_rank < sizes_.con_start + sizes_.con_size))
+    if (sizes_.dflow_size > 0 && (
+        (world_rank >= sizes_.dflow_start && world_rank < sizes_.dflow_start + sizes_.dflow_size) ||
+        (world_rank >= sizes_.con_start && world_rank < sizes_.con_start + sizes_.con_size)))
     {
         switch(dflow_cons_redist)
         {
@@ -322,9 +328,84 @@ Dataflow::Dataflow(CommHandle world_comm,
     }
     else
     {
-        // fprintf(stderr, "No redistribution between dflow and cons needed.\n");
+        //fprintf(stderr, "No redistribution between dflow and cons needed.\n");
         redist_dflow_con_ = NULL;
     }
+
+    // producer and consumer
+    if (sizes_.dflow_size == 0 && (
+        (world_rank >= sizes_.prod_start && world_rank < sizes_.prod_start + sizes_.prod_size) ||
+        (world_rank >= sizes_.con_start && world_rank < sizes_.con_start + sizes_.con_size)))
+    {
+        no_link = true;
+
+        switch(prod_dflow_redist)
+        {
+        case DECAF_ROUND_ROBIN_DECOMP:
+        {
+            // fprintf(stderr, "Using Round for dflow -> cons\n");
+            redist_prod_con_ = new RedistRoundMPI(sizes_.prod_start,
+                                                   sizes_.prod_size,
+                                                   sizes_.con_start,
+                                                   sizes_.con_size,
+                                                   world_comm);
+            break;
+        }
+        case DECAF_CONTIG_DECOMP:
+        {
+            // fprintf(stderr, "Using Count for dflow -> cons\n");
+            redist_prod_con_ = new RedistCountMPI(sizes_.prod_start,
+                                                  sizes_.prod_size,
+                                                  sizes_.con_start,
+                                                  sizes_.con_size,
+                                                  world_comm);
+            break;
+        }
+        case DECAF_ZCURVE_DECOMP:
+        {
+            // fprintf(stderr, "Using ZCurve for dflow -> cons\n");
+            redist_prod_con_ = new RedistZCurveMPI(sizes_.prod_start,
+                                                   sizes_.prod_size,
+                                                   sizes_.con_start,
+                                                   sizes_.con_size,
+                                                   world_comm);
+            break;
+        }
+        case DECAF_BLOCK_DECOMP:
+        {
+            redist_prod_con_ = new RedistBlockMPI(sizes_.prod_start,
+                                                  sizes_.prod_size,
+                                                  sizes_.con_start,
+                                                  sizes_.con_size,
+                                                  world_comm);
+            break;
+        }
+        case DECAF_PROC_DECOMP:
+        {
+
+            redist_prod_con_ = new RedistProcMPI(sizes_.prod_start,
+                                                 sizes_.prod_size,
+                                                 sizes_.con_start,
+                                                 sizes_.con_size,
+                                                 world_comm);
+            break;
+        }
+        default:
+        {
+            fprintf(stderr, "ERROR: policy %d unrecognized to select a redistribution component. "
+                    "Using RedistCountMPI instead\n", prod_dflow_redist);
+            redist_dflow_con_ = new RedistCountMPI(sizes_.prod_start,
+                                                   sizes_.prod_size,
+                                                   sizes_.con_start,
+                                                   sizes_.con_size,
+                                                   world_comm);
+            break;
+        }
+
+        }
+    }
+    else
+        redist_prod_con_ = NULL;
 
     err_ = DECAF_OK;
 }
@@ -379,18 +460,36 @@ Dataflow::put(pConstructData data, TaskType role)
 
     if (role == DECAF_NODE)
     {
-        // encode destination link id into message
-        shared_ptr<SimpleConstructData<int> > value2  =
-            make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-        data->appendData(string("dest_id"), value2,
-                         DECAF_NOFLAG, DECAF_SYSTEM,
-                         DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+        if(no_link)
+        {
+            // encode destination link id into message
+            shared_ptr<SimpleConstructData<int> > value2  =
+                make_shared<SimpleConstructData<int> >(wflow_con_id_);
+            data->appendData(string("dest_id"), value2,
+                             DECAF_NOFLAG, DECAF_SYSTEM,
+                             DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
-        // send the message
-        if(redist_prod_dflow_ == NULL)
-            fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-        redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
-        redist_prod_dflow_->flush();
+            // send the message
+            if(redist_prod_con_ == NULL)
+                fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
+            redist_prod_con_->process(data, DECAF_REDIST_SOURCE);
+            redist_prod_con_->flush();
+        }
+        else
+        {
+            // encode destination link id into message
+            shared_ptr<SimpleConstructData<int> > value2  =
+                make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
+            data->appendData(string("dest_id"), value2,
+                             DECAF_NOFLAG, DECAF_SYSTEM,
+                             DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+
+            // send the message
+            if(redist_prod_dflow_ == NULL)
+                fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
+            redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
+            redist_prod_dflow_->flush();
+        }
     }
     else if (role == DECAF_LINK)
     {
@@ -426,10 +525,20 @@ Dataflow::get(pConstructData data, TaskType role)
     }
     else if (role == DECAF_NODE)
     {
-        if (redist_dflow_con_ == NULL)
-            fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
-        redist_dflow_con_->process(data, DECAF_REDIST_DEST);
-        redist_dflow_con_->flush();
+        if(no_link)
+        {
+            if (redist_prod_con_ == NULL)
+                fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+            redist_prod_con_->process(data, DECAF_REDIST_DEST);
+            redist_prod_con_->flush();
+        }
+        else
+        {
+            if (redist_dflow_con_ == NULL)
+                fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+            redist_dflow_con_->process(data, DECAF_REDIST_DEST);
+            redist_dflow_con_->flush();
+        }
     }
 }
 
