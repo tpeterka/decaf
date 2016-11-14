@@ -61,8 +61,8 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    make_wflow(workflow);
-    // Workflow::make_wflow_from_json(workflow, "linear2.json");
+    //make_wflow(workflow);
+    Workflow::make_wflow_from_json(workflow, "linear2.json");
 
     MPI_Init(NULL, NULL);
 

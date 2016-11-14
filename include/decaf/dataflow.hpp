@@ -551,6 +551,8 @@ Dataflow::shutdown()
         redist_prod_dflow_->shutdown();
     if (redist_dflow_con_)
         redist_dflow_con_->shutdown();
+    if(redist_prod_con_)
+        redist_prod_con_->shutdown();
 }
 
 
@@ -560,7 +562,9 @@ Dataflow::clearBuffers(TaskType role)
 {
     if (role == DECAF_LINK)
         redist_dflow_con_->clearBuffers();
-    else if (role == DECAF_NODE)
+    else if (role == DECAF_NODE && no_link)
+        redist_prod_con_->clearBuffers();
+    else if (role == DECAF_NODE && !no_link)
         redist_prod_dflow_->clearBuffers();
 }
 
