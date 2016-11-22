@@ -33,6 +33,7 @@
 #include <fstream>
 #include <set>
 #include <climits>
+#include <sys/time.h>
 
 // For path finding
 #include <iostream>
@@ -516,8 +517,31 @@ void target(Decaf* decaf)
 
     bool hasWrite = false;
 
+    std::ofstream stats;
+    std::string filename = "targetmanager_";
+    filename.append(std::to_string(rank));
+    filename.append(".csv");
+
+    std::cerr<<"Opening filename :"<<filename<<std::endl;
+    stats.open(filename);
+    stats<<"It;elapsedIt;elapsedPathFinding;RatioPathFinding;RatioPut;RatioFvr;RatioFilter"<<std::endl;
+
+    struct timeval beginIt;
+    struct timeval endIt;
+    struct timeval beginPathFinding;
+    struct timeval endPathFinding;
+    struct timeval beginPut;
+    struct timeval endPut;
+    struct timeval beginFvr;
+    struct timeval endFvr;
+    struct timeval beginFilter;
+    struct timeval endFilter;
+
+
     while (decaf->get(in_data))
     {
+        gettimeofday(&beginIt, NULL);
+
         ArrayFieldf posField = in_data[0]->getFieldData<ArrayFieldf>("pos");
         if(!posField)
         {
@@ -591,6 +615,7 @@ void target(Decaf* decaf)
 
         if(grid)
         {
+            gettimeofday(&beginPathFinding, NULL);
             fprintf(stderr, "Grid available, we are using path finding.\n");
 
             // Getting the grid info
@@ -697,6 +722,7 @@ void target(Decaf* decaf)
             force[0] = targetPathPos[0] - avg[0];
             force[1] = targetPathPos[1] - avg[1];
             force[2] = targetPathPos[2] - avg[2];
+            gettimeofday(&endPathFinding, NULL);
         }
         else
         {
@@ -730,7 +756,9 @@ void target(Decaf* decaf)
                                   DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
         }
 
+        gettimeofday(&beginPut, NULL);
         decaf->put(container);
+        gettimeofday(&endPut, NULL);
 
         //Clearing the first time as the data model will change at the next iteration
         if(iteration == 0)
@@ -739,6 +767,7 @@ void target(Decaf* decaf)
 #ifdef FLOWVR
         // FlowVR forwarding
         // We recreate the order of data
+        gettimeofday(&beginFvr, NULL);
         if(!Module->wait())
         {
             fprintf(stderr, "Closed by FlowVR\n");
@@ -756,11 +785,13 @@ void target(Decaf* decaf)
         //    nbHomeAtoms++; // The IDs start at 0
         //}
 
+
         flowvr::MessageWrite msgPos;
         msgPos.data = pOutPool->alloc(Module->getAllocator(), nbHomeAtoms * 3 * sizeof(float));
         float* atompos = (float*)(msgPos.data.writeAccess());
         fprintf(stderr, "Sending %i atoms to the visualization\n", nbHomeAtoms);
 
+        gettimeofday(&beginFilter, NULL);
         //Move all the position outside of the cone of vision
         for(unsigned int i = 0; i < nbHomeAtoms * 3; i++)
             atompos[i] = 100000.0f;
@@ -778,6 +809,7 @@ void target(Decaf* decaf)
                 atompos[3*ids[i]+2] = pos[3*i+2];
             }
         }
+        gettimeofday(&endFilter, NULL);
         msgPos.stamps.write(StampType, 0);
 
         Module->put(outPositions, msgPos);
@@ -815,7 +847,39 @@ void target(Decaf* decaf)
         memcpy(msgPosSelection.data.writeAccess(), avg, msgPosSelection.data.getSize());
 
         Module->put(outSelection, msgPosSelection);
+        gettimeofday(&endFvr, NULL);
 #endif
+        gettimeofday(&endIt, NULL);
+
+        double elapsedTimeIt = (endIt.tv_sec - beginIt.tv_sec) * 1000.0;      // sec to ms
+        elapsedTimeIt += (endIt.tv_usec - beginIt.tv_usec) / 1000.0;   // us to ms
+        double elapsedTimePut = 0.0;
+        double elapsedTimeFilter = 0.0;
+#ifdef FLOWVR
+        elapsedTimePut = (endPut.tv_sec - beginPut.tv_sec) * 1000.0;      // sec to ms
+        elapsedTimePut += (endPut.tv_usec - beginPut.tv_usec) / 1000.0;   // us to ms
+        elapsedTimeFilter = (endFilter.tv_sec - beginFilter.tv_sec) * 1000.0;      // sec to ms
+        elapsedTimeFilter += (endFilter.tv_usec - beginFilter.tv_usec) / 1000.0;   // us to ms
+#endif
+        double elapsedTimePathFinding = 0.0;
+        if(grid)
+        {
+            elapsedTimePathFinding = (endPathFinding.tv_sec - beginPathFinding.tv_sec) * 1000.0;      // sec to ms
+            elapsedTimePathFinding += (endPathFinding.tv_usec - beginPathFinding.tv_usec) / 1000.0;   // us to ms
+        }
+        double elapsedTimeFvr = (endFvr.tv_sec - beginFvr.tv_sec) * 1000.0;      // sec to ms
+        elapsedTimeFvr += (endFvr.tv_usec - beginFvr.tv_usec) / 1000.0;   // us to ms
+
+        stats<<iteration;
+        stats<<";"<<elapsedTimeIt;
+        stats<<";"<<elapsedTimePathFinding;
+        stats<<";"<<(elapsedTimePathFinding/elapsedTimeIt)*100.0;
+        stats<<";"<<(elapsedTimePut/elapsedTimeIt)*100.0;
+        stats<<";"<<(elapsedTimeFvr/elapsedTimeIt)*100.0;
+        stats<<";"<<(elapsedTimeFilter/elapsedTimeIt)*100.0;
+        stats<<std::endl;
+        stats.flush();
+
         iteration++;
     }
 

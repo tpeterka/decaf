@@ -37,7 +37,8 @@
 
 #include <decaf/workflow.hpp>
 
-//#include "wflow_gromacs.hpp"                         // defines the workflow for this example
+#include <sys/time.h>
+
 
 using namespace decaf;
 using namespace std;
@@ -426,10 +427,24 @@ void treatment1(Decaf* decaf)
 
     bool hasWrite = false;
 
+    std::ofstream stats;
+    std::string filename = "treatment_";
+    filename.append(std::to_string(rank));
+    filename.append(".csv");
+
+    std::cerr<<"Opening filename :"<<filename<<std::endl;
+    stats.open(filename);
+    stats<<"It;elapsedIt;elapsedVisit;RatioVisit"<<std::endl;
+
+    struct timeval beginIt;
+    struct timeval endIt;
+    struct timeval beginVisit;
+    struct timeval endVisit;
+
     while (decaf->get(in_data))
     {
 
-        //in_data[0]->printKeys();
+        gettimeofday(&beginIt, NULL);
 
         // get the atom positions
         if(iteration == 0 && !in_data[0]->hasData("domain_block"))
@@ -608,9 +623,10 @@ void treatment1(Decaf* decaf)
             }
 
             // Normal data transmition to Damaris
-
+            gettimeofday(&beginVisit, NULL);
             damaris_write("space", grid );
             damaris_end_iteration();
+            gettimeofday(&endVisit, NULL);
         }
 
 
@@ -619,6 +635,20 @@ void treatment1(Decaf* decaf)
 
         if(boostGrid) delete boostGrid;
 
+        gettimeofday(&endIt, NULL);
+
+        double elapsedTimeIt = (endIt.tv_sec - beginIt.tv_sec) * 1000.0;      // sec to ms
+        elapsedTimeIt += (endIt.tv_usec - beginIt.tv_usec) / 1000.0;   // us to ms
+        double elapsedTimeVisit = (endVisit.tv_sec - beginVisit.tv_sec) * 1000.0;      // sec to ms
+        elapsedTimeVisit += (endVisit.tv_usec - beginVisit.tv_usec) / 1000.0;   // us to ms
+
+        fprintf(stderr,"Iteration %i: It: %f, Visit: %f, Ratio: %f\n", iteration, elapsedTimeIt, elapsedTimeVisit, (elapsedTimeVisit/elapsedTimeIt)*100.0);
+        stats<<iteration;
+        stats<<";"<<elapsedTimeIt;
+        stats<<";"<<elapsedTimeVisit;
+        stats<<";"<<(elapsedTimeVisit/elapsedTimeIt)*100.0;
+        stats<<std::endl;
+        stats.flush();
         iteration++;
     }
 
@@ -628,6 +658,8 @@ void treatment1(Decaf* decaf)
     delete [] rmesh_z;
 
     delete [] grid;
+
+    stats.close();
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
     fprintf(stderr, "Treatment terminating\n");
