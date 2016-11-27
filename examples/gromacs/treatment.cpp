@@ -569,11 +569,11 @@ void treatment1(Decaf* decaf)
                         updateGrid(grid, localx,localy,localz,lExtends[3],lExtends[4],lExtends[5], 10);
                     }
                 }
-                if(!hasWrite)
+                /*if(!hasWrite)
                 {
                     writeGrid("grid.vtk", grid, lExtends[3],lExtends[4],lExtends[5]);
                     hasWrite = true;
-                }
+                }*/
 
             }
 

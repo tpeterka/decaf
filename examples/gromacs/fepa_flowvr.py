@@ -1,13 +1,13 @@
 from flowvrapp import *
 from filters import *
 
-#modelTpr = "/home/matthieu/INRIA/molecules/FEPA/holo314.tpr"
-#modelPdb = "/home/matthieu/INRIA/molecules/FEPA/holo314.pdb"
-#modelNc  = "/home/matthieu/INRIA/molecules/FEPA/h_chaincolor_P1P2.nc"
+modelTpr = "/home/matthieu/INRIA/molecules/FEPA/holo314.tpr"
+modelPdb = "/home/matthieu/INRIA/molecules/FEPA/holo314.pdb"
+modelNc  = "/home/matthieu/INRIA/molecules/FEPA/h_chaincolor_P1P2.nc"
 
-modelTpr = "/home/matthieu/INRIA/molecules/02_DA_W.3K/example.tpr"
-modelPdb = "/home/matthieu/INRIA/molecules/02_DA_W.3K/model.pdb"
-modelNc  = "/home/matthieu/INRIA/molecules/02_DA_W.3K/model.nc"
+#modelTpr = "/home/matthieu/INRIA/molecules/02_DA_W.3K/example.tpr"
+#modelPdb = "/home/matthieu/INRIA/molecules/02_DA_W.3K/model.pdb"
+#modelNc  = "/home/matthieu/INRIA/molecules/02_DA_W.3K/model.nc"
 
 class RenduSimple(Component):
 
@@ -74,8 +74,8 @@ class DoubleBufferedFilterIt(flowvrapp.Filter):
     self.addPort('order', direction = 'in', messagetype = 'stamps')
 
 #Module declaration
-#decafmodule = Module("decaf", cmdline = "mpirun -n 4 mdrun_mpi_4.5.5_decaf -v -s "+modelTpr+" : -n 2 dflow_gromacs : -n 2 treatment fepa : -n 1 dflow_gromacs : -n 1 targetmanager_flowvr fepa 1.5 0.5 : -n 1 dflow_gromacs")
-decafmodule = Module("decaf", cmdline = "mpirun -n 4 mdrun_mpi_decaf -nsteps 20000 -v -s "+modelTpr+" : -n 2 dflow_gromacs : -n 2 treatment SimplePeptideWater : -n 1 dflow_gromacs : -n 1 targetmanager_flowvr SimplePeptideWater 2.0 0.5 : -n 1 dflow_gromacs")
+decafmodule = Module("decaf", cmdline = "mpirun --rankfile rankfile_helper.txt --report-bindings -n 3 -hostfile hostfile.txt mdrun_mpi_4.5.5_decaf -v -s "+modelTpr+" : -n 1 -hostfile hostfile.txt  dflow_gromacs : -n 1 -hostfile hostfile.txt treatment fepa : -n 1 -hostfile hostfile.txt dflow_gromacs : -n 1 -hostfile hostfile.txt targetmanager_flowvr fepa 1.5 0.5 : -n 1 -hostfile hostfile.txt dflow_gromacs")
+#decafmodule = Module("decaf", cmdline = "mpirun -n 4 mdrun_mpi_decaf -nsteps 20000 -v -s "+modelTpr+" : -n 2 dflow_gromacs : -n 2 treatment SimplePeptideWater : -n 1 dflow_gromacs : -n 1 targetmanager_flowvr SimplePeptideWater 2.0 0.5 : -n 1 dflow_gromacs")
 decafmodule.addPort("outPos")
 decafmodule.addPort("outTargets")
 decafmodule.addPort("outSelection")

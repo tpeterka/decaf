@@ -80,10 +80,10 @@ namespace decaf
         void clearBuffers(TaskType role);
 
         // return a handle for this node's producer or consumer communicator
-        CommHandle prod_comm_handle() { return out_dataflows[0]->prod_comm_handle();    }
-        CommHandle con_comm_handle()  { return node_in_dataflows[0]->con_comm_handle(); }
-        int prod_comm_size()          { return out_dataflows[0]->sizes()->con_size;     }
-        int con_comm_size()           { return node_in_dataflows[0]->sizes()->con_size; }
+        CommHandle prod_comm_handle();
+        CommHandle con_comm_handle();
+        int prod_comm_size();
+        int con_comm_size();
 
 
         // return a pointer to this node's producer or consumer communicator
@@ -787,6 +787,54 @@ Decaf::clearBuffers(TaskType role)
 {
     for(unsigned int i = 0; i < out_dataflows.size(); i++)
         out_dataflows[i]->clearBuffers(role);
+}
+
+CommHandle
+decaf::
+Decaf::prod_comm_handle()
+{
+    if(!out_dataflows.empty())
+        return out_dataflows[0]->prod_comm_handle();
+    else
+        return world_comm_; // The task is the only one in the graph
+}
+
+CommHandle
+decaf::
+Decaf::con_comm_handle()
+{
+    if(!node_in_dataflows.empty())
+        return node_in_dataflows[0]->con_comm_handle();
+    else
+        return world_comm_; // The task is the only one in the graph
+}
+
+int
+decaf::
+Decaf::prod_comm_size()
+{
+    if(!out_dataflows.empty())
+        return out_dataflows[0]->sizes()->con_size;
+    else // The task is the only one in the graph
+    {
+        int size_comm;
+        MPI_Comm_rank(world_comm_, &size_comm);
+        return size_comm;
+    }
+}
+
+int
+decaf::
+Decaf::con_comm_size()
+{
+    if(!node_in_dataflows.empty())
+        return node_in_dataflows[0]->sizes()->con_size;
+    else // The task is the only one in the graph
+    {
+        int size_comm;
+        MPI_Comm_rank(world_comm_, &size_comm);
+        return size_comm;
+    }
 }
 
 // pybind11 python bindings

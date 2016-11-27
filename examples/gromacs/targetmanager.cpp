@@ -657,11 +657,11 @@ void target(Decaf* decaf)
                             densityGrid->shape()[1],
                             densityGrid->shape()[2],
                             densityGrid);
-                if(!hasWrite)
+                /*if(!hasWrite)
                 {
                     writeGrid("gridTarget.vtk", densityGrid, densityGrid->shape()[0],densityGrid->shape()[1],densityGrid->shape()[2]);
                     hasWrite = true;
-                }
+                }*/
                 SquareGrid::Location start{avgIndex[0], avgIndex[1], avgIndex[2]};
                 SquareGrid::Location goal{targetIndex[0], targetIndex[1], targetIndex[2]};
                 unordered_map<SquareGrid::Location, SquareGrid::Location> came_from;
