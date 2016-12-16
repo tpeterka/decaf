@@ -1,6 +1,7 @@
 # converts an nx graph into a workflow data structure and runs the workflow
 
 import imp
+import os
 
 def workflowToJson(graph, libPath, outputFile):
 
@@ -53,7 +54,65 @@ def workflowToJson(graph, libPath, outputFile):
     f.write(content)
     f.close()
 
+# Looking for a node/edge starting at a particular rank
+def getNodeWithRank(rank, graph):
 
+    for node in graph.nodes_iter(data=True):
+        if node[1]['start_proc'] == rank:
+            return ('node', node)
+
+    for edge in graph.edges_iter(data=True):
+        if edge[2]['start_proc'] == rank:
+            return ('edge', edge)
+
+    return ('notfound', graph.nodes_iter())
+
+
+# Build the mpirun command in MPMD mode
+# Parse the graph to sequence the executables with their
+# associated MPI ranks and arguments
+def workflowToSh(graph, outputFile, mpirunOpt = ""):
+
+    currentRank = 0
+    mpirunCommand = "mpirun "+mpirunOpt+" "
+    nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
+
+    # Parsing the graph looking at the current rank
+    for i in range(0, nbExecutables):
+      (type, exe) = getNodeWithRank(currentRank, graph)
+      if type == 'none':
+        print 'ERROR: Unable to find an executable for the rank ' + str(rank)
+        exit()
+
+      if type == 'node':
+
+        if exe[1]['nprocs'] == 0:
+          print 'ERROR: a node can not have 0 MPI rank.'
+          exit()
+
+        mpirunCommand += "-np "+str(exe[1]['nprocs'])
+        mpirunCommand += " "+str(exe[1]['cmdline'])+" : "
+        currentRank += exe[1]['nprocs']
+
+      if type == 'edge':
+
+        if exe[2]['nprocs'] == 0:
+          continue #The link is disable
+
+        mpirunCommand += "-np "+str(exe[2]['nprocs'])
+        mpirunCommand += " "+str(exe[2]['cmdline'])+" : "
+        currentRank += exe[2]['nprocs']
+
+    # Writting the final file
+    f = open(outputFile, "w")
+    content = ""
+    content +="#! /bin/bash\n\n"
+    content +=mpirunCommand
+    content = content.rstrip(": ")
+
+    f.write(content)
+    f.close()
+    os.system("chmod a+rx "+outputFile)
 
 
 def workflow(graph,
