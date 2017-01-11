@@ -85,7 +85,7 @@ set_target_properties (targetmanager PROPERTIES OUTPUT_NAME "targetmanager${bin_
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
     WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-  install(FILES GROMACS_TEST FEPA_TEST gromacs_workflow.py decaf_grid.xml
+  install(FILES GROMACS_TEST FEPA_TEST gromacs_workflow.py decaf_grid.xml gromacs_workflow_no_link.py
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/gromacs/
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_WRITE GROUP_EXECUTE

@@ -79,9 +79,9 @@ float xTrans=0,yTrans=0,zTrans=0,xRot=0,yRot=0,zRot=0;
 float stepTrans=1.0; // step for translation
 
 float mat[16]={1,0,0,0,
-	0,1,0,0,
-	0,0,1,0,
-	0,0,0,1};
+               0,1,0,0,
+               0,0,1,0,
+               0,0,0,1};
 //jess
 bool first=true;
 
@@ -360,12 +360,12 @@ bool displayQuickSurf = false;
 float positionXOld = 0, positionX = 0, positionYOld = 0, positionY = 0, positionZOld = 0, positionZ = 0;
 
 float angle360(float angle){
-	while (angle<0)
-		angle+=360;
-	while (angle>=360)
-		angle-=360;
-	
-	return angle;
+    while (angle<0)
+        angle+=360;
+    while (angle>=360)
+        angle-=360;
+
+    return angle;
 }
 
 
@@ -908,7 +908,7 @@ void update3DWindow(){
 
 void InitDisplay(int width, int height)
 {
-  //  std::cout << "InitDisplay" << std::endl;
+    //  std::cout << "InitDisplay" << std::endl;
     glewInit();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0);
@@ -926,7 +926,7 @@ void InitDisplay(int width, int height)
 
 void displayInfo()
 {
-  //  std::cout << "DisplayInfo" << std::endl;
+    //  std::cout << "DisplayInfo" << std::endl;
     char text[300];
 
     glMatrixMode(GL_PROJECTION);
@@ -1016,7 +1016,7 @@ void MakeSquare(float x1, float y1, float z1, float x2, float y2, float z2)
 
 void doMainDisplay()
 {
-  //  std::cout << "doMainDisplay" << std::endl;
+    //  std::cout << "doMainDisplay" << std::endl;
     // The avatar as an arrow
     if (active)
         glColor3f(1.0,0.0,0.0);
@@ -1033,7 +1033,7 @@ void doMainDisplay()
     glTranslatef(0.0,2.5,0);
     glRotatef(90,1,0,0);
     if (avatarOn)
-      glutSolidCone(0.5,2.5,10,10);
+        glutSolidCone(0.5,2.5,10,10);
     glPopMatrix();
 
     glPushMatrix();
@@ -1041,8 +1041,8 @@ void doMainDisplay()
     //glTranslatef(avatarX,avatarY,avatarZ);
     glTranslatef(cubeX,cubeY,cubeZ);
 
-//    cout << "Avatar : " << avatarX << " " << avatarY << " " << avatarZ << endl;
-//    cout << "Cube : " << cubeX << " " << cubeY << " " << cubeZ << endl;
+    //    cout << "Avatar : " << avatarX << " " << avatarY << " " << avatarZ << endl;
+    //    cout << "Cube : " << cubeX << " " << cubeY << " " << cubeZ << endl;
     glMultMatrixf(MatriceAvatar);
     //    MakeSquare(-xPhantom/6.3,-yPhantom/6.3,-zPhantom/6.3,xPhantom/6.3,yPhantom/6.3,zPhantom/6.3);
     //MakeSquare(avatarX-xPhantom/6.3,avatarY-yPhantom/6.3,avatarZ-zPhantom/6.3,avatarX+xPhantom/6.3,avatarY+yPhantom/6.3,avatarZ+zPhantom/6.3);
@@ -1134,7 +1134,7 @@ void doMainDisplay()
         //float z = avatarZ - OldPosTracker[2];
 
         //    cout << "norme de la force" << x << " " << y << " " << z << endl;
-      //        std::cout<<"Dessin des forces("<<force[0]<<","<<force[1]<<","<<force[2]<<")"<<std::endl;
+        //        std::cout<<"Dessin des forces("<<force[0]<<","<<force[1]<<","<<force[2]<<")"<<std::endl;
         glLineWidth(5);
 
         for (unsigned int i = 0; i < nbselections; i++)
@@ -1205,7 +1205,7 @@ void doMainDisplay()
     if(mesh && displayQuickSurf)
     {
         glColor3f(0.f,1.f,0.5f);
-	//        std::cout<<"Affichage de "<<nbTriangles <<" triangles"<<std::endl;
+        //        std::cout<<"Affichage de "<<nbTriangles <<" triangles"<<std::endl;
         for(int i = 0; i < nbTriangles; i++)
         {
             glBegin(GL_LINE_STRIP);
@@ -1228,52 +1228,52 @@ void CrossProduct()
 
 void DisplayFunc()
 {
-  //  std::cout << "DisplayFunc" << std::endl;
+    //  std::cout << "DisplayFunc" << std::endl;
     //std::cout<<"Nouvel affichage"<<std::endl;
-  if (fpsTime.elapsed() > maxElapsedMS) {
-    fpsTime.restart();
-    PreDisplay();
-    
-    if(displayMode == 0){
-      
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-      
-      displayInfo();
-      if (camera_position){
-	//	std::cout << "Camera_position: " << camera_position[0] << std::endl;
-	eyeX = camera_position[0];
-	eyeY = camera_position[1];
-	eyeZ = camera_position[2];
-	atX = camera_position[3];
-	atY = camera_position[4];
-	atZ = camera_position[5];
-	//                CrossProduct();
-	//                eyeX = 0.0;
-	//                eyeY = 0.0;
-	//                eyeZ = 0.0;
-	//                atX = 0.0;
-	//                atY = 0.0;
-	//                atZ = 100.0;
-      }
-      //      std::cout << "GluLookAt parameters: EYE " << eyeX << " " << eyeY << " " << eyeZ << " AT " << atX << " " << atY << " " << atZ << " UP " << upX << " " << upY << " " << upZ << std::endl;
-      gluLookAt(eyeX,eyeY,eyeZ,atX,atY,atZ,upX,upY,upZ);
-      //            gluLookAt(0.0,0.0,200.0,0.0,0.0,300.0,0.0,1.0,0.0);
-      GLdouble model[16];
-      glGetDoublev(GL_MODELVIEW_MATRIX, model);
-      // printf("-------- MODELVIEW MATRIX ---\n");
-      // for(int i=0; i<4; i++){
-      // 	printf("%f\t%f\t%f\t%f", model[i], model[i+4], model[i+8], model[i+12]);
-      // 	printf("\n");
-      // }
-      /**************************************************************/
-      /*         Rajout pour la gestion de la souris                */
-      /*         VERSION INCOMPATIBLE avec le space3D en même temps */
-      /*         et surtout avec la sélection !!!!!                 */
-      /**************************************************************/
-      /*glTranslatef(xTrans,yTrans,zTrans);
-      
-      // compute the rotations    
+    if (fpsTime.elapsed() > maxElapsedMS) {
+        fpsTime.restart();
+        PreDisplay();
+
+        if(displayMode == 0){
+
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+
+            displayInfo();
+            if (camera_position){
+                //	std::cout << "Camera_position: " << camera_position[0] << std::endl;
+                eyeX = camera_position[0];
+                eyeY = camera_position[1];
+                eyeZ = camera_position[2];
+                atX = camera_position[3];
+                atY = camera_position[4];
+                atZ = camera_position[5];
+                //                CrossProduct();
+                //                eyeX = 0.0;
+                //                eyeY = 0.0;
+                //                eyeZ = 0.0;
+                //                atX = 0.0;
+                //                atY = 0.0;
+                //                atZ = 100.0;
+            }
+            //      std::cout << "GluLookAt parameters: EYE " << eyeX << " " << eyeY << " " << eyeZ << " AT " << atX << " " << atY << " " << atZ << " UP " << upX << " " << upY << " " << upZ << std::endl;
+            gluLookAt(eyeX,eyeY,eyeZ,atX,atY,atZ,upX,upY,upZ);
+            //            gluLookAt(0.0,0.0,200.0,0.0,0.0,300.0,0.0,1.0,0.0);
+            GLdouble model[16];
+            glGetDoublev(GL_MODELVIEW_MATRIX, model);
+            // printf("-------- MODELVIEW MATRIX ---\n");
+            // for(int i=0; i<4; i++){
+            // 	printf("%f\t%f\t%f\t%f", model[i], model[i+4], model[i+8], model[i+12]);
+            // 	printf("\n");
+            // }
+            /**************************************************************/
+            /*         Rajout pour la gestion de la souris                */
+            /*         VERSION INCOMPATIBLE avec le space3D en même temps */
+            /*         et surtout avec la sélection !!!!!                 */
+            /**************************************************************/
+            /*glTranslatef(xTrans,yTrans,zTrans);
+
+      // compute the rotations
       glPushMatrix();
       glLoadIdentity();
       glRotatef(zRot,0,0,1);
@@ -1286,67 +1286,67 @@ void DisplayFunc()
       // reset the angles to 0
       xRot=yRot=zRot=0;
       glPopMatrix();*/
-      
-      // apply the new rotation to the model
-      //      glMultMatrixf(mat);
-      
-      // place the center of the molecule in (0,0,0) 
-      //      glTranslatef(-xCenter,-yCenter,-zCenter);
 
-      /***********************************************/
-      /*     FIN Rajout pour la gestion de la souris */
-      /***********************************************/
+            // apply the new rotation to the model
+            //      glMultMatrixf(mat);
 
-      
+            // place the center of the molecule in (0,0,0)
+            //      glTranslatef(-xCenter,-yCenter,-zCenter);
 
-      //            MessageWrite moutMatrix;
-      //            mOutMatrix.data = rFlowVRModule->alloc(16 * sizeof(double));
-      //            memcpy(mOutMatrix.data.writeAccess(), model, 16 * sizeof(double));
-      //            rFlowVRModule->put(OutMatrix, mOutMatrix);
-      //std::cout<<"Main display..."<<std::endl;
-      doMainDisplay();
-      //std::cout<<"Main display ok"<<std::endl;
+            /***********************************************/
+            /*     FIN Rajout pour la gestion de la souris */
+            /***********************************************/
+
+
+
+            //            MessageWrite moutMatrix;
+            //            mOutMatrix.data = rFlowVRModule->alloc(16 * sizeof(double));
+            //            memcpy(mOutMatrix.data.writeAccess(), model, 16 * sizeof(double));
+            //            rFlowVRModule->put(OutMatrix, mOutMatrix);
+            //std::cout<<"Main display..."<<std::endl;
+            doMainDisplay();
+            //std::cout<<"Main display ok"<<std::endl;
+        }
+        else {
+            Compute3DCamera(eyeDistance);
+
+            glViewport(startLeftWidth, startLeftHeight, imageWidth, imageHeight);
+
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+
+            displayInfo();
+            gluLookAt(eyeLeftX,eyeLeftY,eyeLeftZ,atX,atY,atZ,upX,upY,upZ);
+            doMainDisplay();
+
+
+            glViewport(startRightWidth, startRightHeight, imageWidth, imageHeight);
+
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+
+            displayInfo();
+            gluLookAt(eyeRightX,eyeRightY,eyeRightZ,atX,atY,atZ,upX,upY,upZ);
+            doMainDisplay();
+        }
+
+
+
+        glutSwapBuffers ();
+        glutPostRedisplay();
+
+        nbFrames++;
+
+        if (fpsTimeDisplayer.elapsed() > 1000)
+        {
+            glutSetWindowTitle(QString("VITAMINS      %1 fps").arg((nbFrames*1000.0)/fpsTimeDisplayer.elapsed()).toAscii().data());
+
+            fpsTimeDisplayer.restart();
+
+            nbFrames = 0;
+        }
     }
-    else {
-      Compute3DCamera(eyeDistance);
-      
-      glViewport(startLeftWidth, startLeftHeight, imageWidth, imageHeight);
-      
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-      
-      displayInfo();
-      gluLookAt(eyeLeftX,eyeLeftY,eyeLeftZ,atX,atY,atZ,upX,upY,upZ);
-      doMainDisplay();
-      
-      
-      glViewport(startRightWidth, startRightHeight, imageWidth, imageHeight);
-      
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-      
-      displayInfo();
-      gluLookAt(eyeRightX,eyeRightY,eyeRightZ,atX,atY,atZ,upX,upY,upZ);
-      doMainDisplay();
-    }
-    
-    
-    
-    glutSwapBuffers ();
-    glutPostRedisplay();
-    
-    nbFrames++;
-    
-    if (fpsTimeDisplayer.elapsed() > 1000)
-      {
-	glutSetWindowTitle(QString("VITAMINS      %1 fps").arg((nbFrames*1000.0)/fpsTimeDisplayer.elapsed()).toAscii().data());
-	
-	fpsTimeDisplayer.restart();
-	
-	nbFrames = 0;
-      }
-  }
-  //std::cout<<"Fin affichage."<<std::endl;
+    //std::cout<<"Fin affichage."<<std::endl;
 }
 
 void IdleFunc()
@@ -1358,7 +1358,7 @@ void IdleFunc()
     if (rFlowVRModule->wait())
     {
 
-      //      std::cout << "sortie du wait" << std::endl;
+        //      std::cout << "sortie du wait" << std::endl;
         // Réception (1 fois) des liens entre atomes
         if (!initBonds)
         {
@@ -1398,7 +1398,7 @@ void IdleFunc()
 
         if (mPos.data.getSize() > 1) // If new positions have been received
         {
-	  //            std::cout<<"Reception de "<<mPos.data.getSize() / (3 * 3 * sizeof(float))<<" atomes"<<std::endl;
+            //            std::cout<<"Reception de "<<mPos.data.getSize() / (3 * 3 * sizeof(float))<<" atomes"<<std::endl;
             if (identifiedAtoms != idSelPrec) // on est dans le cas où la selection a changé
             {
                 if (identifiedAtoms == 0) // on a toute la sélection (fvnanosimple)
@@ -1407,9 +1407,9 @@ void IdleFunc()
                     //jess
                     if(first == true)
                     {
-                      //dataPos=new GLfloat[mPos.data.getSize()];
-                      dataPos=(GLfloat*)malloc(nbPos * 3 * sizeof(GLfloat));
-                      first = false;
+                        //dataPos=new GLfloat[mPos.data.getSize()];
+                        dataPos=(GLfloat*)malloc(nbPos * 3 * sizeof(GLfloat));
+                        first = false;
                     }
                     
                     memcpy((void *)dataPos, (void *)mPos.data.readAccess(),mPos.data.getSize());
@@ -1422,7 +1422,7 @@ void IdleFunc()
                 else  // une selection d'atomes
                 {
                     nbPos = mPos.data.getSize() / (sizeof(idPositionType));
-		    //                    std::cout<<"Reception d'un nouveau jeu d'atomes ("<<nbPos<<")"<<std::endl;
+                    //                    std::cout<<"Reception d'un nouveau jeu d'atomes ("<<nbPos<<")"<<std::endl;
                     idPositionType * idPositionTab = (idPositionType*) mPos.data.readAccess();
                     vector<int>indiceDraw(nbPos);
 
@@ -1442,12 +1442,12 @@ void IdleFunc()
             }
             else // la selection n'a pas changé donc on ne met à jour que les positions
             {
-                	        //std::cout<<"Reception de nouvelles positions sans chgt de selection("<<nbPos<<")"<<std::endl;
+                //std::cout<<"Reception de nouvelles positions sans chgt de selection("<<nbPos<<")"<<std::endl;
                 change=memcmp((void *)fenetreTest,(void *)mPos.data.readAccess(),TAILLE_FENETRE_TEST_POSITIONS*sizeof(float));
 
                 //	      cout<<"it= "<<it<<" change="<<change<<endl;
                 if (change!=0){
-                    		  //std::cout<<"A priori les positions ont changé"<<endl;
+                    //std::cout<<"A priori les positions ont changé"<<endl;
                     memcpy((void *)fenetreTest,(void *)mPos.data.readAccess(),TAILLE_FENETRE_TEST_POSITIONS*sizeof(float));
 
                     if (identifiedAtoms == 0) // tous les atomes
@@ -1529,28 +1529,28 @@ void IdleFunc()
 
         // Reception des activations
         if (InActivation->isConnected()) {
-	  rFlowVRModule->get(InActivation, mActivation);
-	  if (mActivation.data.getSize()>0) {
-	    bool * act = (bool*)mActivation.data.readAccess();
-	    activeforce = act[3];
-	    
-	    //cout << "IEIEIEIEIEIEIEIEIEIEIEI " << essai << endl;
-	    
-	    if (activeforce) {
-	      if (initForce) {
-		OldPosTracker[0] = avatarX;
-		OldPosTracker[1] = avatarY;
-		OldPosTracker[2] = avatarZ;
-		
-		initForce = false;
-	      }
-	    }
-	    else
-	      initForce = true;
-	    /*	    if (act[1])
-		    activecube = !activecube;*/
-	    activecube = act[1];
-	  }
+            rFlowVRModule->get(InActivation, mActivation);
+            if (mActivation.data.getSize()>0) {
+                bool * act = (bool*)mActivation.data.readAccess();
+                activeforce = act[3];
+
+                //cout << "IEIEIEIEIEIEIEIEIEIEIEI " << essai << endl;
+
+                if (activeforce) {
+                    if (initForce) {
+                        OldPosTracker[0] = avatarX;
+                        OldPosTracker[1] = avatarY;
+                        OldPosTracker[2] = avatarZ;
+
+                        initForce = false;
+                    }
+                }
+                else
+                    initForce = true;
+                /*	    if (act[1])
+            activecube = !activecube;*/
+                activecube = act[1];
+            }
         }
 
         // Reception de l'avatar
@@ -1581,8 +1581,8 @@ void IdleFunc()
                 AvatarTranslationZ(zPhantom*aux[2][3]);
             }
         }
-	else
-	  avatarOn=false;
+        else
+            avatarOn=false;
 
         //std::cout<<"Avatar ok."<<std::endl;
         // Reception des mouvements de camera
@@ -1598,71 +1598,71 @@ void IdleFunc()
                 float * aux = (float*)mCamera.data.readAccess();
 
                 if (aux[0] > 0) {
-		  if (activecube) {
-		    AvatarTranslationX(0.5);
-		  }
-		  else {
-                    CameraTranslationX(-0.1);
-		  }
-		}
+                    if (activecube) {
+                        AvatarTranslationX(0.5);
+                    }
+                    else {
+                        CameraTranslationX(-0.1);
+                    }
+                }
                 else if (aux[0] < 0) {
-		  if (activecube)
-		    AvatarTranslationX(-0.5);
-		  else
-                    CameraTranslationX(0.1);
-		}
-		
+                    if (activecube)
+                        AvatarTranslationX(-0.5);
+                    else
+                        CameraTranslationX(0.1);
+                }
+
                 if (aux[1] > 0) {
-		  if (activecube)
-		    AvatarTranslationY(-0.5);
-		  else
-                    CameraTranslationY(0.1);
-		}
-		else if (aux[1] < 0) {
-		  if (activecube)
-		    AvatarTranslationY(0.5);
-		  else
-		    CameraTranslationY(-0.1);
-		}
-		
+                    if (activecube)
+                        AvatarTranslationY(-0.5);
+                    else
+                        CameraTranslationY(0.1);
+                }
+                else if (aux[1] < 0) {
+                    if (activecube)
+                        AvatarTranslationY(0.5);
+                    else
+                        CameraTranslationY(-0.1);
+                }
+
                 if (aux[2] > 0) {
-		  if (!activecube)
-                    CameraZoom(-0.1);
-		  else
-		    AvatarTranslationZ(0.5);
-		}
+                    if (!activecube)
+                        CameraZoom(-0.1);
+                    else
+                        AvatarTranslationZ(0.5);
+                }
                 else if (aux[2] < 0) {
-		  if (!activecube)
-                    CameraZoom(0.1);
-		  else
-		    AvatarTranslationZ(-0.5);
-		}
-		
+                    if (!activecube)
+                        CameraZoom(0.1);
+                    else
+                        AvatarTranslationZ(-0.5);
+                }
+
                 if (aux[3] > 0) {
-		  if (!activecube)
-		    CameraRotationY(pi/100);
-		}
-		else if (aux[3] < 0) {
-		  if (!activecube)
-		    CameraRotationY(-pi/100);
-		}
-		
+                    if (!activecube)
+                        CameraRotationY(pi/100);
+                }
+                else if (aux[3] < 0) {
+                    if (!activecube)
+                        CameraRotationY(-pi/100);
+                }
+
                 if (aux[4] > 0) {
-		  if (!activecube)
-                    CameraRotationX(-pi/100);
-		}
+                    if (!activecube)
+                        CameraRotationX(-pi/100);
+                }
                 else if (aux[4] < 0) {
-		  if (!activecube)
-                    CameraRotationX(pi/100);
-		}
+                    if (!activecube)
+                        CameraRotationX(pi/100);
+                }
                 if (aux[5] > 0) {
-		  if (!activecube)
-                    CameraRotationZ(-pi/100);
-		}
+                    if (!activecube)
+                        CameraRotationZ(-pi/100);
+                }
                 else if (aux[5] < 0) {
-		  if (!activecube)
-                    CameraRotationZ(pi/100);
-		}
+                    if (!activecube)
+                        CameraRotationZ(pi/100);
+                }
             }
         }
         //std::cout<<"Camera ok."<<std::endl;
@@ -1715,7 +1715,7 @@ void IdleFunc()
             activeforce = true;
         }
         else*/
-            activeforce = false;
+        activeforce = false;
         //std::cout<<"Reception force ok."<<std::endl;
         
         if (InShaders->isConnected())
@@ -1747,21 +1747,21 @@ void IdleFunc()
         // Emission des atomes déselectionnés par le menu
         if (nbdeselections == 0)
         {
-	  //	  cout << "déselection : envoi d'un message vide" << endl;
-	  mGDeselector.data=rFlowVRModule->alloc(0);
-	  rFlowVRModule->put(OutGDeselector,mGDeselector);
+            //	  cout << "déselection : envoi d'un message vide" << endl;
+            mGDeselector.data=rFlowVRModule->alloc(0);
+            rFlowVRModule->put(OutGDeselector,mGDeselector);
         }
         else
         {
-	  //	  cout << "déselection : envoi d'un message avec " << nbdeselections << " atomes" << endl;
+            //	  cout << "déselection : envoi d'un message avec " << nbdeselections << " atomes" << endl;
             mGDeselector.data = rFlowVRModule->alloc(sizeof(unsigned)*nbdeselections);    // allocate space for mGDeselector
             memcpy((void*)mGDeselector.data.writeAccess(),deselections, sizeof(unsigned)*nbdeselections); // copy data into the message
 
-	    //	    cout << "envoi de la déselection (n): " << nbdeselections << endl;
+            //	    cout << "envoi de la déselection (n): " << nbdeselections << endl;
 
-	    // for (int i=0; i<nbdeselections; i++)
-	    //   cout << deselections[i] << " ";
-	    // cout << endl;
+            // for (int i=0; i<nbdeselections; i++)
+            //   cout << deselections[i] << " ";
+            // cout << endl;
 
             rFlowVRModule->put(OutGDeselector,mGDeselector);
             nbdeselections=0;
@@ -1877,7 +1877,7 @@ void IdleFunc()
         
         if(InBestPos->isConnected())
         {
-	  //            std::cout << "ENTERED IN BEST POV" << std::endl;
+            //            std::cout << "ENTERED IN BEST POV" << std::endl;
             rFlowVRModule->get(InBestPos, msgBestPos);
             if(msgBestPos.data.getSize() > 0)
             {
@@ -1991,90 +1991,90 @@ void TouchesAppui(int key, int x, int y)
 
 void MotionFunc (int x, int y)
 {
-  if (middlebutton) {
-    if (abs(y-mouseYOld) > abs(x-mouseXOld)) { 
-      zTrans=(y-mouseYOld)*stepTrans/50;
+    if (middlebutton) {
+        if (abs(y-mouseYOld) > abs(x-mouseXOld)) {
+            zTrans=(y-mouseYOld)*stepTrans/50;
+        }
+        else {
+            zTrans=(x-mouseXOld)*stepTrans/50;
+        }
+        CameraZoom(zTrans);
+        mouseXOld=x;
+        mouseYOld=y;
     }
-    else { 
-      zTrans=(x-mouseXOld)*stepTrans/50;
+    else if (rightbutton) {
+        xTrans=(x-mouseXOld)*stepTrans/50;
+        yTrans=(y-mouseYOld)*stepTrans/50;
+        CameraTranslationX(xTrans);
+        CameraTranslationY(yTrans);
+        mouseXOld=x;
+        mouseYOld=y;
+
     }
-    CameraZoom(zTrans);    
-    mouseXOld=x;
-    mouseYOld=y;   
-  }
-  else if (rightbutton) {
-    xTrans=(x-mouseXOld)*stepTrans/50;
-    yTrans=(y-mouseYOld)*stepTrans/50;
-    CameraTranslationX(xTrans);       
-    CameraTranslationY(yTrans);       
-    mouseXOld=x;
-    mouseYOld=y;
-    
-  }
-  else if (leftbutton){
-    yRot=(x-mouseXOld)*stepTrans/50;
-    xRot=(y-mouseYOld)*stepTrans/50;                
-    CameraRotationY(yRot);
-    CameraRotationX(xRot);
-    mouseXOld=x;
-    mouseYOld=y;
-  }
+    else if (leftbutton){
+        yRot=(x-mouseXOld)*stepTrans/50;
+        xRot=(y-mouseYOld)*stepTrans/50;
+        CameraRotationY(yRot);
+        CameraRotationX(xRot);
+        mouseXOld=x;
+        mouseYOld=y;
+    }
 }
 
 
 void MouseFunc (int button, int state, int xMouse, int yMouse) 
 {
-  MyObject object;
+    MyObject object;
 
-  switch (button) {
+    switch (button) {
 
-  case GLUT_RIGHT_BUTTON:
-    if (state==GLUT_DOWN) {
-      rightbutton=true;
-      mouseXOld = xMouse;
-      mouseYOld = yMouse;
+    case GLUT_RIGHT_BUTTON:
+        if (state==GLUT_DOWN) {
+            rightbutton=true;
+            mouseXOld = xMouse;
+            mouseYOld = yMouse;
+        }
+        else
+            rightbutton=false;
+        break;
+
+    case GLUT_MIDDLE_BUTTON :
+        if (state==GLUT_DOWN) {
+            middlebutton=true;
+            mouseXOld = xMouse;
+            mouseYOld = yMouse;
+        }
+        else
+            middlebutton=false;
+        break;
+    case GLUT_LEFT_BUTTON:
+        object = gGDeselector->whichButtons( (double)xMouse, (double)yMouse );
+
+        if (state==GLUT_DOWN) {
+            leftbutton=true;
+            mouseXOld = xMouse;
+            mouseYOld = yMouse;
+            if ( object.getType() == eValid ) {
+                AtomButtons atomsDeselected = gGDeselector->addSelectedAtoms();
+                if ( !atomsDeselected.empty() ) {
+                    nbdeselections = atomsDeselected.size();
+                    deselections = new unsigned [nbdeselections];
+                    int k=0;
+                    for (AtomButtons::iterator it=atomsDeselected.begin(); it!=atomsDeselected.end(); it++)
+                        deselections[k++] = it->first;
+                    gGDeselector->doAction ( object, true );
+                }
+            }
+            else if (object.getType() != eNull)
+                gGDeselector->doAction ( object, true, xMouse, yMouse );
+        }
+        else {
+            leftbutton=false;
+            //      if (object.getType() != eNull)
+            gGDeselector->releaseAllButtons();
+        }
+        break;
     }
-    else
-      rightbutton=false;
-    break;
-    
-  case GLUT_MIDDLE_BUTTON :
-    if (state==GLUT_DOWN) {
-      middlebutton=true;
-      mouseXOld = xMouse;
-      mouseYOld = yMouse;
-    }
-    else
-      middlebutton=false;
-    break;    
-  case GLUT_LEFT_BUTTON:
-    object = gGDeselector->whichButtons( (double)xMouse, (double)yMouse );
-    
-    if (state==GLUT_DOWN) {
-      leftbutton=true;
-      mouseXOld = xMouse;
-      mouseYOld = yMouse;
-      if ( object.getType() == eValid ) {
-	AtomButtons atomsDeselected = gGDeselector->addSelectedAtoms();
-	if ( !atomsDeselected.empty() ) {
-	  nbdeselections = atomsDeselected.size();
-	  deselections = new unsigned [nbdeselections];
-	  int k=0;
-	  for (AtomButtons::iterator it=atomsDeselected.begin(); it!=atomsDeselected.end(); it++) 
-	    deselections[k++] = it->first;
-	  gGDeselector->doAction ( object, true );
-	}	
-      }
-      else if (object.getType() != eNull)
-	gGDeselector->doAction ( object, true, xMouse, yMouse );
-    }
-    else {
-      leftbutton=false;
-      //      if (object.getType() != eNull)
-      gGDeselector->releaseAllButtons();
-    }
-    break;
-  }
 }
 
 
@@ -2140,7 +2140,7 @@ void OpenGlutWindow(int posx, int posy, int width, int height)
 // --------------------------------------------------------------------
 
 int main(int argc, char** argv) {
-  //  std::cout << "main" << std::endl;
+    //  std::cout << "main" << std::endl;
 
     srand(23432423);
     InShaders->setNonBlockingFlag(true);

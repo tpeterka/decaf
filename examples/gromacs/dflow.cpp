@@ -22,6 +22,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <sys/time.h>
 
 //#include "wflow_gromacs.hpp"                         // defines the workflow for this example
 #include <decaf/workflow.hpp>
@@ -38,6 +39,7 @@ T clip(const T& n, const T& lower, const T& upper) {
 
 static int iteration = 0;
 int filter = 0;
+static std::ofstream stats;
 
 void posToFile(float* pos, int nbParticules, const string filename)
 {
@@ -180,6 +182,10 @@ void compteBBox(float* pos, int nbPos)
 
 void computeMorton(Dataflow* dataflow, pConstructData in_data, string& model, float gridspace)
 {
+    struct timeval beginIt;
+    struct timeval endIt;
+    gettimeofday(&beginIt, NULL);
+
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -272,6 +278,16 @@ void computeMorton(Dataflow* dataflow, pConstructData in_data, string& model, fl
                           DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
     dataflow->put(container, DECAF_LINK);
 
+    gettimeofday(&endIt, NULL);
+
+    double elapsedTimeIt = (endIt.tv_sec - beginIt.tv_sec) * 1000.0;      // sec to ms
+    elapsedTimeIt += (endIt.tv_usec - beginIt.tv_usec) / 1000.0;   // us to ms
+
+    stats<<iteration;
+    stats<<";"<<elapsedTimeIt;
+    stats<<std::endl;
+    stats.flush();
+
     iteration++;
 }
 
@@ -322,6 +338,15 @@ void run(Workflow& workflow)                             // workflow
 
     srand(time(NULL) + rank * size_world + nameLen);
     fprintf(stdout, "Dflow rank %i\n", rank);
+
+    std::string filename = "dflow_morton_";
+    filename.append(std::to_string(rank));
+    filename.append(".csv");
+
+    std::cerr<<"Opening filename :"<<filename<<std::endl;
+    stats.open(filename);
+    stats<<"It;elapsedIt"<<std::endl;
+
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
