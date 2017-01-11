@@ -2,6 +2,66 @@
 
 import imp
 import os
+import exceptions
+
+class Topology:
+  """ Object holder for informations about the plateform to use """
+
+  def __init__(self, name, nProc, hostfilename = "", offsetRank = 0, procPerNode = 0, offsetProcPerNode = 0):
+
+      self.name = name                  # Name of the topology
+      self.nProc = nProc                # Total number of MPI ranks in the topology
+      self.hostfilename = hostfilename  # File containing the list of hosts. Must match  totalProc
+      self.hostlist = []                # List of hosts.
+      self.offsetRank = offsetRank      # Rank of the first rank in this topology
+      self.nNodes = 0                   # Number of nodes
+      self.nodes = []                   # List of nodes
+      self.procPerNode = procPerNode    # Number of MPI ranks per node. If not given, deduced from the host list
+      self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
+
+      # Minimum level of information required
+      if nProc <= 0:
+        print "ERROR: trying to initialize a topology with no processes. nProc should be greated than 0."
+        raise ValueError
+
+
+      if hostfilename != "":
+        f = open(hostfilename, "r")
+        content = f.read()
+        content = content.rstrip(' \t\n\r') #Clean the last character, usually a \n
+        self.hostlist = content.split('\n')
+        self.nodes = list(set(self.hostlist))   # Removing the duplicate hosts
+        self.nNodes = len(self.nodes)
+      else:
+        stringHost = "localhost," * (self.nProc - 1)
+        stringHost += "localhost"
+        self.hostlist = stringHost.split(',')
+        self.nodes = ["localhost"]
+        self.nNodes = 1
+
+  def isInitialized(self):
+      return self.nProc > 0
+
+  def toStr(self):
+      content = ""
+      content += "name: " + self.name + "\n"
+      content += "nProc: " + str(self.nProc) + "\n"
+      content += "offsetRank: " + str(self.offsetRank) + "\n"
+      content += "host list: " + str(self.hostlist) + "\n"
+
+      return content
+
+  def subTopology(self, name, nProc, procOffset):
+
+      subTopo = Topology(name, nProc, offsetRank = procOffset)
+
+      # Adjusting the hostlist
+      subTopo.hostlist = self.hostlist[procOffset:procOffset+nProc]
+      subTopo.nodes = list(set(subTopo.hostlist))
+      subTopo.nNodes = len(subTopo.nodes)
+
+      return subTopo
+
 
 def workflowToJson(graph, libPath, outputFile):
 
