@@ -837,37 +837,4 @@ Decaf::con_comm_size()
     }
 }
 
-// pybind11 python bindings
-#ifdef PYBIND11
-
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
-// PYBIND11_PLUGIN(py_linear_2nodes)
-PYBIND11_PLUGIN(pymod)
-{
-    py::module m("pymod", "pybind11 module");
-
-    py::class_<WorkflowNode>(m, "WorkflowNode")
-        .def(py::init<int, int, string>())
-        .def_readwrite("out_links", &WorkflowNode::out_links)
-        .def_readwrite("in_links",  &WorkflowNode::in_links)
-        .def("add_out_link", &WorkflowNode::add_out_link)
-        .def("add_in_link",  &WorkflowNode::add_in_link);
-
-    py::class_<WorkflowLink>(m, "WorkflowLink")
-        .def(py::init<int, int, int, int, string, string, string, string>());
-
-    py::class_<Workflow>(m, "Workflow")
-        .def(py::init<vector<WorkflowNode>&, vector<WorkflowLink>&>());
-
-    m.def("run", &run, "Run the workflow", py::arg("workflow"));
-
-    return m.ptr();
-}
-
-#endif  // PYBIND11
-
 #endif  // DECAF_HPP

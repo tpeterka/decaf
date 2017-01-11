@@ -1,8 +1,7 @@
 find_package(Boost COMPONENTS serialization)
 
 if(Boost_FOUND)
-  add_definitions(-DPYBIND11)
-  include_directories(${Boost_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
+  include_directories(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 
   message("Building python direct mpmd example")
   add_library(py_linear_2nodes_prod  MODULE ../../linear_2nodes.cpp)
