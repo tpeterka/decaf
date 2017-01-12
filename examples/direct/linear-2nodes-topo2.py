@@ -5,6 +5,8 @@
 import networkx as nx
 import os
 import imp
+import sys
+import argparse
 
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
@@ -21,22 +23,21 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_2nodes.so'
 #  entire workflow takes 8 procs (2 dataflow procs between producer and consumer)
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
 
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+wf.initParserForTopology(parser)
+args = parser.parse_args()
+
+# Creating the topology
+topo = wf.topologyFromArgs(args)
+subtopos = topo.splitTopology(["prod","dflow","con"],[4,2,2])
+
+# Creating the graph
 w = nx.DiGraph()
-w.add_node("prod", start_proc=0, nprocs=4, func='prod', cmdline='linear_2nodes')
-w.add_node("con",  start_proc=6, nprocs=2, func='con', cmdline='linear_2nodes')
-w.add_edge("prod", "con", start_proc=4, nprocs=2, func='dflow', path=mod_path,
+w.add_node("prod", topology=subtopos[0], func='prod', cmdline='linear_2nodes')
+w.add_node("con", topology=subtopos[2], func='con', cmdline='linear_2nodes')
+w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count', cmdline='linear_2nodes')
 
+
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-
-wf.workflowToJson(w, mod_path, "linear2.json")
-wf.workflowToSh(w, "linear2.sh")
-
-globalTopo = wf.Topology("global", 8)
-print globalTopo.toStr()
-topo1 = globalTopo.subTopology("prodGroup", 4, 0)
-print topo1.toStr()
-topo2 = globalTopo.subTopology("conGroup", 2, 6)
-print topo2.toStr()
-topo3 = globalTopo.subTopology("dflowGroup", 2, 4)
-print topo3.toStr()
+wf.processGraph(w, "linear2", mod_path)

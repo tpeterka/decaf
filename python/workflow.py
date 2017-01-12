@@ -5,15 +5,15 @@ import sys
 import os
 import exceptions
 import getopt
-
+import argparse
 
 class Topology:
   """ Object holder for informations about the plateform to use """
 
-  def __init__(self, name, nProc, hostfilename = "", offsetRank = 0, procPerNode = 0, offsetProcPerNode = 0):
+  def __init__(self, name, nProcs, hostfilename = "", offsetRank = 0, procPerNode = 0, offsetProcPerNode = 0):
 
       self.name = name                  # Name of the topology
-      self.nProc = nProc                # Total number of MPI ranks in the topology
+      self.nProcs = nProcs                # Total number of MPI ranks in the topology
       self.hostfilename = hostfilename  # File containing the list of hosts. Must match  totalProc
       self.hostlist = []                # List of hosts.
       self.offsetRank = offsetRank      # Rank of the first rank in this topology
@@ -23,7 +23,7 @@ class Topology:
       self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
 
       # Minimum level of information required
-      if nProc <= 0:
+      if nProcs <= 0:
         raise ValueError("Invalid nProc. Trying to initialize a topology with no processes. nProc should be greated than 0.")
 
 
@@ -35,22 +35,22 @@ class Topology:
         self.nodes = list(set(self.hostlist))   # Removing the duplicate hosts
         self.nNodes = len(self.nodes)
       else:
-        stringHost = "localhost," * (self.nProc - 1)
+        stringHost = "localhost," * (self.nProcs - 1)
         stringHost += "localhost"
         self.hostlist = stringHost.split(',')
         self.nodes = ["localhost"]
         self.nNodes = 1
 
-      if len(self.hostlist) != self.nProc:
+      if len(self.hostlist) != self.nProcs:
           raise ValueError("The number of hosts does not match the number of procs.")
 
   def isInitialized(self):
-      return self.nProc > 0
+      return self.nProcs > 0
 
   def toStr(self):
       content = ""
       content += "name: " + self.name + "\n"
-      content += "nProc: " + str(self.nProc) + "\n"
+      content += "nProcs: " + str(self.nProcs) + "\n"
       content += "offsetRank: " + str(self.offsetRank) + "\n"
       content += "host list: " + str(self.hostlist) + "\n"
 
@@ -59,7 +59,7 @@ class Topology:
   def subTopology(self, name, nProcs, procOffset):
 
       # Enough rank check
-      if nProcs > self.nProc:
+      if nProcs > self.nProcs:
         raise ValueError("Not enough rank available")
 
       subTopo = Topology(name, nProcs, offsetRank = procOffset)
@@ -78,7 +78,7 @@ class Topology:
         raise ValueError("The size of the list of procs and names don't match.")
 
       # Enough rank check
-      if sum(nProcs) > self.nProc:
+      if sum(nProcs) > self.nProcs:
         raise ValueError("Not enough rank available")
 
       offset = 0
@@ -96,36 +96,49 @@ class Topology:
 
       return splits
 
+def initParserForTopology(parser):
+    """ Add the necessary arguments for initialize a topology.
+        The parser might be completed by the user in other functions
+    """
 
-def topologyFromArgs(argv):
-    """ Create the global topology object from the arguments """
-    try:
-      opts, args = getopt.getopt(argv,"hn:",["np=","hostfile="])
-    except getopt.GetoptError:
-      print 'graph.py -n <totalProc> [--hostfile <hostfile>]'
-      sys.exit(2)
+    parser.add_argument(
+        "-n", "--np",
+        help = "Total number of MPI ranks used in the workflow",
+        type=int,
+        default=1,
+        required=True,
+        dest="nprocs"
+        )
+    parser.add_argument(
+        "--hostfile",
+        help = "List of host for each MPI rank. Must match the number of MPI ranks.",
+        default="",
+        dest="hostfile"
+        )
 
-    nprocs = 0
-    hostfile = ""
-    name = "global"
+def topologyFromArgs(args):
+    return Topology("global", args.nprocs, hostfilename = args.hostfile)
 
-    for opt, arg in opts:
-      if opt == '-h':
-        print 'graph.py -n <totalProc> [--hostfile <hostfile>]'
-        sys.exit()
-      elif opt in ("-n", "--np"):
-        nprocs =   int(arg)
-      elif opt in ("", "--hostfile"):
-        hostfile = arg
+def processTopology(graph):
+    """ Check all nodes and edge if a topology is present.
+        If yes, fill the fields start_proc and nprocs """
 
-    if nprocs <= 0:
-        print "Error: No procs count given."
-        print 'graph.py -n <totalProc> [--hostfile <hostfile>]'
-        sys.exit()
+    for node in graph.nodes_iter(data=True):
+        if 'topology' in node[1]:
+            topo = node[1]['topology']
+            node[1]['start_proc'] = topo.offsetRank
+            node[1]['nprocs'] = topo.nProcs
 
-    return Topology(name, nprocs, hostfilename = hostfile)
+    for edge in graph.edges_iter(data=True):
+        if 'topology' in edge[2]:
+            topo = edge[2]['topology']
+            edge[2]['start_proc'] = topo.offsetRank
+            edge[2]['nprocs'] = topo.nProcs
+
 
 def workflowToJson(graph, libPath, outputFile):
+
+    print "Generating graph description file "+outputFile
 
     nodes   = []
     links   = []
@@ -140,6 +153,7 @@ def workflowToJson(graph, libPath, outputFile):
 
     i = 0
     for node in graph.nodes_iter(data=True):
+
         content +="       {\n"
         content +="       \"start_proc\" : "+str(node[1]['start_proc'])+" ,\n"
         content +="       \"nprocs\" : "+str(node[1]['nprocs'])+" ,\n"
@@ -195,6 +209,8 @@ def getNodeWithRank(rank, graph):
 # associated MPI ranks and arguments
 def workflowToSh(graph, outputFile, mpirunOpt = ""):
 
+    print "Generating bash command script "+outputFile
+
     currentRank = 0
     mpirunCommand = "mpirun "+mpirunOpt+" "
     nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
@@ -236,3 +252,9 @@ def workflowToSh(graph, outputFile, mpirunOpt = ""):
     f.close()
     os.system("chmod a+rx "+outputFile)
 
+# Process the graph and generate the necessary files
+
+def processGraph(graph, name, libPath, mpirunOpt = ""):
+    processTopology(graph)
+    workflowToJson(graph, libPath, name+".json")
+    workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt)

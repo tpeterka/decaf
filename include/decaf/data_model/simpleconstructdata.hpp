@@ -254,7 +254,6 @@ public:
                 }
                 case DECAF_MERGE_ADD_VALUE:
                 {
-
                     value_ = value_ + other_->value_;
 
                     break;
