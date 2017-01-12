@@ -207,12 +207,12 @@ def getNodeWithRank(rank, graph):
 # Build the mpirun command in MPMD mode
 # Parse the graph to sequence the executables with their
 # associated MPI ranks and arguments
-def workflowToSh(graph, outputFile, mpirunOpt = ""):
+def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
     print "Generating bash command script "+outputFile
 
     currentRank = 0
-    mpirunCommand = "mpirun "+mpirunOpt+" "
+    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" "
     nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
 
     # Parsing the graph looking at the current rank
@@ -254,7 +254,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = ""):
 
 # Process the graph and generate the necessary files
 
-def processGraph(graph, name, libPath, mpirunOpt = ""):
+def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = ""):
     processTopology(graph)
     workflowToJson(graph, libPath, name+".json")
-    workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt)
+    workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
