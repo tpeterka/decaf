@@ -1,8 +1,11 @@
 # converts an nx graph into a workflow data structure and runs the workflow
 
 import imp
+import sys
 import os
 import exceptions
+import getopt
+
 
 class Topology:
   """ Object holder for informations about the plateform to use """
@@ -21,8 +24,7 @@ class Topology:
 
       # Minimum level of information required
       if nProc <= 0:
-        print "ERROR: trying to initialize a topology with no processes. nProc should be greated than 0."
-        raise ValueError
+        raise ValueError("Invalid nProc. Trying to initialize a topology with no processes. nProc should be greated than 0.")
 
 
       if hostfilename != "":
@@ -39,6 +41,9 @@ class Topology:
         self.nodes = ["localhost"]
         self.nNodes = 1
 
+      if len(self.hostlist) != self.nProc:
+          raise ValueError("The number of hosts does not match the number of procs.")
+
   def isInitialized(self):
       return self.nProc > 0
 
@@ -51,17 +56,74 @@ class Topology:
 
       return content
 
-  def subTopology(self, name, nProc, procOffset):
+  def subTopology(self, name, nProcs, procOffset):
 
-      subTopo = Topology(name, nProc, offsetRank = procOffset)
+      # Enough rank check
+      if nProcs > self.nProc:
+        raise ValueError("Not enough rank available")
+
+      subTopo = Topology(name, nProcs, offsetRank = procOffset)
 
       # Adjusting the hostlist
-      subTopo.hostlist = self.hostlist[procOffset:procOffset+nProc]
+      subTopo.hostlist = self.hostlist[procOffset:procOffset+nProcs]
       subTopo.nodes = list(set(subTopo.hostlist))
       subTopo.nNodes = len(subTopo.nodes)
 
       return subTopo
 
+  def splitTopology(self, names, nProcs):
+
+      # Same size list check
+      if len(nProcs) != len (names):
+        raise ValueError("The size of the list of procs and names don't match.")
+
+      # Enough rank check
+      if sum(nProcs) > self.nProc:
+        raise ValueError("Not enough rank available")
+
+      offset = 0
+      splits = []
+
+      for i in range(0, len(names)):
+        subTopo = Topology(names[i], nProcs[i], offsetRank = offset)
+
+        subTopo.hostlist = self.hostlist[offset:offset+nProcs[i]]
+        subTopo.nodes = list(set(subTopo.hostlist))
+        subTopo.nNodes = len(subTopo.nodes)
+        offset += nProcs[i]
+
+        splits.append(subTopo)
+
+      return splits
+
+
+def topologyFromArgs(argv):
+    """ Create the global topology object from the arguments """
+    try:
+      opts, args = getopt.getopt(argv,"hn:",["np=","hostfile="])
+    except getopt.GetoptError:
+      print 'graph.py -n <totalProc> [--hostfile <hostfile>]'
+      sys.exit(2)
+
+    nprocs = 0
+    hostfile = ""
+    name = "global"
+
+    for opt, arg in opts:
+      if opt == '-h':
+        print 'graph.py -n <totalProc> [--hostfile <hostfile>]'
+        sys.exit()
+      elif opt in ("-n", "--np"):
+        nprocs =   int(arg)
+      elif opt in ("", "--hostfile"):
+        hostfile = arg
+
+    if nprocs <= 0:
+        print "Error: No procs count given."
+        print 'graph.py -n <totalProc> [--hostfile <hostfile>]'
+        sys.exit()
+
+    return Topology(name, nprocs, hostfilename = hostfile)
 
 def workflowToJson(graph, libPath, outputFile):
 
