@@ -10,7 +10,7 @@ add_library                 (mod_linear_3nodes  MODULE linear_3nodes.cpp)
 add_library                 (mod_cycle_4nodes   MODULE cycle_4nodes.cpp)
 
 target_link_libraries       (linear_2nodes 
-  ${libraries} bredala_transport bredala_datamodel)
+${libraries} bredala_transport bredala_datamodel)
 target_link_libraries       (linear_3nodes
   ${libraries} bredala_transport bredala_datamodel)
 target_link_libraries       (cycle_4nodes

@@ -190,7 +190,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         times[COMP_TIME] = MPI_Wtime();
 
         // following must match tess.cpp
-        int tot_blocks    = 8;                      // total number of blocks in the domain
+        int tot_blocks    = 4;                      // total number of blocks in the domain
 
         // init diy
         diy::mpi::communicator    world(comm);
