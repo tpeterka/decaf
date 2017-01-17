@@ -2,6 +2,14 @@ message("Building Gromacs example")
 include(ExternalProject)
 
 # Damaris configuration library
+find_package            (OpenMP REQUIRED)
+if(OPENMP_FOUND)
+    set                       (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+    message          ("OpenMP not found")
+endif()
+
 find_package(Damaris REQUIRED)
 include_directories(${DAMARIS_INCLUDE_DIR})
 list(APPEND DEP_LIBRARIES ${DAMARIS_LIBRARY})
@@ -85,7 +93,7 @@ set_target_properties (targetmanager PROPERTIES OUTPUT_NAME "targetmanager${bin_
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
     WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-  install(FILES GROMACS_TEST FEPA_TEST gromacs_workflow.py decaf_grid.xml
+  install(FILES GROMACS_TEST FEPA_TEST gromacs_workflow.py decaf_grid.xml gromacs_workflow_no_link.py
     DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/gromacs/
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_WRITE GROUP_EXECUTE
