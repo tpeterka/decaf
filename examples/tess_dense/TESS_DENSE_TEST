@@ -18,11 +18,11 @@ ARCH=LINUX
 #ARCH=CRAY
 
 # number of procs
-np1=8
+np1=4
 np2=4
-np3=2
-np4=2
-np5=2
+np3=4
+np4=4
+np5=4
 num_procs=$[$np1 + $np2 + $np3 + $np4 + $np5]
 
 # procs per node
