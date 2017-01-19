@@ -169,6 +169,7 @@ RedistMPI::splitSystemData(pConstructData& data, RedistRole role)
             // rankDest_ - rankSource_ is the rank of the first destination in the
             // component communicator (communicator_)
             destList_.push_back(i + local_dest_rank_);
+
         }
 
         // All the data chunks are the same pointer

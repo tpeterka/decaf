@@ -32,7 +32,7 @@ using namespace std;
 void prod(Decaf* decaf)
 {
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 10; timestep++)
+    for (int timestep = 0; timestep < 2; timestep++)
     {
         fprintf(stderr, "producer timestep %d\n", timestep);
 

@@ -26,7 +26,7 @@ RedistCountMPI::computeGlobal(pConstructData& data, RedistRole role)
     {
         if(!data->isCountable())
         {
-            std::cout<<"ERROR : Trying to redistribute the data with respect to a ZCurve "
+            std::cout<<"ERROR : Trying to redistribute the data with respect to the number of items "
                      <<"but the data is not fully countable. Abording."<<std::endl;
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
@@ -74,20 +74,65 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
 
         //Compute the destination rank of the first item
         int first_rank;
-        if( rankOffset == 0) //  Case where nbDest divide the total number of item
+        if(items_per_dest > 0) // More items than number of destination
         {
-            first_rank = global_item_rank_ / items_per_dest;
+            if( rankOffset == 0) //  Case where nbDest divide the total number of item
+            {
+                first_rank = global_item_rank_ / items_per_dest;
+            }
+            else
+            {
+                // The first ranks have items_per_dest+1 items
+                first_rank = global_item_rank_ / (items_per_dest+1);
+
+                //If we starts
+                if(first_rank >= rankOffset)
+                {
+                    first_rank = rankOffset +
+                            (global_item_rank_ - rankOffset*(items_per_dest+1)) / items_per_dest;
+                }
+            }
         }
         else
         {
-            // The first ranks have items_per_dest+1 items
-            first_rank = global_item_rank_ / (items_per_dest+1);
+            first_rank = global_item_rank_;
+        }
 
-            //If we starts
-            if(first_rank >= rankOffset)
+        // Create the array which represents where the current source will emit toward
+        // the destinations rank. 0 is no send to that rank, 1 is send
+        // Used only with commMethod = DECAF_REDIST_COLLECTIVE
+        if( summerizeDest_) delete [] summerizeDest_;
+        summerizeDest_ = new int[ nbDests_];
+        bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
+
+
+        // For P2P, destList must have the same size as the number of destination.
+        // We fill the destinations with no messages with -1 (= send empty message)
+        if(!data->hasSystem())
+        {
+            if(commMethod_ == DECAF_REDIST_P2P)
             {
-                first_rank = rankOffset +
-                        (global_item_rank_ - rankOffset*(items_per_dest+1)) / items_per_dest;
+                while(destList_.size() < first_rank)
+                {
+                    destList_.push_back(-1);
+                    splitChunks_.push_back(pConstructData(false));
+                }
+            }
+        }
+        else    // If the data has system fields, we need to forward them to every destination
+        {
+            int dest_rank = 0;
+            while(destList_.size() < first_rank)
+            {
+                destList_.push_back(local_dest_rank_ + dest_rank);
+                splitChunks_.push_back(pConstructData());
+                splitChunks_.back()->copySystemFields(data);
+                splitChunks_.back()->serialize();
+
+                if( commMethod_ == DECAF_REDIST_COLLECTIVE &&
+                    dest_rank + local_dest_rank_ != rank_)
+                        summerizeDest_[dest_rank] = 1;
+                dest_rank++;
             }
         }
 
@@ -95,27 +140,6 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
         std::vector<int> split_ranges;
         int items_left = data->getNbItems();
         int current_rank = first_rank;
-
-        // For P2P, destList must have the same size as the number of destination.
-        // We fill the destinations with no messages with -1 (= send empty message)
-        if(commMethod_ == DECAF_REDIST_P2P)
-        {
-            while(destList_.size() < first_rank)
-            {
-                destList_.push_back(-1);
-                splitChunks_.push_back(pConstructData(false));
-            }
-        }
-
-        // Create the array which represents where the current source will emit toward
-        // the destinations rank. 0 is no send to that rank, 1 is send
-        if( summerizeDest_) delete [] summerizeDest_;
-        summerizeDest_ = new int[ nbDests_];
-        bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
-
-        //We have nothing to do now, the necessary data are initialized
-        //if(items_left == 0)
-        //    return;
 
         unsigned int nbChunks = 0;
         while(items_left != 0)
@@ -153,19 +177,18 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
                 summerizeDest_[current_rank] = 1;
             // rankDest_ - rankSource_ is the rank of the first destination in the
             // component communicator (communicator_)
+
             destList_.push_back(current_rank + local_dest_rank_);
             items_left -= currentNbItems;
             current_rank++;
             nbChunks++;
         }
 
-        //if(useBuffer_)
-        //{
-        if(splitBuffer_.empty())
+        if(splitBuffer_.empty() && nbChunks > 0)
             // We prealloc with 0 to avoid allocating too much iterations
             // The first iteration will make a reasonable allocation
             data.preallocMultiple(nbChunks, 0, splitBuffer_);
-        else
+        else if(nbChunks > 0)
         {
             // If we have more buffer than needed, the remove the excedent
             if(splitBuffer_.size() > nbChunks)
@@ -175,44 +198,18 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
                 splitBuffer_[i]->softClean();
 
             // If we don't have enough buffers, we complete it
-            std::vector< pConstructData > newBuffers;	// Buffer of container to avoid reallocation
-            data.preallocMultiple(nbChunks - splitBuffer_.size(), 0, newBuffers);
-            splitBuffer_.insert(splitBuffer_.end(), newBuffers.begin(), newBuffers.end());
+            if(nbChunks - splitBuffer_.size() > 0)
+            {
+                std::vector< pConstructData > newBuffers;
+                data.preallocMultiple(nbChunks - splitBuffer_.size(), 0, newBuffers);
+                splitBuffer_.insert(splitBuffer_.end(), newBuffers.begin(), newBuffers.end());
+            }
 
         }
-        //}
 
 
-        /*if(commMethod_ == DECAF_REDIST_P2P)
-        {
-            if(useBuffer_)
-            {
-                container->split(split_ranges, splitBuffer_);
-                //splitChunks_.insert(splitChunks_.end(), splitBuffer_, splitBuffer_);
-                for(unsigned int i = 0; i < splitBuffer_.size(); i++)
-                    splitChunks_.push_back(splitBuffer_[i]);
-            }
-            else
-            {
-                std::vector<std::shared_ptr<BaseData> > chunks =  data->split( split_ranges );
-                // TODO : remove this need to copy the pointers
-                splitChunks_.insert(splitChunks_.end(), chunks.begin(), chunks.end());
-            }
-        }
-        else
-        {
-            if(useBuffer_)
-            {
-                container->split(split_ranges, splitBuffer_);
-                //splitChunks_.insert(splitChunks_.end(), splitBuffer_, splitBuffer_);
-                for(unsigned int i = 0; i < splitBuffer_.size(); i++)
-                    splitChunks_.push_back(splitBuffer_[i]);
-            }
-            else
-                splitChunks_ =  data->split( split_ranges );
-        }*/
         data->split(split_ranges, splitBuffer_);
-        //splitChunks_.insert(splitChunks_.end(), splitBuffer_, splitBuffer_);
+
         for(unsigned int i = 0; i < splitBuffer_.size(); i++)
             splitChunks_.push_back(splitBuffer_[i]);
 
@@ -226,12 +223,31 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
 
         // For P2P, destList must have the same size as the number of destination.
         // We fill the destinations with no messages with -1 (= send empty message)
-        if(commMethod_ == DECAF_REDIST_P2P)
+        if(!data->hasSystem())
         {
+            if(commMethod_ == DECAF_REDIST_P2P)
+            {
+                while(destList_.size() < nbDests_)
+                {
+                    destList_.push_back(-1);
+                    splitChunks_.push_back(pConstructData(false));
+                }
+            }
+        }
+        else    // If the data has system fields, we need to forward them to every destination
+        {
+            int dest_rank = current_rank;
             while(destList_.size() < nbDests_)
             {
-                destList_.push_back(-1);
-                splitChunks_.push_back(pConstructData(false));
+                destList_.push_back(local_dest_rank_ + dest_rank);
+                splitChunks_.push_back(pConstructData());
+                splitChunks_.back()->copySystemFields(data);
+                splitChunks_.back()->serialize();
+
+                if( commMethod_ == DECAF_REDIST_COLLECTIVE &&
+                    dest_rank + local_dest_rank_ != rank_)
+                        summerizeDest_[dest_rank] = 1;
+                dest_rank++;
             }
         }
 
