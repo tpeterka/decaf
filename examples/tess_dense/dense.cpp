@@ -135,11 +135,6 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
 // consumer
 void density_estimate(Decaf* decaf, MPI_Comm comm)
 {
-    // 1 block per process in this example
-    int size;
-    MPI_Comm_size(comm, &size);
-    int tot_blocks    = size;                      // total number of blocks in the domain
-
     // set some default arguments
     float mass           = 1.0;                 // particle mass
     alg alg_type         = DENSE_TESS;          // tess or cic
