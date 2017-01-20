@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 // dataflow interface
 //
 // Tom Peterka
@@ -43,6 +43,7 @@ namespace decaf
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
                  int con,                        // id in workflow structure of consumer node
+		         vector<string>,
                  Decomposition prod_dflow_redist // decompositon between producer and dataflow
                  = DECAF_CONTIG_DECOMP,
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
@@ -62,6 +63,8 @@ namespace decaf
         Comm* prod_comm()             { return prod_comm_; }
         Comm* con_comm()              { return con_comm_;  }
         void forward();
+
+		vector<string>& keys(){ return list_keys_; }
 
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
@@ -103,6 +106,8 @@ namespace decaf
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
         bool no_link;                    // True if the Dataflow doesn't have a Link
+
+		vector<string> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer
         };
 
 } // namespace
@@ -113,6 +118,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int prod,
                    int dflow,
                    int con,
+                   vector<string> list_keys,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist) :
     world_comm_(world_comm),
@@ -120,6 +126,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     wflow_prod_id_(prod),
     wflow_dflow_id_(dflow),
     wflow_con_id_(con),
+    list_keys_(list_keys),
     redist_prod_dflow_(NULL),
     redist_dflow_con_(NULL),
     redist_prod_con_(NULL),

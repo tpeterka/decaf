@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // decaf top-level interface
 //
@@ -233,9 +233,13 @@ Decaf::Decaf(CommHandle world_comm,
 
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
-    for (size_t i = 0; i < workflow_.nodes.size(); i++)
-        if (workflow_.my_node(world->rank(), i))
-            return;
+	/*for (size_t i = 0; i < workflow_.nodes.size(); i++)
+		if (workflow_.my_node(world->rank(), i)){
+			return;
+	TODO verify that the following does the same, without a loop */
+	if(my_nodes_.size() > 0){
+		return;
+	}
 
     // if I don't belong to a node, I must be part of nonoverlapping link; run me in spin mode
     run_links(false);
@@ -260,8 +264,20 @@ void
 decaf::
 Decaf::put(pConstructData container)
 {
-    for (size_t i = 0; i < out_dataflows.size(); i++)
-        out_dataflows[i]->put(container, DECAF_NODE);
+	bool quit = container->hasData(string("decaf_quit"));// To know if it's a quit message
+
+	for (size_t i = 0; i < out_dataflows.size(); i++){
+		if(quit){// Just forwards the quit message
+			out_dataflows[i]->put(container, DECAF_NODE);
+		}
+		else{// Else we send the data with respect to the contracts
+			pConstructData data;
+			for(string key : out_dataflows[i]->keys()){
+				data->appendData(container, key);
+			}
+			out_dataflows[i]->put(data, DECAF_NODE);
+		}
+	}
 
     // link ranks that do overlap this node need to be run in one-time mode
     for (size_t i = 0; i < workflow_.links.size(); i++)
@@ -277,7 +293,27 @@ void
 decaf::
 Decaf::put(pConstructData container, int i)
 {
-    out_dataflows[i]->put(container, DECAF_NODE);
+	bool quit = container->hasData(string("decaf_quit"));// To know if it's a quit message
+
+	if(quit){// Just forwards the quit message
+		out_dataflows[i]->put(container, DECAF_NODE);
+	}
+	else{
+		pConstructData data;
+		for(string key : out_dataflows[i]->keys()){
+			data->appendData(container, key);
+		}
+		out_dataflows[i]->put(data, DECAF_NODE);
+	}
+
+	// TODO remove the loop, with the given i in argument we know which one should be taken
+	// link ranks that do overlap this node need to be run in one-time mode
+	for (size_t i = 0; i < workflow_.links.size(); i++)
+		if (workflow_.my_link(world->rank(), i))
+		{
+			run_links(true);
+			break;
+		}
 }
 
 // get messages from all inbound links
@@ -512,9 +548,10 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
                                          decaf_sizes,
                                          prod,
                                          dflow,
-                                         con,
+		                                 con,
+		                                 workflow_.links[i].list_keys,
                                          prod_dflow_redist,
-                                         dflow_con_redist));
+		                                 dflow_con_redist));
         dataflows[i]->err();
     }
 }

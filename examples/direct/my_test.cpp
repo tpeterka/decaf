@@ -35,9 +35,9 @@ void prod(Decaf* decaf)
 	int rank = decaf->world->rank();
 	float pi = 3.1415;
 	// produce data for some number of timesteps
-	for (int timestep = 0; timestep < 3; timestep++)
+	for (int timestep = 0; timestep <1; timestep++)
 	{
-		fprintf(stderr, "prod1 rank %d timestep %d\n", rank, timestep);
+		//fprintf(stderr, "prod1 rank %d timestep %d\n", rank, timestep);
 
 		SimpleFieldi d_index(rank);
 		SimpleFieldf d_velocity(timestep*rank*pi);
@@ -51,13 +51,19 @@ void prod(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
+		for(int i=0; i<10; ++i){
+			string s = "toto" + std::to_string(i);
+			container->appendData(s, d_velocity);
+		}
+		fprintf(stderr, "prod sent %d fields\n", container->getNbFields());
+
 		// send the data on all outbound dataflows
 		// in this example there is only one outbound dataflow, but in general there could be more
 		decaf->put(container);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	fprintf(stderr, "prod1 %d terminating\n", rank);
+	//fprintf(stderr, "prod1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
@@ -68,8 +74,8 @@ void prod2(Decaf* decaf)
 	float den = 2.71828;
 	float vel = 1.618;
 
-	for (int timestep = 0; timestep < 3; timestep++){
-		fprintf(stderr, "prod2 %d timestep %d\n", rank, timestep);
+	for (int timestep = 0; timestep < 1; timestep++){
+		//fprintf(stderr, "prod2 %d timestep %d\n", rank, timestep);
 
 		SimpleFieldf d_vel(timestep*vel);
 		SimpleFieldf d_density(rank*2*timestep*den);
@@ -87,7 +93,7 @@ void prod2(Decaf* decaf)
 		decaf->put(container);
 	}
 
-	fprintf(stderr, "prod2 %d terminating\n", rank);
+	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
 }
 
@@ -103,15 +109,17 @@ void con(Decaf* decaf)
 		float sum_velocity = 0;
 		float sum_density = 0;
 
-		fprintf(stderr, "Con1 %d size of in_data is %lu\n", rank, in_data.size());
+		//fprintf(stderr, "Con1 %d size of in_data is %lu\n", rank, in_data.size());
 
 
 		// get the values and add them
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
+			fprintf(stderr, "con received %d fields\n", in_data[i]->getNbFields());
+
 			if(in_data[i]->hasData("index")){
 				index += in_data[i]->getFieldData<SimpleFieldi >("index").getData();
-				fprintf(stderr, "Con1 %d got index %d at i %lu\n", rank, index, i);
+				//fprintf(stderr, "Con1 %d got index %d at i %lu\n", rank, index, i);
 			}
 
 
@@ -120,7 +128,7 @@ void con(Decaf* decaf)
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	fprintf(stderr, "con1 %d terminating\n", rank);
+	//fprintf(stderr, "con1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
@@ -135,14 +143,14 @@ void con2(Decaf* decaf)
 		int id = 0;
 		float sum_velocity = 0;
 
-		fprintf(stderr, "Con2 %d size of in_data is %lu\n", rank, in_data.size());
+		//fprintf(stderr, "Con2 %d size of in_data is %lu\n", rank, in_data.size());
 
 		// get the values and add them
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
 			if(in_data[i]->hasData("id")){
 				id += in_data[i]->getFieldData<SimpleFieldi >("id").getData();
-				fprintf(stderr, "Con2 %d got id %d at i %lu\n", rank, id, i);
+				//fprintf(stderr, "Con2 %d got id %d at i %lu\n", rank, id, i);
 			}
 
 		}
@@ -150,7 +158,7 @@ void con2(Decaf* decaf)
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	fprintf(stderr, "con1 %d terminating\n", rank);
+	//fprintf(stderr, "con1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
@@ -162,7 +170,7 @@ extern "C"
 	           Dataflow* dataflow,                  // dataflow
 	           pConstructData in_data)   // input data
 	{
-		fprintf(stderr, "Forwarding data in dflow, having %d fields\n", in_data->getNbFields());
+		//fprintf(stderr, "Forwarding data in dflow, having %d fields\n", in_data->getNbFields());
 		dataflow->put(in_data, DECAF_LINK);
 	}
 } // extern "C"

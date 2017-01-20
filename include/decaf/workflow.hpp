@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // workflow definition
 //
@@ -34,10 +34,14 @@ struct WorkflowNode                          // a producer or consumer
     WorkflowNode()                                {}
     WorkflowNode(int start_proc_,
                  int nprocs_,
-                 string func_) :
+	             string func_,
+	             vector<pair<string, string>> inputs_,
+	             vector<pair<string, string>> outputs_) :
         start_proc(start_proc_),
         nprocs(nprocs_),
         func(func_),
+	    inputs(inputs_),
+	    outputs(outputs_),
         args(NULL)                                {}
     vector<int> out_links; // indices of outgoing links
     vector<int> in_links;  // indices of incoming links
@@ -45,6 +49,8 @@ struct WorkflowNode                          // a producer or consumer
     int nprocs;            // number of processes for this producer or consumer
     string func;           // name of node callback
     void* args;            // callback arguments
+	vector<pair<string, string>> inputs;	// pairs <key, type> for the input data
+	vector<pair<string, string>> outputs;   // pairs <key, type> for the output data
     void add_out_link(int link) { out_links.push_back(link); }
     void add_in_link(int link) { in_links.push_back(link); }
 };
@@ -59,7 +65,8 @@ struct WorkflowLink                          // a dataflow
                  string func_,
                  string path_,
                  string prod_dflow_redist_,
-                 string dflow_con_redist_) :
+	             string dflow_con_redist_,
+	             vector<string> list_keys_) :
         prod(prod_),
         con(con_),
         start_proc(start_proc_),
@@ -68,7 +75,8 @@ struct WorkflowLink                          // a dataflow
         args(NULL),
         path(path_),
         prod_dflow_redist(prod_dflow_redist_),
-        dflow_con_redist(dflow_con_redist_)       {}
+	    dflow_con_redist(dflow_con_redist_),
+	    list_keys(list_keys_)					{}
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -78,6 +86,7 @@ struct WorkflowLink                          // a dataflow
     string path;                // path to callback function module
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
+	vector<string> list_keys;   // keys of the data to be exchanged b/w the producer and consumer
 };
 
 struct Workflow                              // an entire workflow
@@ -170,16 +179,23 @@ struct Workflow                              // an entire workflow
        * iterate over the list of nodes, creating and populating WorkflowNodes as we go
        */
       for( auto &&v : root.get_child( "workflow.nodes" ) ) {
-	WorkflowNode node;
-	node.out_links.clear();
-	node.in_links.clear();
-	/* we defer actually linking nodes until we read the edge list */
+		WorkflowNode node;
+		node.out_links.clear();
+		node.in_links.clear();
+		/* we defer actually linking nodes until we read the edge list */
 
-	node.start_proc = v.second.get<int>("start_proc");
-	node.nprocs = v.second.get<int>("nprocs");
-	node.func = v.second.get<std::string>("func");
-	
-	workflow.nodes.push_back( node );
+		node.start_proc = v.second.get<int>("start_proc");
+		node.nprocs = v.second.get<int>("nprocs");
+		node.func = v.second.get<std::string>("func");
+
+		for(bpt::ptree::value_type &pair: v.second.get_child("inputs")){
+			node.inputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
+		}
+		for(bpt::ptree::value_type &pair: v.second.get_child("outputs")){
+			node.outputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
+		}
+
+		workflow.nodes.push_back( node );
       }
 
       string path = root.get<std::string>("workflow.path");
@@ -188,22 +204,27 @@ struct Workflow                              // an entire workflow
        * similarly for the edges
        */
       for( auto &&v : root.get_child( "workflow.edges" ) ) {
+		WorkflowLink link;
 
-	WorkflowLink link;
-	
-	/* link the nodes correctly(?) */      
-	link.prod = v.second.get<int>("source");
-	link.con = v.second.get<int>("target");
+		/* link the nodes correctly(?) */
+		link.prod = v.second.get<int>("source");
+		link.con = v.second.get<int>("target");
 
         workflow.nodes.at( link.prod ).out_links.push_back( workflow.links.size() );
         workflow.nodes.at( link.con ).in_links.push_back( workflow.links.size() );
 	 
-	link.path = path;
-	link.start_proc = v.second.get<int>("start_proc");
-	link.nprocs = v.second.get<int>("nprocs");
-	link.func = v.second.get<std::string>("func");
-	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
-	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+		link.path = path;
+		link.start_proc = v.second.get<int>("start_proc");
+		link.nprocs = v.second.get<int>("nprocs");
+		link.func = v.second.get<std::string>("func");
+		link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
+		link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+
+
+		for(bpt::ptree::value_type &item: v.second.get_child("keys")){
+			link.list_keys.push_back(item.second.data());
+		}
+
         workflow.links.push_back( link );
       }
     }

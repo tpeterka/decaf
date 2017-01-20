@@ -1,4 +1,4 @@
-#include <decaf/data_model/constructtype.h>
+﻿#include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/morton.h>
 #include <sys/time.h>
@@ -218,6 +218,58 @@ ConstructData::appendData(const char* name,
 
     return updateMetaData();
 }
+
+
+
+bool
+decaf::
+ConstructData::appendData(pConstructData data, const string name)
+{
+	std::pair<std::map<std::string, datafield>::iterator,bool> ret;
+	ret = container_->insert(std::pair<std::string, datafield>(name, data->container_->at(name)));
+
+	if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+	{
+		std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+		merge_order_.clear();
+		split_order_.clear();
+	}
+
+	if(!ret.second)
+	{
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+		return false;
+	}
+
+	return updateMetaData();
+}
+
+
+bool
+decaf::
+ConstructData::appendData(pConstructData data, const char* name)
+{
+	std::pair<std::map<std::string, datafield>::iterator,bool> ret;
+	ret = container_->insert(std::pair<std::string, datafield>(name, data->container_->at(name)));
+
+	if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+	{
+		std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+		merge_order_.clear();
+		split_order_.clear();
+	}
+
+	if(!ret.second)
+	{
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+		return false;
+	}
+
+	return updateMetaData();
+}
+
+
+
 
 bool
 decaf::

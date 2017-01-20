@@ -56,14 +56,14 @@ class Topology:
   def addInput(self, key, type):
       self.inputs[key] = type
 
-  def addInputDict(self, dict):
+  def addInputFromDict(self, dict):
       for key, val in dict.items():
           self.inputs[key] = val
 
   def addOutput(self, key, type):
       self.outputs[key] = type
 
-  def addOutputDict(self, dict):
+  def addOutputFromDict(self, dict):
       for key, val in dict.items():
           self.outputs[key] = val
 
@@ -141,7 +141,7 @@ def topologyFromArgs(args):
 
 def processTopology(graph):
     """ Check all nodes and edge if a topology is present.
-        If yes, fill the fields start_proc and nprocs """
+        If yes, fill the fields start_proc, nprocs, inputs and outputs"""
 
     for node in graph.nodes_iter(data=True):
         if 'topology' in node[1]:
@@ -162,13 +162,6 @@ def processTopology(graph):
 # Then checks if all keys of a consumer are received
 def check_contracts(graph):
     dict = defaultdict(list) # dictionary that lists the keys needed for a consumer
-
-    """# We add the json schema in the field 'contract' of each node of the graph
-    for node in graph.nodes_iter(data=True):
-        with open(node[1]['schema'], "r") as f:
-            json_s = f.read()
-        node[1]['contract'] = json.loads(json_s)
-    """
     
     for edge in graph.edges_iter(data=True):
         prod = graph.node[edge[0]]
