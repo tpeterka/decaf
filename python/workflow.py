@@ -7,6 +7,9 @@ import exceptions
 import getopt
 import argparse
 
+import json
+from collections import defaultdict
+
 class Topology:
   """ Object holder for informations about the plateform to use """
 
@@ -22,10 +25,12 @@ class Topology:
       self.procPerNode = procPerNode    # Number of MPI ranks per node. If not given, deduced from the host list
       self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
 
+      self.inputs = {}
+      self.outputs = {}
+
       # Minimum level of information required
       if nProcs <= 0:
         raise ValueError("Invalid nProc. Trying to initialize a topology with no processes. nProc should be greated than 0.")
-
 
       if hostfilename != "":
         f = open(hostfilename, "r")
@@ -35,9 +40,10 @@ class Topology:
         self.nodes = list(set(self.hostlist))   # Removing the duplicate hosts
         self.nNodes = len(self.nodes)
       else:
-        stringHost = "localhost," * (self.nProcs - 1)
+        """stringHost = "localhost," * (self.nProcs - 1)
         stringHost += "localhost"
-        self.hostlist = stringHost.split(',')
+        self.hostlist = stringHost.split(',')"""
+        self.hostlist = ["localhost"] * self.nProcs # should be the same as the 3 above lines
         self.nodes = ["localhost"]
         self.nNodes = 1
 
@@ -46,6 +52,20 @@ class Topology:
 
   def isInitialized(self):
       return self.nProcs > 0
+
+  def addInput(self, key, type):
+      self.inputs[key] = type
+
+  def addInputDict(self, dict):
+      for key, val in dict.items():
+          self.inputs[key] = val
+
+  def addOutput(self, key, type):
+      self.outputs[key] = type
+
+  def addOutputDict(self, dict):
+      for key, val in dict.items():
+          self.outputs[key] = val
 
   def toStr(self):
       content = ""
@@ -128,6 +148,8 @@ def processTopology(graph):
             topo = node[1]['topology']
             node[1]['start_proc'] = topo.offsetRank
             node[1]['nprocs'] = topo.nProcs
+            node[1]['inputs'] = topo.inputs
+            node[1]['outputs'] = topo.outputs
 
     for edge in graph.edges_iter(data=True):
         if 'topology' in edge[2]:
@@ -136,8 +158,65 @@ def processTopology(graph):
             edge[2]['nprocs'] = topo.nProcs
 
 
-def workflowToJson(graph, libPath, outputFile):
+# Checks if the intersection of each pair of prod/con contracts of an edge is non empty
+# Then checks if all keys of a consumer are received
+def check_contracts(graph):
+    dict = defaultdict(list) # dictionary that lists the keys needed for a consumer
 
+    """# We add the json schema in the field 'contract' of each node of the graph
+    for node in graph.nodes_iter(data=True):
+        with open(node[1]['schema'], "r") as f:
+            json_s = f.read()
+        node[1]['contract'] = json.loads(json_s)
+    """
+    
+    for edge in graph.edges_iter(data=True):
+        prod = graph.node[edge[0]]
+        con = graph.node[edge[1]]
+
+        if not "outputs" in prod:
+            print "ERROR while checking schemas: %s has no outputs" % edge[0]
+            return False
+        else:
+            prod_out = prod['outputs']
+
+        if not "inputs" in con:
+            print "ERROR while checking schemas: %s has no inputs" % edge[1]
+            return False
+        else:
+            con_in = con['inputs']
+
+        # We add for each edge the list of keys which is the intersection of the two contracts
+
+        intersection_keys = []
+        if not edge[1] in dict:
+            for key in con_in.keys():
+                dict[edge[1]].append(key)
+
+
+        for key in con_in.keys():
+            if (key in prod_out) and (con_in[key] == prod_out[key]): # Dumb typechecking
+                # This typechecking is silent, two identical keys with different type will be ignored and will not be added to the intersection list
+                intersection_keys.append(key)
+                dict[edge[1]].remove(key)
+
+        if len(intersection_keys) == 0:
+            print "ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1])
+            return False
+
+        # We add the list of keys to be exchanged by the pair prod/con
+        edge[2]['keys'] = intersection_keys
+
+    for key, value in dict.items():
+        if len(value) != 0:
+            print "ERROR %s does not receive the following keys: %s" % (key, value)
+            return False
+
+    return True
+# End of function check_contracts
+
+
+def workflowToJson(graph, libPath, outputFile):
     print "Generating graph description file "+outputFile
 
     nodes   = []
@@ -157,7 +236,9 @@ def workflowToJson(graph, libPath, outputFile):
         content +="       {\n"
         content +="       \"start_proc\" : "+str(node[1]['start_proc'])+" ,\n"
         content +="       \"nprocs\" : "+str(node[1]['nprocs'])+" ,\n"
-        content +="       \"func\" : \""+node[1]['func']+"\"\n"
+        content +="       \"func\" : \""+node[1]['func']+"\",\n"
+        content +="       \"inputs\" : " + json.dumps(node[1]['inputs'], sort_keys=True)+",\n"
+        content +="       \"outputs\" : "+json.dumps(node[1]['outputs'], sort_keys=True)+"\n"
         content +="       },\n"
 
         node[1]['index'] = i
@@ -178,7 +259,8 @@ def workflowToJson(graph, libPath, outputFile):
         content +="       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\" ,\n"
         content +="       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\" ,\n"
         content +="       \"source\" : "+str(prod)+" ,\n"
-        content +="       \"target\" : "+str(con)+" \n"
+        content +="       \"target\" : "+str(con)+" ,\n"
+        content +="       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)+"\n"
         content +="       },\n"
 
     content = content.rstrip(",\n")
@@ -208,7 +290,6 @@ def getNodeWithRank(rank, graph):
 # Parse the graph to sequence the executables with their
 # associated MPI ranks and arguments
 def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-
     print "Generating bash command script "+outputFile
 
     currentRank = 0
@@ -256,5 +337,9 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
 def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = ""):
     processTopology(graph)
+
+    if not check_contracts(graph):
+      return
+
     workflowToJson(graph, libPath, name+".json")
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)

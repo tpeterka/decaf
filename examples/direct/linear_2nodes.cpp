@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // 2-node producer-consumer coupling example
 //
@@ -32,13 +32,11 @@ using namespace std;
 void prod(Decaf* decaf)
 {
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 10; timestep++)
+	for (int timestep = 2; timestep < 3; timestep++)
     {
-        fprintf(stderr, "producer timestep %d\n", timestep);
+		fprintf(stderr, "producer %d timestep %d\n", decaf->world->rank(), timestep);
 
-        // the data in this example is just the timestep; add it to a container
-        //shared_ptr<SimpleConstructData<int> > data =
-        //    make_shared<SimpleConstructData<int> >(timestep);
+		// the data in this example is just the timestep; add it to a container
         SimpleFieldi data(timestep);
         pConstructData container;
         container->appendData("var", data,
@@ -51,7 +49,7 @@ void prod(Decaf* decaf)
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "producer terminating\n");
+	fprintf(stderr, "producer %d terminating\n", decaf->world->rank());
     decaf->terminate();
 }
 
@@ -63,7 +61,7 @@ void con(Decaf* decaf)
     while (decaf->get(in_data))
     {
         int sum = 0;
-
+		fprintf(stderr, "con %d in_data size %lu\n", decaf->world->rank(), in_data.size());
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
@@ -73,11 +71,11 @@ void con(Decaf* decaf)
             else
                 fprintf(stderr, "Error: null pointer in con\n");
         }
-        fprintf(stderr, "consumer sum = %d\n", sum);
+		fprintf(stderr, "consumer %d sum = %d\n", decaf->world->rank(), sum);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "consumer terminating\n");
+	fprintf(stderr, "consumer %d terminating\n", decaf->world->rank());
     decaf->terminate();
 }
 
@@ -89,7 +87,8 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
-        fprintf(stderr, "Forwarding data in dflow\n");
+		int var = in_data->getFieldData<SimpleFieldi>("var").getData();
+		fprintf(stderr, "Forwarding data %d in dflow\n", var);
         dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"

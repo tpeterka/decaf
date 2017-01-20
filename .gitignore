@@ -7,3 +7,4 @@ individual-docs/hadrien/**/*.out
 individual-docs/hadrien/**/*.synctex.gz
 individual-docs/hadrien/**/*.thm
 individual-docs/hadrien/**/*.toc
+build/
