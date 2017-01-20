@@ -95,6 +95,8 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
         }
         else
         {
+            // If there are less items then destination,
+            // only global_nb_items destinations will receive 1 item
             first_rank = global_item_rank_;
         }
 
