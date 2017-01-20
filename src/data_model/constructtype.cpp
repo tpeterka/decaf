@@ -64,7 +64,7 @@ decaf::
 ConstructData::ConstructData() :
     BaseData(), nbFields_(0), bZCurveIndex_(false),
     zCurveIndex_(NULL), bZCurveKey_(false), zCurveKey_(NULL),
-    bSystem_(false), bCountable_(true), bPartialCountable_(true)
+    bSystem_(false), nbSystemFields_(0), bEmpty_(true), bCountable_(true), bPartialCountable_(true)
 {
     container_ = std::make_shared<std::map<std::string, datafield> >();
     //data_ = static_pointer_cast<void>(container_);
@@ -409,6 +409,27 @@ decaf::
 ConstructData::isSystem()
 {
     return bSystem_;
+}
+
+void
+decaf::
+ConstructData::setSystem(bool bSystem)
+{
+    bSystem_ = bSystem;
+}
+
+bool
+decaf::
+ConstructData::hasSystem()
+{
+    return nbSystemFields_ > 0;
+}
+
+bool
+decaf::
+ConstructData::isEmpty()
+{
+    return bEmpty_;
 }
 
 
@@ -1463,26 +1484,43 @@ ConstructData::merge(char* buffer, int size)
     struct timeval begin;
     struct timeval end;
 
-    gettimeofday(&begin, NULL);
-    in_serial_buffer_ = std::string(buffer, size);
-    boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
-    boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
-    boost::archive::binary_iarchive ia(sout);
 
-    fflush(stdout);
-    gettimeofday(&end, NULL);
     //timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
-    if(!data_ || container_->empty())
+    if(!data_ || container_->empty() || bEmpty_)
     {
+        // Very ugly because string of the same string
+        // TODO: check the memory consumption
+        gettimeofday(&begin, NULL);
+        in_serial_buffer_ = std::string(buffer, size);
+        boost::iostreams::basic_array_source<char> device(in_serial_buffer_.data(), in_serial_buffer_.size());
+        boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
+        boost::archive::binary_iarchive ia(sout);
+
+        fflush(stdout);
+        gettimeofday(&end, NULL);
+
+        container_->clear();
+
         ia >> container_;
 
         data_ = std::static_pointer_cast<void>(container_);
     }
     else
     {
+        // TODO: check the memory consumption
+        pConstructData otherContainer;
+        otherContainer->merge(buffer, size);
+
+        if(otherContainer->isEmpty())
+        {
+            //fprintf(stderr, "Trying to merge with an empty data model. Nothing to do.\n");
+            return true;
+        }
+
         std::shared_ptr<std::map<std::string, datafield> > other;
-        ia >> other;
+        //ia >> other;
+        other = otherContainer->container_;
 
         //We check that we can merge all the fields before merging
         if(container_->size() != other->size())
@@ -1659,19 +1697,21 @@ ConstructData::unserializeAndStore(char* buffer, int bufferSize)
     struct timeval begin;
     struct timeval end;
 
-    gettimeofday(&begin, NULL);
-    //in_serial_buffer_ = std::string(&in_serial_buffer_[0], in_serial_buffer_.size());
-    boost::iostreams::basic_array_source<char> device(buffer, bufferSize);
-    boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
-    boost::archive::binary_iarchive ia(sout);
 
-    fflush(stdout);
-    gettimeofday(&end, NULL);
     //timeGlobalSerialization += end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
 
     // If we don't have data yet, we directly unserialize on the local map
-    if(!data_ || container_->empty())
+    if(!data_ || container_->empty() || bEmpty_)
     {
+        gettimeofday(&begin, NULL);
+        //in_serial_buffer_ = std::string(&in_serial_buffer_[0], in_serial_buffer_.size());
+        boost::iostreams::basic_array_source<char> device(buffer, bufferSize);
+        boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
+        boost::archive::binary_iarchive ia(sout);
+
+        fflush(stdout);
+        gettimeofday(&end, NULL);
+
         ia >> container_;
 
         data_ = std::static_pointer_cast<void>(container_);
@@ -1679,8 +1719,19 @@ ConstructData::unserializeAndStore(char* buffer, int bufferSize)
     // Otherwise unserialize and store the map. To be merged later on
     else
     {
+        pConstructData otherContainer;
+        otherContainer->merge(buffer, bufferSize);
+
+        if(otherContainer->isEmpty())
+        {
+            //fprintf(stderr, "Trying to merge with an empty data model. Nothing to do.\n");
+            return;
+        }
+
         std::shared_ptr<std::map<std::string, datafield> > other;
-        ia >> other;
+        //ia >> other;
+        other = otherContainer->container_;
+
 
         //We check that we can merge all the fields before merging
         if(container_->size() != other->size())
@@ -1788,17 +1839,11 @@ ConstructData::purgeData()
 {
     //To purge the data we just have to clean the map and reset the metadatas
     container_->clear();
-    nbFields_ = 0;
-    nbItems_ = 0;
-    bZCurveKey_ = false;
-    bZCurveIndex_ = false;
-    zCurveKey_.reset();
-    zCurveIndex_.reset();
-    splitable_ = false;
-    bCountable_ = true;
-    bPartialCountable_ = true;
+    updateMetaData();
 }
 
+
+// DEPRECATED
 bool
 decaf::
 ConstructData::setData(std::shared_ptr<void> data)
@@ -1810,52 +1855,6 @@ ConstructData::setData(std::shared_ptr<void> data)
         std::cout<<"ERROR : can not cast the data into the proper type."<<std::endl;
         return false;
     }
-
-    //Checking is the map is valid and updating the informations
-    int nbItems = 0, nbFields = 0;
-    bool bZCurveKey = false, bZCurveIndex = false;
-    std::shared_ptr<BaseConstructData> zCurveKey, zCurveIndex;
-    for(std::map<std::string, datafield>::iterator it = container->begin();
-        it != container->end(); it++)
-    {
-        // Checking that we can insert this data and keep spliting the data after
-        // If we already have fields with several items and we insert a new field
-        // with another number of items, we can't split automatically
-        if(nbItems > 1 && nbItems != getNbItemsField(it->second))
-        {
-            std::cout<<"ERROR : can't add new field with "<<getNbItemsField(it->second)<<" items."
-                    <<" The current map has "<<nbItems<<" items. The number of items "
-                   <<"of the new filed should be 1 or "<<nbItems<<std::endl;
-            return false;
-        }
-        else // We still update the number of items
-            nbItems_ = getNbItemsField(it->second);
-
-        if(getFlag(it->second) == DECAF_POS)
-        {
-            bZCurveKey = true;
-            zCurveKey = getBaseData(it->second);
-        }
-
-        if(getFlag(it->second) == DECAF_MORTON)
-        {
-            bZCurveIndex = true;
-            zCurveIndex = getBaseData(it->second);
-        }
-
-        //The field is already in the map, we don't have to test the insert
-        nbFields++;
-    }
-
-    // We have checked all the fields without issue, we can use this map
-    //container_ = container.get();
-    container_ = container;
-    nbItems_ = nbItems;
-    nbFields_ = nbFields;
-    bZCurveKey_ = bZCurveKey;
-    bZCurveIndex_ = bZCurveIndex;
-    zCurveKey_ = zCurveKey;
-    zCurveIndex_ = zCurveIndex;
 
     return updateMetaData();
 }
@@ -1880,7 +1879,7 @@ ConstructData::getData(std::string key)
     it = container_->find(key);
     if(it == container_->end())
     {
-        fprintf(stderr, "ERROR: key %s not found.\n", key.c_str());
+        //fprintf(stderr, "ERROR: key %s not found.\n", key.c_str());
         return std::shared_ptr<BaseConstructData>();
     }
     else
@@ -1896,7 +1895,9 @@ ConstructData::updateMetaData()
     nbFields_ = 0;
     bZCurveKey_ = false;
     bZCurveIndex_ = false;
-    bSystem_ = true;
+    //bSystem_ = true;
+    bEmpty_ = true;
+    nbSystemFields_ = 0;
     bCountable_ = true;
     bPartialCountable_ = true;
 
@@ -1938,7 +1939,10 @@ ConstructData::updateMetaData()
         }
 
         if(getScope(it->second) != DECAF_SYSTEM)
-            bSystem_ = false;
+            bEmpty_ = false;
+
+        if(getScope(it->second) == DECAF_SYSTEM)
+            nbSystemFields_++;
 
         //The field is already in the map, we don't have to test the insert
         nbFields_++;
@@ -1970,4 +1974,17 @@ ConstructData::softClean()
     }
 
     updateMetaData();
+}
+
+void
+decaf::
+ConstructData::copySystemFields(pConstructData& source)
+{
+    for(std::map<std::string, datafield>::iterator it = source->container_->begin();
+        it != source->container_->end(); it++)
+    {
+        // If fails, the field was already in place
+        if(getScope(it->second) == DECAF_SYSTEM)
+            container_->insert(std::pair<std::string, datafield>(it->first, it->second));
+    }
 }

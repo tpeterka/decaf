@@ -80,6 +80,7 @@ namespace decaf
                 out_data->appendData(string("decaf_quit"), data,
                                      DECAF_NOFLAG, DECAF_SYSTEM,
                                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+                out_data->setSystem(true);
             }
 
         // tests whether a message is a quit command

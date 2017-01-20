@@ -57,11 +57,21 @@ void node_a(Decaf* decaf)
             // get the values and add them
             for (size_t i = 0; i < in_data.size(); i++)
             {
-                ArrayFieldi field = in_data[i]->getFieldData<ArrayFieldi >("vars");
-                if(field)
-                    sum += field.getArray()[0];
-                else
-                    fprintf(stderr, "Error: null pointer in node_a\n");
+//                ArrayFieldi field = in_data[i]->getFieldData<ArrayFieldi >("vars");
+//                if(field)
+//                    sum += field.getArray()[0];
+//                else
+//                    fprintf(stderr, "Error: null pointer in node_a\n");
+
+                // Only the first rank will receive a data
+                if(in_data[i]->hasData("vars"))
+                {
+                    SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("vars");
+                    if(field)
+                        sum += field.getData();
+                    else
+                        fprintf(stderr, "Error: null pointer in node_a\n");
+                }
             }
         }
 
@@ -99,19 +109,20 @@ void node_b(Decaf* decaf)
             if(field)
                 sum += field.getData();
             else
-                fprintf(stderr, "Error: null pointer in node1\n");
+                fprintf(stderr, "Error: null pointer in node_b\n");
         }
 
         fprintf(stderr, "node_b: sum = %d\n", sum);
 
         // replicate the sums in an array so that they can be sent to a destination with
         // more ranks
-        int* sums = new int[decaf->dataflow(1)->sizes()->con_size];
-        for (size_t i = 0; i < decaf->dataflow(1)->sizes()->con_size; i++)
-            sums[i] = sum;
+        //int* sums = new int[decaf->dataflow(1)->sizes()->con_size];
+        //for (size_t i = 0; i < decaf->dataflow(1)->sizes()->con_size; i++)
+        //    sums[i] = sum;
 
         // append the array to a container
-        ArrayFieldi data(sums, 4, 1, false);
+        //ArrayFieldi data(sums, 4, 1, false);
+        SimpleFieldi data(sum);
         pConstructData container;
         container->appendData("vars", data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
@@ -121,7 +132,7 @@ void node_b(Decaf* decaf)
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
 
-        delete[] sums;
+        //delete[] sums;
 
     }
 

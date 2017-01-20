@@ -102,8 +102,6 @@ RedistRoundMPI::splitData(pConstructData& data, RedistRole role)
 
         }
 
-        //if(useBuffer_)
-        //{
         if(splitBuffer_.empty())
             // We prealloc with 0 to avoid allocating too much iterations
             // The first iteration will make a reasonable allocation
@@ -115,7 +113,6 @@ RedistRoundMPI::splitData(pConstructData& data, RedistRole role)
                 splitBuffer_[i]->softClean();
         }
 
-        //splitChunks_ =  data->split( split_ranges );
         data->split(split_ranges, splitBuffer_);
 
         for(unsigned int i = 0; i < splitBuffer_.size(); i++)

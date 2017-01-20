@@ -116,6 +116,12 @@ public:
 
     virtual bool isSystem();
 
+    virtual void setSystem(bool bSystem);
+
+    virtual bool hasSystem();
+
+    virtual bool isEmpty();
+
     bool isCountable();
 
     bool isPartiallyCountable();
@@ -196,6 +202,8 @@ public:
 
     void updateNbItems();
 
+    void copySystemFields(pConstructData& source);
+
 protected:
     mapConstruct container_;
     int nbFields_;
@@ -223,6 +231,8 @@ protected:
     std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
     std::vector<std::vector<int> > rangeItems_;
     bool bSystem_;
+    int nbSystemFields_;
+    bool bEmpty_;
     bool bCountable_;
     bool bPartialCountable_;
 };
@@ -255,7 +265,7 @@ ConstructData::getFieldData(const char* key)
     std::shared_ptr<BaseConstructData> field = this->getData(key);
     if(!field)
     {
-        std::cerr<<"Fail cast in getFieldData when requesting the field \""<<key<<"\""<<std::endl;
+        //std::cerr<<"Fail cast in getFieldData when requesting the field \""<<key<<"\""<<std::endl;
         return T();
     }
 

@@ -7,6 +7,14 @@ if                            (${serial} MATCHES "CGAL")
   find_package                (Boost)
 endif                         ()
 
+# Damaris configuration library
+find_package            (OpenMP REQUIRED)
+if(OPENMP_FOUND)
+    set                       (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set                       (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+    message          ("OpenMP not found")
+endif()
 
 message("Building tess_dense (mpmd) example")
 include_directories(${TESS_INCLUDE_DIR} ${DIY_INCLUDE_DIR})
@@ -15,6 +23,7 @@ add_executable              (points             prod.cpp)
 add_executable              (tess               tess.cpp)
 add_executable              (dense              dense.cpp)
 add_executable              (pts_dflow          dflow.cpp)
+add_executable              (test_tess               full.cpp)
 add_library                 (mod_pts_dflow      MODULE dflow.cpp)
 
 target_link_libraries       (points
@@ -52,6 +61,12 @@ else                        ()
                             ${QHull_LIBRARY}
                             bredala_transport
                             bredala_datamodel)
+  target_link_libraries     (test_tess
+                            ${libraries}
+                            ${TESS_LIBRARY}
+                            ${QHull_LIBRARY}
+                            bredala_transport
+                            bredala_datamodel)
 endif                       ()
 target_link_libraries       (pts_dflow
   ${libraries} bredala_transport bredala_datamodel)
@@ -70,12 +85,13 @@ install                     (TARGETS
                             dense
                             pts_dflow
                             mod_pts_dflow
+                            test_tess
                             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/tess_dense/
                             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                             GROUP_READ GROUP_WRITE GROUP_EXECUTE
                             WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-install                     (FILES TESS_DENSE_TEST  bgq_run.py bgq_mapfile
+install                     (FILES TESS_DENSE_TEST  bgq_run.py bgq_mapfile tess_dense.py
                             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/tess_dense/
                             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                             GROUP_READ GROUP_WRITE GROUP_EXECUTE

@@ -39,6 +39,10 @@ target_link_libraries       (testround ${libraries} bredala_transport bredala_da
 add_executable              (test2count test2Count.cpp)
 target_link_libraries       (test2count ${libraries} bredala_transport bredala_datamodel)
 
+add_executable              (testEmptyMessage testEmptyMessage.cpp)
+target_link_libraries       (testEmptyMessage ${libraries} bredala_transport bredala_datamodel)
+
+
 #    add_executable              (testarrayndim testArrayNDim.cpp)
 #    target_link_libraries       (testarrayndim     ${libraries} bredala_transport bredala_datamodel)
 
@@ -54,7 +58,7 @@ target_link_libraries       (testmem ${libraries} bredala_transport bredala_data
 add_executable              (testserialization testSerialization.cpp)
 target_link_libraries       (testserialization ${libraries} bredala_transport bredala_datamodel)
 
-install(TARGETS testboost testzcurve testround test2count testblock testproc testmem testserialization
+install(TARGETS testboost testzcurve testround test2count testblock testproc testmem testserialization testEmptyMessage
   DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/bredala/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   )

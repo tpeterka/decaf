@@ -23,9 +23,10 @@ public:
         }
     }
 
-    ArrayField(mapConstruct map = mapConstruct())
+    ArrayField(bool init = false, mapConstruct map = mapConstruct())
     {
-        ptr_ = std::make_shared<ArrayConstructData<T> >(map);
+        if (init)
+            ptr_ = std::make_shared<ArrayConstructData<T> >(map);
     }
 
     ArrayField(T* array,

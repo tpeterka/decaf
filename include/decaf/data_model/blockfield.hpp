@@ -20,9 +20,10 @@ public:
         }
     }
 
-    BlockField(mapConstruct map = mapConstruct())
+    BlockField(bool init = false, mapConstruct map = mapConstruct())
     {
-        ptr_ = std::make_shared<BlockConstructData>(Block<3>(), map);
+        if(init)
+            ptr_ = std::make_shared<BlockConstructData>(Block<3>(), map);
     }
 
     virtual ~BlockField(){}

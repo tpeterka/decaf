@@ -20,11 +20,14 @@ public:
             std::cerr<<"ERROR : Unable to cast pointer to VectorConstructData<T> when using a VectorField."<<std::endl;
     }
 
-    VectorField(mapConstruct map = mapConstruct(),
+    VectorField(bool init = false,
+                mapConstruct map = mapConstruct(),
                 bool bCountable = true)
     {
-        ptr_ = std::make_shared<VectorConstructData<T> >(map, bCountable);
+        if(init)
+            ptr_ = std::make_shared<VectorConstructData<T> >(map, bCountable);
     }
+
 
     VectorField(std::vector<T>& value, int element_per_items, mapConstruct map = mapConstruct(),
                 bool bCountable = true)
