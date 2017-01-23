@@ -86,7 +86,7 @@ void prod(Decaf* decaf)
         vector<float> bboxBlock = {0.0, 0.0, 0.0, (float)npts, float(npts), float(npts)};
 
         // describe to decaf the global and local domain
-        BlockField domainData;
+        BlockField domainData(true);
         Block<3>* domainBlock = domainData.getBlock();
         domainBlock->setGridspace(1.0);
         domainBlock->setGlobalExtends(extendsBlock);

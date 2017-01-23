@@ -24,15 +24,20 @@
 #include <mpi.h>
 #include <map>
 #include <cstdlib>
+#include <unistd.h>
 
 using namespace decaf;
 using namespace std;
+
+// Buffering stuff
+static MPI_Win winBuffer;
+static int send = 0;
 
 // producer
 void prod(Decaf* decaf)
 {
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 2; timestep++)
+    for (int timestep = 0; timestep < 10; timestep++)
     {
         fprintf(stderr, "producer timestep %d\n", timestep);
 
@@ -48,6 +53,9 @@ void prod(Decaf* decaf)
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
+
+        // Sleeping 1 sec to slow down the producer
+        sleep(1);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -63,11 +71,17 @@ int main(int argc,
 
     MPI_Init(NULL, NULL);
 
+    //Initialization of the window for buffering
+    MPI_Win_create(&send, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &winBuffer);
+
+
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
     // run decaf
     prod(decaf);
+
+    MPI_Win_free(&winBuffer);
 
     // cleanup
     delete decaf;
