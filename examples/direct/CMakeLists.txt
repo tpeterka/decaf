@@ -51,7 +51,7 @@ install(TARGETS linear_2nodes mod_linear_2nodes
   GROUP_READ GROUP_WRITE GROUP_EXECUTE
   WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-install(FILES LINEAR_2NODES_TEST LINEAR_3NODES_TEST CYCLE_4NODES_TEST MY_TEST
+install(FILES LINEAR_2NODES_TEST LINEAR_3NODES_TEST CYCLE_4NODES_TEST
   linear-2nodes.py linear-3nodes.py cycle-4nodes.py my_test.py
   linear-2nodes-topo1.py linear-2nodes-topo2.py linear-2nodes-topo3.py
   DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/

@@ -10,6 +10,95 @@ import argparse
 import json
 from collections import defaultdict
 
+""" Object holding information about input/output data and types """
+class Contract:
+  """ Object holder for informations about the plateform to use """
+
+  def __init__(self, jsonfilename = ""):
+    self.inputs = {}
+    self.outputs = {}
+    if(jsonfilename != ""):
+      with open(jsonfilename, "r") as f:
+            content = f.read()
+      contract = json.loads(content)
+      if "inputs" in contract:
+        for key, val in contract["inputs"].items():
+          self.inputs[key] = val
+      if "outputs" in contract:
+        for key, val in contract["outputs"].items():
+          self.outputs[key] = val
+
+
+  def addInput(self, key, type):
+    self.inputs[key] = type
+
+  def addInputFromDict(self, dict):
+    for key, val in dict.items():
+        self.inputs[key] = val
+
+  def addOutput(self, key, type):
+    self.outputs[key] = type
+
+  def addOutputFromDict(self, dict):
+    for key, val in dict.items():
+        self.outputs[key] = val
+
+  #TODO for debugging purpose
+  def my_print(self):
+    print "inputs", self.inputs
+    print "outputs", self.outputs
+# End of class Contract
+
+# Checks if the intersection of each pair of prod/con contracts of an edge is non empty
+# Then checks if all keys of a consumer are received
+def check_contracts(graph):
+    dict = defaultdict(list) # dictionary that lists the keys needed for a consumer
+    
+    for edge in graph.edges_iter(data=True):
+        prod = graph.node[edge[0]]
+        con = graph.node[edge[1]]
+
+        if prod["contract"].outputs == {}:
+            print "ERROR while checking contracts: %s has no outputs" % edge[0]
+            return False
+        else:
+            prod_out = prod["contract"].outputs
+
+        if con["contract"].inputs == {}:
+            print "ERROR while checking contracts: %s has no inputs" % edge[1]
+            return False
+        else:
+            con_in = con["contract"].inputs
+
+        # We add for each edge the list of keys which is the intersection of the two contracts
+
+        intersection_keys = []
+        if not edge[1] in dict:
+            for key in con_in.keys():
+                dict[edge[1]].append(key)
+
+        for key in con_in.keys():
+            if (key in prod_out) and (con_in[key] == prod_out[key]): # Dumb typechecking
+                # This typechecking is silent, two identical keys with different type will be ignored and will not be added to the intersection list
+                intersection_keys.append(key)
+                dict[edge[1]].remove(key)
+
+        if len(intersection_keys) == 0:
+            print "ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1])
+            return False
+
+        # We add the list of keys to be exchanged by the pair prod/con
+        edge[2]['keys'] = intersection_keys
+
+    for key, value in dict.items():
+        if len(value) != 0:
+            print "ERROR %s does not receive the following keys (or receives it with different type): %s" % (key, value)
+            return False
+
+    return True
+# End of function check_contracts
+
+
 class Topology:
   """ Object holder for informations about the plateform to use """
 
@@ -24,9 +113,6 @@ class Topology:
       self.nodes = []                   # List of nodes
       self.procPerNode = procPerNode    # Number of MPI ranks per node. If not given, deduced from the host list
       self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
-
-      self.inputs = {}
-      self.outputs = {}
 
       # Minimum level of information required
       if nProcs <= 0:
@@ -53,19 +139,6 @@ class Topology:
   def isInitialized(self):
       return self.nProcs > 0
 
-  def addInput(self, key, type):
-      self.inputs[key] = type
-
-  def addInputFromDict(self, dict):
-      for key, val in dict.items():
-          self.inputs[key] = val
-
-  def addOutput(self, key, type):
-      self.outputs[key] = type
-
-  def addOutputFromDict(self, dict):
-      for key, val in dict.items():
-          self.outputs[key] = val
 
   def toStr(self):
       content = ""
@@ -115,6 +188,8 @@ class Topology:
         splits.append(subTopo)
 
       return splits
+# End of class Topology
+
 
 def initParserForTopology(parser):
     """ Add the necessary arguments for initialize a topology.
@@ -141,72 +216,19 @@ def topologyFromArgs(args):
 
 def processTopology(graph):
     """ Check all nodes and edge if a topology is present.
-        If yes, fill the fields start_proc, nprocs, inputs and outputs"""
+        If yes, fill the fields start_proc and nprocs """
 
     for node in graph.nodes_iter(data=True):
         if 'topology' in node[1]:
             topo = node[1]['topology']
             node[1]['start_proc'] = topo.offsetRank
             node[1]['nprocs'] = topo.nProcs
-            node[1]['inputs'] = topo.inputs
-            node[1]['outputs'] = topo.outputs
 
     for edge in graph.edges_iter(data=True):
         if 'topology' in edge[2]:
             topo = edge[2]['topology']
             edge[2]['start_proc'] = topo.offsetRank
             edge[2]['nprocs'] = topo.nProcs
-
-
-# Checks if the intersection of each pair of prod/con contracts of an edge is non empty
-# Then checks if all keys of a consumer are received
-def check_contracts(graph):
-    dict = defaultdict(list) # dictionary that lists the keys needed for a consumer
-    
-    for edge in graph.edges_iter(data=True):
-        prod = graph.node[edge[0]]
-        con = graph.node[edge[1]]
-
-        if not "outputs" in prod:
-            print "ERROR while checking schemas: %s has no outputs" % edge[0]
-            return False
-        else:
-            prod_out = prod['outputs']
-
-        if not "inputs" in con:
-            print "ERROR while checking schemas: %s has no inputs" % edge[1]
-            return False
-        else:
-            con_in = con['inputs']
-
-        # We add for each edge the list of keys which is the intersection of the two contracts
-
-        intersection_keys = []
-        if not edge[1] in dict:
-            for key in con_in.keys():
-                dict[edge[1]].append(key)
-
-
-        for key in con_in.keys():
-            if (key in prod_out) and (con_in[key] == prod_out[key]): # Dumb typechecking
-                # This typechecking is silent, two identical keys with different type will be ignored and will not be added to the intersection list
-                intersection_keys.append(key)
-                dict[edge[1]].remove(key)
-
-        if len(intersection_keys) == 0:
-            print "ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1])
-            return False
-
-        # We add the list of keys to be exchanged by the pair prod/con
-        edge[2]['keys'] = intersection_keys
-
-    for key, value in dict.items():
-        if len(value) != 0:
-            print "ERROR %s does not receive the following keys: %s" % (key, value)
-            return False
-
-    return True
-# End of function check_contracts
 
 
 def workflowToJson(graph, libPath, outputFile):
@@ -226,13 +248,14 @@ def workflowToJson(graph, libPath, outputFile):
     i = 0
     for node in graph.nodes_iter(data=True):
 
-        content +="       {\n"
-        content +="       \"start_proc\" : "+str(node[1]['start_proc'])+" ,\n"
-        content +="       \"nprocs\" : "+str(node[1]['nprocs'])+" ,\n"
-        content +="       \"func\" : \""+node[1]['func']+"\",\n"
-        content +="       \"inputs\" : " + json.dumps(node[1]['inputs'], sort_keys=True)+",\n"
-        content +="       \"outputs\" : "+json.dumps(node[1]['outputs'], sort_keys=True)+"\n"
-        content +="       },\n"
+        content +="      {\n"
+        content +="       \"start_proc\" : "+str(node[1]['start_proc'])
+        content +=",\n       \"nprocs\" : "+str(node[1]['nprocs'])
+        content +=",\n       \"func\" : \""+node[1]['func']+"\""
+        if 'contract' in node[1]:
+          content +=",\n       \"inputs\" : " + json.dumps(node[1]['contract'].inputs, sort_keys=True)
+          content +=",\n       \"outputs\" : "+json.dumps(node[1]['contract'].outputs, sort_keys=True)
+        content +="\n      },\n"
 
         node[1]['index'] = i
         i += 1
@@ -245,16 +268,17 @@ def workflowToJson(graph, libPath, outputFile):
     for edge in graph.edges_iter(data=True):
         prod  = graph.node[edge[0]]['index']
         con   = graph.node[edge[1]]['index']
-        content +="       {\n"
-        content +="       \"start_proc\" : "+str(edge[2]['start_proc'])+" ,\n"
-        content +="       \"nprocs\" : "+str(edge[2]['nprocs'])+" ,\n"
-        content +="       \"func\" : \""+edge[2]['func']+"\" ,\n"
-        content +="       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\" ,\n"
-        content +="       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\" ,\n"
-        content +="       \"source\" : "+str(prod)+" ,\n"
-        content +="       \"target\" : "+str(con)+" ,\n"
-        content +="       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)+"\n"
-        content +="       },\n"
+        content +="      {\n"
+        content +="       \"start_proc\" : "+str(edge[2]['start_proc'])
+        content +=",\n       \"nprocs\" : "+str(edge[2]['nprocs'])
+        content +=",\n       \"func\" : \""+edge[2]['func']+"\""
+        content +=",\n       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\""
+        content +=",\n       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\""
+        content +=",\n       \"source\" : "+str(prod)
+        content +=",\n       \"target\" : "+str(con)
+        if "keys" in edge[2]:
+          content +=",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
+        content +="\n      },\n"
 
     content = content.rstrip(",\n")
     content += "\n"
@@ -328,11 +352,11 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
 # Process the graph and generate the necessary files
 
-def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = ""):
+def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = "", contracts = True):
+    if contracts: # We check contracts only if the boolean argument is set to True, meaning there are contracts added for each node of the graph
+      if not check_contracts(graph):
+        return
+
     processTopology(graph)
-
-    if not check_contracts(graph):
-      return
-
     workflowToJson(graph, libPath, name+".json")
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
