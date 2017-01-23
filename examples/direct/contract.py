@@ -15,7 +15,7 @@ args = parser.parse_args()
 # --- set your options here ---
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_my_test.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_contract.so'
 
 # define workflow graph
 # TODO little schema graph
@@ -51,4 +51,4 @@ w.add_edge("prod2", "con2", topology=subtopos[7], func='dflow', path=mod_path, p
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "my_test", mod_path, contracts=True)
+wf.processGraph(w, "contract", mod_path, contracts=True)

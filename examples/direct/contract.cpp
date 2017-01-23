@@ -18,6 +18,7 @@
 #include <decaf/decaf.hpp>
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simplefield.hpp>
+#include <decaf/data_model/arrayfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -34,13 +35,16 @@ void prod(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
 	float pi = 3.1415;
+	float array[3];
 	// produce data for some number of timesteps
-	for (int timestep = 0; timestep <1; timestep++)
-	{
+	for (int timestep = 1; timestep <4; timestep++){
 		//fprintf(stderr, "prod1 rank %d timestep %d\n", rank, timestep);
+		for(int i = 0; i<3; ++i){
+			array[i] = (i+1)*timestep*(rank+1)*pi;
+		}
 
 		SimpleFieldi d_index(rank);
-		SimpleFieldf d_velocity(timestep*rank*pi);
+		ArrayFieldf d_velocity(array,3, 1);
 
 		pConstructData container;
 		container->appendData("index", d_index,
@@ -49,17 +53,12 @@ void prod(Decaf* decaf)
 
 		container->appendData("velocity", d_velocity,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-		for(int i=0; i<10; ++i){
-			string s = "toto" + std::to_string(i);
-			container->appendData(s, d_velocity);
-		}
-		fprintf(stderr, "prod sent %d fields\n", container->getNbFields());
-
-		// send the data on all outbound dataflows
-		// in this example there is only one outbound dataflow, but in general there could be more
+		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		decaf->put(container);
+		fprintf(stderr, "prod rank %d sent %d fields\n", rank, container->getNbFields());
+		sleep(1);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -73,29 +72,39 @@ void prod2(Decaf* decaf)
 	int rank = decaf->world->rank();
 	float den = 2.71828;
 	float vel = 1.618;
+	float vel_array[3], den_array[3];
 
-	for (int timestep = 0; timestep < 1; timestep++){
+	for (int timestep = 1; timestep < 4; timestep++){
 		//fprintf(stderr, "prod2 %d timestep %d\n", rank, timestep);
 
-		SimpleFieldf d_vel(timestep*vel);
-		SimpleFieldf d_density(rank*2*timestep*den);
+		for(int i = 0; i<3; ++i){
+			vel_array[i] = timestep*vel*(i+1);
+			den_array[i] = (rank+1)*2*timestep*den*(i+1);
+		}
+
+
+		ArrayFieldf d_vel(vel_array, 3, 3);
+		ArrayFieldf d_density(den_array, 3, 3);
 		SimpleFieldi d_id(rank);
 
 		pConstructData container;
 		container->appendData("id", d_id);
 		container->appendData("vel", d_vel,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 		container->appendData("density", d_density,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
 		decaf->put(container);
+		fprintf(stderr, "prod2 rank %d sent %d fields\n", rank, container->getNbFields());
+		sleep(1);
 	}
 
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
 }
+
 
 // consumer
 void con(Decaf* decaf)
@@ -106,25 +115,24 @@ void con(Decaf* decaf)
 	while (decaf->get(in_data))
 	{
 		int index = 0;
-		float sum_velocity = 0;
-		float sum_density = 0;
+		float* velocity;
+		float* density;
 
-		//fprintf(stderr, "Con1 %d size of in_data is %lu\n", rank, in_data.size());
-
-
-		// get the values and add them
+		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
-			fprintf(stderr, "con received %d fields\n", in_data[i]->getNbFields());
-
 			if(in_data[i]->hasData("index")){
-				index += in_data[i]->getFieldData<SimpleFieldi >("index").getData();
-				//fprintf(stderr, "Con1 %d got index %d at i %lu\n", rank, index, i);
+				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
 			}
-
-
+			if(in_data[i]->hasData("velocity")){
+				velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity").getArray();
+			}
+			if(in_data[i]->hasData("density")){
+				density = in_data[i]->getFieldData<ArrayFieldf>("density").getArray();
+			}
 		}
-		//fprintf(stderr, "con1 %d velocity %f and density %f\n", sum_velocity, sum_density);
+		//fprintf(stderr, "con rank %d received index %d velocity %f and density %f\n", rank, index, velocity[1], density[1]);
+		fprintf(stderr, "con rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -141,20 +149,20 @@ void con2(Decaf* decaf)
 	while (decaf->get(in_data))
 	{
 		int id = 0;
-		float sum_velocity = 0;
+		float* velocity;
 
-		//fprintf(stderr, "Con2 %d size of in_data is %lu\n", rank, in_data.size());
-
-		// get the values and add them
+		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
 			if(in_data[i]->hasData("id")){
-				id += in_data[i]->getFieldData<SimpleFieldi >("id").getData();
-				//fprintf(stderr, "Con2 %d got id %d at i %lu\n", rank, id, i);
+				id = in_data[i]->getFieldData<SimpleFieldi >("id").getData();
 			}
-
+			if(in_data[i]->hasData("velocity")){
+				velocity = in_data[i]->getFieldData<ArrayFieldf >("velocity").getArray();
+			}
 		}
-		//fprintf(stderr, "con1 %d velocity %f and density %f\n", sum_velocity, sum_density);
+		//fprintf(stderr, "con2 rank %d id %d and velocity %f\n", rank, id, velocity[1]);
+		fprintf(stderr, "con2 rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
