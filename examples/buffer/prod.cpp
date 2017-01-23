@@ -29,10 +29,6 @@
 using namespace decaf;
 using namespace std;
 
-// Buffering stuff
-static MPI_Win winBuffer;
-static int send = 0;
-
 // producer
 void prod(Decaf* decaf)
 {
@@ -71,17 +67,11 @@ int main(int argc,
 
     MPI_Init(NULL, NULL);
 
-    //Initialization of the window for buffering
-    MPI_Win_create(&send, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &winBuffer);
-
-
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
     // run decaf
     prod(decaf);
-
-    MPI_Win_free(&winBuffer);
 
     // cleanup
     delete decaf;

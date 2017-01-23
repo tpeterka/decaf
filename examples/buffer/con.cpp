@@ -59,14 +59,6 @@ void con(Decaf* decaf)
         }
         fprintf(stderr, "consumer sum = %d\n", sum);
 
-        // Signaling the dflow that the con can receive a new msg
-        // Rank 1 = dflow
-        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 1, 0, winBuffer);
-        int flagToSend = 0;
-        MPI_Put(&flagToSend, 1, MPI_INT, 1, 0, 1, MPI_INT, winBuffer);
-        MPI_Win_unlock(1, winBuffer);
-        fprintf(stderr, "Sent the command to the dflow\n");
-
         // Producer is putting every second
         // Generate an overflow between the dflow and the consumer
         sleep(5);
@@ -86,16 +78,11 @@ int main(int argc,
 
     MPI_Init(NULL, NULL);
 
-    //Initialization of the window for buffering
-    MPI_Win_create(&send, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &winBuffer);
-
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
     // run decaf
     con(decaf);
-
-    MPI_Win_free(&winBuffer);
 
     // cleanup
     delete decaf;
