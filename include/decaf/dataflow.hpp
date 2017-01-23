@@ -444,16 +444,20 @@ void
 decaf::
 Dataflow::put(pConstructData data, TaskType role)
 {
-
-    // clear old identifiers
-    data->removeData("src_type");
-    data->removeData("link_id");
-    data->removeData("dest_id");
+	pConstructData data_filtered;
+	if(data->hasData(string("decaf_quit")) ){ // To know if it's a quit message
+		set_quit(data_filtered);
+	}
+	else{
+		for(string key : keys()){
+			data_filtered->appendData(data, key);
+		}
+	}
 
     // encode type into message (producer/consumer or dataflow)
     shared_ptr<SimpleConstructData<TaskType> > value  =
         make_shared<SimpleConstructData<TaskType> >(role);
-    data->appendData(string("src_type"), value,
+	data_filtered->appendData(string("src_type"), value,
                     DECAF_NOFLAG, DECAF_SYSTEM,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -461,7 +465,7 @@ Dataflow::put(pConstructData data, TaskType role)
     // encode dataflow link id into message
     shared_ptr<SimpleConstructData<int> > value1  =
         make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-    data->appendData(string("link_id"), value1,
+	data_filtered->appendData(string("link_id"), value1,
                      DECAF_NOFLAG, DECAF_SYSTEM,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -473,14 +477,14 @@ Dataflow::put(pConstructData data, TaskType role)
             // encode destination link id into message
             shared_ptr<SimpleConstructData<int> > value2  =
                 make_shared<SimpleConstructData<int> >(wflow_con_id_);
-            data->appendData(string("dest_id"), value2,
+			data_filtered->appendData(string("dest_id"), value2,
                              DECAF_NOFLAG, DECAF_SYSTEM,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
             // send the message
             if(redist_prod_con_ == NULL)
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-            redist_prod_con_->process(data, DECAF_REDIST_SOURCE);
+			redist_prod_con_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_con_->flush();
         }
         else
@@ -488,14 +492,14 @@ Dataflow::put(pConstructData data, TaskType role)
             // encode destination link id into message
             shared_ptr<SimpleConstructData<int> > value2  =
                 make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-            data->appendData(string("dest_id"), value2,
+			data_filtered->appendData(string("dest_id"), value2,
                              DECAF_NOFLAG, DECAF_SYSTEM,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
             // send the message
             if(redist_prod_dflow_ == NULL)
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-            redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
+			redist_prod_dflow_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_dflow_->flush();
         }
     }
@@ -504,21 +508,19 @@ Dataflow::put(pConstructData data, TaskType role)
         // encode destination node id into message
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_con_id_);
-        data->appendData(string("dest_id"), value2,
+		data_filtered->appendData(string("dest_id"), value2,
                          DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
         // send the message
         if(redist_dflow_con_ == NULL)
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-        redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
+		redist_dflow_con_->process(data_filtered, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
-    }
-
-    data->removeData("src_type");
-    data->removeData("link_id");
-    data->removeData("dest_id");
+	}
 }
+
+
 
 void
 decaf::
@@ -528,7 +530,7 @@ Dataflow::get(pConstructData data, TaskType role)
     {
         if (redist_prod_dflow_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
-        redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+		redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
     }
     else if (role == DECAF_NODE)

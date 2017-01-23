@@ -264,19 +264,8 @@ void
 decaf::
 Decaf::put(pConstructData container)
 {
-	bool quit = container->hasData(string("decaf_quit"));// To know if it's a quit message
-
 	for (size_t i = 0; i < out_dataflows.size(); i++){
-		if(quit){// Just forwards the quit message
-			out_dataflows[i]->put(container, DECAF_NODE);
-		}
-		else{// Else we send the data with respect to the contracts
-			pConstructData data;
-			for(string key : out_dataflows[i]->keys()){
-				data->appendData(container, key);
-			}
-			out_dataflows[i]->put(data, DECAF_NODE);
-		}
+		out_dataflows[i]->put(container, DECAF_NODE);
 	}
 
     // link ranks that do overlap this node need to be run in one-time mode
@@ -293,18 +282,8 @@ void
 decaf::
 Decaf::put(pConstructData container, int i)
 {
-	bool quit = container->hasData(string("decaf_quit"));// To know if it's a quit message
+	out_dataflows[i]->put(container, DECAF_NODE);
 
-	if(quit){// Just forwards the quit message
-		out_dataflows[i]->put(container, DECAF_NODE);
-	}
-	else{
-		pConstructData data;
-		for(string key : out_dataflows[i]->keys()){
-			data->appendData(container, key);
-		}
-		out_dataflows[i]->put(data, DECAF_NODE);
-	}
 
 	// TODO remove the loop, with the given i in argument we know which one should be taken
 	// link ranks that do overlap this node need to be run in one-time mode
