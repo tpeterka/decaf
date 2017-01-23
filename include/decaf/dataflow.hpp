@@ -88,6 +88,9 @@ namespace decaf
             return in_data->hasData(string("decaf_quit"));
         }
 
+        void waitSignal(TaskType role);             // If a link and buffer activated, wait until we have the command to continue
+        void signalReady();            // If a cons and buffer activated, signal to the link that we are ready to receive a new message
+
 
     private:
         CommHandle world_comm_;          // handle to original world communicator
@@ -104,6 +107,12 @@ namespace decaf
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
         bool no_link;                    // True if the Dataflow doesn't have a Link
+        bool use_buffer;                 // True if the Dataflow manages a buffer.
+
+        // Buffer infos
+        int command;
+        MPI_Win window;
+        bool first_iteration;
         };
 
 } // namespace
@@ -125,7 +134,9 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_dflow_con_(NULL),
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
-    no_link(false)
+    no_link(false),
+    use_buffer(true),
+    first_iteration(true)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -408,6 +419,13 @@ Dataflow::Dataflow(CommHandle world_comm,
     else
         redist_prod_con_ = NULL;
 
+    // Buffering setup
+    if(use_buffer)
+    {
+        // Everyone is creating a window
+        MPI_Win_create(&command, 1, sizeof(int), MPI_INFO_NULL, world_comm, &window);
+    }
+
     err_ = DECAF_OK;
 }
 
@@ -425,6 +443,9 @@ Dataflow::~Dataflow()
         delete redist_dflow_con_;
     if (redist_prod_dflow_)
         delete redist_prod_dflow_;
+
+    if(use_buffer)
+        MPI_Win_free(&window);
 }
 
 // puts data into the dataflow
@@ -501,6 +522,9 @@ Dataflow::put(pConstructData data, TaskType role)
                          DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
+        if(use_buffer)
+            waitSignal(DECAF_LINK);
+
         // send the message
         if(redist_dflow_con_ == NULL)
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
@@ -511,6 +535,53 @@ Dataflow::put(pConstructData data, TaskType role)
     data->removeData("src_type");
     data->removeData("link_id");
     data->removeData("dest_id");
+}
+
+void
+decaf::
+Dataflow::waitSignal(TaskType role)
+{
+    // Just for links for now
+    if(role != DECAF_LINK)
+        return;
+
+    // First iteration we send immediatly to start the pipeline
+    if(first_iteration)
+    {
+        first_iteration = false;
+        return;
+    }
+
+    // Check the window
+    int localCommand = 1;
+    do
+    {
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 1, 0, window);
+        MPI_Get(&localCommand, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+        if(localCommand == 0)   // We are good to go
+        {
+            int newFlag = 1;
+            MPI_Put(&newFlag, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+        }
+        MPI_Win_unlock(1, window);
+    } while(localCommand != 0);
+
+    fprintf(stderr, "We received the signal. Processing...\n");
+}
+
+void
+decaf::
+Dataflow::signalReady()
+{
+    if(!is_con())
+        return;
+
+    // Only for consumer for now
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 1, 0, window);
+    int flag_to_send = 0;
+    MPI_Put(&flag_to_send, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+    MPI_Win_unlock(1, window);
+    fprintf(stderr, "Sent the signal to the dflow.\n");
 }
 
 void
