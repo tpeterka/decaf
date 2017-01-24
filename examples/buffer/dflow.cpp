@@ -41,9 +41,7 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
-        fprintf(stderr, "Forwarding data in dflow\n");
-        fprintf(stderr, "Iteration %i\n", iteration);
-
+        fprintf(stderr, "It %i: Forwarding data in dflow\n", iteration);
         iteration++;
 
         dataflow->put(in_data, DECAF_LINK);

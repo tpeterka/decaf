@@ -116,7 +116,10 @@ namespace decaf
         MPI_Win window;
         bool first_iteration;
         std::queue<pConstructData> buffer;  // Buffer
-        bool doGet;  // We do a get until we get a terminate message
+        bool doGet;                         // We do a get until we get a terminate message
+        CommHandle root_comm_;              // Communicator including the root of dflow and root of cons
+        int rank_dflow_root_comm_;          // Rank of the dflow root in root_comm_
+        int rank_con_root_comm_;            // Rank of the con root in root_comm_
         };
 
 } // namespace
@@ -141,7 +144,8 @@ Dataflow::Dataflow(CommHandle world_comm,
     no_link(false),
     use_buffer(true),
     first_iteration(true),
-    doGet(true)
+    doGet(true),
+    root_comm_(MPI_COMM_NULL)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -425,10 +429,44 @@ Dataflow::Dataflow(CommHandle world_comm,
         redist_prod_con_ = NULL;
 
     // Buffering setup
-    if(use_buffer)
+    if(!no_link && use_buffer)
     {
-        // Everyone is creating a window
-        MPI_Win_create(&command, 1, sizeof(int), MPI_INFO_NULL, world_comm, &window);
+        // Creating the group of with the root link and root consumer
+        if(world_rank == sizes_.con_start || world_rank == sizes_.dflow_start)
+        {
+            MPI_Group group, groupRoots;
+            MPI_Comm_group(world_comm, &group);
+
+            int ranges[2][3];
+            if(sizes_.dflow_start <= sizes_.con_start)
+            {
+                ranges[0][0] = sizes_.dflow_start;
+                ranges[0][1] = sizes_.dflow_start;
+                ranges[0][2] = 1;
+                ranges[1][0] = sizes_.con_start;
+                ranges[1][1] = sizes_.con_start;
+                ranges[1][2] = 1;
+                rank_dflow_root_comm_ = 0;
+                rank_con_root_comm_ = 1;
+            }
+            else
+            {
+                ranges[1][0] = sizes_.dflow_start;
+                ranges[1][1] = sizes_.dflow_start;
+                ranges[1][2] = 1;
+                ranges[0][0] = sizes_.con_start;
+                ranges[0][1] = sizes_.con_start;
+                ranges[0][2] = 1;
+                rank_dflow_root_comm_ = 1;
+                rank_con_root_comm_ = 0;
+            }
+            MPI_Group_range_incl(group, 2, ranges, &groupRoots);
+            MPI_Comm_create_group(world_comm, groupRoots, 0, &root_comm_);
+
+
+            // Only the root create a Window for the retroactive loop
+            MPI_Win_create(&command, 1, sizeof(int), MPI_INFO_NULL, root_comm_, &window);
+        }
     }
 
     err_ = DECAF_OK;
@@ -559,14 +597,14 @@ Dataflow::waitSignal(TaskType role)
     int localCommand = 1;
     do
     {
-        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 1, 0, window);
-        MPI_Get(&localCommand, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_comm_, 0, window);
+        MPI_Get(&localCommand, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, window);
         if(localCommand == 0)   // We are good to go
         {
             int newFlag = 1;
-            MPI_Put(&newFlag, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+            MPI_Put(&newFlag, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, window);
         }
-        MPI_Win_unlock(1, window);
+        MPI_Win_unlock(rank_dflow_root_comm_, window);
     } while(localCommand != 0);
 
     fprintf(stderr, "We received the signal. Processing...\n");
@@ -591,20 +629,20 @@ Dataflow::checkSignal(TaskType role)
     // 0 = send
     // other = block
     int localCommand = 1;
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 1, 0, window);
-    MPI_Get(&localCommand, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_comm_, 0, window);
+    MPI_Get(&localCommand, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, window);
     if(localCommand == 0)   // We are good to go
     {
         // Reseting the window value for next iteration
         int newFlag = 1;
-        MPI_Put(&newFlag, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
-        MPI_Win_unlock(1, window);
+        MPI_Put(&newFlag, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, window);
+        MPI_Win_unlock(rank_dflow_root_comm_, window);
 
         return true;
     }
 
     // We didn't have the command
-    MPI_Win_unlock(1, window);
+    MPI_Win_unlock(rank_dflow_root_comm_, window);
 
     return false;
 }
@@ -617,10 +655,10 @@ Dataflow::signalReady()
         return;
 
     // Only for consumer for now
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 1, 0, window);
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_comm_, 0, window);
     int flag_to_send = 0;
-    MPI_Put(&flag_to_send, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
-    MPI_Win_unlock(1, window);
+    MPI_Put(&flag_to_send, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, window);
+    MPI_Win_unlock(rank_dflow_root_comm_, window);
     fprintf(stderr, "Sent the signal to the dflow.\n");
 }
 
