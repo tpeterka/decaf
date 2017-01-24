@@ -28,6 +28,7 @@
 #include "transport/mpi/redist_proc_mpi.h"
 #include "transport/mpi/tools.hpp"
 #include <memory>
+#include <queue>
 #endif
 
 #include "types.hpp"
@@ -89,6 +90,7 @@ namespace decaf
         }
 
         void waitSignal(TaskType role);             // If a link and buffer activated, wait until we have the command to continue
+        bool checkSignal(TaskType role);            // If a link and buffer activated, check if we have the command to continue
         void signalReady();            // If a cons and buffer activated, signal to the link that we are ready to receive a new message
 
 
@@ -113,6 +115,8 @@ namespace decaf
         int command;
         MPI_Win window;
         bool first_iteration;
+        std::queue<pConstructData> buffer;  // Buffer
+        bool doGet;  // We do a get until we get a terminate message
         };
 
 } // namespace
@@ -136,7 +140,8 @@ Dataflow::Dataflow(CommHandle world_comm,
     type_(DECAF_OTHER_COMM),
     no_link(false),
     use_buffer(true),
-    first_iteration(true)
+    first_iteration(true),
+    doGet(true)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -522,8 +527,6 @@ Dataflow::put(pConstructData data, TaskType role)
                          DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
-        if(use_buffer)
-            waitSignal(DECAF_LINK);
 
         // send the message
         if(redist_dflow_con_ == NULL)
@@ -569,6 +572,43 @@ Dataflow::waitSignal(TaskType role)
     fprintf(stderr, "We received the signal. Processing...\n");
 }
 
+bool
+decaf::
+Dataflow::checkSignal(TaskType role)
+{
+    // Just for links for now
+    if(role != DECAF_LINK)
+        return false;
+
+    // First iteration we send immediatly to start the pipeline
+    if(first_iteration)
+    {
+        first_iteration = false;
+        return true;
+    }
+
+    // Checking the window to see if the command has been updated
+    // 0 = send
+    // other = block
+    int localCommand = 1;
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 1, 0, window);
+    MPI_Get(&localCommand, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+    if(localCommand == 0)   // We are good to go
+    {
+        // Reseting the window value for next iteration
+        int newFlag = 1;
+        MPI_Put(&newFlag, 1, MPI_INT, 1, 0, 1, MPI_INT, window);
+        MPI_Win_unlock(1, window);
+
+        return true;
+    }
+
+    // We didn't have the command
+    MPI_Win_unlock(1, window);
+
+    return false;
+}
+
 void
 decaf::
 Dataflow::signalReady()
@@ -592,11 +632,63 @@ Dataflow::get(pConstructData data, TaskType role)
     {
         if (redist_prod_dflow_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
-        redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
-        redist_prod_dflow_->flush();
+
+        if(use_buffer)
+        {
+            bool receivedSignal = false;
+
+            // First phase: Waiting for the signal and checking incoming msgs
+            while(!receivedSignal)
+            {
+                receivedSignal = checkSignal(role);
+
+                if(doGet)
+                {
+                    pConstructData container;
+                    bool received = redist_prod_dflow_->IGet(container);
+                    if(received)
+                    {
+                        if(Dataflow::test_quit(container))
+                        {
+                            doGet = false;
+                            fprintf(stderr, "Termination received. Won't perform a get anymore.\n");
+                        }
+                        redist_prod_dflow_->flush();
+                        buffer.push(container);
+                        fprintf(stderr, "New size of the queue: %zu\n", buffer.size());
+                    }
+                }
+
+            }
+
+            // Second phase: We got the signal
+            if(buffer.empty()) // No data received yet, we do a blocking get
+            {
+                if(!doGet)
+                {
+                    fprintf(stderr, "ERROR: trying to get after receiving a terminate msg.\n");
+                }
+                // We have no msg in queue, we treat directly the incoming msg
+                redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+                redist_prod_dflow_->flush();
+            }
+            else
+            {
+                // Won't do a copy, just pass the pointer of the map
+                data->merge(buffer.front().getPtr());
+                buffer.pop();
+                fprintf(stderr, "Dequeing a msg. New queue size: %zu\n", buffer.size());
+            }
+        }
+        else
+        {
+            redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+            redist_prod_dflow_->flush();
+        }
     }
     else if (role == DECAF_NODE)
     {
+        fprintf(stderr, "Waiting for data in con...\n");
         if(no_link)
         {
             if (redist_prod_con_ == NULL)
@@ -611,6 +703,7 @@ Dataflow::get(pConstructData data, TaskType role)
             redist_dflow_con_->process(data, DECAF_REDIST_DEST);
             redist_dflow_con_->flush();
         }
+        fprintf(stderr, "Data received in con.\n");
     }
 }
 

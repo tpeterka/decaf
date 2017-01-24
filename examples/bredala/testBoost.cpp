@@ -266,7 +266,7 @@ void printMap(pConstructData map)
     std::cout<<"]"<<std::endl;
 }
 
-void testConstructTypeSplit()
+/*void testConstructTypeSplit()
 {
     std::cout<<"Test of the serialization fonctionnality with ContructType"<<std::endl;
     std::cout<<"SPLITTING BASE OBJECT"<<std::endl;
@@ -313,7 +313,7 @@ void testConstructTypeSplit()
     std::cout<<"Merged map has "<<mergeContainer->getMap()->size()<<" fields."<<std::endl;
     mergeContainer->printKeys();
     std::cout<<"==========================="<<std::endl;
-}
+}*/
 
 void testConstructTypeSplitMPI()
 {
@@ -600,7 +600,7 @@ int main(int argc,
     {
         simpleSerializeTest();
         testConstructType();
-        testConstructTypeSplit();
+        //testConstructTypeSplit();
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

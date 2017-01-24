@@ -21,10 +21,15 @@ int main()
 
     vector<shared_ptr<BaseData> > chunks = container->split(ranges);
 
+    vector<shared_ptr<ConstructData> > convertedChunks;
+    for(unsigned int i = 0; i < chunks.size(); i++)
+        convertedChunks.push_back(dynamic_pointer_cast<ConstructData>(chunks[i]));
+
+
     pConstructData merged;
-    merged->merge(chunks[0]);
-    merged->merge(chunks[1]);
-    merged->merge(chunks[2]);
+    merged->merge(convertedChunks[0]);
+    merged->merge(convertedChunks[1]);
+    merged->merge(convertedChunks[2]);
 
     delete [] array;
 }

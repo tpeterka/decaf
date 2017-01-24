@@ -80,7 +80,7 @@ namespace  decaf {
     // virtual bool isMergeable() = 0;
 
     // Insert the data from other into the current objects
-    virtual bool merge(std::shared_ptr<BaseData> other) = 0;
+    //virtual bool merge(std::shared_ptr<BaseData> other) = 0;
 
     // Insert the data from other in its serialize form
     virtual bool merge(char* buffer, int size) = 0;
