@@ -44,7 +44,7 @@ void prod(Decaf* decaf)
 		}
 
 		SimpleFieldi d_index(rank);
-		ArrayFieldf d_velocity(array,3, 1);
+		ArrayFieldf d_velocity(array,3, 3);
 
 		pConstructData container;
 		container->appendData("index", d_index,
@@ -53,12 +53,12 @@ void prod(Decaf* decaf)
 
 		container->appendData("velocity", d_velocity,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		decaf->put(container);
 		fprintf(stderr, "prod rank %d sent %d fields\n", rank, container->getNbFields());
-		sleep(1);
+		usleep(50000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -98,7 +98,7 @@ void prod2(Decaf* decaf)
 
 		decaf->put(container);
 		fprintf(stderr, "prod2 rank %d sent %d fields\n", rank, container->getNbFields());
-		sleep(1);
+		usleep(50000);
 	}
 
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
@@ -115,8 +115,8 @@ void con(Decaf* decaf)
 	while (decaf->get(in_data))
 	{
 		int index = 0;
-		float* velocity;
-		float* density;
+		float *density, *velocity;
+		ArrayFieldf a_density, a_velocity;
 
 		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
@@ -125,14 +125,18 @@ void con(Decaf* decaf)
 				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
 			}
 			if(in_data[i]->hasData("velocity")){
-				velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity").getArray();
+				//velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity").getArray();
+				a_velocity.reset();
+				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
 			}
 			if(in_data[i]->hasData("density")){
-				density = in_data[i]->getFieldData<ArrayFieldf>("density").getArray();
+				a_density.reset();
+				a_density = in_data[i]->getFieldData<ArrayFieldf>("density");
 			}
 		}
 		//fprintf(stderr, "con rank %d received index %d velocity %f and density %f\n", rank, index, velocity[1], density[1]);
-		fprintf(stderr, "con rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
+		//fprintf(stderr, "con rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
+		fprintf(stderr, "con rank %d index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -150,6 +154,7 @@ void con2(Decaf* decaf)
 	{
 		int id = 0;
 		float* velocity;
+		ArrayFieldf a_velocity;
 
 		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
@@ -158,11 +163,14 @@ void con2(Decaf* decaf)
 				id = in_data[i]->getFieldData<SimpleFieldi >("id").getData();
 			}
 			if(in_data[i]->hasData("velocity")){
-				velocity = in_data[i]->getFieldData<ArrayFieldf >("velocity").getArray();
+				//velocity = in_data[i]->getFieldData<ArrayFieldf >("velocity").getArray();
+				a_velocity.reset();
+				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
 			}
 		}
 		//fprintf(stderr, "con2 rank %d id %d and velocity %f\n", rank, id, velocity[1]);
-		fprintf(stderr, "con2 rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
+		//fprintf(stderr, "con2 rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
+		fprintf(stderr, "con2 rank %d id %d velocity sie %d\n", rank, id, a_velocity.getArraySize());
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -178,7 +186,7 @@ extern "C"
 	           Dataflow* dataflow,                  // dataflow
 	           pConstructData in_data)   // input data
 	{
-		//fprintf(stderr, "Forwarding data in dflow, having %d fields\n", in_data->getNbFields());
+		//fprintf(stderr, "Forwarding data in dflow, having %d fields\n", in_data->getNbFields()-2); //-2 because there are 2 fields used for the system
 		dataflow->put(in_data, DECAF_LINK);
 	}
 } // extern "C"
@@ -216,7 +224,7 @@ int main(int argc,
          char** argv)
 {
 	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "my_test.json");
+	Workflow::make_wflow_from_json(workflow, "contract.json");
 
 	// run decaf
 	run(workflow);

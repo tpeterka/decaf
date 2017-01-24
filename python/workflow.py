@@ -102,7 +102,7 @@ def check_contracts(graph):
 class Topology:
   """ Object holder for informations about the plateform to use """
 
-  def __init__(self, name, nProcs, hostfilename = "", offsetRank = 0, procPerNode = 0, offsetProcPerNode = 0):
+  def __init__(self, name, nProcs = 0, hostfilename = "", offsetRank = 0, procPerNode = 0, offsetProcPerNode = 0):
 
       self.name = name                  # Name of the topology
       self.nProcs = nProcs                # Total number of MPI ranks in the topology
@@ -115,8 +115,9 @@ class Topology:
       self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
 
       # Minimum level of information required
-      if nProcs <= 0:
+      """if nProcs <= 0:
         raise ValueError("Invalid nProc. Trying to initialize a topology with no processes. nProc should be greated than 0.")
+      """
 
       if hostfilename != "":
         f = open(hostfilename, "r")
@@ -297,7 +298,7 @@ def getNodeWithRank(rank, graph):
             return ('node', node)
 
     for edge in graph.edges_iter(data=True):
-        if edge[2]['start_proc'] == rank:
+        if (edge[2]['start_proc'] == rank) and (edge[2]['nprocs'] != 0):
             return ('edge', edge)
 
     return ('notfound', graph.nodes_iter())
@@ -332,12 +333,10 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
       if type == 'edge':
 
-        if exe[2]['nprocs'] == 0:
-          continue #The link is disable
-
-        mpirunCommand += "-np "+str(exe[2]['nprocs'])
-        mpirunCommand += " "+str(exe[2]['cmdline'])+" : "
-        currentRank += exe[2]['nprocs']
+        if exe[2]['nprocs'] != 0:
+          mpirunCommand += "-np "+str(exe[2]['nprocs'])
+          mpirunCommand += " "+str(exe[2]['cmdline'])+" : "
+          currentRank += exe[2]['nprocs']
 
     # Writting the final file
     f = open(outputFile, "w")
@@ -352,10 +351,9 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
 # Process the graph and generate the necessary files
 
-def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = "", contracts = True):
-    if contracts: # We check contracts only if the boolean argument is set to True, meaning there are contracts added for each node of the graph
-      if not check_contracts(graph):
-        return
+def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = ""):
+    if not check_contracts(graph):
+      return
 
     processTopology(graph)
     workflowToJson(graph, libPath, name+".json")
