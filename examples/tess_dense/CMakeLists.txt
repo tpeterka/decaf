@@ -6,6 +6,8 @@ if                            (${serial} MATCHES "CGAL")
   find_package                (CGAL)
 endif                         ()
 
+add_definitions             (-DDIY_NO_THREADS -DTESS_NO_OPENMP )
+
 message("Building tess_dense (mpmd) example")
 include_directories(${TESS_INCLUDE_DIR} ${DIY_INCLUDE_DIR})
 
@@ -23,7 +25,7 @@ target_link_libraries       (points
   ${libraries} bredala_transport bredala_datamodel)
 if                          (${serial} MATCHES "CGAL")
   include                   (${CGAL_USE_FILE})
-  add_definitions           (${CGAL_CXX_FLAGS_INIT})
+  add_definitions           (${CGAL_CXX_FLAGS_INIT} -DTESS_USE_CGAL)
   include_directories       (${CGAL_INCLUDE_DIRS} SYSTEM ${Boost_INCLUDE_DIR})
   target_link_libraries     (tess
                             ${libraries}
@@ -42,6 +44,7 @@ if                          (${serial} MATCHES "CGAL")
   add_definitions           (-DTESS_CGAL_ALLOW_SPATIAL_SORT)
   add_definitions           (-DTESS_USE_CGAL)
 else                        ()
+  add_definitions           (-DTESS_USE_QHull)
   target_link_libraries     (tess
                             ${libraries}
                             ${TESS_LIBRARY}
