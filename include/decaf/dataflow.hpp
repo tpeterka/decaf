@@ -65,6 +65,7 @@ namespace decaf
         void forward();
 
 		vector<string>& keys(){ return list_keys_; }
+		bool is_contract(){		return is_contract_;}
 
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
@@ -108,7 +109,8 @@ namespace decaf
         int wflow_dflow_id_;             // index of corresponding link in the workflow
         bool no_link;                    // True if the Dataflow doesn't have a Link
 
-		vector<string> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer
+		bool is_contract_;			 // boolean to say if the dataflow has a contract or not
+		vector<string> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if is_contract is set to true
         };
 
 } // namespace
@@ -127,7 +129,6 @@ Dataflow::Dataflow(CommHandle world_comm,
     wflow_prod_id_(prod),
     wflow_dflow_id_(dflow),
     wflow_con_id_(con),
-    list_keys_(list_keys),
     redist_prod_dflow_(NULL),
     redist_dflow_con_(NULL),
     redist_prod_con_(NULL),
@@ -164,6 +165,14 @@ Dataflow::Dataflow(CommHandle world_comm,
         err_ = DECAF_COMM_SIZES_ERR;
         return;
     }
+
+	if(list_keys.size() == 0){
+		is_contract_ = false;
+	}
+	else{
+		is_contract_ = true;
+		list_keys_ = list_keys;
+	}
 
     // debug
     // if (world_rank == 0)
@@ -445,13 +454,22 @@ decaf::
 Dataflow::put(pConstructData data, TaskType role)
 {
 	pConstructData data_filtered;
-	if(data->hasData(string("decaf_quit")) ){ // To know if it's a quit message
-		set_quit(data_filtered);
-	}
-	else{
-		for(string key : keys()){
-			data_filtered->appendData(data, key);
+
+	if(is_contract()){// If this dataflow is related to a contract, need to filter the data to be sent
+		if(data->hasData(string("decaf_quit")) ){ // To know if it's a quit message
+			set_quit(data_filtered);
 		}
+		else{
+			for(string key : keys()){
+				data_filtered->appendData(data, key);
+			}
+		}
+	}
+	else{// No contract, we just send all data
+		data->removeData("src_type");
+		data->removeData("link_id");
+		data->removeData("dest_id");
+		data_filtered = data;
 	}
 
     // encode type into message (producer/consumer or dataflow)
@@ -518,6 +536,11 @@ Dataflow::put(pConstructData data, TaskType role)
 		redist_dflow_con_->process(data_filtered, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
 	}
+
+/*
+	data_filtered->removeData("src_type");
+	data_filtered->removeData("link_id");
+	data_filtered->removeData("dest_id");*/
 }
 
 

@@ -1,11 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 node example for contracts
-//
-// prod (2 procs) - con (2 procs)
-// prod2 (2 procs) - con2 (2procs)
-//
-// entire workflow takes 16 procs (8 dataflows in total)
+// 4 nodes example for contracts
 //
 // clement Mommessin
 // Argonne National Laboratory
@@ -170,7 +165,7 @@ void con2(Decaf* decaf)
 		}
 		//fprintf(stderr, "con2 rank %d id %d and velocity %f\n", rank, id, velocity[1]);
 		//fprintf(stderr, "con2 rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
-		fprintf(stderr, "con2 rank %d id %d velocity sie %d\n", rank, id, a_velocity.getArraySize());
+		fprintf(stderr, "con2 rank %d id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow

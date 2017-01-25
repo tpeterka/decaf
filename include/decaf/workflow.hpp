@@ -188,11 +188,18 @@ struct Workflow                              // an entire workflow
 		node.nprocs = v.second.get<int>("nprocs");
 		node.func = v.second.get<std::string>("func");
 
-		for(bpt::ptree::value_type &pair: v.second.get_child("inputs")){
-			node.inputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
+		boost::optional<bpt::ptree&> pt_inputs = v.second.get_child_optional("inputs");
+		if(pt_inputs){
+			for(bpt::ptree::value_type &pair: pt_inputs.get()){
+				node.inputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
+			}
 		}
-		for(bpt::ptree::value_type &pair: v.second.get_child("outputs")){
-			node.outputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
+
+		boost::optional<bpt::ptree&> pt_outputs = v.second.get_child_optional("outputs");
+		if(pt_outputs){
+			for(bpt::ptree::value_type &pair: pt_outputs.get()){
+				node.outputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
+			}
 		}
 
 		workflow.nodes.push_back( node );
@@ -220,9 +227,11 @@ struct Workflow                              // an entire workflow
 		link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
 		link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
 
-
-		for(bpt::ptree::value_type &item: v.second.get_child("keys")){
-			link.list_keys.push_back(item.second.data());
+		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
+		if(pt_keys){
+			for(bpt::ptree::value_type &item: pt_keys.get()){
+				link.list_keys.push_back(item.second.data());
+			}
 		}
 
         workflow.links.push_back( link );

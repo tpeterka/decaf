@@ -52,50 +52,48 @@ class Contract:
 # Checks if the intersection of each pair of prod/con contracts of an edge is non empty
 # Then checks if all keys of a consumer are received
 def check_contracts(graph):
-    dict = defaultdict(list) # dictionary that lists the keys needed for a consumer
+    dict = defaultdict(set) # dictionary that lists the keys received by a consumer
     
     for edge in graph.edges_iter(data=True):
         prod = graph.node[edge[0]]
         con = graph.node[edge[1]]
 
-        if prod["contract"].outputs == {}:
-            print "ERROR while checking contracts: %s has no outputs" % edge[0]
-            return False
-        else:
-            prod_out = prod["contract"].outputs
+        if ("contract" in prod) and ("contract" in con):
+          if prod["contract"].outputs == {}:
+              raise ValueError("ERROR while checking contracts: %s has no outputs" % edge[0])
+          else:
+              prod_out = prod["contract"].outputs
 
-        if con["contract"].inputs == {}:
-            print "ERROR while checking contracts: %s has no inputs" % edge[1]
-            return False
-        else:
-            con_in = con["contract"].inputs
+          if con["contract"].inputs == {}:
+              raise ValueError("ERROR while checking contracts: %s has no inputs" % edge[1])
+          else:
+              con_in = con["contract"].inputs
 
-        # We add for each edge the list of keys which is the intersection of the two contracts
+          # We add for each edge the list of keys which is the intersection of the two contracts
+          intersection_keys = []
+          for key in con_in.keys():
+              if (key in prod_out) and (con_in[key] == prod_out[key]): # Dumb typechecking
+                  # This typechecking is silent, two identical keys with different type will be ignored and will not be added to the intersection list
+                  intersection_keys.append(key)
+                  dict[edge[1]].add(key)
 
-        intersection_keys = []
-        if not edge[1] in dict:
-            for key in con_in.keys():
-                dict[edge[1]].append(key)
+          if len(intersection_keys) == 0:
+              raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
 
-        for key in con_in.keys():
-            if (key in prod_out) and (con_in[key] == prod_out[key]): # Dumb typechecking
-                # This typechecking is silent, two identical keys with different type will be ignored and will not be added to the intersection list
-                intersection_keys.append(key)
-                dict[edge[1]].remove(key)
+          # We add the list of keys to be exchanged by the pair prod/con
+          edge[2]['keys'] = intersection_keys
 
-        if len(intersection_keys) == 0:
-            print "ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1])
-            return False
+    for name, set_k in dict.items():
+    	needed = graph.node[name]['contract'].inputs
+    	received = list(set_k)
+        complement = [item for item in needed if item not in received]
+        if len(complement) != 0:
+          s = "ERROR %s does not receive the following:" % name
+          for key in complement:
+            s+= " %s:%s," %(key, needed[key])
+          #print s.rstrip(',')
+          raise ValueError(s.rstrip(','))
 
-        # We add the list of keys to be exchanged by the pair prod/con
-        edge[2]['keys'] = intersection_keys
-
-    for key, value in dict.items():
-        if len(value) != 0:
-            print "ERROR %s does not receive the following keys (or receives it with different type): %s" % (key, value)
-            return False
-
-    return True
 # End of function check_contracts
 
 
@@ -352,9 +350,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 # Process the graph and generate the necessary files
 
 def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = ""):
-    if not check_contracts(graph):
-      return
-
+    check_contracts(graph)
     processTopology(graph)
     workflowToJson(graph, libPath, name+".json")
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
