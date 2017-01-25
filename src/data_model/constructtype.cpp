@@ -225,6 +225,11 @@ bool
 decaf::
 ConstructData::appendData(pConstructData data, const string name)
 {
+	if(!data->hasData(name)){
+		fprintf(stderr, "ERROR : appendData failed. The field \"%s\" is not present in the data model in argument.\n", name.c_str() );
+		return false;
+	}
+
 	std::pair<std::map<std::string, datafield>::iterator,bool> ret;
 	ret = container_->insert(std::pair<std::string, datafield>(name, data->container_->at(name)));
 
@@ -249,6 +254,11 @@ bool
 decaf::
 ConstructData::appendData(pConstructData data, const char* name)
 {
+	if(!data->hasData(name)){
+		fprintf(stderr, "ERROR : appendData failed. The field \"%s\" is not present in the data model in argument.\n", name );
+		return false;
+	}
+
 	std::pair<std::map<std::string, datafield>::iterator,bool> ret;
 	ret = container_->insert(std::pair<std::string, datafield>(name, data->container_->at(name)));
 

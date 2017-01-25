@@ -75,14 +75,14 @@ namespace decaf
         static
         void
         set_quit(pConstructData out_data)   // output message
-            {
-                shared_ptr<SimpleConstructData<int> > data  =
-                    make_shared<SimpleConstructData<int> >(1);
-                out_data->appendData(string("decaf_quit"), data,
-                                     DECAF_NOFLAG, DECAF_SYSTEM,
-                                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
-                out_data->setSystem(true);
-            }
+		{
+			shared_ptr<SimpleConstructData<int> > data  =
+			    make_shared<SimpleConstructData<int> >(1);
+			out_data->appendData(string("decaf_quit"), data,
+			                     DECAF_NOFLAG, DECAF_SYSTEM,
+			                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+			out_data->setSystem(true);
+		}
 
         // tests whether a message is a quit command
         static
@@ -164,8 +164,9 @@ Dataflow::Dataflow(CommHandle world_comm,
     {
         err_ = DECAF_COMM_SIZES_ERR;
         return;
-    }
+	}
 
+	// Sets the boolean value to true/false whether the dataflow is related to a contract or not
 	if(list_keys.size() == 0){
 		is_contract_ = false;
 	}
@@ -461,7 +462,12 @@ Dataflow::put(pConstructData data, TaskType role)
 		}
 		else{
 			for(string key : keys()){
-				data_filtered->appendData(data, key);
+				if(!data->hasData(key)){// If the key is not present in the data the contract is not respected.
+					fprintf(stderr, "ERROR : Contract not respected. The field \"%s\" is not present in the data model.\n", key.c_str());
+				}
+				else{
+					data_filtered->appendData(data, key);
+				}
 			}
 		}
 	}
@@ -537,10 +543,6 @@ Dataflow::put(pConstructData data, TaskType role)
         redist_dflow_con_->flush();
 	}
 
-/*
-	data_filtered->removeData("src_type");
-	data_filtered->removeData("link_id");
-	data_filtered->removeData("dest_id");*/
 }
 
 

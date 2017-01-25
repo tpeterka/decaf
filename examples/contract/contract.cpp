@@ -46,10 +46,10 @@ void prod(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
-		container->appendData("velocity", d_velocity,
+		/*container->appendData("velocity", d_velocity,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
-
+							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+*/
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		decaf->put(container);
 		fprintf(stderr, "prod rank %d sent %d fields\n", rank, container->getNbFields());
@@ -77,17 +77,18 @@ void prod2(Decaf* decaf)
 			den_array[i] = (rank+1)*2*timestep*den*(i+1);
 		}
 
-
 		ArrayFieldf d_vel(vel_array, 3, 3);
 		ArrayFieldf d_density(den_array, 3, 3);
 		SimpleFieldi d_id(rank);
 
 		pConstructData container;
 		container->appendData("id", d_id);
-		container->appendData("vel", d_vel,
+		container->appendData("density", d_density,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
-		container->appendData("density", d_density,
+
+		//Data vel is produced but not used in this example
+		container->appendData("vel", d_vel,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
@@ -120,7 +121,6 @@ void con(Decaf* decaf)
 				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
 			}
 			if(in_data[i]->hasData("velocity")){
-				//velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity").getArray();
 				a_velocity.reset();
 				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
 			}
@@ -129,9 +129,8 @@ void con(Decaf* decaf)
 				a_density = in_data[i]->getFieldData<ArrayFieldf>("density");
 			}
 		}
-		//fprintf(stderr, "con rank %d received index %d velocity %f and density %f\n", rank, index, velocity[1], density[1]);
-		//fprintf(stderr, "con rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
-		fprintf(stderr, "con rank %d index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
+
+		//fprintf(stderr, "con rank %d index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -163,9 +162,8 @@ void con2(Decaf* decaf)
 				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
 			}
 		}
-		//fprintf(stderr, "con2 rank %d id %d and velocity %f\n", rank, id, velocity[1]);
-		//fprintf(stderr, "con2 rank %d received velocities: %f %f %f\n", rank, velocity[0], velocity[1], velocity[2]);
-		fprintf(stderr, "con2 rank %d id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
+
+		//fprintf(stderr, "con2 rank %d id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow

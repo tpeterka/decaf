@@ -43,8 +43,8 @@ w.add_node("con1",  topology=subtopos[2], contract=contractC1, func='con', cmdli
 w.add_edge("prod1", "con1", topology=subtopos[4], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='contract')
 
 w.add_node("prod2", topology=subtopos[1], contract=contractP2, func='prod2', cmdline='contract')
-#w.add_node("con2",  topology=subtopos[3], contract=contractC2, func='con2', cmdline='contract')
-w.add_node("con2",  topology=subtopos[3], func='con2', cmdline='contract')
+w.add_node("con2",  topology=subtopos[3], contract=contractC2, func='con2', cmdline='contract')
+#w.add_node("con2",  topology=subtopos[3], func='con2', cmdline='contract')
 
 w.add_edge("prod1", "con2", topology=subtopos[5], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='contract')
 w.add_edge("prod2", "con1", topology=subtopos[6], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='contract')
