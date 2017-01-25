@@ -165,7 +165,7 @@ void deduplicate(DBlock*                           b,
         size_t total = 0;
         for (DuplicateCountMap::const_iterator it = count.begin(); it != count.end(); ++it)
             total += it->second;
-        fprintf(stderr, "gid=%d found %d particles that appear more than once, with %d "
+        fprintf(stderr, "gid=%d found %ld particles that appear more than once, with %ld "
                 " total extra copies\n", b->gid, count.size(), total);
     }
 }
