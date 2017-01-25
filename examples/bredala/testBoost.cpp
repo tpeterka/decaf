@@ -194,7 +194,7 @@ void simpleSerializeTest()
     std::cout<<"Test with normal object successful"<<std::endl;
 
 
-    delete [] p;
+    delete p;
     delete [] newparticule;
 }
 
