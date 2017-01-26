@@ -43,7 +43,8 @@ namespace decaf
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
                  int con,                        // id in workflow structure of consumer node
-		         vector<string>,
+		         vector<pair<string,string>> list_key, // list of key/type if related to a contract
+		         int check_types,					   // level of typechecking if related to a contract
                  Decomposition prod_dflow_redist // decompositon between producer and dataflow
                  = DECAF_CONTIG_DECOMP,
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
@@ -64,7 +65,7 @@ namespace decaf
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
-		vector<string>& keys(){ return list_keys_; }
+		vector<pair<string,string>>& keys(){ return list_keys_; }
 		bool is_contract(){		return bContract_;}
 
         // Clear the buffer of the redistribution components.
@@ -110,7 +111,8 @@ namespace decaf
         bool no_link;                    // True if the Dataflow doesn't have a Link
 
 		bool bContract_;			 // boolean to say if the dataflow has a contract or not
-		vector<string> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+		int check_types_;			 // level of typechecking used; Relevant if bContract_ is set to true
+		vector<pair<string,string>> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
         };
 
 } // namespace
@@ -121,7 +123,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int prod,
                    int dflow,
                    int con,
-                   vector<string> list_keys,
+                   vector<pair<string,string>> list_keys,
+                   int check_types = 0,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist) :
     world_comm_(world_comm),
@@ -133,6 +136,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_dflow_con_(NULL),
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
+    check_types_(check_types),
     no_link(false)
 {
     // DEPRECATED
@@ -462,15 +466,16 @@ Dataflow::put(pConstructData data, TaskType role)
 			set_quit(data_filtered);
 		}
 		else{
-			for(string key : keys()){
-				if(!data->hasData(key)){// If the key is not present in the data the contract is not respected.
-					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", key.c_str());
+			for(pair<string,string> pair : keys()){
+				if(!data->hasData(pair.first)){// If the key is not present in the data the contract is not respected.
+					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", pair.first.c_str());
 					return false;
 				}
-				else{
+				if(check_types_ > 1){
 					//TODO do some typechecking here
-					data_filtered->appendData(data, key);
+					// return false if type does not correspond to the contract
 				}
+				data_filtered->appendData(data, pair.first);
 			}
 		}
 	}
@@ -599,10 +604,14 @@ Dataflow::get(pConstructData data, TaskType role)
 
 	// Checks if all keys of the contract are in the data
 	if(is_contract()){
-		for(string key : keys()){
-			if(! data->hasData(key)){
-				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", key.c_str());
+		for(pair<string,string> pair : keys()){
+			if(! data->hasData(pair.first)){
+				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", pair.first.c_str());
 				return false;
+			}
+			if(check_types_ > 1){
+				//TODO ADD TYPECHECKING HERE
+				// return false if the type does not correspond to the contract
 			}
 		}
 	}

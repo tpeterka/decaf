@@ -34,23 +34,17 @@ struct WorkflowNode                          // a producer or consumer
     WorkflowNode()                                {}
     WorkflowNode(int start_proc_,
                  int nprocs_,
-	             string func_,
-	             vector<pair<string, string>> inputs_,
-	             vector<pair<string, string>> outputs_) :
+	             string func_) :
         start_proc(start_proc_),
         nprocs(nprocs_),
-        func(func_),
-	    inputs(inputs_),
-	    outputs(outputs_),
+	    func(func_),
         args(NULL)                                {}
     vector<int> out_links; // indices of outgoing links
     vector<int> in_links;  // indices of incoming links
     int start_proc;        // starting proc rank in world communicator for this producer or consumer
     int nprocs;            // number of processes for this producer or consumer
     string func;           // name of node callback
-    void* args;            // callback arguments
-	vector<pair<string, string>> inputs;	// pairs <key, type> for the input data
-	vector<pair<string, string>> outputs;   // pairs <key, type> for the output data
+	void* args;            // callback arguments
     void add_out_link(int link) { out_links.push_back(link); }
     void add_in_link(int link) { in_links.push_back(link); }
 };
@@ -66,7 +60,8 @@ struct WorkflowLink                          // a dataflow
                  string path_,
                  string prod_dflow_redist_,
 	             string dflow_con_redist_,
-	             vector<string> list_keys_) :
+	             vector<pair<string,string>> list_keys_,
+	             int check_types_) :
         prod(prod_),
         con(con_),
         start_proc(start_proc_),
@@ -76,7 +71,8 @@ struct WorkflowLink                          // a dataflow
         path(path_),
         prod_dflow_redist(prod_dflow_redist_),
 	    dflow_con_redist(dflow_con_redist_),
-	    list_keys(list_keys_)					{}
+	    list_keys(list_keys_),
+	    check_types(check_types_)				{}
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -86,7 +82,10 @@ struct WorkflowLink                          // a dataflow
     string path;                // path to callback function module
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
-	vector<string> list_keys;   // keys of the data to be exchanged b/w the producer and consumer
+
+	// The following two are only relevant if the dataflow is related to a contract
+	vector<pair<string, string>> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
+	int check_types;						  // level of checking for the type of data to be exchanged
 };
 
 struct Workflow                              // an entire workflow
@@ -188,7 +187,7 @@ struct Workflow                              // an entire workflow
 		node.nprocs = v.second.get<int>("nprocs");
 		node.func = v.second.get<std::string>("func");
 
-		boost::optional<bpt::ptree&> pt_inputs = v.second.get_child_optional("inputs");
+		/*boost::optional<bpt::ptree&> pt_inputs = v.second.get_child_optional("inputs");
 		if(pt_inputs){
 			for(bpt::ptree::value_type &pair: pt_inputs.get()){
 				node.inputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
@@ -200,12 +199,14 @@ struct Workflow                              // an entire workflow
 			for(bpt::ptree::value_type &pair: pt_outputs.get()){
 				node.outputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
 			}
-		}
+		}*/
 
 		workflow.nodes.push_back( node );
       }
 
       string path = root.get<std::string>("workflow.path");
+
+	  int check_types = root.get<int>("workflow.check_types");
 
       /* 
        * similarly for the edges
@@ -229,9 +230,10 @@ struct Workflow                              // an entire workflow
 
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
 		if(pt_keys){
-			for(bpt::ptree::value_type &item: pt_keys.get()){
-				link.list_keys.push_back(item.second.data());
+			for(bpt::ptree::value_type &pair: pt_keys.get()){
+				link.list_keys.push_back(std::pair<string,string>(pair.first, pair.second.data()));
 			}
+			link.check_types = check_types;
 		}
 
         workflow.links.push_back( link );

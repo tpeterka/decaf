@@ -556,7 +556,8 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
                                          dflow,
 		                                 con,
 		                                 workflow_.links[i].list_keys,
-                                         prod_dflow_redist,
+		                                 workflow_.links[i].check_types,
+		                                 prod_dflow_redist,
 		                                 dflow_con_redist));
 
         dataflows[i]->err();

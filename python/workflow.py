@@ -27,7 +27,7 @@ class Contract:
       if "outputs" in contract:
         for key, val in contract["outputs"].items():
           self.outputs[key] = val
-
+  # End constructor
 
   def addInput(self, key, type):
     self.inputs[key] = type
@@ -43,15 +43,11 @@ class Contract:
     for key, val in dict.items():
         self.outputs[key] = val
 
-  #TODO for debugging purpose
-  def my_print(self):
-    print "inputs", self.inputs
-    print "outputs", self.outputs
 # End of class Contract
 
 # Checks if the intersection of each pair of prod/con contracts of an edge is non empty
 # Then checks if all keys of a consumer are received
-def check_contracts(graph):
+def check_contracts(graph, check_types):
     dict = defaultdict(set) # dictionary that lists the keys received by a consumer
     
     for edge in graph.edges_iter(data=True):
@@ -69,19 +65,27 @@ def check_contracts(graph):
           else:
               con_in = con["contract"].inputs
 
-          # We add for each edge the list of keys which is the intersection of the two contracts
-          intersection_keys = []
-          for key in con_in.keys():
-              if (key in prod_out) and (con_in[key] == prod_out[key]): # Dumb typechecking
-                  # This typechecking is silent, two identical keys with different type will be ignored and will not be added to the intersection list
-                  intersection_keys.append(key)
+          # We add for each edge the list of pairs key/type which is the intersection of the two contracts
+          intersection_keys = {key:con_in[key] for key in con_in.keys() if (key in prod_out) and ( (check_types == 0) or (con_in[key] == prod_out[key]) ) }
+          for key in intersection_keys.keys():
+          	dict[edge[1]].add(key)
+
+          """ This part does the same as the 3 lines above
+          intersection_keys = {}
+          for key in [key for key in con_in.keys() if key in prod_out] :
+                if (check_types == 0) or (con_in[key] == prod_out[key]):
+                                        # This typechecking is silent, two identical keys with different types will be ignored 
+                                        # and will not be added to the intersection list
+                  intersection_keys[key] = con_in[key]
                   dict[edge[1]].add(key)
+		  """		  
 
           if len(intersection_keys) == 0:
               raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
 
-          # We add the list of keys to be exchanged by the pair prod/con
+          # We add the list of pairs key/type to be exchanged b/w the producer and consumer
           edge[2]['keys'] = intersection_keys
+
 
     for name, set_k in dict.items():
     	needed = graph.node[name]['contract'].inputs
@@ -93,7 +97,6 @@ def check_contracts(graph):
             s+= " %s:%s," %(key, needed[key])
           #print s.rstrip(',')
           raise ValueError(s.rstrip(','))
-
 # End of function check_contracts
 
 
@@ -112,10 +115,6 @@ class Topology:
       self.procPerNode = procPerNode    # Number of MPI ranks per node. If not given, deduced from the host list
       self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
 
-      # Minimum level of information required
-      """if nProcs <= 0:
-        raise ValueError("Invalid nProc. Trying to initialize a topology with no processes. nProc should be greated than 0.")
-      """
 
       if hostfilename != "":
         f = open(hostfilename, "r")
@@ -134,6 +133,7 @@ class Topology:
 
       if len(self.hostlist) != self.nProcs:
           raise ValueError("The number of hosts does not match the number of procs.")
+  # End of constructor
 
   def isInitialized(self):
       return self.nProcs > 0
@@ -230,7 +230,7 @@ def processTopology(graph):
             edge[2]['nprocs'] = topo.nProcs
 
 
-def workflowToJson(graph, libPath, outputFile):
+def workflowToJson(graph, libPath, outputFile, check_types):
     print "Generating graph description file "+outputFile
 
     nodes   = []
@@ -242,6 +242,7 @@ def workflowToJson(graph, libPath, outputFile):
     content +="   \"workflow\" :\n"
     content +="   {\n"
     content +="   \"path\" : \""+libPath+"\",\n"
+    content +="   \"check_types\" : \""+str(check_types)+"\",\n"
     content +="   \"nodes\" : [\n"
 
     i = 0
@@ -251,9 +252,9 @@ def workflowToJson(graph, libPath, outputFile):
         content +="       \"start_proc\" : "+str(node[1]['start_proc'])
         content +=",\n       \"nprocs\" : "+str(node[1]['nprocs'])
         content +=",\n       \"func\" : \""+node[1]['func']+"\""
-        if 'contract' in node[1]:
+        """if 'contract' in node[1]: # TODO not used if the list of key/type is given for each edge
           content +=",\n       \"inputs\" : " + json.dumps(node[1]['contract'].inputs, sort_keys=True)
-          content +=",\n       \"outputs\" : "+json.dumps(node[1]['contract'].outputs, sort_keys=True)
+          content +=",\n       \"outputs\" : "+json.dumps(node[1]['contract'].outputs, sort_keys=True)"""
         content +="\n      },\n"
 
         node[1]['index'] = i
@@ -347,10 +348,12 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     f.close()
     os.system("chmod a+rx "+outputFile)
 
-# Process the graph and generate the necessary files
-
-def processGraph(graph, name, libPath, mpirunPath = "", mpirunOpt = ""):
-    check_contracts(graph)
+""" Process the graph and generate the necessary files
+  check_types = 0 means no typechecking; 1 means typechecking at python script only
+  2 means typechecking both at python script and at runtime; Only relevant if contracts are used
+"""
+def processGraph(graph, name, libPath, check_types = 1, mpirunPath = "", mpirunOpt = ""):
+    check_contracts(graph, check_types)
     processTopology(graph)
-    workflowToJson(graph, libPath, name+".json")
+    workflowToJson(graph, libPath, name+".json", check_types)
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
