@@ -49,8 +49,8 @@ namespace decaf
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
                  = DECAF_CONTIG_DECOMP);
         ~Dataflow();
-        void put(pConstructData data, TaskType role);
-        void get(pConstructData data, TaskType role);
+		bool put(pConstructData data, TaskType role);
+		bool get(pConstructData data, TaskType role);
         DecafSizes* sizes()    { return &sizes_; }
         void shutdown();
         void err()             { ::all_err(err_); }
@@ -65,7 +65,7 @@ namespace decaf
         void forward();
 
 		vector<string>& keys(){ return list_keys_; }
-		bool is_contract(){		return is_contract_;}
+		bool is_contract(){		return bContract_;}
 
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
@@ -109,8 +109,8 @@ namespace decaf
         int wflow_dflow_id_;             // index of corresponding link in the workflow
         bool no_link;                    // True if the Dataflow doesn't have a Link
 
-		bool is_contract_;			 // boolean to say if the dataflow has a contract or not
-		vector<string> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if is_contract is set to true
+		bool bContract_;			 // boolean to say if the dataflow has a contract or not
+		vector<string> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
         };
 
 } // namespace
@@ -168,10 +168,10 @@ Dataflow::Dataflow(CommHandle world_comm,
 
 	// Sets the boolean value to true/false whether the dataflow is related to a contract or not
 	if(list_keys.size() == 0){
-		is_contract_ = false;
+		bContract_ = false;
 	}
 	else{
-		is_contract_ = true;
+		bContract_ = true;
 		list_keys_ = list_keys;
 	}
 
@@ -450,7 +450,8 @@ Dataflow::~Dataflow()
 // - workflow link id corresponding to this dataflow
 // - destination workflow node id or link id, depending on type of destination
 // NB: source is *link* id while destination is *either node or link* id
-void
+// Returns true if ok, false if an ERROR occured
+bool
 decaf::
 Dataflow::put(pConstructData data, TaskType role)
 {
@@ -463,15 +464,17 @@ Dataflow::put(pConstructData data, TaskType role)
 		else{
 			for(string key : keys()){
 				if(!data->hasData(key)){// If the key is not present in the data the contract is not respected.
-					fprintf(stderr, "ERROR : Contract not respected. The field \"%s\" is not present in the data model.\n", key.c_str());
+					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", key.c_str());
+					return false;
 				}
 				else{
+					//TODO do some typechecking here
 					data_filtered->appendData(data, key);
 				}
 			}
 		}
 	}
-	else{// No contract, we just send all data
+	else{ // No contract in this dataflow, we just send all data
 		data->removeData("src_type");
 		data->removeData("link_id");
 		data->removeData("dest_id");
@@ -506,8 +509,10 @@ Dataflow::put(pConstructData data, TaskType role)
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
             // send the message
-            if(redist_prod_con_ == NULL)
+			if(redist_prod_con_ == NULL){
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
+				return false;
+			}
 			redist_prod_con_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_con_->flush();
         }
@@ -521,8 +526,10 @@ Dataflow::put(pConstructData data, TaskType role)
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
             // send the message
-            if(redist_prod_dflow_ == NULL)
+			if(redist_prod_dflow_ == NULL){
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
+				return false;
+			}
 			redist_prod_dflow_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_dflow_->flush();
         }
@@ -537,24 +544,30 @@ Dataflow::put(pConstructData data, TaskType role)
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
         // send the message
-        if(redist_dflow_con_ == NULL)
+		if(redist_dflow_con_ == NULL){
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
+			return false;
+		}
 		redist_dflow_con_->process(data_filtered, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
 	}
 
+	return true;
 }
 
 
-
-void
+// gets data from the dataflow
+// return true if ok, false if an ERROR occured
+bool
 decaf::
 Dataflow::get(pConstructData data, TaskType role)
 {
     if (role == DECAF_LINK)
     {
-        if (redist_prod_dflow_ == NULL)
+		if (redist_prod_dflow_ == NULL){
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+			return false;
+		}
 		redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
     }
@@ -562,19 +575,39 @@ Dataflow::get(pConstructData data, TaskType role)
     {
         if(no_link)
         {
-            if (redist_prod_con_ == NULL)
+			if (redist_prod_con_ == NULL){
                 fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+				return false;
+			}
             redist_prod_con_->process(data, DECAF_REDIST_DEST);
             redist_prod_con_->flush();
         }
         else
         {
-            if (redist_dflow_con_ == NULL)
+			if (redist_dflow_con_ == NULL){
                 fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+				return false;
+			}
             redist_dflow_con_->process(data, DECAF_REDIST_DEST);
             redist_dflow_con_->flush();
         }
     }
+
+	if(test_quit(data)){
+		return true;
+	}
+
+	// Checks if all keys of the contract are in the data
+	if(is_contract()){
+		for(string key : keys()){
+			if(! data->hasData(key)){
+				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", key.c_str());
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 // cleanup

@@ -24,7 +24,7 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract.so'
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[5,3,2,2,3,0,0,0])
+subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[3,2,2,2,0,0,0,0])
 
 # Add outputs contracts for prod1 and prod2
 contractP1 = wf.Contract()

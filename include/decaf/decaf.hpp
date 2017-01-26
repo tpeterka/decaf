@@ -56,10 +56,12 @@ namespace decaf
         void print_workflow();               // debug: print the workflow
 
         // put a message on all outbound links
-        void put(pConstructData container);
+		// returns true = ok, false = function terminate() has been called
+		bool put(pConstructData container);
 
         // put a message on a particular outbound links
-        void put(pConstructData container, int i);
+		// returns true = ok, false = function terminate() has been called
+		bool put(pConstructData container, int i);
 
         // get messages from all inbound links
         // returns true = process messages, false = break (quit received)
@@ -260,43 +262,57 @@ Decaf::~Decaf()
 }
 
 // put a message on all outbound links
-void
+bool
 decaf::
 Decaf::put(pConstructData container)
 {
+	bool ret_ok;
 	for (size_t i = 0; i < out_dataflows.size(); i++){
-		out_dataflows[i]->put(container, DECAF_NODE);
+		ret_ok = (out_dataflows[i]->put(container, DECAF_NODE) );
+
+		if(!ret_ok){
+			terminate();
+			return false;
+		}
 	}
 
     // link ranks that do overlap this node need to be run in one-time mode
-    for (size_t i = 0; i < workflow_.links.size(); i++)
+	for (size_t i = 0; i < workflow_.links.size(); i++){
         if (workflow_.my_link(world->rank(), i))
         {
             run_links(true);
             break;
         }
+	}
+	return true;
 }
 
 // put a message on a particular outbound links
-void
+bool
 decaf::
 Decaf::put(pConstructData container, int i)
 {
-	out_dataflows[i]->put(container, DECAF_NODE);
+	bool ret_ok = out_dataflows[i]->put(container, DECAF_NODE);
 
+	if(!ret_ok){
+		terminate();
+		return false;
+	}
 
 	// TODO remove the loop, with the given i in argument we know which one should be taken
 	// link ranks that do overlap this node need to be run in one-time mode
-	for (size_t i = 0; i < workflow_.links.size(); i++)
+	for (size_t i = 0; i < workflow_.links.size(); i++){
 		if (workflow_.my_link(world->rank(), i))
 		{
 			run_links(true);
 			break;
 		}
+	}
+	return true;
 }
 
 // get messages from all inbound links
-// returns true = process messages, false = break (quit received)
+// returns true = process messages, false = quit received or error occured
 bool
 decaf::
 Decaf::get(vector< pConstructData >& containers)
@@ -304,32 +320,43 @@ Decaf::get(vector< pConstructData >& containers)
     // link ranks that do overlap this node need to be run in one-time mode, unless
     // the same rank also was a producer node for this link, in which case
     // the link was already run by the producer node during Decaf::put()
-    for (size_t i = 0; i < workflow_.links.size(); i++)
+	for (size_t i = 0; i < workflow_.links.size(); i++){
         if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
         {
             run_links(true);
             break;
         }
+	}
 
     containers.clear();
+	bool ret_ok;
 
     for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
     {
         pConstructData container;
-        link_in_dataflows[i]->get(container, DECAF_LINK);
+		ret_ok = link_in_dataflows[i]->get(container, DECAF_LINK);
+		if(!ret_ok){
+			terminate();
+			return false;
+		}
         containers.push_back(container);
     }
     for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
     {
         pConstructData container;
-        node_in_dataflows[i]->get(container, DECAF_NODE);
+		ret_ok = node_in_dataflows[i]->get(container, DECAF_NODE);
+		if(!ret_ok){
+			terminate();
+			return false;
+		}
         containers.push_back(container);
     }
-    for (size_t i = 0; i < containers.size(); i++)
+	for (size_t i = 0; i < containers.size(); i++){
         if (Dataflow::test_quit(containers[i]))
         {
             return false;
         }
+	}
     return true;
 }
 

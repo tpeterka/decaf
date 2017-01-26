@@ -46,12 +46,14 @@ void prod(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
-		/*container->appendData("velocity", d_velocity,
+		container->appendData("velocity", d_velocity,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
-*/
+
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		decaf->put(container);
+		if(! decaf->put(container) ){
+			break;
+		}
 		fprintf(stderr, "prod rank %d sent %d fields\n", rank, container->getNbFields());
 		usleep(50000);
 	}
@@ -92,7 +94,9 @@ void prod2(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-		decaf->put(container);
+		if(! decaf->put(container) ){
+			break;
+		}
 		fprintf(stderr, "prod2 rank %d sent %d fields\n", rank, container->getNbFields());
 		usleep(50000);
 	}
