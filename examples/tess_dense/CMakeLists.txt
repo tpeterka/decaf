@@ -2,9 +2,9 @@
 #   add_subdirectory          (python)
 # endif                       (python_examples)
 
-if                            (${serial} MATCHES "CGAL")
-  find_package                (CGAL)
-endif                         ()
+if                          (${serial} MATCHES "CGAL")
+  find_package              (CGAL)
+endif                       ()
 
 add_definitions             (-DDIY_NO_THREADS -DTESS_NO_OPENMP )
 
@@ -17,12 +17,11 @@ add_executable              (dense              dense.cpp)
 add_executable              (pts_dflow          dflow.cpp)
 add_library                 (mod_pts_dflow      MODULE dflow.cpp)
 
-# TODO: remove following two targets once bug is fixed
-add_executable              (test1              full.cpp)
-add_executable              (test2              tess2-main.cpp)
-
 target_link_libraries       (points
-  ${libraries} bredala_transport bredala_datamodel)
+                             ${libraries}
+                             bredala_transport
+                             bredala_datamodel)
+
 if                          (${serial} MATCHES "CGAL")
   include                   (${CGAL_USE_FILE})
   add_definitions           (${CGAL_CXX_FLAGS_INIT} -DTESS_USE_CGAL)
@@ -57,19 +56,6 @@ else                        ()
                             ${QHull_LIBRARY}
                             bredala_transport
                             bredala_datamodel)
-
-# TODO: remove following two targets once bug is fixed
-  target_link_libraries     (test1
-                            ${libraries}
-                            ${TESS_LIBRARY}
-                            ${QHull_LIBRARY}
-                            bredala_transport
-                            bredala_datamodel)
-  target_link_libraries     (test2
-                            ${libraries}
-                            ${TESS_LIBRARY}
-                            ${QHull_LIBRARY})
-
 endif                       ()
 
 target_link_libraries       (pts_dflow
@@ -83,15 +69,12 @@ set_target_properties       (mod_pts_dflow PROPERTIES SUFFIX ".so")
 # Don't add a 'lib' prefix to the shared library
 set_target_properties       (mod_pts_dflow PROPERTIES PREFIX "")
 
-# TODO: remove test1 and test2 once bug is fixed
 install                     (TARGETS
                             points
                             tess
                             dense
                             pts_dflow
                             mod_pts_dflow
-                            test1
-                            test2
                             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/tess_dense/
                             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                             GROUP_READ GROUP_WRITE GROUP_EXECUTE

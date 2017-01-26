@@ -24,11 +24,11 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "wflow.hpp"                         // defines the workflow for this example
 #include "tess/tess.h"
 #include "tess/tess.hpp"
 #include "block_serialization.hpp"
 
+using namespace decaf;
 using namespace std;
 
 // a light copy of small data (quantities, bounding boxes, etc) and pointer to the heavy data
@@ -215,8 +215,6 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         strcpy(outfile, "del.out");
         double times[TESS_MAX_TIMES];               // timing
 
-        fprintf(stderr,"Size of the communicator: %i\n", size);
-
         // data extents
         typedef     diy::ContinuousBounds         Bounds;
         Bounds domain;
@@ -239,14 +237,6 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
                                          &load_block);
         diy::RoundRobinAssigner   assigner(world.size(), tot_blocks);
         AddEmpty                  create(master);
-
-        int size_comm_diy;
-        MPI_Comm_size(world, &size_comm_diy);
-        int rank_diy;
-        MPI_Comm_rank(world, &rank_diy);
-
-        fprintf(stderr,"DIY size communicator: %i\n", size_comm_diy);
-        fprintf(stderr,"DIY rank communicator: %i\n", rank_diy);
 
         // decompose
         diy::RegularDecomposer<Bounds>::BoolVector          wraps;
@@ -307,32 +297,19 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
             }
         }
 
-        DBlock* b = (DBlock*)master.block(0);
-
-        fprintf(stderr, "Number of blocks in the master: %u\n", master.size());
-        fprintf(stderr, "Number of particles in the block: %i\n", b->num_orig_particles);
-
-        MPI_Comm_size(world, &size_comm_diy);
-        MPI_Comm_rank(world, &rank_diy);
-
-        fprintf(stderr,"DIY size communicator before TESS: %i\n", size_comm_diy);
-        fprintf(stderr,"DIY rank communicator before TESS: %i\n", rank_diy);
-        fprintf(stderr,"Retrieving the communicator from DIY...\n");
-        MPI_Comm_rank(master.communicator(), &rank_diy);
-        fprintf(stderr,"DIY rank from master communicator before TESS: %i\n", rank_diy);
-
-
         // sort and distribute particles to regular blocks
         tess_exchange(master, assigner, times);
 
-        fprintf(stderr,"Tesselation exchange done\n");
+        // debug
+        // fprintf(stderr,"Tesselation exchange done\n");
 
         // clean up any duplicates and out of bounds particles
         DuplicateCountMap count;
         master.foreach([&](DBlock* b, const diy::Master::ProxyWithLink& cp)
                        { deduplicate(b, cp, count); });
 
-        fprintf(stderr, "Removed the duplicated particles\n");
+        // debug
+        // fprintf(stderr, "Removed the duplicated particles\n");
 
         // tessellate
         quants_t quants;
@@ -373,7 +350,6 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    // make_wflow(workflow);
     Workflow::make_wflow_from_json(workflow, "tess_dense.json");
 
     MPI_Init(NULL, NULL);

@@ -23,12 +23,12 @@
 #include <map>
 #include <cstdlib>
 
-#include "wflow.hpp"                         // defines the workflow for this example
 #include "tess/tess.h"
 #include "tess/tess.hpp"
 #include "tess/dense.hpp"
 #include "block_serialization.hpp"
 
+using namespace decaf;
 using namespace std;
 
 // fill blocks with incoming data
@@ -251,7 +251,6 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    // make_wflow(workflow);
     Workflow::make_wflow_from_json(workflow, "tess_dense.json");
 
     MPI_Init(NULL, NULL);
