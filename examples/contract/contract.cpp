@@ -14,6 +14,7 @@
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/arrayfield.hpp>
+#include <decaf/data_model/vectorfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -24,6 +25,23 @@
 
 using namespace decaf;
 using namespace std;
+
+
+class My_class{
+public:
+	My_class(int v = 0) : val(v){}
+	~My_class(){}
+
+	void print(){
+		std::cout << "My_class: " << val << std::endl;
+	}
+
+	int val;
+};
+
+My_class operator+(My_class a, My_class b){
+	return My_class(a.val + b.val);
+}
 
 // producer
 void prod(Decaf* decaf)
@@ -41,6 +59,7 @@ void prod(Decaf* decaf)
 		SimpleFieldi d_index(rank);
 		ArrayFieldf d_velocity(array,3, 3);
 
+
 		pConstructData container;
 		container->appendData("index", d_index,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
@@ -49,6 +68,20 @@ void prod(Decaf* decaf)
 		container->appendData("velocity", d_velocity,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
+		//std::vector<My_class> toto(3);
+		//VectorField<My_class> my_toto(toto, 1);
+		My_class toto;
+		SimpleField<My_class> my_toto(toto);
+
+
+		fprintf(stderr, "no crash yet?\n");
+		sleep(3);
+
+		container->appendData("toto", my_toto,
+		                      DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
+		std::cout << "BLABLA " << container->getTypename("toto") << std::endl;
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){

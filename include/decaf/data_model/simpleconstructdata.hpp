@@ -121,7 +121,7 @@ public:
                 }
                 break;
             }
-            case DECAF_SPLIT_MINUS_NBITEM:
+		     case DECAF_SPLIT_MINUS_NBITEM:
             {
                 for(unsigned int i = 0; i < range.size(); i++)
                 {
@@ -132,7 +132,7 @@ public:
                     ptr->map_ = map_;
                 }
                 break;
-            }
+		    }
             default:
             {
                 std::cout<<"Policy "<<policy<<" not supported for SimpleConstructData"<<std::endl;

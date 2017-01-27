@@ -348,7 +348,7 @@ decaf::
 ConstructData::getTypename(std::string name){
 	std::shared_ptr<BaseConstructData> field = this->getData(name);
 	if(!field){
-		return std::string("ERROR");
+		return std::string("ERROR in getTypename. The field \"%s\" is not present in the data model", name.c_str());
 	}
 	return field->getTypename();
 }
