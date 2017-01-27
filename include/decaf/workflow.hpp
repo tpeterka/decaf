@@ -78,6 +78,7 @@ struct WorkflowLink                          // a dataflow
     string path;                // path to callback function module
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
+    string buffer;              // Type of buffer to use (none, full, greedy)
 };
 
 struct Workflow                              // an entire workflow
@@ -204,6 +205,7 @@ struct Workflow                              // an entire workflow
 	link.func = v.second.get<std::string>("func");
 	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
 	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+        link.buffer = v.second.get<std::string>("buffer");
         workflow.links.push_back( link );
       }
     }

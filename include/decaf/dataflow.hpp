@@ -47,7 +47,9 @@ namespace decaf
                  Decomposition prod_dflow_redist // decompositon between producer and dataflow
                  = DECAF_CONTIG_DECOMP,
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
-                 = DECAF_CONTIG_DECOMP);
+                 = DECAF_CONTIG_DECOMP,
+                 BufferMethod buffer_mode
+                 = DECAF_BUFFER_NONE);
         ~Dataflow();
         void put(pConstructData data, TaskType role);
         void get(pConstructData data, TaskType role);
@@ -93,10 +95,14 @@ namespace decaf
         }
 
         void waitSignal(TaskType role);             // If a link and buffer activated, wait until we have the command to continue
-        bool checkRootSignal(TaskType role);        // If a link and buffer activated, check if we have the command to continue
-        void signalRootReady();                     // If a cons and buffer activated, signal to the link that we are ready to receive a new message
+        bool checkRootDflowSignal(TaskType role);   // If a link and buffer activated, check if we have the command to continue
+        void signalRootDflowReady();                // If a cons and buffer activated, signal to the link that we are ready to receive a new message
         void broadcastDflowSignal();                // The dflow root broadcast a signal to the other dflow ranks to send the next msg
         bool checkDflowSignal();                    // Checking the sending signal in the dflow window
+        void signalRootProdBlock(int value);        // Send the signal from the root dflow to producer to block/unblock the producer
+        void broadcastProdSignal(int value);        // Broadcast a value from the producer root to the other producer ranks
+        int getRootProdValue();                     // Return the command value from the dflow root to the producer root
+        int getProdValue();                         // Return the command value from the prod root to all the producer
 
 
     private:
@@ -120,16 +126,27 @@ namespace decaf
         bool use_buffer;                 // True if the Dataflow manages a buffer.
 
         // Buffer infos
-        int commandRoot;                    // Memory allocation for the root window
-        MPI_Win windowRoot;                 // Window allocation for the root communications
-        int commandDflow;                   // Memory allocation for the dflow window
-        MPI_Win windowDflow;                // Window allocation of the dflow communications
+        BufferMethod bufferMethod_;         // Type of buffer to use
+        int command_root_dflow_con_;        // Memory allocation for the root window between the consumer and the dflow
+        MPI_Win window_root_dflow_con_;     // Window allocation for the root communications
+        int command_dflow_;                 // Memory allocation for the dflow window
+        MPI_Win window_dflow_;              // Window allocation of the dflow communications
+        int command_root_prod_dflow_;       // Memory allocation for the root window between the dflow and producer
+        MPI_Win window_root_prod_dflow_;    // Window allocation of the root communications form dflow to the producer
+        int command_prod_;                  // Memory allocation of the prod window
+        MPI_Win window_prod_;               // Window allocation of the prod communications
+
         bool first_iteration;
         std::queue<pConstructData> buffer;  // Buffer
+        int buffer_max_size;                // Maximum size allowed for the buffer
+        bool is_blocking;                   // Currently blocking the producer
         bool doGet;                         // We do a get until we get a terminate message
-        CommHandle root_comm_;              // Communicator including the root of dflow and root of cons
-        int rank_dflow_root_comm_;          // Rank of the dflow root in root_comm_
-        int rank_con_root_comm_;            // Rank of the con root in root_comm_
+        CommHandle root_dc_comm_;           // Communicator including the root of dflow and root of cons
+        int rank_dflow_root_dc_comm_;       // Rank of the dflow root in root_dc_comm_
+        int rank_con_root_dc_comm_;         // Rank of the con root in root_dc_comm_
+        CommHandle root_pd_comm_;           // Communicator including the root of dflow and root of cons
+        int rank_dflow_root_pd_comm_;       // Rank of the dflow root in the root_pd_comm_
+        int rank_prod_root_pd_comm_;        // Rank of the dflow root in the root_pd_comm_
     };
 
 } // namespace
@@ -141,7 +158,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int dflow,
                    int con,
                    Decomposition prod_dflow_redist,
-                   Decomposition dflow_cons_redist) :
+                   Decomposition dflow_cons_redist,
+                   BufferMethod buffer_mode) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -152,10 +170,14 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
     no_link(false),
-    use_buffer(true),
+    use_buffer(false),
+    buffer_max_size(5),
+    is_blocking(false),
     first_iteration(true),
     doGet(true),
-    root_comm_(MPI_COMM_NULL)
+    root_dc_comm_(MPI_COMM_NULL),
+    root_pd_comm_(MPI_COMM_NULL),
+    bufferMethod_(buffer_mode)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -441,11 +463,14 @@ Dataflow::Dataflow(CommHandle world_comm,
     else
         redist_prod_con_ = NULL;
 
+    if(buffer_mode != DECAF_BUFFER_NONE && !no_link)
+        use_buffer = true;
+
     // Buffering setup
     if(!no_link && use_buffer)
     {
         // Creating the group of with the root link and root consumer
-        if(world_rank_ == sizes_.con_start || world_rank_ == sizes_.dflow_start)
+        if(is_con_root() || is_dflow_root())
         {
             MPI_Group group, groupRoots;
             MPI_Comm_group(world_comm, &group);
@@ -459,8 +484,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                 ranges[1][0] = sizes_.con_start;
                 ranges[1][1] = sizes_.con_start;
                 ranges[1][2] = 1;
-                rank_dflow_root_comm_ = 0;
-                rank_con_root_comm_ = 1;
+                rank_dflow_root_dc_comm_ = 0;
+                rank_con_root_dc_comm_ = 1;
             }
             else
             {
@@ -470,23 +495,68 @@ Dataflow::Dataflow(CommHandle world_comm,
                 ranges[0][0] = sizes_.con_start;
                 ranges[0][1] = sizes_.con_start;
                 ranges[0][2] = 1;
-                rank_dflow_root_comm_ = 1;
-                rank_con_root_comm_ = 0;
+                rank_dflow_root_dc_comm_ = 1;
+                rank_con_root_dc_comm_ = 0;
             }
             MPI_Group_range_incl(group, 2, ranges, &groupRoots);
-            MPI_Comm_create_group(world_comm, groupRoots, 0, &root_comm_);
+            MPI_Comm_create_group(world_comm, groupRoots, 0, &root_dc_comm_);
 
-            commandRoot = 1;    // 0 = sending msg, other = block
+            command_root_dflow_con_ = 1;    // 0 = sending msg, other = block
 
             // Only the root create a Window for the retroactive loop
-            MPI_Win_create(&commandRoot, 1, sizeof(int), MPI_INFO_NULL, root_comm_, &windowRoot);
+            MPI_Win_create(&command_root_dflow_con_, 1, sizeof(int), MPI_INFO_NULL, root_dc_comm_, &window_root_dflow_con_);
+        }
+
+        // Creating the group of with the root link and root consumer
+        if(is_prod_root() || is_dflow_root())
+        {
+            MPI_Group group, groupRoots;
+            MPI_Comm_group(world_comm, &group);
+
+            int ranges[2][3];
+            if(sizes_.dflow_start <= sizes_.prod_start)
+            {
+                ranges[0][0] = sizes_.dflow_start;
+                ranges[0][1] = sizes_.dflow_start;
+                ranges[0][2] = 1;
+                ranges[1][0] = sizes_.prod_start;
+                ranges[1][1] = sizes_.prod_start;
+                ranges[1][2] = 1;
+                rank_dflow_root_pd_comm_ = 0;
+                rank_prod_root_pd_comm_ = 1;
+            }
+            else
+            {
+                ranges[1][0] = sizes_.dflow_start;
+                ranges[1][1] = sizes_.dflow_start;
+                ranges[1][2] = 1;
+                ranges[0][0] = sizes_.prod_start;
+                ranges[0][1] = sizes_.prod_start;
+                ranges[0][2] = 1;
+                rank_dflow_root_pd_comm_ = 1;
+                rank_prod_root_pd_comm_ = 0;
+            }
+            MPI_Group_range_incl(group, 2, ranges, &groupRoots);
+            MPI_Comm_create_group(world_comm, groupRoots, 0, &root_pd_comm_);
+
+            command_root_prod_dflow_ = 0;    // 0 = sending msg, other = block
+
+            // Only the root create a Window for the retroactive loop
+            MPI_Win_create(&command_root_prod_dflow_, 1, sizeof(int), MPI_INFO_NULL, root_pd_comm_, &window_root_prod_dflow_);
         }
 
         if(is_dflow())
         {
-            commandDflow = 1;
+            command_dflow_ = 1;
 
-            MPI_Win_create(&commandDflow, 1, sizeof(int), MPI_INFO_NULL, dflow_comm_->handle(), &windowDflow);
+            MPI_Win_create(&command_dflow_, 1, sizeof(int), MPI_INFO_NULL, dflow_comm_->handle(), &window_dflow_);
+        }
+
+        if(is_prod())
+        {
+            command_prod_ = 0;  // By default you are always allowed to send until you're blocked
+
+            MPI_Win_create(&command_prod_, 1, sizeof(int), MPI_INFO_NULL, prod_comm_handle(), &window_prod_);
         }
     }
 
@@ -511,9 +581,9 @@ Dataflow::~Dataflow()
     if(!no_link && use_buffer)
     {
         if(world_rank_ == sizes_.con_start || world_rank_ == sizes_.dflow_start)
-            MPI_Win_free(&windowRoot);
+            MPI_Win_free(&window_root_dflow_con_);
         if(is_dflow())
-            MPI_Win_free(&windowDflow);
+            MPI_Win_free(&window_dflow_);
     }
 }
 
@@ -568,6 +638,46 @@ Dataflow::put(pConstructData data, TaskType role)
         }
         else
         {
+            if(use_buffer)
+            {
+                bool blocking = false;
+                if(is_prod_root())
+                {
+                    int command_received = getRootProdValue();
+                    if(command_received == 1)
+                    {
+                        fprintf(stderr,"Blocking command received. We should block\n");
+                        fprintf(stderr,"Broadcasting on prod root the value 1\n");
+
+                        broadcastProdSignal(1);
+                        blocking = true;
+                    }
+                }
+                MPI_Barrier(prod_comm_handle());
+
+                // TODO: remove busy wait
+                int signal_prod;
+                do
+                {
+                    signal_prod = getProdValue();
+
+                    if(is_prod_root() && blocking == true)
+                    {
+                        int command_received = getRootProdValue();
+                        if(command_received == 0)
+                        {
+                            fprintf(stderr,"Unblocking command received.\n");
+                            fprintf(stderr,"Broadcasting on prod root the value 0\n");
+
+                            broadcastProdSignal(0);
+                            break;
+                        }
+                    }
+
+
+                } while(signal_prod != 0);
+            }
+
             // encode destination link id into message
             shared_ptr<SimpleConstructData<int> > value2  =
                 make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
@@ -624,36 +734,36 @@ Dataflow::waitSignal(TaskType role)
     int localCommand = 1;
     do
     {
-        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_comm_, 0, windowRoot);
-        MPI_Get(&localCommand, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, windowRoot);
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_dc_comm_, 0, window_root_dflow_con_);
+        MPI_Get(&localCommand, 1, MPI_INT, rank_dflow_root_dc_comm_, 0, 1, MPI_INT, window_root_dflow_con_);
         if(localCommand == 0)   // We are good to go
         {
             int newFlag = 1;
-            MPI_Put(&newFlag, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, windowRoot);
+            MPI_Put(&newFlag, 1, MPI_INT, rank_dflow_root_dc_comm_, 0, 1, MPI_INT, window_root_dflow_con_);
         }
-        MPI_Win_unlock(rank_dflow_root_comm_, windowRoot);
+        MPI_Win_unlock(rank_dflow_root_dc_comm_, window_root_dflow_con_);
     } while(localCommand != 0);
 }
 
 // The root consumer sent a signal to the root dflow
 void
 decaf::
-Dataflow::signalRootReady()
+Dataflow::signalRootDflowReady()
 {
     if(!use_buffer || !is_con_root())
         return;
 
     // Only for consumer for now
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_comm_, 0, windowRoot);
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_dc_comm_, 0, window_root_dflow_con_);
     int flag_to_send = 0;
-    MPI_Put(&flag_to_send, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, windowRoot);
-    MPI_Win_unlock(rank_dflow_root_comm_, windowRoot);
+    MPI_Put(&flag_to_send, 1, MPI_INT, rank_dflow_root_dc_comm_, 0, 1, MPI_INT, window_root_dflow_con_);
+    MPI_Win_unlock(rank_dflow_root_dc_comm_, window_root_dflow_con_);
 }
 
-// Check in the root dflow if we received a signal
+// Check in the root dflow if we received a signal from the con
 bool
 decaf::
-Dataflow::checkRootSignal(TaskType role)
+Dataflow::checkRootDflowSignal(TaskType role)
 {
     // Just for links for now
     if(!is_dflow_root())
@@ -670,22 +780,66 @@ Dataflow::checkRootSignal(TaskType role)
     // 0 = send
     // other = block
     int localCommand = 1;
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_comm_, 0, windowRoot);
-    MPI_Get(&localCommand, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, windowRoot);
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_dflow_root_dc_comm_, 0, window_root_dflow_con_);
+    MPI_Get(&localCommand, 1, MPI_INT, rank_dflow_root_dc_comm_, 0, 1, MPI_INT, window_root_dflow_con_);
     if(localCommand == 0)   // We are good to go
     {
         // Reseting the window value for next iteration
         int newFlag = 1;
-        MPI_Put(&newFlag, 1, MPI_INT, rank_dflow_root_comm_, 0, 1, MPI_INT, windowRoot);
-        MPI_Win_unlock(rank_dflow_root_comm_, windowRoot);
+        MPI_Put(&newFlag, 1, MPI_INT, rank_dflow_root_dc_comm_, 0, 1, MPI_INT, window_root_dflow_con_);
+        MPI_Win_unlock(rank_dflow_root_dc_comm_, window_root_dflow_con_);
 
         return true;
     }
 
     // We didn't have the command
-    MPI_Win_unlock(rank_dflow_root_comm_, windowRoot);
+    MPI_Win_unlock(rank_dflow_root_dc_comm_, window_root_dflow_con_);
 
     return false;
+}
+
+// The root consumer sent a signal to the root dflow
+void
+decaf::
+Dataflow::signalRootProdBlock(int value)
+{
+    if(!use_buffer || !is_dflow_root())
+        return;
+
+    // Only for consumer for now
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_prod_root_pd_comm_, 0, window_root_prod_dflow_);
+    int flag_to_send = value;
+    MPI_Put(&flag_to_send, 1, MPI_INT, rank_prod_root_pd_comm_, 0, 1, MPI_INT, window_root_prod_dflow_);
+    MPI_Win_unlock(rank_prod_root_pd_comm_, window_root_prod_dflow_);
+}
+
+// Check in the root dflow if we received a signal from the con
+int
+decaf::
+Dataflow::getProdValue()
+{
+    // Just for links for now
+    if(!is_prod_root())
+        return 0;
+
+    // First iteration we send immediatly to start the pipeline
+    if(first_iteration)
+    {
+        first_iteration = false;
+        return 0;
+    }
+
+    // Checking the window to see if the command has been updated
+    // 0 = send
+    // other = block
+    int localCommand = 0;
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, prod_comm_->rank(), 0, window_prod_);
+    MPI_Get(&localCommand, 1, MPI_INT, prod_comm_->rank(), 0, 1, MPI_INT, window_prod_);
+
+    // We didn't have the command
+    MPI_Win_unlock(prod_comm_->rank(), window_prod_);
+
+    return localCommand;
 }
 
 void
@@ -697,12 +851,54 @@ Dataflow::broadcastDflowSignal()
 
     for(int i = 0; i < dflow_comm_->size(); i++)
     {
-        fprintf(stderr, "Broadcasting to rank %i\n", i);
-        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, i, 0, windowDflow);
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, i, 0, window_dflow_);
         int flag_to_send = 0;
-        MPI_Put(&flag_to_send, 1, MPI_INT, i, 0, 1, MPI_INT, windowDflow);
-        MPI_Win_unlock(i, windowDflow);
+        MPI_Put(&flag_to_send, 1, MPI_INT, i, 0, 1, MPI_INT, window_dflow_);
+        MPI_Win_unlock(i, window_dflow_);
     }
+}
+
+void
+decaf::
+Dataflow::broadcastProdSignal(int value)
+{
+    if(!is_prod_root())
+        return;
+
+    for(int i = 0; i < prod_comm_->size(); i++)
+    {
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, i, 0, window_prod_);
+        int flag_to_send = value;
+        MPI_Put(&flag_to_send, 1, MPI_INT, i, 0, 1, MPI_INT, window_prod_);
+        MPI_Win_unlock(i, window_prod_);
+    }
+}
+
+int
+decaf::
+Dataflow::getRootProdValue()
+{
+    if(!is_prod())
+        return 0;
+
+    // First iteration we send immediatly to start the pipeline
+    if(first_iteration)
+    {
+        first_iteration = false;
+        return 0;
+    }
+
+    // Checking the window to see if the command has been updated
+    // 0 = send
+    // other = block
+    int localCommand = 0;
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank_prod_root_pd_comm_, 0, window_root_prod_dflow_);
+    MPI_Get(&localCommand, 1, MPI_INT, rank_prod_root_pd_comm_, 0, 1, MPI_INT, window_root_prod_dflow_);
+
+    // We didn't have the command
+    MPI_Win_unlock(rank_prod_root_pd_comm_, window_root_prod_dflow_);
+
+    return localCommand;
 }
 
 bool
@@ -717,21 +913,20 @@ Dataflow::checkDflowSignal()
     // 0 = send
     // other = block
     int localCommand = 1;
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, dflow_comm_->rank(), 0, windowDflow);
-    MPI_Get(&localCommand, 1, MPI_INT, dflow_comm_->rank(), 0, 1, MPI_INT, windowDflow);
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, dflow_comm_->rank(), 0, window_dflow_);
+    MPI_Get(&localCommand, 1, MPI_INT, dflow_comm_->rank(), 0, 1, MPI_INT, window_dflow_);
     if(localCommand == 0)   // We are good to go
     {
         // Reseting the window value for next iteration
         int newFlag = 1;
-        MPI_Put(&newFlag, 1, MPI_INT, dflow_comm_->rank(), 0, 1, MPI_INT, windowDflow);
-        MPI_Win_unlock(dflow_comm_->rank(), windowDflow);
+        MPI_Put(&newFlag, 1, MPI_INT, dflow_comm_->rank(), 0, 1, MPI_INT, window_dflow_);
+        MPI_Win_unlock(dflow_comm_->rank(), window_dflow_);
 
-        fprintf(stderr, "Received the signal on rank %i\n", dflow_comm_->rank());
         return true;
     }
 
     // We didn't have the command
-    MPI_Win_unlock(dflow_comm_->rank(), windowDflow);
+    MPI_Win_unlock(dflow_comm_->rank(), window_dflow_);
 
     return false;
 }
@@ -757,35 +952,39 @@ Dataflow::get(pConstructData data, TaskType role)
                 // Checking the root communication
                 if(is_dflow_root())
                 {
-                    bool receivedRootSignal = checkRootSignal(role);
+                    bool receivedRootSignal = checkRootDflowSignal(role);
                     if(receivedRootSignal)
                         broadcastDflowSignal();
                 }
 
+                // NOTE: Barrier could be removed if we used only async point-to-point communication
+                // For now collective are creating deadlocks without barrier
+                // Ex: 1 dflow do put while the other do a get
                 MPI_Barrier(dflow_comm_->handle());
 
                 receivedDflowSignal = checkDflowSignal();
 
-                if(doGet)
+                if(doGet && !is_blocking)
                 {
-                    fprintf(stderr, "Waiting on a msg from prod\n");
                     pConstructData container;
                     bool received = redist_prod_dflow_->IGet(container);
                     if(received)
                     {
                         if(Dataflow::test_quit(container))
-                        {
                             doGet = false;
-                            fprintf(stderr, "Termination received. Won't perform a get anymore.\n");
-                        }
                         redist_prod_dflow_->flush();
                         buffer.push(container);
-                        fprintf(stderr, "New size of the queue: %zu\n", buffer.size());
+
+                        // Block the producer if reaching the maximum buffer size
+                        if(buffer.size() >= buffer_max_size && !is_blocking)
+                        {
+                            fprintf(stderr,"The buffer is too large. Sending blocking command\n");
+                            is_blocking = true;
+                            signalRootProdBlock(1);
+                        }
                     }
                 }
             }
-
-            fprintf(stderr, "We are processing the msg and giving to the dflow function\n");
 
             // Second phase: We got the signal
             if(buffer.empty()) // No data received yet, we do a blocking get
@@ -803,7 +1002,14 @@ Dataflow::get(pConstructData data, TaskType role)
                 // Won't do a copy, just pass the pointer of the map
                 data->merge(buffer.front().getPtr());
                 buffer.pop();
-                fprintf(stderr, "Dequeing a msg. New queue size: %zu\n", buffer.size());
+
+                // Unblock the producer if necessary
+                if(buffer.size() < buffer_max_size && is_blocking)
+                {
+                    fprintf(stderr,"The buffer is small enough. Sending unblocking command\n");
+                    is_blocking = false;
+                    signalRootProdBlock(0);
+                }
             }
         }
         else

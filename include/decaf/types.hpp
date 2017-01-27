@@ -33,6 +33,13 @@ enum Decomposition
     DECAF_NUM_DECOMPS,
 };
 
+enum BufferMethod
+{
+    DECAF_BUFFER_NONE,
+    DECAF_BUFFER_SIMPLE,
+    DECAF_BUFFER_RECENT,
+};
+
 // workflow entity types
 typedef unsigned char TaskType;
 #define DECAF_NONE      0x00
@@ -95,8 +102,23 @@ Decomposition stringToDecomposition(std::string name)
         return DECAF_PROC_DECOMP;
     else
     {
-        std::cerr<<"ERROR : unknown Decomposition name : "<<name<<". Using count instead."<<std::endl;
+        std::cerr<<"ERROR : unknown Decomposition name: "<<name<<". Using count instead."<<std::endl;
         return DECAF_CONTIG_DECOMP;
+    }
+}
+
+BufferMethod stringToBufferMethod(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_BUFFER_NONE;
+    else if(name.compare(std::string("simple")) == 0)
+        return DECAF_BUFFER_SIMPLE;
+    else if(name.compare(std::string("recent")) == 0)
+        return DECAF_BUFFER_RECENT;
+    else
+    {
+        std::cerr<<"ERROR: unknown buffering method name: "<<name<<". Disabling buffering."<<std::endl;
+        return DECAF_BUFFER_NONE;
     }
 }
 

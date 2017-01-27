@@ -178,7 +178,11 @@ def workflowToJson(graph, libPath, outputFile):
         content +="       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\" ,\n"
         content +="       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\" ,\n"
         content +="       \"source\" : "+str(prod)+" ,\n"
-        content +="       \"target\" : "+str(con)+" \n"
+        content +="       \"target\" : "+str(con)+" ,\n"
+        if 'buffer' in edge[2]:
+            content +="       \"buffer\" : \""+edge[2]['buffer']+"\" \n"
+        else:
+            content +="       \"buffer\" : \"none\" \n"
         content +="       },\n"
 
     content = content.rstrip(",\n")
