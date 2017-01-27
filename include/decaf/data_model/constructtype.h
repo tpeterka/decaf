@@ -98,6 +98,8 @@ public:
 
     int getNbFields();
 
+	std::string getTypename(std::string name);
+
     bool isCoherent();
 
     std::shared_ptr<std::map<std::string, datafield> > getMap();
@@ -271,6 +273,7 @@ ConstructData::getFieldData(const char* key)
 
     return T(field);
 }
+
 
 } //namespace
 

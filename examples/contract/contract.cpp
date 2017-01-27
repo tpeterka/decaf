@@ -33,7 +33,7 @@ void prod(Decaf* decaf)
 	float array[3];
 	// produce data for some number of timesteps
 	for (int timestep = 1; timestep <4; timestep++){
-		//fprintf(stderr, "prod1 rank %d timestep %d\n", rank, timestep);
+		//fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
 		for(int i = 0; i<3; ++i){
 			array[i] = (i+1)*timestep*(rank+1)*pi;
 		}
@@ -54,7 +54,6 @@ void prod(Decaf* decaf)
 		if(! decaf->put(container) ){
 			break;
 		}
-		fprintf(stderr, "prod rank %d sent %d fields\n", rank, container->getNbFields());
 		usleep(50000);
 	}
 
@@ -72,7 +71,7 @@ void prod2(Decaf* decaf)
 	float vel_array[3], den_array[3];
 
 	for (int timestep = 1; timestep < 4; timestep++){
-		//fprintf(stderr, "prod2 %d timestep %d\n", rank, timestep);
+		//fprintf(stderr, "prod2 rank %d timestep %d\n", rank, timestep);
 
 		for(int i = 0; i<3; ++i){
 			vel_array[i] = timestep*vel*(i+1);
@@ -97,7 +96,6 @@ void prod2(Decaf* decaf)
 		if(! decaf->put(container) ){
 			break;
 		}
-		fprintf(stderr, "prod2 rank %d sent %d fields\n", rank, container->getNbFields());
 		usleep(50000);
 	}
 
@@ -134,7 +132,7 @@ void con(Decaf* decaf)
 			}
 		}
 
-		//fprintf(stderr, "con rank %d index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
+		fprintf(stderr, "con rank %d received: index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -167,7 +165,7 @@ void con2(Decaf* decaf)
 			}
 		}
 
-		//fprintf(stderr, "con2 rank %d id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
+		fprintf(stderr, "con2 rank %d received: id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow

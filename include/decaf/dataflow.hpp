@@ -17,6 +17,8 @@
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
 
+#include <boost/type_index.hpp>
+
 // transport layer specific types
 #ifdef TRANSPORT_MPI
 #include "transport/mpi/types.h"
@@ -471,20 +473,24 @@ Dataflow::put(pConstructData data, TaskType role)
 					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", pair.first.c_str());
 					return false;
 				}
-				if(check_types_ > 1){
-					//TODO do some typechecking here
-					// return false if type does not correspond to the contract
+				if(check_types_ > 1){ //Typechecking is done here
+					string typeName = data->getTypename(pair.first);
+					if(typeName.compare(pair.second) != 0){ //The two types do not match
+						fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not of type %s. Aborting.\n", pair.first.c_str(), pair.second.c_str());
+						return false;
+					}
 				}
 				data_filtered->appendData(data, pair.first);
 			}
 		}
 	}
 	else{ // No contract in this dataflow, we just send all data
-		data->removeData("src_type");
-		data->removeData("link_id");
-		data->removeData("dest_id");
 		data_filtered = data;
 	}
+
+	data_filtered->removeData("src_type");
+	data_filtered->removeData("link_id");
+	data_filtered->removeData("dest_id");
 
     // encode type into message (producer/consumer or dataflow)
     shared_ptr<SimpleConstructData<TaskType> > value  =
@@ -557,6 +563,10 @@ Dataflow::put(pConstructData data, TaskType role)
         redist_dflow_con_->flush();
 	}
 
+	data_filtered->removeData("src_type");
+	data_filtered->removeData("link_id");
+	data_filtered->removeData("dest_id");
+
 	return true;
 }
 
@@ -611,7 +621,7 @@ Dataflow::get(pConstructData data, TaskType role)
 			}
 			if(check_types_ > 1){
 				//TODO ADD TYPECHECKING HERE
-				// return false if the type does not correspond to the contract
+				// return false if the type does not correspond to the contract/b
 			}
 		}
 	}

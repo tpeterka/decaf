@@ -28,17 +28,17 @@ subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dfl
 
 # Add outputs contracts for prod1 and prod2
 contractP1 = wf.Contract()
-contractP1.addOutputFromDict({"index":"int", "velocity":"float"})
+contractP1.addOutputFromDict({"index":"int", "velocity":"Array_float", "id":"int"})
 contractP2 = wf.Contract()
-contractP2.addOutputFromDict({"density":"float", "vel":"float", "id":"int"})
+contractP2.addOutputFromDict({"density":"Array_float", "vel":"Array_float", "id":"int"})
 # Add inputs contracts for con1 and con2
 contractC1 = wf.Contract()
-contractC1.addInputFromDict({"index":"int", "velocity":"float", "density":"float"})
+contractC1.addInputFromDict({"density":"Array_float"})
 contractC2 = wf.Contract()
-contractC2.addInputFromDict({"velocity":"float", "id":"int"})
+contractC2.addInputFromDict({"id":"int"})
 
 w = nx.DiGraph()
-w.add_node("prod1", topology=subtopos[0], contract=contractP1, func='prod', cmdline='contract')
+w.add_node("prod1", topology=subtopos[0], func='prod', cmdline='contract')
 w.add_node("con1",  topology=subtopos[2], contract=contractC1, func='con', cmdline='contract')
 w.add_edge("prod1", "con1", topology=subtopos[4], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='contract')
 
@@ -52,4 +52,4 @@ w.add_edge("prod2", "con2", topology=subtopos[7], func='dflow', path=mod_path, p
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "contract", mod_path, check_types = 1)
+wf.processGraph(w, "contract", mod_path, check_types = 2)

@@ -125,7 +125,7 @@ ConstructData::appendData(string name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name.c_str() );
         return false;
     }
 
@@ -154,7 +154,7 @@ ConstructData::appendData(std::string name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name.c_str() );
         return false;
     }
 
@@ -183,7 +183,7 @@ ConstructData::appendData(const char* name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name );
         return false;
     }
 
@@ -212,7 +212,7 @@ ConstructData::appendData(const char* name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name );
         return false;
     }
 
@@ -242,7 +242,7 @@ ConstructData::appendData(pConstructData data, const string name)
 
 	if(!ret.second)
 	{
-		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name.c_str() );
 		return false;
 	}
 
@@ -271,7 +271,7 @@ ConstructData::appendData(pConstructData data, const char* name)
 
 	if(!ret.second)
 	{
-		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name );
 		return false;
 	}
 
@@ -341,6 +341,16 @@ decaf::
 ConstructData::getNbFields()
 {
     return nbFields_;
+}
+
+std::string
+decaf::
+ConstructData::getTypename(std::string name){
+	std::shared_ptr<BaseConstructData> field = this->getData(name);
+	if(!field){
+		return std::string("ERROR");
+	}
+	return field->getTypename();
 }
 
 std::shared_ptr<std::map<std::string, datafield> >
@@ -1809,7 +1819,7 @@ char*
 decaf::
 ConstructData::getOutSerialBuffer(int* size)
 {
-    *size = out_serial_buffer_.size(); //+1 for the \n caractere
+	*size = out_serial_buffer_.size(); //+1 for the \n character
     return &out_serial_buffer_[0]; //Dangerous if the string gets reallocated
 }
 
@@ -1828,7 +1838,7 @@ char*
 decaf::
 ConstructData::getInSerialBuffer(int* size)
 {
-    *size = in_serial_buffer_.size(); //+1 for the \n caractere
+	*size = in_serial_buffer_.size(); //+1 for the \n character
     return &in_serial_buffer_[0]; //Dangerous if the string gets reallocated
 }
 

@@ -1,4 +1,4 @@
-#ifndef SIMPLE_CONSTRUCT_DATA
+﻿#ifndef SIMPLE_CONSTRUCT_DATA
 #define SIMPLE_CONSTRUCT_DATA
 
 #include "baseconstructdata.hpp"
@@ -31,6 +31,8 @@ public:
     virtual bool isBlockSplitable(){ return false; }
 
     virtual int getNbItems(){ return 1; }
+
+	virtual std::string getTypename(){ return boost::typeindex::type_id<T>().pretty_name(); }
 
     T& getData(){ return value_; }
 
