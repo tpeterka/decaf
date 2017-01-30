@@ -1,27 +1,38 @@
-message("Building contract example")
+﻿message("Building contract example")
 
 add_executable              (contract                contract.cpp)
 add_library                 (mod_contract   MODULE   contract.cpp)
+
+add_executable				(test_object			test_object.cpp)
+add_library					(mod_test_object MODULE test_object.cpp)
 
 target_link_libraries       (contract
 ${libraries} bredala_transport bredala_datamodel)
 target_link_libraries       (mod_contract
   ${libraries} bredala_transport bredala_datamodel)
 
+target_link_libraries		(test_object
+${libraries} bredala_transport bredala_datamodel)
+target_link_libraries		(mod_test_object
+${libraries} bredala_transport bredala_datamodel)
+
+
 # .SO file extension on Linux/Mac OS
 set_target_properties(mod_contract  PROPERTIES SUFFIX ".so")
+set_target_properties(mod_test_object PROPERTIES SUFFIX ".so")
 
 # Don't add a 'lib' prefix to the shared library
 set_target_properties(mod_contract  PROPERTIES PREFIX "")
-
+set_target_properties(mod_test_object PROPERTIES PREFIX "")
 
 install(TARGETS contract mod_contract
+  test_object mod_test_object
   DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/contract/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
   GROUP_READ GROUP_WRITE GROUP_EXECUTE
   WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-install(FILES contract.py
+install(FILES contract.py test_object.py
   DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/contract/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
   GROUP_READ GROUP_WRITE GROUP_EXECUTE
