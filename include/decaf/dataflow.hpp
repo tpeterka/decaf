@@ -463,7 +463,8 @@ Dataflow::put(pConstructData data, TaskType role)
 {
 	pConstructData data_filtered;
 
-	if(is_contract()){// If this dataflow is related to a contract, need to filter the data to be sent
+	// If this dataflow is related to a contract, need to filter the data to be sent
+	if(is_contract() && !data->isEmpty()){ //If the data received is empty, no need to check the contract
 		if(data->hasData(string("decaf_quit")) ){ // To know if it's a quit message
 			set_quit(data_filtered);
 		}
@@ -614,7 +615,7 @@ Dataflow::get(pConstructData data, TaskType role)
 	}
 
 	// Checks if all keys of the contract are in the data
-	if(is_contract()){
+	if(is_contract() && !data->isEmpty()){ //If the data received is empty, no need to check the contract
 		for(pair<string,string> pair : keys()){
 			if(! data->hasData(pair.first)){
 				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", pair.first.c_str());

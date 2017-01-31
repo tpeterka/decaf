@@ -18,13 +18,16 @@ args = parser.parse_args()
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract.so'
 
 # define workflow graph
-# TODO little schema graph
-#  entire workflow takes 16 procs
-#  dataflow can be overlapped, but currently all disjoint procs (simplest case)
+# prod (3 procs)  ---> con (2 procs) 
+#				  \/
+#				  /\
+# prod2 (2 procs) ---> con2 (2 procs)
+#
+# entire workflow takes 13 procs (1 proc per link)
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[3,2,2,2,0,0,0,0])
+subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[3,2,2,2,1,1,1,1])
 
 # Add outputs contracts for prod1 and prod2
 contractP1 = wf.Contract()

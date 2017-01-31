@@ -83,7 +83,10 @@ void prod2(Decaf* decaf)
 		SimpleFieldi d_id(rank);
 
 		pConstructData container;
-		container->appendData("id", d_id);
+		container->appendData("id", d_id,
+		                      DECAF_NOFLAG, DECAF_PRIVATE,
+		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
+
 		container->appendData("density", d_density,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
@@ -119,18 +122,6 @@ void con(Decaf* decaf)
 		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
-			link_id = in_data[i]->getFieldData<SimpleFieldi>("link_id").getData();
-
-			if(link_id == 0){
-				cout << "link_id 0 and has index: " << in_data[i]->hasData("index") << endl;
-			}
-			else if(link_id == 2){
-				cout << "link_id 2 and has index: " << in_data[i]->hasData("density") << endl;
-			}
-			else{
-				in_data[i]->printKeys();
-			}
-
 			if(in_data[i]->hasData("index")){
 				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
 			}
@@ -192,9 +183,10 @@ extern "C"
 	           Dataflow* dataflow,                  // dataflow
 	           pConstructData in_data)   // input data
 	{
-		//fprintf(stderr, "Forwarding data in dflow, having %d fields\n", in_data->getNbFields()-2); //-2 because there are 2 fields used for the system
+		//fprintf(stderr, "Forwarding data in dflow, having %d fields\n", in_data->getNbFields());
 		dataflow->put(in_data, DECAF_LINK);
 	}
+
 } // extern "C"
 
 void run(Workflow& workflow)                             // workflow
