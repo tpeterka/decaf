@@ -70,16 +70,6 @@ def check_contracts(graph, check_types):
           for key in intersection_keys.keys():
           	dict[edge[1]].add(key)
 
-          """ This part does the same as the 3 lines above
-          intersection_keys = {}
-          for key in [key for key in con_in.keys() if key in prod_out] :
-                if (check_types == 0) or (con_in[key] == prod_out[key]):
-                                        # This typechecking is silent, two identical keys with different types will be ignored 
-                                        # and will not be added to the intersection list
-                  intersection_keys[key] = con_in[key]
-                  dict[edge[1]].add(key)
-		  """		  
-
           if len(intersection_keys) == 0:
               raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
 
@@ -124,9 +114,6 @@ class Topology:
         self.nodes = list(set(self.hostlist))   # Removing the duplicate hosts
         self.nNodes = len(self.nodes)
       else:
-        """stringHost = "localhost," * (self.nProcs - 1)
-        stringHost += "localhost"
-        self.hostlist = stringHost.split(',')"""
         self.hostlist = ["localhost"] * self.nProcs # should be the same as the 3 above lines
         self.nodes = ["localhost"]
         self.nNodes = 1
@@ -230,7 +217,7 @@ def processTopology(graph):
             edge[2]['nprocs'] = topo.nProcs
 
 
-def workflowToJson(graph, libPath, outputFile, check_types):
+def workflowToJson(graph, outputFile, check_types):
     print "Generating graph description file "+outputFile
 
     nodes   = []
@@ -241,20 +228,15 @@ def workflowToJson(graph, libPath, outputFile, check_types):
     content +="{\n"
     content +="   \"workflow\" :\n"
     content +="   {\n"
-    content +="   \"path\" : \""+libPath+"\",\n"
     content +="   \"check_types\" : \""+str(check_types)+"\",\n"
     content +="   \"nodes\" : [\n"
 
     i = 0
     for node in graph.nodes_iter(data=True):
-
         content +="      {\n"
         content +="       \"start_proc\" : "+str(node[1]['start_proc'])
         content +=",\n       \"nprocs\" : "+str(node[1]['nprocs'])
         content +=",\n       \"func\" : \""+node[1]['func']+"\""
-        """if 'contract' in node[1]: # TODO not used if the list of key/type is given for each edge
-          content +=",\n       \"inputs\" : " + json.dumps(node[1]['contract'].inputs, sort_keys=True)
-          content +=",\n       \"outputs\" : "+json.dumps(node[1]['contract'].outputs, sort_keys=True)"""
         content +="\n      },\n"
 
         node[1]['index'] = i
@@ -271,13 +253,18 @@ def workflowToJson(graph, libPath, outputFile, check_types):
         content +="      {\n"
         content +="       \"start_proc\" : "+str(edge[2]['start_proc'])
         content +=",\n       \"nprocs\" : "+str(edge[2]['nprocs'])
-        content +=",\n       \"func\" : \""+edge[2]['func']+"\""
-        content +=",\n       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\""
-        content +=",\n       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\""
         content +=",\n       \"source\" : "+str(prod)
         content +=",\n       \"target\" : "+str(con)
+        content +=",\n       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\""
+
+        if(edge[2]['nprocs'] != 0):
+          content +=",\n       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\""
+          content +=",\n       \"func\" : \""+edge[2]['func']+"\""
+          content +=",\n       \"path\" : \""+edge[2]['path']+"\""
+
         if "keys" in edge[2]:
           content +=",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
+
         content +="\n      },\n"
 
     content = content.rstrip(",\n")
@@ -342,7 +329,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     content = ""
     content +="#! /bin/bash\n\n"
     content +=mpirunCommand
-    content = content.rstrip(": ")
+    content = content.rstrip(" : ")
 
     f.write(content)
     f.close()
@@ -352,8 +339,8 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
   check_types = 0 means no typechecking; 1 means typechecking at python script only
   2 means typechecking both at python script and at runtime; Only relevant if contracts are used
 """
-def processGraph(graph, name, libPath, check_types = 1, mpirunPath = "", mpirunOpt = ""):
+def processGraph(graph, name, check_types = 1, mpirunPath = "", mpirunOpt = ""):
     check_contracts(graph, check_types)
     processTopology(graph)
-    workflowToJson(graph, libPath, name+".json", check_types)
+    workflowToJson(graph, name+".json", check_types)
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)

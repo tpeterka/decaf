@@ -204,7 +204,7 @@ struct Workflow                              // an entire workflow
 		workflow.nodes.push_back( node );
       }
 
-      string path = root.get<std::string>("workflow.path");
+	  //string path = root.get<std::string>("workflow.path");
 
 	  int check_types = root.get<int>("workflow.check_types");
 
@@ -221,12 +221,15 @@ struct Workflow                              // an entire workflow
         workflow.nodes.at( link.prod ).out_links.push_back( workflow.links.size() );
         workflow.nodes.at( link.con ).in_links.push_back( workflow.links.size() );
 	 
-		link.path = path;
 		link.start_proc = v.second.get<int>("start_proc");
 		link.nprocs = v.second.get<int>("nprocs");
-		link.func = v.second.get<std::string>("func");
 		link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
-		link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+
+		if(link.nprocs != 0){
+			link.path = v.second.get<std::string>("path");
+			link.func = v.second.get<std::string>("func");
+			link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+		}
 
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
 		if(pt_keys){

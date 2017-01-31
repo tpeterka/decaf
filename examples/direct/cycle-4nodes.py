@@ -27,19 +27,19 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_cycle_4nodes.so'
 
 w = nx.DiGraph()
 
-w.add_node("node_b", start_proc=5, nprocs=1, func='node_b')
-w.add_node("node_d", start_proc=9, nprocs=1, func='node_d')
-w.add_node("node_c", start_proc=7, nprocs=1, func='node_c')
-w.add_node("node_a", start_proc=0, nprocs=4, func='node_a')
+w.add_node("node_b", start_proc=5, nprocs=1, func='node_b', cmdline='cycle_4nodes')
+w.add_node("node_d", start_proc=9, nprocs=1, func='node_d', cmdline='cycle_4nodes')
+w.add_node("node_c", start_proc=7, nprocs=1, func='node_c', cmdline='cycle_4nodes')
+w.add_node("node_a", start_proc=0, nprocs=4, func='node_a', cmdline='cycle_4nodes')
 
 w.add_edge("node_c", "node_d", start_proc=8,  nprocs=1, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='cycle_4nodes')
 w.add_edge("node_a", "node_b", start_proc=4,  nprocs=1, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='cycle_4nodes')
 w.add_edge("node_a", "node_c", start_proc=6,  nprocs=1, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='cycle_4nodes')
 w.add_edge("node_b", "node_a", start_proc=10, nprocs=1, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='cycle_4nodes')
 
 # --- convert the nx graph into a workflow data structure and generate the JSON ---
-wf.workflowToJson(w, mod_path, "cycle.json")
+wf.processGraph(w, "cycle")

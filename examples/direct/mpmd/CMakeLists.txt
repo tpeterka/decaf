@@ -30,7 +30,7 @@ install(TARGETS prod con dflow mod_dflow
   GROUP_READ GROUP_WRITE GROUP_EXECUTE
   WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-install(FILES LINEAR_2NODES_TEST linear-2nodes.py bgq_run.py bgq_mapfile
+install(FILES linear-2nodes.py bgq_run.py bgq_mapfile
   DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/mpmd/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
   GROUP_READ GROUP_WRITE GROUP_EXECUTE

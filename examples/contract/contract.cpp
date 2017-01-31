@@ -122,6 +122,18 @@ void con(Decaf* decaf)
 		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
+			/*link_id = in_data[i]->getFieldData<SimpleFieldi>("link_id").getData();
+
+			if(link_id == 0){
+				cout << "link_id 0 and has index: " << in_data[i]->hasData("index") << endl;
+			}
+			else if(link_id == 2){
+				cout << "link_id 2 and has density: " << in_data[i]->hasData("density") << endl;
+			}
+			else{
+				in_data[i]->printKeys();
+			}*/
+
 			if(in_data[i]->hasData("index")){
 				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
 			}

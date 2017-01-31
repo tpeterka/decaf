@@ -1,6 +1,6 @@
 ﻿if(NOT ${bredala_only} )
 
-  #add_subdirectory            (direct)
+  add_subdirectory            (direct)
   #add_subdirectory            (buffer)
   add_subdirectory			  (contract)
 
@@ -29,6 +29,6 @@
   # add_subdirectory            (cfd)
 endif(NOT ${bredala_only})
 
-add_subdirectory            (bredala)
-# add_subdirectory            (C)
+#  add_subdirectory            (bredala)
+#  add_subdirectory            (C)
 

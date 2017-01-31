@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // 4-node graph with 2 cycles
 //
@@ -260,101 +260,9 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    /*char * prefix = getenv("DECAF_PREFIX");
-    if (prefix == NULL)
-    {
-        fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
-                "DECAF_PREFIX to point to the root of your decaf install directory.\n");
-        exit(1);
-    }
-    string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/direct/mod_cycle_4nodes.so"));
+	Workflow::make_wflow_from_json(workflow, "cycle.json");
 
-    // fill workflow nodes
-    WorkflowNode node;
-    node.in_links.push_back(1);                     // node_b
-    node.out_links.push_back(3);
-    node.start_proc = 5;
-    node.nprocs = 1;
-    node.func = "node_b";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();                         // node_d
-    node.in_links.clear();
-    node.in_links.push_back(0);
-    node.start_proc = 9;
-    node.nprocs = 1;
-    node.func = "node_d";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();                         // node_c
-    node.in_links.clear();
-    node.out_links.push_back(0);
-    node.in_links.push_back(2);
-    node.start_proc = 7;
-    node.nprocs = 1;
-    node.func = "node_c";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();                         // node_a
-    node.in_links.clear();
-    node.out_links.push_back(1);
-    node.out_links.push_back(2);
-    node.in_links.push_back(3);
-    node.start_proc = 0;
-    node.nprocs = 4;
-    node.func = "node_a";
-    workflow.nodes.push_back(node);
-
-    // fill workflow links
-    WorkflowLink link;
-    link.prod = 2;                                  // node_c -> node_d
-    link.con = 1;
-    link.start_proc = 8;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
-    link.prod = 3;                                  // node_a -> node_b
-    link.con = 0;
-    link.start_proc = 4;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
-    link.prod = 3;                                  // node_a -> node_c
-    link.con = 2;
-    link.start_proc = 6;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "proc";
-    link.dflow_con_redist = "proc";
-    workflow.links.push_back(link);
-
-    link.prod = 0;                                  // node_b -> node_a
-    link.con = 3;
-    link.start_proc = 10;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
-    // identify sources
-    vector<int> sources;
-    sources.push_back(3);                           // node_a
-    */
-
-    Workflow::make_wflow_from_json(workflow, "cycle.json");
-    // run decaf
+	// run decaf
     run(workflow);
 
     return 0;
