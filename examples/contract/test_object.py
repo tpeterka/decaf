@@ -28,10 +28,11 @@ subtopos = topo.splitTopology(["prod", "dflow", "con"],[3,1,2])
 
 # Add outputs contracts for prod
 contractP = wf.Contract()
-contractP.addOutputFromDict({"object":"MyObject"})
+contractP.addOutputFromDict({"object":"Vector_My_class"})
 # Add inputs contracts for con
 contractC = wf.Contract()
-contractC.addInputFromDict({"object":"MyObject"})
+contractC.addInputFromDict({"object":"Vector_My_class"})
+
 
 w = nx.DiGraph()
 w.add_node("prod", topology=subtopos[0], contract=contractP, func='prod', cmdline='test_object')
@@ -39,4 +40,4 @@ w.add_node("con",  topology=subtopos[2], contract=contractC, func='con', cmdline
 w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='test_object')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "test_object", mod_path, check_types = 1)
+wf.processGraph(w, "test_object", mod_path, check_types = 2)

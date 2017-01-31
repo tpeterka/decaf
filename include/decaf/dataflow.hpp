@@ -473,10 +473,11 @@ Dataflow::put(pConstructData data, TaskType role)
 					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", pair.first.c_str());
 					return false;
 				}
-				if(check_types_ > 1){ //Typechecking is done here
+				// Performing typechecking if needed
+				if(check_types_ > 1){
 					string typeName = data->getTypename(pair.first);
 					if(typeName.compare(pair.second) != 0){ //The two types do not match
-						fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not of type %s. Aborting.\n", pair.first.c_str(), pair.second.c_str());
+						fprintf(stderr, "ERROR : Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), pair.second.c_str(), pair.first.c_str());
 						return false;
 					}
 				}
@@ -619,9 +620,13 @@ Dataflow::get(pConstructData data, TaskType role)
 				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", pair.first.c_str());
 				return false;
 			}
+			// Performing typechecking if needed
 			if(check_types_ > 1){
-				//TODO ADD TYPECHECKING HERE
-				// return false if the type does not correspond to the contract/b
+				string typeName = data->getTypename(pair.first);
+				if(typeName.compare(pair.second) != 0){ //The two types do not match
+					fprintf(stderr, "ERROR : Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), pair.second.c_str(), pair.first.c_str());
+					return false;
+				}
 			}
 		}
 	}

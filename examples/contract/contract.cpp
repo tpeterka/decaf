@@ -115,9 +115,22 @@ void con(Decaf* decaf)
 		float *density, *velocity;
 		ArrayFieldf a_density, a_velocity;
 
+		int link_id;
 		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
+			link_id = in_data[i]->getFieldData<SimpleFieldi>("link_id").getData();
+
+			if(link_id == 0){
+				cout << "link_id 0 and has index: " << in_data[i]->hasData("index") << endl;
+			}
+			else if(link_id == 2){
+				cout << "link_id 2 and has index: " << in_data[i]->hasData("density") << endl;
+			}
+			else{
+				in_data[i]->printKeys();
+			}
+
 			if(in_data[i]->hasData("index")){
 				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
 			}
@@ -129,6 +142,7 @@ void con(Decaf* decaf)
 				a_density.reset();
 				a_density = in_data[i]->getFieldData<ArrayFieldf>("density");
 			}
+
 		}
 
 		fprintf(stderr, "con rank %d received: index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());

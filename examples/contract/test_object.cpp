@@ -24,12 +24,13 @@
 using namespace decaf;
 using namespace std;
 
-
+// Simple class used for the test
 class My_class{
 public:
 	My_class(float v = 0) : value(v){}
 	~My_class(){}
 
+	// Serialize method that must be implemented
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version){
 		ar & value;
@@ -42,6 +43,8 @@ My_class operator+(My_class a, My_class b){
 	return My_class(a.value + b.value);
 }
 
+
+// A VectorField<My_class> is used in the example so this registration is mandatory
 BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<My_class>,"VectorConstructData<My_class>")
 
 // producer
@@ -52,7 +55,7 @@ void prod(Decaf* decaf)
 	std::vector<My_class> v_object(3);
 	// produce data for some number of timesteps
 	for (int timestep = 1; timestep <4; timestep++){
-		//fprintf(stdout, "prod rank %d timestep %d\n", rank, timestep);
+		fprintf(stdout, "prod rank %d timestep %d\n", rank, timestep);
 		for(int i = 0; i<3; ++i){
 			v_object[i].value = (i+1)*pi+rank*100;
 		}
@@ -67,15 +70,12 @@ void prod(Decaf* decaf)
 		if(! decaf->put(container) ){
 			break;
 		}
-		usleep(50000);
+		//usleep(50000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	//fprintf(stdout, "prod1 %d terminating\n", rank);
 	decaf->terminate();
 }
-
-
 
 // consumer
 void con(Decaf* decaf)
@@ -86,15 +86,14 @@ void con(Decaf* decaf)
 
 	while (decaf->get(in_data))
 	{
-
-		// retrieve the values get
+		// retrieve the values from the get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
 			if(in_data[i]->hasData("object")){
 				v_object = in_data[i]->getFieldData<VectorField<My_class>>("object").getVector();
 			}
 		}
-		//fprintf(stdout, "con rank %d received object of size %d\n", rank, vf.getNbItems());
+
 		string s;
 		for(size_t i = 0; i<v_object.size(); ++i){
 			s+= std::to_string(v_object[i].value) + " ";
@@ -103,7 +102,6 @@ void con(Decaf* decaf)
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	//fprintf(stdout, "con1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
