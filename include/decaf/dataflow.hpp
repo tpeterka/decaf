@@ -130,15 +130,16 @@ namespace decaf
         BufferMethod bufferMethod_;         // Type of buffer to use
         int command_root_dflow_con_;        // Memory allocation for the root window between the consumer and the dflow
         MPI_Win window_root_dflow_con_;     // Window allocation for the root communications
-        OneWayChannel* channel_dflow_con_;   // Communication channel between the root consumer and dflow
+        OneWayChannel* channel_dflow_con_;  // Communication channel between the root consumer and dflow
         int command_dflow_;                 // Memory allocation for the dflow window
         MPI_Win window_dflow_;              // Window allocation of the dflow communications
+        OneWayChannel* channel_dflow_;       // Communication channel between the dflows
         int command_root_prod_dflow_;       // Memory allocation for the root window between the dflow and producer
         MPI_Win window_root_prod_dflow_;    // Window allocation of the root communications form dflow to the producer
-        OneWayChannel* channel_prod_dflow_;  // Communication channel between the root dflow and prod
+        OneWayChannel* channel_prod_dflow_; // Communication channel between the root dflow and prod
         int command_prod_;                  // Memory allocation of the prod window
         MPI_Win window_prod_;               // Window allocation of the prod communications
-        OneWayChannel* channel_prod_;        //Communication channel between the producers
+        OneWayChannel* channel_prod_;       //Communication channel between the producers
         bool first_iteration;
         std::queue<pConstructData> buffer;  // Buffer
         int buffer_max_size;                // Maximum size allowed for the buffer
@@ -559,10 +560,10 @@ Dataflow::Dataflow(CommHandle world_comm,
             MPI_Win_create(&command_root_prod_dflow_, 1, sizeof(int), MPI_INFO_NULL, root_pd_comm_, &window_root_prod_dflow_);
             */
             channel_prod_dflow_ = new OneWayChannel(world_comm_,
-                                                sizes_.dflow_start,
-                                                sizes_.prod_start,
-                                                1,
-                                                (int)DECAF_CHANNEL_OK);
+                                                    sizes_.dflow_start,
+                                                    sizes_.prod_start,
+                                                    1,
+                                                    (int)DECAF_CHANNEL_OK);
         }
 
         if(is_dflow())
@@ -570,21 +571,25 @@ Dataflow::Dataflow(CommHandle world_comm,
             command_dflow_ = 1;
 
             MPI_Win_create(&command_dflow_, 1, sizeof(int), MPI_INFO_NULL, dflow_comm_->handle(), &window_dflow_);
+
+            channel_dflow_ = new OneWayChannel( world_comm_,
+                                                sizes_.dflow_start,
+                                                sizes_.dflow_start,
+                                                sizes_.dflow_size,
+                                                (int)DECAF_CHANNEL_WAIT);
         }
 
         if(is_prod())
         {
-            command_prod_ = 0;  // By default you are always allowed to send until you're blocked
+            //command_prod_ = 0;  // By default you are always allowed to send until you're blocked
 
-            int err = MPI_Win_create(&command_prod_, 1, sizeof(int), MPI_INFO_NULL, prod_comm_handle(), &window_prod_);
-            fprintf(stderr, "ERROR on the window: %i\n", err);
-            fprintf(stderr,"Creation of the prod channel...\n");
-            channel_prod_ = new OneWayChannel(world_comm_,
-                                          sizes_.prod_start,
-                                          sizes_.prod_start,
-                                          sizes_.prod_size,
-                                          (int)DECAF_CHANNEL_OK);
-            fprintf(stderr,"Prod channel created\n");
+            //MPI_Win_create(&command_prod_, 1, sizeof(int), MPI_INFO_NULL, prod_comm_handle(), &window_prod_);
+
+            channel_prod_ = new OneWayChannel(  world_comm_,
+                                                sizes_.prod_start,
+                                                sizes_.prod_start,
+                                                sizes_.prod_size,
+                                                (int)DECAF_CHANNEL_OK);
         }
     }
 
@@ -1013,7 +1018,8 @@ Dataflow::get(pConstructData data, TaskType role)
                     //bool receivedRootSignal = checkRootDflowSignal(role);
                     if(receivedRootSignal)
                     {
-                        broadcastDflowSignal();
+                        //broadcastDflowSignal();
+                        channel_dflow_->sendCommand(DECAF_CHANNEL_OK);
                         fprintf(stderr,"Dflow received the continue command. Broadcasting\n");
                     }
 
@@ -1024,8 +1030,8 @@ Dataflow::get(pConstructData data, TaskType role)
                 // Ex: 1 dflow do put while the other do a get
                 MPI_Barrier(dflow_comm_->handle());
 
-                receivedDflowSignal = checkDflowSignal();
-                //receivedDflowSignal = channel_dflow_con_.checkSelfCommand() == DECAF_CHANNEL_OK;
+                //receivedDflowSignal = checkDflowSignal();
+                receivedDflowSignal = channel_dflow_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
 
                 if(doGet && !is_blocking)
                 {

@@ -234,7 +234,7 @@ OneWayChannel::checkAndReplaceSelfCommand(
         DecafChannelCommand replace_command)
 {
     if(!initialized_)
-        return DECAF_CHANNEL_OK;
+        return false;
 
     int localCommand = 0;
     MPI_Win_lock(MPI_LOCK_EXCLUSIVE, channel_rank_, 0, window_);
@@ -242,7 +242,7 @@ OneWayChannel::checkAndReplaceSelfCommand(
     if(localCommand == (int)wanted_command)
     {
         int newCommand = (int)replace_command;
-        MPI_Put(&newCommand, 1, MPI_INT, rank_start_recep_, 0, 1, MPI_INT, window_);
+        MPI_Put(&newCommand, 1, MPI_INT, channel_rank_, 0, 1, MPI_INT, window_);
         MPI_Win_unlock(channel_rank_, window_);
         return true;
     }
