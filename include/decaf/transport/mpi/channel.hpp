@@ -212,7 +212,10 @@ decaf::
 OneWayChannel::checkSelfCommand()
 {
     if(!initialized_)
+    {
+        fprintf(stderr, "Calling from not initialized\n");
         return DECAF_CHANNEL_OK;
+    }
 
     int localCommand = 0;
     MPI_Win_lock(MPI_LOCK_EXCLUSIVE, channel_rank_, 0, window_);

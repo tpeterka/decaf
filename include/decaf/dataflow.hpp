@@ -174,7 +174,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     type_(DECAF_OTHER_COMM),
     no_link(false),
     use_buffer(false),
-    buffer_max_size(5),
+    buffer_max_size(2),
     is_blocking(false),
     first_iteration(true),
     doGet(true),
@@ -579,11 +579,11 @@ Dataflow::Dataflow(CommHandle world_comm,
             int err = MPI_Win_create(&command_prod_, 1, sizeof(int), MPI_INFO_NULL, prod_comm_handle(), &window_prod_);
             fprintf(stderr, "ERROR on the window: %i\n", err);
             fprintf(stderr,"Creation of the prod channel...\n");
-            /*channel_prod_ = new OneWayChannel(world_comm_,
+            channel_prod_ = new OneWayChannel(world_comm_,
                                           sizes_.prod_start,
                                           sizes_.prod_start,
                                           sizes_.prod_size,
-                                          (int)DECAF_CHANNEL_OK);*/
+                                          (int)DECAF_CHANNEL_OK);
             fprintf(stderr,"Prod channel created\n");
         }
     }
@@ -677,7 +677,7 @@ Dataflow::put(pConstructData data, TaskType role)
                     if(first_iteration)
                     {
                         command_received = DECAF_CHANNEL_OK;
-                        first_iteration = true;
+                        first_iteration = false;
                     }
                     else
                         command_received = channel_prod_dflow_->checkSelfCommand();
@@ -686,20 +686,21 @@ Dataflow::put(pConstructData data, TaskType role)
                         fprintf(stderr,"Blocking command received. We should block\n");
                         fprintf(stderr,"Broadcasting on prod root the value 1\n");
 
-                        broadcastProdSignal(1);
-                        //channel_prod_.sendCommand(DECAF_CHANNEL_WAIT);
+                        //broadcastProdSignal(1);
+                        channel_prod_->sendCommand(DECAF_CHANNEL_WAIT);
                         blocking = true;
                     }
                 }
                 MPI_Barrier(prod_comm_handle());
 
                 // TODO: remove busy wait
-                int signal_prod;
-                //DecafChannelCommand signal_prod;
+                //int signal_prod;
+                DecafChannelCommand signal_prod;
                 do
                 {
-                    signal_prod = getProdValue();
-                    //signal_prod = channel_prod_.checkSelfCommand();
+                    fprintf(stderr,"Checking value from the produer\n");
+                    //signal_prod = getProdValue();
+                    signal_prod = channel_prod_->checkSelfCommand();
 
                     if(is_prod_root() && blocking == true)
                     {
@@ -711,15 +712,17 @@ Dataflow::put(pConstructData data, TaskType role)
                             fprintf(stderr,"Unblocking command received.\n");
                             fprintf(stderr,"Broadcasting on prod root the value 0\n");
 
-                            broadcastProdSignal(0);
-                            //channel_prod_.sendCommand(DECAF_CHANNEL_OK);
+                            //broadcastProdSignal(0);
+                            channel_prod_->sendCommand(DECAF_CHANNEL_OK);
                             break;
                         }
                     }
 
+                    usleep(100000); //100ms
 
-                 } while(signal_prod != 0);
-                 //} while(signal_prod != DECAF_CHANNEL_OK);
+
+                 //} while(signal_prod != 0);
+                 } while(signal_prod != DECAF_CHANNEL_OK);
             }
 
             // encode destination link id into message
