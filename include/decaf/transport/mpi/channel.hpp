@@ -118,13 +118,14 @@ OneWayChannel::OneWayChannel(   CommHandle world_comm,
     }
     else // Producer is overlapping with receivers
     {
-        int ranges[1][3];
-        ranges[0][0] = startRecep;
-        ranges[0][1] = startRecep + nbRecep - 1;
-        ranges[0][2] = 1;
+        fprintf(stderr, "Creation of the window with overlapping\n");
+        int ranges[3];
+        ranges[0] = startRecep;
+        ranges[1] = startRecep + nbRecep - 1;
+        ranges[2] = 1;
         rank_source_ = prod - startRecep;
         rank_start_recep_ = 0;
-        MPI_Group_range_incl(world_group, 1, ranges, &channel_group);
+        MPI_Group_range_incl(world_group, 1, &ranges, &channel_group);
     }
     nb_recep_ = nbRecep;
 

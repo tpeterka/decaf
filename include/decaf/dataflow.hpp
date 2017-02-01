@@ -130,15 +130,15 @@ namespace decaf
         BufferMethod bufferMethod_;         // Type of buffer to use
         int command_root_dflow_con_;        // Memory allocation for the root window between the consumer and the dflow
         MPI_Win window_root_dflow_con_;     // Window allocation for the root communications
-        OneWayChannel channel_dflow_con_;   // Communication channel between the root consumer and dflow
+        OneWayChannel* channel_dflow_con_;   // Communication channel between the root consumer and dflow
         int command_dflow_;                 // Memory allocation for the dflow window
         MPI_Win window_dflow_;              // Window allocation of the dflow communications
         int command_root_prod_dflow_;       // Memory allocation for the root window between the dflow and producer
         MPI_Win window_root_prod_dflow_;    // Window allocation of the root communications form dflow to the producer
-        OneWayChannel channel_prod_dflow_;  // Communication channel between the root dflow and prod
+        OneWayChannel* channel_prod_dflow_;  // Communication channel between the root dflow and prod
         int command_prod_;                  // Memory allocation of the prod window
         MPI_Win window_prod_;               // Window allocation of the prod communications
-        //OneWayChannel channel_prod_;        //Communication channel between the producers
+        OneWayChannel* channel_prod_;        //Communication channel between the producers
         bool first_iteration;
         std::queue<pConstructData> buffer;  // Buffer
         int buffer_max_size;                // Maximum size allowed for the buffer
@@ -203,6 +203,8 @@ Dataflow::Dataflow(CommHandle world_comm,
 
     world_rank_ = CommRank(world_comm); // my place in the world
     world_size_ = CommSize(world_comm);
+
+    fprintf(stderr, "My rank: %i\n", world_rank_);
 
     // ensure sizes and starts fit in the world
     if (sizes_.prod_start + sizes_.prod_size > world_size_   ||
@@ -510,7 +512,7 @@ Dataflow::Dataflow(CommHandle world_comm,
             // Only the root create a Window for the retroactive loop
             MPI_Win_create(&command_root_dflow_con_, 1, sizeof(int), MPI_INFO_NULL, root_dc_comm_, &window_root_dflow_con_);
             */
-            channel_dflow_con_ = OneWayChannel(world_comm_,
+            channel_dflow_con_ = new OneWayChannel(world_comm_,
                                                sizes_.con_start,
                                                sizes_.dflow_start,
                                                1,
@@ -556,11 +558,11 @@ Dataflow::Dataflow(CommHandle world_comm,
             // Only the root create a Window for the retroactive loop
             MPI_Win_create(&command_root_prod_dflow_, 1, sizeof(int), MPI_INFO_NULL, root_pd_comm_, &window_root_prod_dflow_);
             */
-            channel_prod_dflow_ = OneWayChannel(world_comm_,
+            channel_prod_dflow_ = new OneWayChannel(world_comm_,
                                                 sizes_.dflow_start,
                                                 sizes_.prod_start,
                                                 1,
-                                                (int)DECAF_CHANNEL_WAIT);
+                                                (int)DECAF_CHANNEL_OK);
         }
 
         if(is_dflow())
@@ -574,12 +576,15 @@ Dataflow::Dataflow(CommHandle world_comm,
         {
             command_prod_ = 0;  // By default you are always allowed to send until you're blocked
 
-            MPI_Win_create(&command_prod_, 1, sizeof(int), MPI_INFO_NULL, prod_comm_handle(), &window_prod_);
-            //channel_prod_ = OneWayChannel(world_comm_,
-            //                              sizes_.prod_start,
-            //                              sizes_.prod_start,
-            //                              sizes_.prod_size,
-            //                              (int)DECAF_CHANNEL_OK);
+            int err = MPI_Win_create(&command_prod_, 1, sizeof(int), MPI_INFO_NULL, prod_comm_handle(), &window_prod_);
+            fprintf(stderr, "ERROR on the window: %i\n", err);
+            fprintf(stderr,"Creation of the prod channel...\n");
+            /*channel_prod_ = new OneWayChannel(world_comm_,
+                                          sizes_.prod_start,
+                                          sizes_.prod_start,
+                                          sizes_.prod_size,
+                                          (int)DECAF_CHANNEL_OK);*/
+            fprintf(stderr,"Prod channel created\n");
         }
     }
 
@@ -675,7 +680,7 @@ Dataflow::put(pConstructData data, TaskType role)
                         first_iteration = true;
                     }
                     else
-                        command_received = channel_prod_dflow_.checkSelfCommand();
+                        command_received = channel_prod_dflow_->checkSelfCommand();
                     if(command_received == DECAF_CHANNEL_WAIT)
                     {
                         fprintf(stderr,"Blocking command received. We should block\n");
@@ -698,10 +703,10 @@ Dataflow::put(pConstructData data, TaskType role)
 
                     if(is_prod_root() && blocking == true)
                     {
-                        int command_received = getRootProdValue();
-                        //DecafChannelCommand command_received = channel_prod_dflow_.checkSelfCommand();
-                        if(command_received == 0)
-                        //if(command_received == DECAF_CHANNEL_OK)
+                        //int command_received = getRootProdValue();
+                        DecafChannelCommand command_received = channel_prod_dflow_->checkSelfCommand();
+                        //if(command_received == 0)
+                        if(command_received == DECAF_CHANNEL_OK)
                         {
                             fprintf(stderr,"Unblocking command received.\n");
                             fprintf(stderr,"Broadcasting on prod root the value 0\n");
@@ -798,7 +803,7 @@ Dataflow::signalRootDflowReady()
     //MPI_Put(&flag_to_send, 1, MPI_INT, rank_dflow_root_dc_comm_, 0, 1, MPI_INT, window_root_dflow_con_);
     //MPI_Win_unlock(rank_dflow_root_dc_comm_, window_root_dflow_con_);
     fprintf(stderr,"Signaling the dflow that the con is ready\n");
-    channel_dflow_con_.sendCommand(DECAF_CHANNEL_OK);
+    channel_dflow_con_->sendCommand(DECAF_CHANNEL_OK);
 }
 
 // Check in the root dflow if we received a signal from the con
@@ -1000,7 +1005,7 @@ Dataflow::get(pConstructData data, TaskType role)
                         receivedRootSignal =  true;
                     }
                     else
-                        receivedRootSignal =  channel_dflow_con_.checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
+                        receivedRootSignal =  channel_dflow_con_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
 
                     //bool receivedRootSignal = checkRootDflowSignal(role);
                     if(receivedRootSignal)
@@ -1036,7 +1041,8 @@ Dataflow::get(pConstructData data, TaskType role)
                             fprintf(stderr,"The buffer is too large. Sending blocking command\n");
                             is_blocking = true;
                             //signalRootProdBlock(1);
-                            channel_prod_dflow_.sendCommand(DECAF_CHANNEL_WAIT);
+                            if(is_dflow_root())
+                                channel_prod_dflow_->sendCommand(DECAF_CHANNEL_WAIT);
                         }
                     }
 
@@ -1069,7 +1075,8 @@ Dataflow::get(pConstructData data, TaskType role)
                     fprintf(stderr,"The buffer is small enough. Sending unblocking command\n");
                     is_blocking = false;
                     //signalRootProdBlock(0);
-                    channel_prod_dflow_.sendCommand(DECAF_CHANNEL_OK);
+                    if(is_dflow_root())
+                        channel_prod_dflow_->sendCommand(DECAF_CHANNEL_OK);
                 }
             }
         }
