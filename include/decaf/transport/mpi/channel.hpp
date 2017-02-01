@@ -118,7 +118,6 @@ OneWayChannel::OneWayChannel(   CommHandle world_comm,
     }
     else // Producer is overlapping with receivers
     {
-        fprintf(stderr, "Creation of the window with overlapping\n");
         int ranges[3];
         ranges[0] = startRecep;
         ranges[1] = startRecep + nbRecep - 1;
@@ -212,10 +211,7 @@ decaf::
 OneWayChannel::checkSelfCommand()
 {
     if(!initialized_)
-    {
-        fprintf(stderr, "Calling from not initialized\n");
         return DECAF_CHANNEL_OK;
-    }
 
     int localCommand = 0;
     MPI_Win_lock(MPI_LOCK_EXCLUSIVE, channel_rank_, 0, window_);
