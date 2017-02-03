@@ -10,6 +10,9 @@ import argparse
 import json
 from collections import defaultdict
 
+import fractions  #Definition of the least common multiple of two numbers
+def lcm(a,b): return abs(a * b) / fractions.gcd(a,b) if a and b else 0
+
 """ Object holding information about input/output data and types """
 class Contract:
   """ Object holder for informations about the plateform to use """
@@ -23,25 +26,33 @@ class Contract:
       contract = json.loads(content)
       if "inputs" in contract:
         for key, val in contract["inputs"].items():
+          if len(val) == 1:
+            val.append(1)
           self.inputs[key] = val
       if "outputs" in contract:
         for key, val in contract["outputs"].items():
+          if len(val) == 1:
+            val.append(1)
           self.outputs[key] = val
   # End constructor
 
-  def addInput(self, key, type):
-    self.inputs[key] = type
+  def addInput(self, key, typename, period=1):
+    self.inputs[key] = [typename, period]
 
   def addInputFromDict(self, dict):
     for key, val in dict.items():
-        self.inputs[key] = val
+      if len(val) == 1:
+        val.append(1) # period=1 by default
+      self.inputs[key] = val
 
-  def addOutput(self, key, type):
-    self.outputs[key] = type
+  def addOutput(self, key, typename, period=1):
+    self.outputs[key] = [typename, period]
 
   def addOutputFromDict(self, dict):
     for key, val in dict.items():
-        self.outputs[key] = val
+      if len(val) == 1:
+        val.append(1) # period=1 by default
+      self.outputs[key] = val
 
 # End of class Contract
 
@@ -66,9 +77,10 @@ def check_contracts(graph, check_types):
               con_in = con["contract"].inputs
 
           # We add for each edge the list of pairs key/type which is the intersection of the two contracts
-          intersection_keys = {key:con_in[key] for key in con_in.keys() if (key in prod_out) and ( (check_types == 0) or (con_in[key] == prod_out[key]) ) }
+          intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (check_types == 0) or (con_in[key][0] == prod_out[key][0]) ) }
           for key in intersection_keys.keys():
-          	dict[edge[1]].add(key)
+              dict[edge[1]].add(key)
+              intersection_keys[key].append(lcm(con_in[key][1], prod_out[key][1]))
 
           if len(intersection_keys) == 0:
               raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))

@@ -45,7 +45,7 @@ namespace decaf
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
                  int con,                        // id in workflow structure of consumer node
-		         vector<pair<string,string>> list_key, // list of key/type if related to a contract
+		         vector<ContractField> list_key, // list of key/type if related to a contract
 		         int check_types,					   // level of typechecking if related to a contract
                  Decomposition prod_dflow_redist // decompositon between producer and dataflow
                  = DECAF_CONTIG_DECOMP,
@@ -67,7 +67,7 @@ namespace decaf
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
-		vector<pair<string,string>>& keys(){ return list_keys_; }
+		vector<ContractField>& keys(){ return list_keys_; }
 		bool is_contract(){		return bContract_;}
 
         // Clear the buffer of the redistribution components.
@@ -112,9 +112,11 @@ namespace decaf
         int wflow_dflow_id_;             // index of corresponding link in the workflow
         bool no_link;                    // True if the Dataflow doesn't have a Link
 
+		int it;						 // Counting the iterations
+
 		bool bContract_;			 // boolean to say if the dataflow has a contract or not
 		int check_types_;			 // level of typechecking used; Relevant if bContract_ is set to true
-		vector<pair<string,string>> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+		vector<ContractField> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
         };
 
 } // namespace
@@ -125,7 +127,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int prod,
                    int dflow,
                    int con,
-                   vector<pair<string,string>> list_keys,
+                   vector<ContractField> list_keys,
                    int check_types = 0,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist) :
@@ -139,7 +141,8 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
     check_types_(check_types),
-    no_link(false)
+    no_link(false),
+    it(0)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -469,20 +472,20 @@ Dataflow::put(pConstructData data, TaskType role)
 			set_quit(data_filtered);
 		}
 		else{
-			for(pair<string,string> pair : keys()){
-				if(!data->hasData(pair.first)){// If the key is not present in the data the contract is not respected.
-					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", pair.first.c_str());
+			for(ContractField field : keys()){
+				if(!data->hasData(field.name)){// If the key is not present in the data the contract is not respected.
+					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
 					return false;
 				}
 				// Performing typechecking if needed
 				if(check_types_ > 1){
-					string typeName = data->getTypename(pair.first);
-					if(typeName.compare(pair.second) != 0){ //The two types do not match
-						fprintf(stderr, "ERROR : Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), pair.second.c_str(), pair.first.c_str());
+					string typeName = data->getTypename(field.name);
+					if(typeName.compare(field.type) != 0){ //The two types do not match
+						fprintf(stderr, "ERROR : Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
 						return false;
 					}
 				}
-				data_filtered->appendData(data, pair.first);
+				data_filtered->appendData(data, field.name);
 			}
 		}
 	}
@@ -616,16 +619,16 @@ Dataflow::get(pConstructData data, TaskType role)
 
 	// Checks if all keys of the contract are in the data
 	if(is_contract() && !data->isEmpty()){ //If the data received is empty, no need to check the contract
-		for(pair<string,string> pair : keys()){
-			if(! data->hasData(pair.first)){
-				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", pair.first.c_str());
+		for(ContractField field : keys()){
+			if(! data->hasData(field.name)){
+				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
 				return false;
 			}
 			// Performing typechecking if needed
 			if(check_types_ > 1){
-				string typeName = data->getTypename(pair.first);
-				if(typeName.compare(pair.second) != 0){ //The two types do not match
-					fprintf(stderr, "ERROR : Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), pair.second.c_str(), pair.first.c_str());
+				string typeName = data->getTypename(field.name);
+				if(typeName.compare(field.type) != 0){ //The two types do not match
+					fprintf(stderr, "ERROR : Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
 					return false;
 				}
 			}

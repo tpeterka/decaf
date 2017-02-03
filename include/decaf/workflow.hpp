@@ -60,7 +60,7 @@ struct WorkflowLink                          // a dataflow
                  string path_,
                  string prod_dflow_redist_,
 	             string dflow_con_redist_,
-	             vector<pair<string,string>> list_keys_,
+	             vector<ContractField> list_keys_,
 	             int check_types_) :
         prod(prod_),
         con(con_),
@@ -84,7 +84,7 @@ struct WorkflowLink                          // a dataflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
 
 	// The following two are only relevant if the dataflow is related to a contract
-	vector<pair<string, string>> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
+	vector<ContractField> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
 	int check_types;						  // level of checking for the type of data to be exchanged
 };
 
@@ -187,24 +187,8 @@ struct Workflow                              // an entire workflow
 		node.nprocs = v.second.get<int>("nprocs");
 		node.func = v.second.get<std::string>("func");
 
-		/*boost::optional<bpt::ptree&> pt_inputs = v.second.get_child_optional("inputs");
-		if(pt_inputs){
-			for(bpt::ptree::value_type &pair: pt_inputs.get()){
-				node.inputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
-			}
-		}
-
-		boost::optional<bpt::ptree&> pt_outputs = v.second.get_child_optional("outputs");
-		if(pt_outputs){
-			for(bpt::ptree::value_type &pair: pt_outputs.get()){
-				node.outputs.push_back(std::pair<string,string>(pair.first, pair.second.data()));
-			}
-		}*/
-
 		workflow.nodes.push_back( node );
       }
-
-	  //string path = root.get<std::string>("workflow.path");
 
 	  int check_types = root.get<int>("workflow.check_types");
 
@@ -233,8 +217,18 @@ struct Workflow                              // an entire workflow
 
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
 		if(pt_keys){
-			for(bpt::ptree::value_type &pair: pt_keys.get()){
-				link.list_keys.push_back(std::pair<string,string>(pair.first, pair.second.data()));
+			for(bpt::ptree::value_type &value: pt_keys.get()){
+				ContractField field;
+				field.name = value.first;
+
+				// Didn't find a nicer way of doing this...
+				auto i = value.second.begin();
+				field.type = i->second.get<std::string>("");
+				i++;
+				field.period = i->second.get<int>("");
+				//////
+
+				link.list_keys.push_back(field);
 			}
 			link.check_types = check_types;
 		}

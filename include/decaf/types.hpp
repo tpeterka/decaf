@@ -66,6 +66,14 @@ struct DecafSizes
 	int con_nsteps;        // number of consumer timesteps
 };
 
+struct ContractField
+{
+	std::string name;		// Name of the field
+	std::string type;		// Type of the field
+	int period;				// The field is sent every "period" iteration
+};
+
+
 void
 all_err(int err_code)
 {
