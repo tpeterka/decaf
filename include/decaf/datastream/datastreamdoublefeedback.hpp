@@ -13,7 +13,7 @@
 #ifndef DECAF_DATASTREAM_DOUBLE_FEEDBACK
 #define DECAF_DATASTREAM_DOUBLE_FEEDBACK
 
-#include <decaf/buffer/buffer.hpp>
+#include <decaf/datastream/datastreaminterface.hpp>
 #include <decaf/transport/mpi/channel.hpp>
 #include <decaf/transport/redist_comp.h>
 #include <decaf/data_model/msgtool.hpp>

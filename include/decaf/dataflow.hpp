@@ -29,7 +29,7 @@
 #include <decaf/transport/mpi/redist_proc_mpi.h>
 #include <decaf/transport/mpi/tools.hpp>
 #include <decaf/transport/mpi/channel.hpp>
-#include <decaf/buffer/bufferLimited.hpp>
+#include <decaf/datastream/datastreamdoublefeedback.hpp>
 #include <memory>
 #include <queue>
 #endif
@@ -98,7 +98,7 @@ namespace decaf
 
         // Buffer infos
         BufferMethod bufferMethod_;         // Type of buffer to use
-        OneWayChannel* channel_dflow_con_;  // Communication channel between the root consumer and dflow
+/*        OneWayChannel* channel_dflow_con_;  // Communication channel between the root consumer and dflow
         OneWayChannel* channel_dflow_;      // Communication channel between the dflows
         OneWayChannel* channel_prod_dflow_; // Communication channel between the root dflow and prod
         OneWayChannel* channel_prod_;       //Communication channel between the producers
@@ -107,7 +107,7 @@ namespace decaf
         int buffer_max_size;                // Maximum size allowed for the buffer
         bool is_blocking;                   // Currently blocking the producer
         bool doGet;                         // We do a get until we get a terminate message
-        DatastreamDoubleFeedback* stream_;
+*/        DatastreamDoubleFeedback* stream_;
     };
 
 } // namespace
@@ -132,15 +132,16 @@ Dataflow::Dataflow(CommHandle world_comm,
     type_(DECAF_OTHER_COMM),
     no_link(false),
     use_buffer(false),
-    buffer_max_size(2),
-    is_blocking(false),
-    first_iteration(true),
-    doGet(true),
+    //buffer_max_size(2),
+    //is_blocking(false),
+    //first_iteration(true),
+    //doGet(true),
     bufferMethod_(buffer_mode),
-    channel_dflow_(NULL),
-    channel_dflow_con_(NULL),
-    channel_prod_(NULL),
-    channel_prod_dflow_(NULL)
+    //channel_dflow_(NULL),
+    //channel_dflow_con_(NULL),
+    //channel_prod_(NULL),
+    //channel_prod_dflow_(NULL)
+    stream_(NULL)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -463,10 +464,11 @@ Dataflow::~Dataflow()
 
     if(!no_link && use_buffer)
     {
-        if(channel_dflow_) delete channel_dflow_;
+        /*if(channel_dflow_) delete channel_dflow_;
         if(channel_dflow_con_) delete channel_dflow_con_;
         if(channel_prod_) delete channel_prod_;
-        if(channel_prod_dflow_) delete channel_prod_dflow_;
+        if(channel_prod_dflow_) delete channel_prod_dflow_;*/
+        if(stream_) delete stream_;
 
     }
 }
