@@ -1,0 +1,138 @@
+//---------------------------------------------------------------------------
+// Abstract class to define a controlled data stream mechanism.
+//
+// Matthieu Dreher
+// Argonne National Laboratory
+// 9700 S. Cass Ave.
+// Argonne, IL 60439
+// mdreher@anl.gov
+//
+//--------------------------------------------------------------------------
+
+#ifndef DECAF_DATASTREAM
+#define DECAF_DATASTREAM
+
+#ifdef TRANSPORT_MPI
+#include <decaf/transport/mpi/types.h>
+#include <decaf/transport/mpi/comm.hpp>
+#endif
+
+namespace decaf
+{
+
+
+    class Datastream
+    {
+    public:
+        Datastream() : initialized_(false){}
+        Datastream(CommHandle world_comm,
+               int start_prod,
+               int nb_prod,
+               int start_dflow,
+               int nb_dfow,
+               int start_con,
+               int nb_con,
+               RedistComp* prod_dflow,
+               RedistComp* dflow_con);
+        virtual ~Datastream(){}
+
+        bool is_prod()          { return initialized_ && world_rank_ >= start_prod_ && world_rank_ < start_prod_ + nb_prod_; }
+        bool is_dflow()         { return initialized_ && world_rank_ >= start_dflow_ && world_rank_ < start_dflow_ + nb_dflow_;  }
+        bool is_con()           { return initialized_ && world_rank_ >= start_con_ && world_rank_ < start_con_ + nb_con_;  }
+        bool is_prod_root()     { return world_rank_ == start_prod_; }
+        bool is_dflow_root()    { return world_rank_ == start_dflow_; }
+        bool is_con_root()      { return world_rank_ == start_con_; }
+
+
+        virtual void processProd(pConstructData data) = 0;
+
+        virtual void processDflow(pConstructData data) = 0;
+
+        virtual void processCon(pConstructData) = 0;
+
+    protected:
+        bool initialized_;
+        CommHandle world_comm_;
+        int world_rank_;
+        int world_size_;
+
+        int start_prod_;
+        int nb_prod_;
+        int start_dflow_;
+        int nb_dflow_;
+        int start_con_;
+        int nb_con_;
+
+        CommHandle prod_comm_handle_;
+        CommHandle dflow_comm_handle_;
+        CommHandle con_comm_handle_;
+
+        RedistComp* redist_prod_dflow_;
+        RedistComp* redist_dflow_con_;
+
+
+    };
+}
+
+decaf::
+Datastream::Datastream(CommHandle world_comm,
+              int start_prod, int nb_prod,
+              int start_dflow, int nb_dflow,
+              int start_con, int nb_con,
+              RedistComp* redist_prod_dflow,
+              RedistComp* redist_dflow_con) :
+    initialized_(false), world_comm_(world_comm),
+    start_prod_(start_prod), nb_prod_(nb_prod),
+    start_dflow_(start_dflow), nb_dflow_(nb_dflow),
+    start_con_(start_con), nb_con_(nb_con),
+    redist_prod_dflow_(redist_prod_dflow), redist_dflow_con_(redist_dflow_con)
+{
+    MPI_Comm_rank(world_comm_, &world_rank_);
+    MPI_Comm_size(world_comm_, &world_size_);
+
+    // Creation of the channels
+    if(is_prod())
+    {
+
+        MPI_Group group, newgroup;
+        int range[3];
+        range[0] = start_prod;
+        range[1] = start_prod + nb_prod - 1;
+        range[2] = 1;
+        MPI_Comm_group(world_comm, &group);
+        MPI_Group_range_incl(group, 1, &range, &newgroup);
+        MPI_Comm_create_group(world_comm, newgroup, 0, &prod_comm_handle_);
+        MPI_Group_free(&group);
+        MPI_Group_free(&newgroup);
+    }
+
+    if(is_dflow())
+    {
+        MPI_Group group, newgroup;
+        int range[3];
+        range[0] = start_dflow;
+        range[1] = start_dflow + nb_dflow - 1;
+        range[2] = 1;
+        MPI_Comm_group(world_comm, &group);
+        MPI_Group_range_incl(group, 1, &range, &newgroup);
+        MPI_Comm_create_group(world_comm, newgroup, 0, &dflow_comm_handle_);
+        MPI_Group_free(&group);
+        MPI_Group_free(&newgroup);
+    }
+
+    if(is_con())
+    {
+        MPI_Group group, newgroup;
+        int range[3];
+        range[0] = start_con;
+        range[1] = start_con + nb_con - 1;
+        range[2] = 1;
+        MPI_Comm_group(world_comm, &group);
+        MPI_Group_range_incl(group, 1, &range, &newgroup);
+        MPI_Comm_create_group(world_comm, newgroup, 0, &con_comm_handle_);
+        MPI_Group_free(&group);
+        MPI_Group_free(&newgroup);
+    }
+}
+
+#endif

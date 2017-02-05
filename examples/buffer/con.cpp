@@ -60,7 +60,7 @@ void con(Decaf* decaf)
         fprintf(stderr, "consumer sum = %d\n", sum);
 
         // Signaling the dflow to forward the next message
-        decaf->dataflow(0)->signalRootDflowReady();
+        //decaf->dataflow(0)->signalRootDflowReady();
 
         // Producer is putting every second
         // Generate an overflow between the dflow and the consumer

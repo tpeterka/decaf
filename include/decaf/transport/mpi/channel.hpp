@@ -143,11 +143,11 @@ OneWayChannel::OneWayChannel(   CommHandle world_comm,
 decaf::
 OneWayChannel::~OneWayChannel()
 {
-    //if(initialized_)
-    //{
-    //    MPI_Win_free(&window_);
-    //    MPI_Comm_free(&channel_comm_);
-    //}
+    if(initialized_)
+    {
+        MPI_Win_free(&window_);
+        MPI_Comm_free(&channel_comm_);
+    }
 }
 
 int
@@ -196,7 +196,11 @@ decaf::
 OneWayChannel::sendCommand(DecafChannelCommand command)
 {
     if(!initialized_)
+    {
+        fprintf(stderr,"ERROR: the ChannelCommand is not initialized.\n");
         return;
+
+    }
 
     for(int i = rank_start_recep_; i < rank_start_recep_ + nb_recep_; i++)
     {

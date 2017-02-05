@@ -16,6 +16,7 @@
 
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
+#include <decaf/data_model/msgtool.hpp>
 
 // transport layer specific types
 #ifdef TRANSPORT_MPI
@@ -28,6 +29,7 @@
 #include <decaf/transport/mpi/redist_proc_mpi.h>
 #include <decaf/transport/mpi/tools.hpp>
 #include <decaf/transport/mpi/channel.hpp>
+#include <decaf/buffer/bufferLimited.hpp>
 #include <memory>
 #include <queue>
 #endif
@@ -74,38 +76,6 @@ namespace decaf
         // To call if the data model change from one iteration to another or to free memory space
         void clearBuffers(TaskType role);
 
-        // sets a quit message into a container; caller still needs to send the message
-        static
-        void
-        set_quit(pConstructData out_data)   // output message
-            {
-                shared_ptr<SimpleConstructData<int> > data  =
-                    make_shared<SimpleConstructData<int> >(1);
-                out_data->appendData(string("decaf_quit"), data,
-                                     DECAF_NOFLAG, DECAF_SYSTEM,
-                                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
-                out_data->setSystem(true);
-            }
-
-        // tests whether a message is a quit command
-        static
-        bool
-        test_quit(pConstructData in_data)   // input message
-        {
-            return in_data->hasData(string("decaf_quit"));
-        }
-
-        //void waitSignal(TaskType role);             // If a link and buffer activated, wait until we have the command to continue
-        //bool checkRootDflowSignal(TaskType role);   // If a link and buffer activated, check if we have the command to continue
-        void signalRootDflowReady();                // If a cons and buffer activated, signal to the link that we are ready to receive a new message
-        //void broadcastDflowSignal();                // The dflow root broadcast a signal to the other dflow ranks to send the next msg
-        //bool checkDflowSignal();                    // Checking the sending signal in the dflow window
-        //void signalRootProdBlock(int value);        // Send the signal from the root dflow to producer to block/unblock the producer
-        //void broadcastProdSignal(int value);        // Broadcast a value from the producer root to the other producer ranks
-        //int getRootProdValue();                     // Return the command value from the dflow root to the producer root
-        //int getProdValue();                         // Return the command value from the prod root to all the producer
-
-
     private:
         CommHandle world_comm_;          // handle to original world communicator
         Comm* prod_comm_;                // producer communicator
@@ -137,6 +107,7 @@ namespace decaf
         int buffer_max_size;                // Maximum size allowed for the buffer
         bool is_blocking;                   // Currently blocking the producer
         bool doGet;                         // We do a get until we get a terminate message
+        DatastreamDoubleFeedback* stream_;
     };
 
 } // namespace
@@ -461,43 +432,15 @@ Dataflow::Dataflow(CommHandle world_comm,
     // Buffering setup
     if(!no_link && use_buffer)
     {
-        // Creating the group of with the root link and root consumer
-        if(is_con_root() || is_dflow_root())
-        {
-            channel_dflow_con_ = new OneWayChannel(world_comm_,
-                                               sizes_.con_start,
+        stream_ = new DatastreamDoubleFeedback(world_comm_,
+                                               sizes_.prod_start,
+                                               sizes_.prod_size,
                                                sizes_.dflow_start,
-                                               1,
-                                               (int)DECAF_CHANNEL_WAIT);
-        }
-
-        // Creating the group of with the root link and root consumer
-        if(is_prod_root() || is_dflow_root())
-        {
-            channel_prod_dflow_ = new OneWayChannel(world_comm_,
-                                                    sizes_.dflow_start,
-                                                    sizes_.prod_start,
-                                                    1,
-                                                    (int)DECAF_CHANNEL_OK);
-        }
-
-        if(is_dflow())
-        {
-            channel_dflow_ = new OneWayChannel( world_comm_,
-                                                sizes_.dflow_start,
-                                                sizes_.dflow_start,
-                                                sizes_.dflow_size,
-                                                (int)DECAF_CHANNEL_WAIT);
-        }
-
-        if(is_prod())
-        {
-            channel_prod_ = new OneWayChannel(  world_comm_,
-                                                sizes_.prod_start,
-                                                sizes_.prod_start,
-                                                sizes_.prod_size,
-                                                (int)DECAF_CHANNEL_OK);
-        }
+                                               sizes_.dflow_size,
+                                               sizes_.con_start,
+                                               sizes_.con_size,
+                                               redist_prod_dflow_,
+                                               redist_dflow_con_);
     }
 
     err_ = DECAF_OK;
@@ -579,56 +522,6 @@ Dataflow::put(pConstructData data, TaskType role)
         }
         else
         {
-            if(use_buffer)
-            {
-                bool blocking = false;
-                if(is_prod_root())
-                {
-                    DecafChannelCommand command_received;
-                    if(first_iteration)
-                    {
-                        command_received = DECAF_CHANNEL_OK;
-                        first_iteration = false;
-                    }
-                    else
-                        command_received = channel_prod_dflow_->checkSelfCommand();
-                    if(command_received == DECAF_CHANNEL_WAIT)
-                    {
-                        //fprintf(stderr,"Blocking command received. We should block\n");
-                        //fprintf(stderr,"Broadcasting on prod root the value 1\n");
-
-                        channel_prod_->sendCommand(DECAF_CHANNEL_WAIT);
-                        blocking = true;
-                    }
-                }
-                MPI_Barrier(prod_comm_handle());
-
-                // TODO: remove busy wait
-                DecafChannelCommand signal_prod;
-                do
-                {
-                    signal_prod = channel_prod_->checkSelfCommand();
-
-                    if(is_prod_root() && blocking == true)
-                    {
-                        DecafChannelCommand command_received = channel_prod_dflow_->checkSelfCommand();
-
-                        if(command_received == DECAF_CHANNEL_OK)
-                        {
-                            //fprintf(stderr,"Unblocking command received.\n");
-                            //fprintf(stderr,"Broadcasting on prod root the value 0\n");
-
-                            channel_prod_->sendCommand(DECAF_CHANNEL_OK);
-                            break;
-                        }
-                    }
-
-                    usleep(1000); //100ms
-
-
-                 } while(signal_prod != DECAF_CHANNEL_OK);
-            }
-
             // encode destination link id into message
             shared_ptr<SimpleConstructData<int> > value2  =
                 make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
@@ -636,11 +529,18 @@ Dataflow::put(pConstructData data, TaskType role)
                              DECAF_NOFLAG, DECAF_SYSTEM,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
-            // send the message
-            if(redist_prod_dflow_ == NULL)
-                fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-            redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
-            redist_prod_dflow_->flush();
+            if(use_buffer)
+            {
+                stream_->processProd(data);
+            }
+            else
+            {
+                // send the message
+                if(redist_prod_dflow_ == NULL)
+                    fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
+                redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
+                redist_prod_dflow_->flush();
+            }
         }
     }
     else if (role == DECAF_LINK)
@@ -665,20 +565,6 @@ Dataflow::put(pConstructData data, TaskType role)
     data->removeData("dest_id");
 }
 
-
-// The root consumer sent a signal to the root dflow
-void
-decaf::
-Dataflow::signalRootDflowReady()
-{
-    if(!use_buffer || !is_con_root())
-        return;
-
-    channel_dflow_con_->sendCommand(DECAF_CHANNEL_OK);
-}
-
-
-
 void
 decaf::
 Dataflow::get(pConstructData data, TaskType role)
@@ -690,87 +576,9 @@ Dataflow::get(pConstructData data, TaskType role)
 
         if(use_buffer)
         {
-            bool receivedDflowSignal = false;
-
-            // First phase: Waiting for the signal and checking incoming msgs
-            while(!receivedDflowSignal)
-            {
-                // Checking the root communication
-                if(is_dflow_root())
-                {
-                    bool receivedRootSignal;
-                    if(first_iteration)
-                    {
-                        first_iteration = false;
-                        receivedRootSignal =  true;
-                    }
-                    else
-                        receivedRootSignal =  channel_dflow_con_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
-
-                    if(receivedRootSignal)
-                        channel_dflow_->sendCommand(DECAF_CHANNEL_OK);
-
-                }
-
-                // NOTE: Barrier could be removed if we used only async point-to-point communication
-                // For now collective are creating deadlocks without barrier
-                // Ex: 1 dflow do put while the other do a get
-                MPI_Barrier(dflow_comm_->handle());
-
-                receivedDflowSignal = channel_dflow_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
-
-                if(doGet && !is_blocking)
-                {
-                    pConstructData container;
-                    bool received = redist_prod_dflow_->IGet(container);
-                    if(received)
-                    {
-                        if(Dataflow::test_quit(container))
-                            doGet = false;
-                        redist_prod_dflow_->flush();
-                        buffer.push(container);
-
-                        // Block the producer if reaching the maximum buffer size
-                        if(buffer.size() >= buffer_max_size && !is_blocking)
-                        {
-                            is_blocking = true;
-
-                            if(is_dflow_root())
-                                channel_prod_dflow_->sendCommand(DECAF_CHANNEL_WAIT);
-                        }
-                    }
-                }
-            }
-
-
-            // Second phase: We got the signal
-            if(buffer.empty()) // No data received yet, we do a blocking get
-            {
-                if(!doGet)
-                {
-                    fprintf(stderr, "ERROR: trying to get after receiving a terminate msg.\n");
-                }
-                // We have no msg in queue, we treat directly the incoming msg
-                redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
-                redist_prod_dflow_->flush();
-            }
-            else
-            {
-                // Won't do a copy, just pass the pointer of the map
-                data->merge(buffer.front().getPtr());
-                buffer.pop();
-
-                // Unblock the producer if necessary
-                if(buffer.size() < buffer_max_size && is_blocking)
-                {
-                    is_blocking = false;
-
-                    if(is_dflow_root())
-                        channel_prod_dflow_->sendCommand(DECAF_CHANNEL_OK);
-                }
-            }
+            stream_->processDflow(data);
         }
-        else
+        else    // No buffer, blocking get
         {
             redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
             redist_prod_dflow_->flush();
@@ -791,6 +599,9 @@ Dataflow::get(pConstructData data, TaskType role)
                 fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
             redist_dflow_con_->process(data, DECAF_REDIST_DEST);
             redist_dflow_con_->flush();
+
+            // Comnsumer side
+            stream_->processCon(data);
         }
     }
 }
