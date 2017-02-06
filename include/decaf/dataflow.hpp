@@ -30,6 +30,7 @@
 #include <decaf/transport/mpi/tools.hpp>
 #include <decaf/transport/mpi/channel.hpp>
 #include <decaf/datastream/datastreamdoublefeedback.hpp>
+#include <decaf/datastream/datastreamsinglefeedback.hpp>
 #include <memory>
 #include <queue>
 #endif
@@ -107,7 +108,7 @@ namespace decaf
         int buffer_max_size;                // Maximum size allowed for the buffer
         bool is_blocking;                   // Currently blocking the producer
         bool doGet;                         // We do a get until we get a terminate message
-*/        DatastreamDoubleFeedback* stream_;
+*/        Datastream* stream_;
     };
 
 } // namespace
@@ -425,7 +426,16 @@ Dataflow::Dataflow(CommHandle world_comm,
     // Buffering setup
     if(!no_link && use_buffer)
     {
-        stream_ = new DatastreamDoubleFeedback(world_comm_,
+        /*stream_ = new DatastreamDoubleFeedback(world_comm_,
+                                               sizes_.prod_start,
+                                               sizes_.prod_size,
+                                               sizes_.dflow_start,
+                                               sizes_.dflow_size,
+                                               sizes_.con_start,
+                                               sizes_.con_size,
+                                               redist_prod_dflow_,
+                                               redist_dflow_con_);*/
+        stream_ = new DatastreamSingleFeedback(world_comm_,
                                                sizes_.prod_start,
                                                sizes_.prod_size,
                                                sizes_.dflow_start,
@@ -453,6 +463,8 @@ Dataflow::~Dataflow()
         delete redist_dflow_con_;
     if (redist_prod_dflow_)
         delete redist_prod_dflow_;
+    if (redist_prod_con_)
+        delete redist_prod_con_;
 
     if(!no_link && use_buffer)
     {
