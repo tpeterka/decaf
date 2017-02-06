@@ -80,7 +80,10 @@ def check_contracts(graph, check_types):
           intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (check_types == 0) or (con_in[key][0] == prod_out[key][0]) ) }
           for key in intersection_keys.keys():
               dict[edge[1]].add(key)
-              intersection_keys[key].append(lcm(con_in[key][1], prod_out[key][1]))
+              lcm_val = lcm(con_in[key][1], prod_out[key][1])
+              intersection_keys[key].append(lcm_val)
+              if(lcm_val != con_in[key][1]):
+                print "WARNING: %s will receive %s with periodicity %s instead of %s. Continuing" % (edge[1], key, lcm_val, con_in[key][1])
 
           if len(intersection_keys) == 0:
               raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))

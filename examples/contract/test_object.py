@@ -28,10 +28,10 @@ subtopos = topo.splitTopology(["prod", "dflow", "con"],[3,1,2])
 
 # Add outputs contracts for prod
 contractP = wf.Contract()
-contractP.addOutputFromDict({"object":"Vector_My_class"})
+contractP.addOutputFromDict({"object":["Vector_My_class"]})
 # Add inputs contracts for con
 contractC = wf.Contract()
-contractC.addInputFromDict({"object":"Vector_My_class"})
+contractC.addInputFromDict({"object":["Vector_My_class"]})
 
 
 w = nx.DiGraph()
