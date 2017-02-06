@@ -14,6 +14,7 @@
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/arrayfield.hpp>
+#include <decaf/data_model/vectorfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -32,29 +33,35 @@ void prod(Decaf* decaf)
 	float pi = 3.1415;
 	float array[3];
 	// produce data for some number of timesteps
-	for (int timestep = 1; timestep <4; timestep++){
+	for (int timestep = 1; timestep <= 6; timestep++){
+		if(rank == 0){
+			fprintf(stderr, "\n\n----- ITERATION %d -----\n", timestep-1);
+		}
 		//fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
 		for(int i = 0; i<3; ++i){
 			array[i] = (i+1)*timestep*(rank+1)*pi;
 		}
 
-		SimpleFieldi d_index(rank);
-		ArrayFieldf d_velocity(array,3, 3);
+		SimpleFieldi d_index(timestep);
+		ArrayFieldf d_velocity(array,3, 1);
 
 		pConstructData container;
 		container->appendData("index", d_index,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
+
 		container->appendData("velocity", d_velocity,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
-							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){
 			break;
 		}
-		usleep(50000);
+		//usleep(500000);
+		sleep(1);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -70,7 +77,7 @@ void prod2(Decaf* decaf)
 	float vel = 1.618;
 	float vel_array[3], den_array[3];
 
-	for (int timestep = 1; timestep < 4; timestep++){
+	for (int timestep = 1; timestep <= 6; timestep++){
 		//fprintf(stderr, "prod2 rank %d timestep %d\n", rank, timestep);
 
 		for(int i = 0; i<3; ++i){
@@ -78,8 +85,8 @@ void prod2(Decaf* decaf)
 			den_array[i] = (rank+1)*2*timestep*den*(i+1);
 		}
 
-		ArrayFieldf d_vel(vel_array, 3, 3);
-		ArrayFieldf d_density(den_array, 3, 3);
+		ArrayFieldf d_vel(vel_array, 3, 1);
+		ArrayFieldf d_density(den_array, 3, 1);
 		SimpleFieldi d_id(rank);
 
 		pConstructData container;
@@ -99,7 +106,8 @@ void prod2(Decaf* decaf)
 		if(! decaf->put(container) ){
 			break;
 		}
-		usleep(50000);
+		//usleep(500000);
+		sleep(1);
 	}
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
@@ -110,6 +118,7 @@ void prod2(Decaf* decaf)
 void con(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
+	int it = 0;
 	vector< pConstructData > in_data;
 
 	while (decaf->get(in_data))
@@ -118,25 +127,32 @@ void con(Decaf* decaf)
 		float *density, *velocity;
 		ArrayFieldf a_density, a_velocity;
 
-		int link_id;
+		string s = "";
 		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
 			if(in_data[i]->hasData("index")){
 				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
+				s+= "index: " + to_string(index) + " ";
+
 			}
 			if(in_data[i]->hasData("velocity")){
-				a_velocity.reset();
+				//a_velocity.reset();
 				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
+				s+="velocity_size: "+to_string(a_velocity.getArraySize()) + " ";
 			}
 			if(in_data[i]->hasData("density")){
-				a_density.reset();
+				//a_density.reset();
 				a_density = in_data[i]->getFieldData<ArrayFieldf>("density");
+				s+= "density_size: "+to_string(a_density.getArraySize()) + " ";
 			}
 
 		}
 
-		fprintf(stderr, "con rank %d received: index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
+		fprintf(stderr, "con %d and it %d received: %s\n", rank, it, s.c_str());
+		//fprintf(stderr, "con rank %d received: index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
+		it++;
+		//sleep(1);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -148,6 +164,7 @@ void con(Decaf* decaf)
 void con2(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
+	int it = 0;
 	vector< pConstructData > in_data;
 
 	while (decaf->get(in_data))
@@ -155,19 +172,25 @@ void con2(Decaf* decaf)
 		int id = 0;
 		ArrayFieldf a_velocity;
 
+		string s = "";
 		// retrieve the values get
 		for (size_t i = 0; i < in_data.size(); i++)
 		{
 			if(in_data[i]->hasData("id")){
 				id = in_data[i]->getFieldData<SimpleFieldi >("id").getData();
+				s+="id: "+to_string(id)+" ";
 			}
 			if(in_data[i]->hasData("velocity")){
-				a_velocity.reset();
+				//a_velocity.reset();
 				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
+				s+="velocity_size: " + to_string(a_velocity.getArraySize()) + " ";
 			}
 		}
 
-		fprintf(stderr, "con2 rank %d received: id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
+		fprintf(stderr, "con2 %d and it %d received: %s\n", rank, it, s.c_str());
+		//fprintf(stderr, "con2 rank %d received: id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
+		it++;
+		//sleep(1);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow

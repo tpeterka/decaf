@@ -25,20 +25,22 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract.so'
 #
 # entire workflow takes 13 procs (1 proc per link)
 
+
+
 # Creating the topology
 topo = wf.topologyFromArgs(args)
 subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[1,1,1,1,0,0,0,0])
 
 # Add outputs contracts for prod1 and prod2
 contractP1 = wf.Contract()
-contractP1.addOutputFromDict({"index":["int", 2], "velocity":["Array_float", 3]})
+contractP1.addOutputFromDict({"index":["int", 1], "velocity":["Array_float", 1]})
 contractP2 = wf.Contract()
-contractP2.addOutputFromDict({"density":["Array_float", 3], "vel":["Array_float"], "id":["int"]})
+contractP2.addOutputFromDict({"vel":["Array_float"], "id":["int"], "density":["Array_float", 3]})
 # Add inputs contracts for con1 and con2
 contractC1 = wf.Contract()
 contractC1.addInputFromDict({"index":["int"], "velocity":["Array_float", 2], "density":["Array_float"]})
 contractC2 = wf.Contract()
-contractC2.addInputFromDict({"velocity":["Array_float", 3], "id":["int"]})
+contractC2.addInputFromDict({"velocity":["Array_float", 1], "id":["int"]})
 
 
 w = nx.DiGraph()
@@ -55,4 +57,4 @@ w.add_edge("prod2", "con2", topology=subtopos[7], prod_dflow_redist='count', fun
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "contract", check_types = 1)
+wf.processGraph(w, "contract", check_types = 2)

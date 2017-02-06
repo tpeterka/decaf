@@ -112,7 +112,8 @@ namespace decaf
         int wflow_dflow_id_;             // index of corresponding link in the workflow
         bool no_link;                    // True if the Dataflow doesn't have a Link
 
-		int it;						 // Counting the iterations
+		int it_put;						 // Counting the put iterations
+		int it_get;
 
 		bool bContract_;			 // boolean to say if the dataflow has a contract or not
 		int check_types_;			 // level of typechecking used; Relevant if bContract_ is set to true
@@ -141,8 +142,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
     check_types_(check_types),
-    no_link(false),
-    it(0)
+    no_link(false)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -182,6 +182,8 @@ Dataflow::Dataflow(CommHandle world_comm,
 	else{
 		bContract_ = true;
 		list_keys_ = list_keys;
+		it_put = 0;
+		it_get = 0;
 	}
 
     // debug
@@ -451,6 +453,8 @@ Dataflow::~Dataflow()
         delete redist_dflow_con_;
     if (redist_prod_dflow_)
         delete redist_prod_dflow_;
+
+	// TODO need to delete also redist_prod_con_ ??
 }
 
 // puts data into the dataflow
@@ -465,29 +469,43 @@ decaf::
 Dataflow::put(pConstructData data, TaskType role)
 {
 	pConstructData data_filtered;
+	bool period_filtered = false;
 
 	// If this dataflow is related to a contract, need to filter the data to be sent
-	if(is_contract() && !data->isEmpty()){ //If the data received is empty, no need to check the contract
+	// If it's a DECAF_LINK or the data is empty no need to check the contract
+	if(is_contract() && !data->isEmpty()){
 		if(data->hasData(string("decaf_quit")) ){ // To know if it's a quit message
 			set_quit(data_filtered);
 		}
 		else{
 			for(ContractField field : keys()){
-				if(!data->hasData(field.name)){// If the key is not present in the data the contract is not respected.
-					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
-					return false;
-				}
-				// Performing typechecking if needed
-				if(check_types_ > 1){
-					string typeName = data->getTypename(field.name);
-					if(typeName.compare(field.type) != 0){ //The two types do not match
-						fprintf(stderr, "ERROR : Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+				if( (it_put % field.period) == 0){ // This field is sent during this iteration
+					if(!data->hasData(field.name)){// If the key is not present in the data the contract is not respected.
+						fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
 						return false;
 					}
+					// Performing typechecking if needed
+					if(check_types_ > 1){
+						string typeName = data->getTypename(field.name);
+						if(typeName.compare(field.type) != 0){ //The two types do not match
+							fprintf(stderr, "ERROR : Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+							return false;
+						}
+					}
+					data_filtered->appendData(data, field.name);
 				}
-				data_filtered->appendData(data, field.name);
+				else{
+					period_filtered = true; //A field has been removed, we need to clear the buffers of the RedistComp
+				}
 			}
 		}
+
+		if(!data->isSystem()){// We only increment it if there is user data
+			if(no_link || role == DECAF_LINK){
+				it_put++;
+			}
+		}
+
 	}
 	else{ // No contract in this dataflow, we just send all data
 		data_filtered = data;
@@ -529,8 +547,14 @@ Dataflow::put(pConstructData data, TaskType role)
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
 				return false;
 			}
+			if(period_filtered){
+				redist_prod_con_->clearBuffers(); // We clear the buffers before and after the sending
+			}
 			redist_prod_con_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_con_->flush();
+			if(period_filtered){
+				redist_prod_con_->clearBuffers();
+			}
         }
         else
         {
@@ -546,8 +570,14 @@ Dataflow::put(pConstructData data, TaskType role)
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
 				return false;
 			}
+			if(period_filtered){
+				redist_prod_dflow_->clearBuffers(); // We clear the buffers before and after the sending
+			}
 			redist_prod_dflow_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_dflow_->flush();
+			if(period_filtered){
+				redist_prod_dflow_->clearBuffers();
+			}
         }
     }
     else if (role == DECAF_LINK)
@@ -564,8 +594,14 @@ Dataflow::put(pConstructData data, TaskType role)
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
 			return false;
 		}
+		if(period_filtered){
+			redist_dflow_con_->clearBuffers(); // We clear the buffers before and after the sending
+		}
 		redist_dflow_con_->process(data_filtered, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
+		if(period_filtered){
+			redist_dflow_con_->clearBuffers();
+		}
 	}
 
 	data_filtered->removeData("src_type");
@@ -582,6 +618,7 @@ bool
 decaf::
 Dataflow::get(pConstructData data, TaskType role)
 {
+
     if (role == DECAF_LINK)
     {
 		if (redist_prod_dflow_ == NULL){
@@ -620,20 +657,29 @@ Dataflow::get(pConstructData data, TaskType role)
 	// Checks if all keys of the contract are in the data
 	if(is_contract() && !data->isEmpty()){ //If the data received is empty, no need to check the contract
 		for(ContractField field : keys()){
-			if(! data->hasData(field.name)){
-				fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
-				return false;
-			}
-			// Performing typechecking if needed
-			if(check_types_ > 1){
-				string typeName = data->getTypename(field.name);
-				if(typeName.compare(field.type) != 0){ //The two types do not match
-					fprintf(stderr, "ERROR : Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+			if( (it_get % field.period) == 0){ // This field should be received during this iteration
+				if(! data->hasData(field.name)){
+					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
 					return false;
+				}
+				// Performing typechecking if needed
+				if(check_types_ > 1){
+					string typeName = data->getTypename(field.name);
+					if(typeName.compare(field.type) != 0){ //The two types do not match
+						fprintf(stderr, "ERROR : Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+						return false;
+					}
 				}
 			}
 		}
 	}
+
+	if(no_link || role == DECAF_NODE){
+		it_get++;
+	}
+
+
+	usleep(50000);
 
 	return true;
 }
