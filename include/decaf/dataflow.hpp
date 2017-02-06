@@ -505,7 +505,6 @@ Dataflow::put(pConstructData data, TaskType role)
 				it_put++;
 			}
 		}
-
 	}
 	else{ // No contract in this dataflow, we just send all data
 		data_filtered = data;
@@ -671,15 +670,15 @@ Dataflow::get(pConstructData data, TaskType role)
 					}
 				}
 			}
+			else{// The field is not supposed to be received in this iteration, remove it
+				data->removeData(field.name);
+			}
 		}
 	}
 
 	if(no_link || role == DECAF_NODE){
 		it_get++;
 	}
-
-
-	usleep(50000);
 
 	return true;
 }

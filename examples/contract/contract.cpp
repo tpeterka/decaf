@@ -60,8 +60,7 @@ void prod(Decaf* decaf)
 		if(! decaf->put(container) ){
 			break;
 		}
-		//usleep(500000);
-		sleep(1);
+		usleep(500000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -106,8 +105,7 @@ void prod2(Decaf* decaf)
 		if(! decaf->put(container) ){
 			break;
 		}
-		//usleep(500000);
-		sleep(1);
+		usleep(500000);
 	}
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
@@ -152,7 +150,6 @@ void con(Decaf* decaf)
 		fprintf(stderr, "con %d and it %d received: %s\n", rank, it, s.c_str());
 		//fprintf(stderr, "con rank %d received: index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
 		it++;
-		//sleep(1);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -190,7 +187,6 @@ void con2(Decaf* decaf)
 		fprintf(stderr, "con2 %d and it %d received: %s\n", rank, it, s.c_str());
 		//fprintf(stderr, "con2 rank %d received: id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
 		it++;
-		//sleep(1);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
