@@ -45,7 +45,10 @@ namespace decaf
         virtual void processCon(pConstructData data);
 
     protected:
-        std::queue<pConstructData> buffer_;
+        //std::queue<pConstructData> buffer_;
+        unsigned int iteration_;
+        unsigned int buffer_max_size_;
+        std::map<unsigned int, pConstructData> buffer_;
         OneWayChannel* channel_prod_;
         OneWayChannel* channel_prod_dflow_;
         OneWayChannel* channel_dflow_;
@@ -54,7 +57,6 @@ namespace decaf
         bool first_iteration_;
         bool doGet_;
         bool is_blocking_;
-        unsigned int buffer_max_size_;
     };
 
 decaf::
@@ -79,7 +81,7 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
        RedistComp* dflow_con):
     Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con),
     channel_prod_(NULL), channel_prod_dflow_(NULL), channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
-    first_iteration_(true), doGet_(true), is_blocking_(false), buffer_max_size_(2)
+    first_iteration_(true), doGet_(true), is_blocking_(false), buffer_max_size_(2), iteration_(0)
 {
     initialized_ = true;
     // Creation of the channels
@@ -238,7 +240,10 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
                 receivedRootSignal =  channel_dflow_con_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
 
             if(receivedRootSignal)
+            {
                 channel_dflow_->sendCommand(DECAF_CHANNEL_OK);
+                framemanager_->computeNextFrame();
+            }
 
         }
 
@@ -248,6 +253,7 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
         MPI_Barrier(dflow_comm_handle_);
 
         receivedDflowSignal = channel_dflow_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
+        //receivedDflowSignal = framemanager_->hasNextFrameId();
 
         if(doGet_ && !is_blocking_)
         {
@@ -258,7 +264,9 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
                 if(msgtools::test_quit(container))
                     doGet_ = false;
                 redist_prod_dflow_->flush();
-                buffer_.push(container);
+                framemanager_->putFrame(iteration_);
+                buffer_.insert(std::pair<unsigned int,pConstructData>(iteration_, container));
+                iteration_++;
 
                 // Block the producer if reaching the maximum buffer size
                 if(buffer_.size() >= buffer_max_size_ && !is_blocking_)
@@ -272,33 +280,44 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
         }
     }
 
-
-    // Second phase: We got the signal
-    if(buffer_.empty()) // No data received yet, we do a blocking get
+    while(!framemanager_->hasNextFrame())
     {
         if(!doGet_)
         {
             fprintf(stderr, "ERROR: trying to get after receiving a terminate msg.\n");
         }
-        // We have no msg in queue, we treat directly the incoming msg
-        redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
+        pConstructData container;
+        redist_prod_dflow_->process(container, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
-    }
-    else
-    {
-        // Won't do a copy, just pass the pointer of the map
-        data->merge(buffer_.front().getPtr());
-        buffer_.pop();
+        framemanager_->putFrame(iteration_);
+        buffer_.insert(std::pair<unsigned int,pConstructData>(iteration_, container));
+        iteration_++;
 
-
-        // Unblock the producer if necessary
-        if(buffer_.size() < buffer_max_size_ && is_blocking_)
+        // Block the producer if reaching the maximum buffer size
+        if(buffer_.size() >= buffer_max_size_ && !is_blocking_)
         {
-            is_blocking_ = false;
+            fprintf(stderr, "WARNING: Blocking the producer while waiting for incoming message. Can create a deadlock.\n");
+            is_blocking_ = true;
 
             if(is_dflow_root())
-                channel_prod_dflow_->sendCommand(DECAF_CHANNEL_OK);
+                channel_prod_dflow_->sendCommand(DECAF_CHANNEL_WAIT);
         }
+    }
+
+    unsigned int frame_id;
+    FrameCommand command = framemanager_->getNextFrame(&frame_id);
+    data->merge(buffer_.find(frame_id)->second.getPtr());
+    buffer_.erase(frame_id);
+
+
+
+    // Unblock the producer if necessary
+    if(buffer_.size() < buffer_max_size_ && is_blocking_)
+    {
+        is_blocking_ = false;
+
+        if(is_dflow_root())
+            channel_prod_dflow_->sendCommand(DECAF_CHANNEL_OK);
     }
 }
 

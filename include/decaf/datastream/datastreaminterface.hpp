@@ -15,6 +15,7 @@
 #ifdef TRANSPORT_MPI
 #include <decaf/transport/mpi/types.h>
 #include <decaf/transport/mpi/comm.hpp>
+#include <decaf/buffer/framemanagersequential.hpp>
 #endif
 
 namespace decaf
@@ -34,11 +35,11 @@ namespace decaf
                int nb_con,
                RedistComp* prod_dflow,
                RedistComp* dflow_con);
-        virtual ~Datastream(){}
+        virtual ~Datastream();
 
-        bool is_prod()          { return initialized_ && world_rank_ >= start_prod_ && world_rank_ < start_prod_ + nb_prod_; }
-        bool is_dflow()         { return initialized_ && world_rank_ >= start_dflow_ && world_rank_ < start_dflow_ + nb_dflow_;  }
-        bool is_con()           { return initialized_ && world_rank_ >= start_con_ && world_rank_ < start_con_ + nb_con_;  }
+        bool is_prod()          { return world_rank_ >= start_prod_ && world_rank_ < start_prod_ + nb_prod_; }
+        bool is_dflow()         { return world_rank_ >= start_dflow_ && world_rank_ < start_dflow_ + nb_dflow_;  }
+        bool is_con()           { return world_rank_ >= start_con_ && world_rank_ < start_con_ + nb_con_;  }
         bool is_prod_root()     { return world_rank_ == start_prod_; }
         bool is_dflow_root()    { return world_rank_ == start_dflow_; }
         bool is_con_root()      { return world_rank_ == start_con_; }
@@ -70,6 +71,7 @@ namespace decaf
         RedistComp* redist_prod_dflow_;
         RedistComp* redist_dflow_con_;
 
+        FrameManager* framemanager_;
 
     };
 }
@@ -85,7 +87,8 @@ Datastream::Datastream(CommHandle world_comm,
     start_prod_(start_prod), nb_prod_(nb_prod),
     start_dflow_(start_dflow), nb_dflow_(nb_dflow),
     start_con_(start_con), nb_con_(nb_con),
-    redist_prod_dflow_(redist_prod_dflow), redist_dflow_con_(redist_dflow_con)
+    redist_prod_dflow_(redist_prod_dflow), redist_dflow_con_(redist_dflow_con),
+    framemanager_(NULL)
 {
     MPI_Comm_rank(world_comm_, &world_rank_);
     MPI_Comm_size(world_comm_, &world_size_);
@@ -118,6 +121,8 @@ Datastream::Datastream(CommHandle world_comm,
         MPI_Comm_create_group(world_comm, newgroup, 0, &dflow_comm_handle_);
         MPI_Group_free(&group);
         MPI_Group_free(&newgroup);
+
+        framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
     }
 
     if(is_con())
@@ -133,6 +138,11 @@ Datastream::Datastream(CommHandle world_comm,
         MPI_Group_free(&group);
         MPI_Group_free(&newgroup);
     }
+}
+
+decaf::Datastream::~Datastream()
+{
+    if(framemanager_) delete framemanager_;
 }
 
 #endif

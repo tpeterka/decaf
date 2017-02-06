@@ -132,15 +132,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     type_(DECAF_OTHER_COMM),
     no_link(false),
     use_buffer(false),
-    //buffer_max_size(2),
-    //is_blocking(false),
-    //first_iteration(true),
-    //doGet(true),
     bufferMethod_(buffer_mode),
-    //channel_dflow_(NULL),
-    //channel_dflow_con_(NULL),
-    //channel_prod_(NULL),
-    //channel_prod_dflow_(NULL)
     stream_(NULL)
 {
     // DEPRECATED
@@ -464,12 +456,7 @@ Dataflow::~Dataflow()
 
     if(!no_link && use_buffer)
     {
-        /*if(channel_dflow_) delete channel_dflow_;
-        if(channel_dflow_con_) delete channel_dflow_con_;
-        if(channel_prod_) delete channel_prod_;
-        if(channel_prod_dflow_) delete channel_prod_dflow_;*/
         if(stream_) delete stream_;
-
     }
 }
 
