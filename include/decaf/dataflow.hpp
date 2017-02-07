@@ -52,8 +52,8 @@ namespace decaf
                  = DECAF_CONTIG_DECOMP,
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
                  = DECAF_CONTIG_DECOMP,
-                 BufferMethod buffer_mode
-                 = DECAF_BUFFER_NONE);
+                 StreamPolicy streamPolicy
+                 = DECAF_STREAM_NONE);
         ~Dataflow();
         void put(pConstructData data, TaskType role);
         void get(pConstructData data, TaskType role);
@@ -95,20 +95,11 @@ namespace decaf
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
         bool no_link;                    // True if the Dataflow doesn't have a Link
-        bool use_buffer;                 // True if the Dataflow manages a buffer.
+        bool use_stream;                 // True if the Dataflow manages a buffer.
 
         // Buffer infos
-        BufferMethod bufferMethod_;         // Type of buffer to use
-/*        OneWayChannel* channel_dflow_con_;  // Communication channel between the root consumer and dflow
-        OneWayChannel* channel_dflow_;      // Communication channel between the dflows
-        OneWayChannel* channel_prod_dflow_; // Communication channel between the root dflow and prod
-        OneWayChannel* channel_prod_;       //Communication channel between the producers
-        bool first_iteration;
-        std::queue<pConstructData> buffer;  // Buffer
-        int buffer_max_size;                // Maximum size allowed for the buffer
-        bool is_blocking;                   // Currently blocking the producer
-        bool doGet;                         // We do a get until we get a terminate message
-*/        Datastream* stream_;
+        StreamPolicy stream_policy_;         // Type of stream to use
+        Datastream* stream_;
     };
 
 } // namespace
@@ -121,7 +112,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int con,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist,
-                   BufferMethod buffer_mode) :
+                   StreamPolicy stream_policy) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -132,9 +123,8 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
     no_link(false),
-    use_buffer(false),
-    bufferMethod_(buffer_mode),
-    stream_(NULL)
+    use_stream(false),
+    stream_policy_(stream_policy)
 {
     // DEPRECATED
     // sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -420,30 +410,49 @@ Dataflow::Dataflow(CommHandle world_comm,
     else
         redist_prod_con_ = NULL;
 
-    if(buffer_mode != DECAF_BUFFER_NONE && !no_link)
-        use_buffer = true;
+    if(stream_policy_ != DECAF_STREAM_NONE && !no_link)
+        use_stream = true;
 
     // Buffering setup
-    if(!no_link && use_buffer)
+    if(!no_link && use_stream)
     {
-        /*stream_ = new DatastreamDoubleFeedback(world_comm_,
-                                               sizes_.prod_start,
-                                               sizes_.prod_size,
-                                               sizes_.dflow_start,
-                                               sizes_.dflow_size,
-                                               sizes_.con_start,
-                                               sizes_.con_size,
-                                               redist_prod_dflow_,
-                                               redist_dflow_con_);*/
-        stream_ = new DatastreamSingleFeedback(world_comm_,
-                                               sizes_.prod_start,
-                                               sizes_.prod_size,
-                                               sizes_.dflow_start,
-                                               sizes_.dflow_size,
-                                               sizes_.con_start,
-                                               sizes_.con_size,
-                                               redist_prod_dflow_,
-                                               redist_dflow_con_);
+        switch(stream_policy_)
+        {
+            case DECAF_STREAM_SINGLE:
+            {
+                stream_ = new DatastreamSingleFeedback(world_comm_,
+                                                   sizes_.prod_start,
+                                                   sizes_.prod_size,
+                                                   sizes_.dflow_start,
+                                                   sizes_.dflow_size,
+                                                   sizes_.con_start,
+                                                   sizes_.con_size,
+                                                   redist_prod_dflow_,
+                                                   redist_dflow_con_);
+                break;
+            }
+            case DECAF_STREAM_DOUBLE:
+            {
+                stream_ = new DatastreamDoubleFeedback(world_comm_,
+                                                   sizes_.prod_start,
+                                                   sizes_.prod_size,
+                                                   sizes_.dflow_start,
+                                                   sizes_.dflow_size,
+                                                   sizes_.con_start,
+                                                   sizes_.con_size,
+                                                   redist_prod_dflow_,
+                                                   redist_dflow_con_);
+                break;
+            }
+            default:
+            {
+                fprintf(stderr, "ERROR: Unknown Stream policy. Disabling streaming.\n");
+                use_stream = false;
+                break;
+            }
+        }
+
+
     }
 
     err_ = DECAF_OK;
@@ -466,7 +475,7 @@ Dataflow::~Dataflow()
     if (redist_prod_con_)
         delete redist_prod_con_;
 
-    if(!no_link && use_buffer)
+    if(!no_link && use_stream)
     {
         if(stream_) delete stream_;
     }
@@ -530,7 +539,7 @@ Dataflow::put(pConstructData data, TaskType role)
                              DECAF_NOFLAG, DECAF_SYSTEM,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
-            if(use_buffer)
+            if(use_stream)
             {
                 stream_->processProd(data);
             }
@@ -575,7 +584,7 @@ Dataflow::get(pConstructData data, TaskType role)
         if (redist_prod_dflow_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
 
-        if(use_buffer)
+        if(use_stream)
         {
             stream_->processDflow(data);
         }

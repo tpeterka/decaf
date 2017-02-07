@@ -15,7 +15,7 @@
 #ifdef TRANSPORT_MPI
 #include <decaf/transport/mpi/types.h>
 #include <decaf/transport/mpi/comm.hpp>
-#include <decaf/buffer/framemanagersequential.hpp>
+#include <decaf/storage/framemanagersequential.hpp>
 #endif
 
 namespace decaf

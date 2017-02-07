@@ -508,8 +508,8 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
             stringToDecomposition(workflow_.links[dflow].prod_dflow_redist);
         Decomposition dflow_con_redist =
             stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
-        BufferMethod buffer_mode =
-            stringToBufferMethod(workflow_.links[dflow].buffer);
+        StreamPolicy stream_mode =
+            stringToStreamPolicy(workflow_.links[dflow].stream);
         dataflows.push_back(new Dataflow(world_comm_,
                                          decaf_sizes,
                                          prod,
@@ -517,7 +517,7 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
                                          con,
                                          prod_dflow_redist,
                                          dflow_con_redist,
-                                         buffer_mode));
+                                         stream_mode));
         dataflows[i]->err();
     }
 }

@@ -33,11 +33,11 @@ enum Decomposition
     DECAF_NUM_DECOMPS,
 };
 
-enum BufferMethod
+enum StreamPolicy
 {
-    DECAF_BUFFER_NONE,
-    DECAF_BUFFER_SIMPLE,
-    DECAF_BUFFER_RECENT,
+    DECAF_STREAM_NONE,
+    DECAF_STREAM_SINGLE,
+    DECAF_STREAM_DOUBLE,
 };
 
 // workflow entity types
@@ -107,18 +107,18 @@ Decomposition stringToDecomposition(std::string name)
     }
 }
 
-BufferMethod stringToBufferMethod(std::string name)
+StreamPolicy stringToStreamPolicy(std::string name)
 {
     if(name.compare(std::string("none")) == 0)
-        return DECAF_BUFFER_NONE;
-    else if(name.compare(std::string("simple")) == 0)
-        return DECAF_BUFFER_SIMPLE;
-    else if(name.compare(std::string("recent")) == 0)
-        return DECAF_BUFFER_RECENT;
+        return DECAF_STREAM_NONE;
+    else if(name.compare(std::string("single")) == 0)
+        return DECAF_STREAM_SINGLE;
+    else if(name.compare(std::string("double")) == 0)
+        return DECAF_STREAM_DOUBLE;
     else
     {
-        std::cerr<<"ERROR: unknown buffering method name: "<<name<<". Disabling buffering."<<std::endl;
-        return DECAF_BUFFER_NONE;
+        std::cerr<<"ERROR: unknown stream policy name: "<<name<<". Disabling streaming capability."<<std::endl;
+        return DECAF_STREAM_NONE;
     }
 }
 

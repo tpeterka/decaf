@@ -17,6 +17,7 @@
 #include <decaf/transport/mpi/channel.hpp>
 #include <decaf/transport/redist_comp.h>
 #include <decaf/data_model/msgtool.hpp>
+#include <decaf/storage/storagemainmemory.hpp>
 #include <queue>
 
 namespace decaf
@@ -45,10 +46,9 @@ namespace decaf
         virtual void processCon(pConstructData data);
 
     protected:
-        //std::queue<pConstructData> buffer_;
         unsigned int iteration_;
         unsigned int buffer_max_size_;
-        std::map<unsigned int, pConstructData> buffer_;
+        Storage* buffer_;
         OneWayChannel* channel_prod_;
         OneWayChannel* channel_prod_dflow_;
         OneWayChannel* channel_dflow_;
@@ -81,7 +81,8 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
        RedistComp* dflow_con):
     Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con),
     channel_prod_(NULL), channel_prod_dflow_(NULL), channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
-    first_iteration_(true), doGet_(true), is_blocking_(false), buffer_max_size_(2), iteration_(0)
+    first_iteration_(true), doGet_(true), is_blocking_(false), buffer_max_size_(5), iteration_(0),
+    buffer_(NULL)
 {
     initialized_ = true;
     // Creation of the channels
@@ -123,6 +124,8 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
         MPI_Comm_create_group(world_comm, newgroup, 0, &dflow_comm_handle_);
         MPI_Group_free(&group);
         MPI_Group_free(&newgroup);
+
+        buffer_ = new StorageMainMemory(buffer_max_size_);
     }
 
     if(is_con())
@@ -265,11 +268,13 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
                     doGet_ = false;
                 redist_prod_dflow_->flush();
                 framemanager_->putFrame(iteration_);
-                buffer_.insert(std::pair<unsigned int,pConstructData>(iteration_, container));
+                //buffer_.insert(std::pair<unsigned int,pConstructData>(iteration_, container));
+                buffer_->insert(iteration_, container);
                 iteration_++;
 
                 // Block the producer if reaching the maximum buffer size
-                if(buffer_.size() >= buffer_max_size_ && !is_blocking_)
+                //if(buffer_.size() >= buffer_max_size_ && !is_blocking_)
+                if(!is_blocking_ && buffer_->isFull())
                 {
                     is_blocking_ = true;
 
@@ -290,11 +295,13 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
         redist_prod_dflow_->process(container, DECAF_REDIST_DEST);
         redist_prod_dflow_->flush();
         framemanager_->putFrame(iteration_);
-        buffer_.insert(std::pair<unsigned int,pConstructData>(iteration_, container));
+        //buffer_.insert(std::pair<unsigned int,pConstructData>(iteration_, container));
+        buffer_->insert(iteration_, container);
         iteration_++;
 
         // Block the producer if reaching the maximum buffer size
-        if(buffer_.size() >= buffer_max_size_ && !is_blocking_)
+        //if(buffer_.size() >= buffer_max_size_ && !is_blocking_)
+        if(!is_blocking_ && buffer_->isFull())
         {
             fprintf(stderr, "WARNING: Blocking the producer while waiting for incoming message. Can create a deadlock.\n");
             is_blocking_ = true;
@@ -306,13 +313,16 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
 
     unsigned int frame_id;
     FrameCommand command = framemanager_->getNextFrame(&frame_id);
-    data->merge(buffer_.find(frame_id)->second.getPtr());
-    buffer_.erase(frame_id);
+    //data->merge(buffer_.find(frame_id)->second.getPtr());
+    //buffer_.erase(frame_id);
+    data->merge(buffer_->getData(frame_id).getPtr());
+    buffer_->erase(frame_id);
 
 
 
     // Unblock the producer if necessary
-    if(buffer_.size() < buffer_max_size_ && is_blocking_)
+    //if(is_blocking_ && buffer_.size() < buffer_max_size_)
+    if(is_blocking_ && !buffer_->isFull())
     {
         is_blocking_ = false;
 

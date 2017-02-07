@@ -59,7 +59,8 @@ struct WorkflowLink                          // a dataflow
                  string func_,
                  string path_,
                  string prod_dflow_redist_,
-                 string dflow_con_redist_) :
+                 string dflow_con_redist_,
+                 string stream_) :
         prod(prod_),
         con(con_),
         start_proc(start_proc_),
@@ -68,7 +69,8 @@ struct WorkflowLink                          // a dataflow
         args(NULL),
         path(path_),
         prod_dflow_redist(prod_dflow_redist_),
-        dflow_con_redist(dflow_con_redist_)       {}
+        dflow_con_redist(dflow_con_redist_),
+        stream(stream_){}
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -78,7 +80,7 @@ struct WorkflowLink                          // a dataflow
     string path;                // path to callback function module
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
-    string buffer;              // Type of buffer to use (none, full, greedy)
+    string stream;              // Type of stream policy to use (none, single, double)
 };
 
 struct Workflow                              // an entire workflow
@@ -205,7 +207,7 @@ struct Workflow                              // an entire workflow
 	link.func = v.second.get<std::string>("func");
 	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
 	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
-        link.buffer = v.second.get<std::string>("buffer");
+        link.stream = v.second.get<std::string>("stream");
         workflow.links.push_back( link );
       }
     }

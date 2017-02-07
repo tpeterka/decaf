@@ -13,7 +13,7 @@
 #ifndef DECAF_FRAMEMANAGER_SEQ
 #define DECAF_FRAMEMANAGER_SEQ
 
-#include <decaf/buffer/framemanager.hpp>
+#include <decaf/storage/framemanager.hpp>
 #include <queue>
 
 namespace decaf
