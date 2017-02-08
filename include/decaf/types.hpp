@@ -40,6 +40,14 @@ enum StreamPolicy
     DECAF_STREAM_DOUBLE,
 };
 
+enum StorageType
+{
+    DECAF_STORAGE_NONE,
+    DECAF_STORAGE_MAINMEM,
+    DECAF_STORAGE_FILE,
+    DECAF_STORAGE_DATASPACE,
+};
+
 // workflow entity types
 typedef unsigned char TaskType;
 #define DECAF_NONE      0x00
@@ -119,6 +127,23 @@ StreamPolicy stringToStreamPolicy(std::string name)
     {
         std::cerr<<"ERROR: unknown stream policy name: "<<name<<". Disabling streaming capability."<<std::endl;
         return DECAF_STREAM_NONE;
+    }
+}
+
+StorageType stringToStoragePolicy(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_STORAGE_NONE;
+    else if(name.compare(std::string("mainmem")) == 0)
+        return DECAF_STORAGE_MAINMEM;
+    else if(name.compare(std::string("file")) == 0)
+        return DECAF_STORAGE_FILE;
+    else if(name.compare(std::string("dataspace")) == 0)
+        return DECAF_STORAGE_DATASPACE;
+    else
+    {
+        std::cerr<<"ERROR: unknown storage type: "<<name<<". Disabling storage capability."<<std::endl;
+        return DECAF_STORAGE_NONE;
     }
 }
 

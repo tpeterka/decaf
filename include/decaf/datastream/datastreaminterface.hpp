@@ -34,7 +34,9 @@ namespace decaf
                int start_con,
                int nb_con,
                RedistComp* prod_dflow,
-               RedistComp* dflow_con);
+               RedistComp* dflow_con,
+               vector<StorageType>& storage_types,
+               vector<unsigned int>& max_storage_sizes);
         virtual ~Datastream();
 
         bool is_prod()          { return world_rank_ >= start_prod_ && world_rank_ < start_prod_ + nb_prod_; }
@@ -82,7 +84,9 @@ Datastream::Datastream(CommHandle world_comm,
               int start_dflow, int nb_dflow,
               int start_con, int nb_con,
               RedistComp* redist_prod_dflow,
-              RedistComp* redist_dflow_con) :
+              RedistComp* redist_dflow_con,
+              vector<StorageType>& storage_types,
+              vector<unsigned int>& max_storage_sizes) :
     initialized_(false), world_comm_(world_comm),
     start_prod_(start_prod), nb_prod_(nb_prod),
     start_dflow_(start_dflow), nb_dflow_(nb_dflow),

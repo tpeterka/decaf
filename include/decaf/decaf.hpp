@@ -517,7 +517,9 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
                                          con,
                                          prod_dflow_redist,
                                          dflow_con_redist,
-                                         stream_mode));
+                                         stream_mode,
+                                         workflow_.links[dflow].storages,
+                                         workflow_.links[dflow].storage_max_buffer));
         dataflows[i]->err();
     }
 }

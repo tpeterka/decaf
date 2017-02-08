@@ -48,12 +48,11 @@ namespace decaf
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
                  int con,                        // id in workflow structure of consumer node
-                 Decomposition prod_dflow_redist // decompositon between producer and dataflow
-                 = DECAF_CONTIG_DECOMP,
-                 Decomposition dflow_cons_redist // decomposition between dataflow and consumer
-                 = DECAF_CONTIG_DECOMP,
-                 StreamPolicy streamPolicy
-                 = DECAF_STREAM_NONE);
+                 Decomposition prod_dflow_redist, // decompositon between producer and dataflow
+                 Decomposition dflow_cons_redist, // decomposition between dataflow and consumer
+                 StreamPolicy streamPolicy,
+                 vector<StorageType>& storage_types,
+                 vector<unsigned int>& max_storage_sizes);
         ~Dataflow();
         void put(pConstructData data, TaskType role);
         void get(pConstructData data, TaskType role);
@@ -94,8 +93,8 @@ namespace decaf
         int wflow_prod_id_;              // index of corresponding producer in the workflow
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
-        bool no_link;                    // True if the Dataflow doesn't have a Link
-        bool use_stream;                 // True if the Dataflow manages a buffer.
+        bool no_link_;                   // True if the Dataflow doesn't have a Link
+        bool use_stream_;                // True if the Dataflow manages a buffer.
 
         // Buffer infos
         StreamPolicy stream_policy_;         // Type of stream to use
@@ -112,7 +111,9 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int con,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist,
-                   StreamPolicy stream_policy) :
+                   StreamPolicy stream_policy,
+                   vector<StorageType>& storage_types,
+                   vector<unsigned int>& max_storage_sizes) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -122,8 +123,8 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_dflow_con_(NULL),
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
-    no_link(false),
-    use_stream(false),
+    no_link_(false),
+    use_stream_(false),
     stream_policy_(stream_policy)
 {
     // DEPRECATED
@@ -340,7 +341,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         (world_rank_ >= sizes_.prod_start && world_rank_ < sizes_.prod_start + sizes_.prod_size) ||
         (world_rank_ >= sizes_.con_start && world_rank_ < sizes_.con_start + sizes_.con_size)))
     {
-        no_link = true;
+        no_link_ = true;
 
         switch(prod_dflow_redist)
         {
@@ -410,11 +411,14 @@ Dataflow::Dataflow(CommHandle world_comm,
     else
         redist_prod_con_ = NULL;
 
-    if(stream_policy_ != DECAF_STREAM_NONE && !no_link)
-        use_stream = true;
+    if(stream_policy_ != DECAF_STREAM_NONE && !no_link_ && storage_types.size() > 0)
+    {
+        fprintf(stderr, "Stream mode activated.\n");
+        use_stream_ = true;
+    }
 
     // Buffering setup
-    if(!no_link && use_stream)
+    if(use_stream_)
     {
         switch(stream_policy_)
         {
@@ -428,7 +432,9 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
                                                    redist_prod_dflow_,
-                                                   redist_dflow_con_);
+                                                   redist_dflow_con_,
+                                                   storage_types,
+                                                   max_storage_sizes);
                 break;
             }
             case DECAF_STREAM_DOUBLE:
@@ -441,13 +447,15 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.con_start,
                                                    sizes_.con_size,
                                                    redist_prod_dflow_,
-                                                   redist_dflow_con_);
+                                                   redist_dflow_con_,
+                                                   storage_types,
+                                                   max_storage_sizes);
                 break;
             }
             default:
             {
                 fprintf(stderr, "ERROR: Unknown Stream policy. Disabling streaming.\n");
-                use_stream = false;
+                use_stream_ = false;
                 break;
             }
         }
@@ -475,10 +483,7 @@ Dataflow::~Dataflow()
     if (redist_prod_con_)
         delete redist_prod_con_;
 
-    if(!no_link && use_stream)
-    {
-        if(stream_) delete stream_;
-    }
+    if(stream_) delete stream_;
 }
 
 // puts data into the dataflow
@@ -515,7 +520,7 @@ Dataflow::put(pConstructData data, TaskType role)
 
     if (role == DECAF_NODE)
     {
-        if(no_link)
+        if(no_link_)
         {
             // encode destination link id into message
             shared_ptr<SimpleConstructData<int> > value2  =
@@ -539,7 +544,7 @@ Dataflow::put(pConstructData data, TaskType role)
                              DECAF_NOFLAG, DECAF_SYSTEM,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
-            if(use_stream)
+            if(use_stream_)
             {
                 stream_->processProd(data);
             }
@@ -584,7 +589,7 @@ Dataflow::get(pConstructData data, TaskType role)
         if (redist_prod_dflow_ == NULL)
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
 
-        if(use_stream)
+        if(use_stream_)
         {
             stream_->processDflow(data);
         }
@@ -596,7 +601,7 @@ Dataflow::get(pConstructData data, TaskType role)
     }
     else if (role == DECAF_NODE)
     {
-        if(no_link)
+        if(no_link_)
         {
             if (redist_prod_con_ == NULL)
                 fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
@@ -611,7 +616,8 @@ Dataflow::get(pConstructData data, TaskType role)
             redist_dflow_con_->flush();
 
             // Comnsumer side
-            stream_->processCon(data);
+            if(use_stream_)
+                stream_->processCon(data);
         }
     }
 }
@@ -636,9 +642,9 @@ Dataflow::clearBuffers(TaskType role)
 {
     if (role == DECAF_LINK)
         redist_dflow_con_->clearBuffers();
-    else if (role == DECAF_NODE && no_link)
+    else if (role == DECAF_NODE && no_link_)
         redist_prod_con_->clearBuffers();
-    else if (role == DECAF_NODE && !no_link)
+    else if (role == DECAF_NODE && !no_link_)
         redist_prod_dflow_->clearBuffers();
 }
 
