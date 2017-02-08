@@ -13,6 +13,7 @@
 #define DECAF_DATAFLOW_HPP
 
 #include <map>
+#include <string>
 
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
@@ -46,11 +47,13 @@ namespace decaf
                  int dflow,                      // id in workflow structure of dataflow link
                  int con,                        // id in workflow structure of consumer node
 		         vector<ContractField> list_key, // list of key/type if related to a contract
-		         int check_types,					   // level of typechecking if related to a contract
+		         int check_types = 0,					   // level of typechecking if related to a contract
                  Decomposition prod_dflow_redist // decompositon between producer and dataflow
                  = DECAF_CONTIG_DECOMP,
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
-                 = DECAF_CONTIG_DECOMP);
+		         = DECAF_CONTIG_DECOMP,
+		         string srcPort = "",
+		         string destPort = "");
         ~Dataflow();
 		bool put(pConstructData data, TaskType role);
 		bool get(pConstructData data, TaskType role);
@@ -69,6 +72,9 @@ namespace decaf
 
 		vector<ContractField>& keys(){ return list_keys_; }
 		bool is_contract(){		return bContract_;}
+
+		string srcPort(){ return srcPort_; }
+		string destPort(){ return destPort_; }
 
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
@@ -113,7 +119,10 @@ namespace decaf
         bool no_link;                    // True if the Dataflow doesn't have a Link
 
 		int it_put;						 // Counting the put iterations
-		int it_get;
+		int it_get;						 // Counting the get iterations
+
+		string srcPort_;				// Portname of the source
+		string destPort_;				// Portname of the destination
 
 		bool bContract_;			 // boolean to say if the dataflow has a contract or not
 		int check_types_;			 // level of typechecking used; Relevant if bContract_ is set to true
@@ -129,9 +138,11 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int dflow,
                    int con,
                    vector<ContractField> list_keys,
-                   int check_types = 0,
+                   int check_types,
                    Decomposition prod_dflow_redist,
-                   Decomposition dflow_cons_redist) :
+                   Decomposition dflow_cons_redist,
+                   string srcPort,
+                   string destPort) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -142,6 +153,8 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
     check_types_(check_types),
+    srcPort_(srcPort),
+    destPort_(destPort),
     no_link(false)
 {
     // DEPRECATED

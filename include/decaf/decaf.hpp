@@ -17,6 +17,8 @@
 
 #include <dlfcn.h>
 #include <map>
+#include <string>
+#include <vector>
 #include "dataflow.hpp"
 
 // transport layer specific types
@@ -163,6 +165,9 @@ namespace decaf
         vector<Dataflow*>   out_dataflows;         // all my outbound dataflows
         vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
         vector<Dataflow*>   node_in_dataflows;     // all my inbound dataflows in case I am a node
+
+		map<string, Dataflow*> inPortMap;		   // Map between an input port and its associated Dataflow
+		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
     };
 
 } // namespace
@@ -217,8 +222,10 @@ Decaf::Decaf(CommHandle world_comm,
     {
         if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
             link_in_dataflows.push_back(dataflows[i]);
-        if (workflow_.my_in_link(world->rank(), i))     // I am a node and this dataflow is an input
+		if (workflow_.my_in_link(world->rank(), i)){     // I am a node and this dataflow is an input
             node_in_dataflows.push_back(dataflows[i]);
+			inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
+		}
     }
 
     // outbound dataflows
@@ -227,11 +234,23 @@ Decaf::Decaf(CommHandle world_comm,
     {
         if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
             unique_out_dataflows.insert(dataflows[i]);
-        if (workflow_.my_out_link(world->rank(), i))    // I am a node and this dataflow is an input
+		if (workflow_.my_out_link(world->rank(), i))    // I am a node and this dataflow is an output
             unique_out_dataflows.insert(dataflows[i]);
     }
     out_dataflows.resize(unique_out_dataflows.size()); // copy set to vector
     copy(unique_out_dataflows.begin(), unique_out_dataflows.end(), out_dataflows.begin());
+
+	// TODO once we are sure the unique_out_dataflows set is used for the overlapping thing,
+	// move this creation of the outPortMap ~5lines above in the "if i am a node"
+	for(Dataflow* df : out_dataflows){
+		if(outPortMap.count(df->srcPort()) == 1){
+			outPortMap[df->srcPort()].push_back(df);
+		}
+		else{
+			vector<Dataflow*> vect(1, df);
+			outPortMap.emplace(df->srcPort(), vect);
+		}
+	}
 
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
@@ -558,7 +577,9 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
 		                                 workflow_.links[i].list_keys,
 		                                 workflow_.links[i].check_types,
 		                                 prod_dflow_redist,
-		                                 dflow_con_redist));
+		                                 dflow_con_redist,
+		                                 workflow_.links[i].srcPort,
+		                                 workflow_.links[i].destPort));
 
         dataflows[i]->err();
     }

@@ -10,13 +10,95 @@ import argparse
 import json
 from collections import defaultdict
 
-import fractions  #Definition of the least common multiple of two numbers
+import fractions  #Definition of the least common multiple of two numbers; Used for the period in Contracts
 def lcm(a,b): return abs(a * b) / fractions.gcd(a,b) if a and b else 0
 
-""" Object holding information about input/output data and types """
-class Contract:
-  """ Object holder for informations about the plateform to use """
 
+""" Object holding information about a Node """
+class Node:
+  def __init__(self, name, start_proc, nprocs, func, cmdline):
+    self.name = name
+    self.func = func
+    self.cmdline = cmdline
+    self.start_proc = start_proc
+    self.nprocs = nprocs
+    self.inports = {}
+    self.outports = {}
+    self.topology = 0  # To have information about the list of hosts and nodes of the Topology
+
+
+  def addInPort(self, name, contract=0):
+    if contract == 0:
+      self.inports[name] = {}
+    else:
+      self.inports[name] = contract.inputs
+
+  def addInput(self, portname, key, typename, period=1):
+    if not portname in self.inports:
+      raise ValueError("ERROR in addInput: the IN port %s is not present in %s." % (portname, self.name))
+    self.inports[portname][key] = [typename, period]
+
+  def addInputFromDict(self, portname, dict):
+    if not portname in self.inports:
+      raise ValueError("ERROR in addInputFromDict: the IN port %s is not present in %s." % (portname, self.name))
+    for key, val in dict.items():
+      if len(val) == 1:
+        val.append(1)
+      self.inports[portname][key] = val
+
+  def addOutPort(self, name, contract=0):
+    if contract == 0:
+      self.outports[name] = {}
+    else:
+      self.outports[name] = contract.outputs
+
+  def addOutput(self, portname, key, typename, period=1):
+    if not portname in self.outports:
+      raise ValueError("ERROR in addOutput: the OUT port %s is not present in %s." % (portname, self.name))
+    self.outports[portname][key] = [typename, period]
+
+  def addOutputFromDict(self, portname, dict):
+    if not portname in self.outports:
+      raise ValueError("ERROR in addOutputFromDict: the OUT port %s is not present in %s." % (portname, self.name))
+    for key, val in dict.items():
+      if len(val) == 1:
+        val.append(1)
+      self.outports[portname][key] = val
+
+# End of class Node
+
+""" To create a Node using a Topology """
+def nodeFromTopo(name, func, cmdline, topo):
+  n = Node(name, topo.offsetRank, topo.nProcs, func, cmdline)
+  n.topology=topo
+  return n
+
+
+def addNode(graph, n):
+  if n.topology == 0:
+    graph.add_node(n.name, nprocs=n.nprocs, start_proc=n.start_proc, func=n.func, cmdline=n.cmdline, inports=n.inports, outports=n.outports)
+  else:
+    graph.add_node(n.name, topology=n.topology, func=n.func, cmdline=n.cmdline, inports=n.inports, outports=n.outports)
+
+
+def addEdgeWithTopo(graph, prodString, conString, topology, prod_dflow_redist, func='', path='', dflow_con_redist='', cmdline=''):
+  prod, prodP = prodString.split('.')
+  con, conP = conString.split('.')
+  graph.add_edge(prod, con, prodPort=prodP, conPort=conP, topology=topology, prod_dflow_redist=prod_dflow_redist, func=func, path=path, dflow_con_redist=dflow_con_redist, cmdline=cmdline)
+
+
+def addEdge(graph, prodString, conString, start_proc, nprocs, prod_dflow_redist, func='', path='', dflow_con_redist='', cmdline=''):
+  if nprocs != 0 and func == '':
+    raise ValueError("ERROR: Missing links arguments for the edge \"%s->%s\", aborting.")
+  prod, prodP = prodString.split('.')
+  con, conP = conString.split('.')
+  graph.add_edge(prod, con, prodPort=prodP, conPort=conP, nprocs=nprocs, start_proc=start_proc, prod_dflow_redist=prod_dflow_redist, func=func, path=path, dflow_con_redist=dflow_con_redist, cmdline=cmdline)
+
+
+
+
+""" Object holding information about input/output data name, type and periodicity """
+class Contract:
   def __init__(self, jsonfilename = ""):
     self.inputs = {}
     self.outputs = {}
@@ -56,40 +138,81 @@ class Contract:
 
 # End of class Contract
 
-# Checks if the intersection of each pair of prod/con contracts of an edge is non empty
-# Then checks if all keys of a consumer are received
+# Checks if the input port (consumer) contract of an edge is a subset of the output port (producer) contract
 def check_contracts(graph, check_types):
-    dict = defaultdict(set) # dictionary that lists the keys received by a consumer
+    my_list = [] # To check if an input port is connected to only one output port
+
+    dict = defaultdict(set)
     
     for edge in graph.edges_iter(data=True):
         prod = graph.node[edge[0]]
         con = graph.node[edge[1]]
+        
+        if 'prodPort' in edge[2]: # If the prod/con of this edge have ports          
+          OutportName = edge[2]['prodPort']
+          Outport = graph.node[edge[0]]['outports'][OutportName]
 
-        if ("contract" in prod) and ("contract" in con):
-          if prod["contract"].outputs == {}:
-              raise ValueError("ERROR while checking contracts: %s has no outputs" % edge[0])
+          InportName = edge[2]['conPort']
+          Inport = graph.node[edge[1]]['inports'][InportName]
+
+          s = edge[1]+'.'+InportName
+          if s in my_list: # This input port is already connected to an output port
+            raise ValueError("ERROR: The port \"%s\" cannot be connected to more than one Output port, aborting." % (s) )
           else:
-              prod_out = prod["contract"].outputs
+            my_list.append(s)
 
-          if con["contract"].inputs == {}:
-              raise ValueError("ERROR while checking contracts: %s has no inputs" % edge[1])
-          else:
-              con_in = con["contract"].inputs
+          if len(Inport) == 0: # The Input port accepts anything, no need to perform check or filtering
+            continue
 
-          # We add for each edge the list of pairs key/type which is the intersection of the two contracts
-          intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (check_types == 0) or (con_in[key][0] == prod_out[key][0]) ) }
-          for key in intersection_keys.keys():
-              dict[edge[1]].add(key)
-              lcm_val = lcm(con_in[key][1], prod_out[key][1])
-              intersection_keys[key].append(lcm_val)
-              if(lcm_val != con_in[key][1]):
-                print "WARNING: %s will receive %s with periodicity %s instead of %s. Continuing" % (edge[1], key, lcm_val, con_in[key][1])
+          if len(Outport) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
+            list_fields = Inport          
 
-          if len(intersection_keys) == 0:
-              raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
+          else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
+            list_fields = {}
+            s = ""
+            for key, val in Inport.items():
+              if not key in Outport : # The key is not sent by the producer
+                s+= key + " "
+              else:
+                if (check_types == 0) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
+                  lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
+                  list_fields[key] = [val[0], lcm_val]
+                else:
+                  raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\", aborting." % (key, edge[0], OutportName, edge[1], InportName))
 
-          # We add the list of pairs key/type to be exchanged b/w the producer and consumer
-          edge[2]['keys'] = intersection_keys
+            if s != "":
+              raise ValueError("ERROR: the keys \"%s\"are not sent in the output port \"%s.%s\", aborting." % (s, edge[0], OutportName))
+
+          # We add the dict of fields to be exchanged in this edge; A field is an entry of a dict: name:[type, period]
+          edge[2]['keys'] = list_fields
+
+        else: # This edge does not deal with ports
+#This is the old checking of keys/types with contracts without ports
+          if ("contract" in prod) and ("contract" in con):
+            if prod["contract"].outputs == {}:
+                raise ValueError("ERROR while checking contracts: %s has no outputs" % edge[0])
+            else:
+                prod_out = prod["contract"].outputs
+
+            if con["contract"].inputs == {}:
+                raise ValueError("ERROR while checking contracts: %s has no inputs" % edge[1])
+            else:
+                con_in = con["contract"].inputs
+
+            # We add for each edge the list of pairs key/type which is the intersection of the two contracts
+            intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (check_types == 0) or (con_in[key][0] == prod_out[key][0]) ) }
+            for key in intersection_keys.keys():
+                dict[edge[1]].add(key)
+                lcm_val = lcm(con_in[key][1], prod_out[key][1])
+                intersection_keys[key].append(lcm_val)
+                if(lcm_val != con_in[key][1]):
+                  print "WARNING: %s will receive %s with periodicity %s instead of %s. Continuing" % (edge[1], key, lcm_val, con_in[key][1])
+
+            if len(intersection_keys) == 0:
+                raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
+
+            # We add the list of pairs key/type to be exchanged b/w the producer and consumer
+            edge[2]['keys'] = intersection_keys
 
 
     for name, set_k in dict.items():
@@ -193,10 +316,9 @@ class Topology:
 
 
 def initParserForTopology(parser):
-    """ Add the necessary arguments for initialize a topology.
+    """ Add the necessary arguments to initialize a topology.
         The parser might be completed by the user in other functions
     """
-
     parser.add_argument(
         "-n", "--np",
         help = "Total number of MPI ranks used in the workflow",
@@ -217,8 +339,8 @@ def topologyFromArgs(args):
 
 def processTopology(graph):
     """ Check all nodes and edge if a topology is present.
-        If yes, fill the fields start_proc and nprocs """
-
+        If yes, fill the fields start_proc and nprocs 
+    """
     for node in graph.nodes_iter(data=True):
         if 'topology' in node[1]:
             topo = node[1]['topology']
@@ -265,6 +387,8 @@ def workflowToJson(graph, outputFile, check_types):
     for edge in graph.edges_iter(data=True):
         prod  = graph.node[edge[0]]['index']
         con   = graph.node[edge[1]]['index']
+
+
         content +="      {\n"
         content +="       \"start_proc\" : "+str(edge[2]['start_proc'])
         content +=",\n       \"nprocs\" : "+str(edge[2]['nprocs'])
@@ -272,13 +396,18 @@ def workflowToJson(graph, outputFile, check_types):
         content +=",\n       \"target\" : "+str(con)
         content +=",\n       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\""
 
-        if(edge[2]['nprocs'] != 0):
+        if edge[2]['nprocs'] != 0 :
           content +=",\n       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\""
           content +=",\n       \"func\" : \""+edge[2]['func']+"\""
           content +=",\n       \"path\" : \""+edge[2]['path']+"\""
 
         if "keys" in edge[2]:
-          content +=",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
+          content += ",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
+        if "prodPort" in edge[2]:
+          content += ",\n       \"sourcePort\" : \""+str(edge[2]['prodPort'])+"\""
+          content += ",\n       \"targetPort\" : \""+str(edge[2]['conPort'])+"\""
+        #if "keys" in edge[2]:
+          #content +=",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
 
         content +="\n      },\n"
 
@@ -344,7 +473,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     content = ""
     content +="#! /bin/bash\n\n"
     content +=mpirunCommand
-    content = content.rstrip(" : ")
+    content = content.rstrip(" : ") + "\n"
 
     f.write(content)
     f.close()

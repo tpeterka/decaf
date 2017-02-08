@@ -60,6 +60,8 @@ struct WorkflowLink                          // a dataflow
                  string path_,
                  string prod_dflow_redist_,
 	             string dflow_con_redist_,
+	             string srcPort_,
+	             string destPort_,
 	             vector<ContractField> list_keys_,
 	             int check_types_) :
         prod(prod_),
@@ -71,6 +73,8 @@ struct WorkflowLink                          // a dataflow
         path(path_),
         prod_dflow_redist(prod_dflow_redist_),
 	    dflow_con_redist(dflow_con_redist_),
+	    srcPort(srcPort_),
+	    destPort(destPort_),
 	    list_keys(list_keys_),
 	    check_types(check_types_)				{}
     int prod;                   // index in vector of all workflow nodes of producer
@@ -83,9 +87,13 @@ struct WorkflowLink                          // a dataflow
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
 
+	string srcPort;				// Portname of the source
+	string destPort;			// Portname of the dest
+
 	// The following two are only relevant if the dataflow is related to a contract
 	vector<ContractField> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
 	int check_types;						  // level of checking for the type of data to be exchanged
+
 };
 
 struct Workflow                              // an entire workflow
@@ -213,6 +221,14 @@ struct Workflow                              // an entire workflow
 			link.path = v.second.get<std::string>("path");
 			link.func = v.second.get<std::string>("func");
 			link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+		}
+
+		boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
+		boost::optional<string> destP = v.second.get_optional<string>("targetPort");
+
+		if(srcP && destP){
+			link.srcPort = srcP.get();
+			link.destPort = destP.get();
 		}
 
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
