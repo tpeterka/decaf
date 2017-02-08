@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts
+// 3 nodes example for contracts with periodicity of fields
 //
 // clement Mommessin
 // Argonne National Laboratory
@@ -35,19 +35,19 @@ void node1(Decaf* decaf)
 		//fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
 
 		pConstructData container;
-		SimpleFieldi var(timestep);
+		SimpleFieldi var(10+timestep);
 
 		container->appendData("var", var,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		fprintf(stderr, "\nNode1 sent timestep %d\n", timestep);
+		fprintf(stderr, "\nNode1 it=%d sent %d\n", timestep, 10+timestep);
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){
 			break;
 		}
-		usleep(500000);
+		usleep(100000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -67,7 +67,7 @@ void node2(Decaf* decaf)
 	SimpleFieldi recv;
 
 	while(decaf->get(in_data)){
-		var = 10;
+		var = 0;
 		for(pConstructData data : in_data){
 			fprintf(stderr, "Node2 it=%d %sreceived var\n", timestep, data->isEmpty()?"did not " : "");
 			if(data->hasData("var")){

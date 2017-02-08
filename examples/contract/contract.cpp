@@ -35,7 +35,7 @@ void prod(Decaf* decaf)
 	// produce data for some number of timesteps
 	for (int timestep = 1; timestep <= 6; timestep++){
 		if(rank == 0){
-			fprintf(stderr, "\n\n----- ITERATION %d -----\n", timestep-1);
+			fprintf(stderr, "\n----- ITERATION %d -----\n", timestep-1);
 		}
 		//fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
 		for(int i = 0; i<3; ++i){
@@ -131,23 +131,26 @@ void con(Decaf* decaf)
 		{
 			if(in_data[i]->hasData("index")){
 				index = in_data[i]->getFieldData<SimpleFieldi >("index").getData();
-				s+= "index: " + to_string(index) + " ";
+				//s+= "index: " + to_string(index) + " ";
+				s+= "index ";
 
 			}
 			if(in_data[i]->hasData("velocity")){
 				//a_velocity.reset();
 				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
-				s+="velocity_size: "+to_string(a_velocity.getArraySize()) + " ";
+				//s+="velocity_size: "+to_string(a_velocity.getArraySize()) + " ";
+				s+="velocity ";
 			}
 			if(in_data[i]->hasData("density")){
 				//a_density.reset();
 				a_density = in_data[i]->getFieldData<ArrayFieldf>("density");
-				s+= "density_size: "+to_string(a_density.getArraySize()) + " ";
+				//s+= "density_size: "+to_string(a_density.getArraySize()) + " ";
+				s+="density ";
 			}
 
 		}
 
-		fprintf(stderr, "con %d and it %d received: %s\n", rank, it, s.c_str());
+		fprintf(stderr, "con rank %d and it %d received: %s\n", rank, it, s.c_str());
 		//fprintf(stderr, "con rank %d received: index %d velocity size %d and density size %d\n", rank, index, a_velocity.getArraySize(), a_density.getArraySize());
 		it++;
 	}
@@ -175,16 +178,18 @@ void con2(Decaf* decaf)
 		{
 			if(in_data[i]->hasData("id")){
 				id = in_data[i]->getFieldData<SimpleFieldi >("id").getData();
-				s+="id: "+to_string(id)+" ";
+				//s+="id: "+to_string(id)+" ";
+				s+="id ";
 			}
 			if(in_data[i]->hasData("velocity")){
 				//a_velocity.reset();
 				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
-				s+="velocity_size: " + to_string(a_velocity.getArraySize()) + " ";
+				//s+="velocity_size: " + to_string(a_velocity.getArraySize()) + " ";
+				s+="velocity ";
 			}
 		}
 
-		fprintf(stderr, "con2 %d and it %d received: %s\n", rank, it, s.c_str());
+		fprintf(stderr, "con2 rank %d and it %d received: %s\n", rank, it, s.c_str());
 		//fprintf(stderr, "con2 rank %d received: id %d velocity size %d\n", rank, id, a_velocity.getArraySize());
 		it++;
 	}

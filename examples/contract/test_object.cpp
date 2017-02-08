@@ -54,8 +54,8 @@ void prod(Decaf* decaf)
 	float pi = 3.1415;
 	std::vector<My_class> v_object(3);
 	// produce data for some number of timesteps
-	for (int timestep = 1; timestep <4; timestep++){
-		fprintf(stdout, "prod rank %d timestep %d\n", rank, timestep);
+	for (int timestep = 1; timestep <3; timestep++){
+
 		for(int i = 0; i<3; ++i){
 			v_object[i].value = (i+1)*pi+rank*100;
 		}
@@ -70,7 +70,8 @@ void prod(Decaf* decaf)
 		if(! decaf->put(container) ){
 			break;
 		}
-		//usleep(50000);
+		fprintf(stdout, "prod rank %d timestep %d sent the object\n", rank, timestep);
+		usleep(100000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow

@@ -40,7 +40,7 @@ contractP2.addOutputFromDict({"vel":["Array_float"], "id":["int"], "density":["A
 contractC1 = wf.Contract()
 contractC1.addInputFromDict({"index":["int"], "velocity":["Array_float", 2], "density":["Array_float"]})
 contractC2 = wf.Contract()
-contractC2.addInputFromDict({"velocity":["Array_float", 1], "id":["int"]})
+contractC2.addInputFromDict({"velocity":["Array_float", 1], "id":["int", 2]})
 
 
 w = nx.DiGraph()
