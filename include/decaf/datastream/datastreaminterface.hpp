@@ -18,6 +18,9 @@
 #include <decaf/storage/framemanagersequential.hpp>
 #endif
 
+#include <decaf/storage/storagecollectiongreedy.hpp>
+#include <decaf/storage/storagemainmemory.hpp>
+
 namespace decaf
 {
 
@@ -75,6 +78,8 @@ namespace decaf
 
         FrameManager* framemanager_;
 
+        StorageCollectionInterface* storage_collection_;
+
     };
 }
 
@@ -92,7 +97,7 @@ Datastream::Datastream(CommHandle world_comm,
     start_dflow_(start_dflow), nb_dflow_(nb_dflow),
     start_con_(start_con), nb_con_(nb_con),
     redist_prod_dflow_(redist_prod_dflow), redist_dflow_con_(redist_dflow_con),
-    framemanager_(NULL)
+    framemanager_(NULL),storage_collection_(NULL)
 {
     MPI_Comm_rank(world_comm_, &world_rank_);
     MPI_Comm_size(world_comm_, &world_size_);
@@ -127,6 +132,42 @@ Datastream::Datastream(CommHandle world_comm,
         MPI_Group_free(&newgroup);
 
         framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
+
+        storage_collection_ = new StorageCollectionGreedy();
+
+        for(unsigned int i = 0; i < storage_types.size(); i++)
+        {
+            switch(storage_types[i])
+            {
+                case DECAF_STORAGE_MAINMEM:
+                {
+                    storage_collection_->addBuffer(new StorageMainMemory(max_storage_sizes[i]));
+                    break;
+                }
+                case DECAF_STORAGE_FILE:
+                {
+                    fprintf(stderr,"DECAF_STORAGE_FILE not implemented yet.\n");
+                    break;
+                }
+                case DECAF_STORAGE_DATASPACE:
+                {
+                    fprintf(stderr,"DECAF_STORAGE_DATASPACE not implemented yet.\n");
+                    break;
+                }
+                default:
+                {
+                    fprintf(stderr, "Unknown storage type. Skiping.\n");
+                    break;
+                }
+            };
+        }
+
+        if(storage_collection_->getNbStorageObjects() == 0)
+        {
+            fprintf(stderr, "ERROR: Using streams but no storage objects were created successfully.\n");
+            MPI_Abort(MPI_COMM_WORLD, 0);
+        }
+
     }
 
     if(is_con())

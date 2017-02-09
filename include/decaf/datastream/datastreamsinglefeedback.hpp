@@ -51,8 +51,6 @@ namespace decaf
 
     protected:
         unsigned int iteration_;
-        unsigned int buffer_max_size_;
-        Storage* buffer_;
         OneWayChannel* channel_dflow_;
         OneWayChannel* channel_dflow_con_;
         OneWayChannel* channel_con_;
@@ -83,8 +81,7 @@ DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
        vector<unsigned int>& max_storage_sizes):
     Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, storage_types, max_storage_sizes),
     channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
-    first_iteration_(true), doGet_(true), is_blocking_(false), buffer_max_size_(2), iteration_(0),
-    buffer_(NULL)
+    first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
 {
     initialized_ = true;
 
@@ -106,8 +103,6 @@ DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
         MPI_Comm_create_group(world_comm, newgroup, 0, &dflow_comm_handle_);
         MPI_Group_free(&group);
         MPI_Group_free(&newgroup);
-
-        buffer_ = new StorageMainMemory(100000000); // Unlimited memory
     }
 
     if(is_con())
@@ -194,8 +189,8 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
                     doGet_ = false;
                 redist_prod_dflow_->flush();
                 framemanager_->putFrame(iteration_);
-                //buffer_.insert(std::pair<unsigned int,pConstructData>(iteration_, container));
-                buffer_->insert(iteration_, container);
+                storage_collection_->insert(iteration_, container);
+
                 iteration_++;
             }
         }
@@ -210,7 +205,7 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
             redist_prod_dflow_->process(container, DECAF_REDIST_DEST);
             redist_prod_dflow_->flush();
             framemanager_->putFrame(iteration_);
-            buffer_->insert(iteration_, container);
+            storage_collection_->insert(iteration_, container);
             iteration_++;
 
             if(msgtools::test_quit(container))
@@ -220,8 +215,8 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
 
     unsigned int frame_id;
     FrameCommand command = framemanager_->getNextFrame(&frame_id);
-    data->merge(buffer_->getData(frame_id).getPtr());
-    buffer_->erase(frame_id);
+    data->merge(storage_collection_->getData(frame_id).getPtr());
+    storage_collection_->erase(frame_id);
 }
 
 void
