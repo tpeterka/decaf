@@ -6,8 +6,8 @@ add_library             (bredala_transport SHARED     ../redist_comp.cpp
                                                     redist_block_mpi.cpp
                                                     redist_proc_mpi.cpp)
 
-target_link_libraries   (bredala_transport 
-  ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${Boost_LIBRARIES})
+target_link_libraries   (bredala_transport
+                        ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${Boost_LIBRARIES})
 
 install                 (TARGETS bredala_transport
                         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/
