@@ -44,14 +44,16 @@ void prod(Decaf* decaf)
 		vect[2] = std::rand() % 100;
 
 		pConstructData container;
-		VectorFieldi vf(vect, 3);
+		VectorFieldi vf(vect, 1);
 
 		container->appendData("value", vf,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
+		//fprintf(stderr, "Prod sent\n");
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){
+		//if(! decaf->put(container, "Out")){
 			break;
 		}
 		usleep(100000);
@@ -79,12 +81,14 @@ void prod2(Decaf* decaf)
 		pConstructData container;
 		ArrayFieldi af(arr, 3, 1);
 
-		container->appendData("value2", af,
+		container->appendData("value", af,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
+		//fprintf(stderr, "Prod2 sent\n");
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){
+		//if(! decaf->put(container, "Out")){
 			break;
 		}
 		usleep(100000);
@@ -102,37 +106,67 @@ void con(Decaf* decaf)
 	int* arr;
 	std::vector<int> vect;
 
-	vector<pConstructData> in_data;
+	map<string, pConstructData> in_data;
+
 	ArrayFieldi af;
 	VectorFieldi vf;
+	string s;
+
 
 	while(decaf->get(in_data)){
-		std::string s = "";
-		for(pConstructData data : in_data){
-			if(data->hasData("value")){
-				vf = data->getFieldData<VectorFieldi>("value");
-				if(vf){
-					vect = vf.getVector();
-					s+= "Vector size: " + std::to_string(vect.size()) + " ";
+		s = "";
+
+		if(!in_data["In1"]->isEmpty()){
+			vf = in_data["In1"]->getFieldData<VectorFieldi>("value");
+			if(vf){
+				vect = vf.getVector();
+				for (int i : vect){
+					s+= to_string(i) + " ";
 				}
-				else{
-					fprintf(stderr, "TOTO\n");
-				}
-			}
-			if(data->hasData("value2")){
-				af = data->getFieldData<ArrayFieldi>("value2");
-				if(af){
-					arr = af.getArray();
-					s+= "Array size: " + std::to_string(af.getArraySize()) + " ";
-				}
-				else{
-					fprintf(stderr, "TATA\n");
-				}
+				//s+= "Vector size: " + std::to_string(vect.size()) + " ";
 			}
 		}
-		fprintf(stderr, "Consumer received %s\n", s.c_str());
+		if(!in_data["In2"]->isEmpty()){
+			af = in_data["In2"]->getFieldData<ArrayFieldi>("value");
+			if(af){
+				arr= af.getArray();
+				for(int i = 0; i<af.getArraySize(); i++){
+					s+= to_string(arr[i]) + " ";
+				}
+				//s+= "Array size: " + std::to_string(af.getArraySize()) + " ";
+			}
+		}
+
+		fprintf(stderr, "Consumer rank %d received %s\n", rank, s.c_str());
+	}
+
+/*	pConstructData data1, data2;
+	while(true){
+		s = "";
+
+		if(decaf->get(data1, "In1")){
+			vf = data1->getFieldData<VectorFieldi>("value");
+			if(vf){
+				vect = vf.getVector();
+				s+= "Vector size: " + std::to_string(vect.size()) + " ";
+			}
+		}
+
+		if(decaf->get(data2, "In2")){
+			af = data2->getFieldData<ArrayFieldi>("value2");
+			if(af){
+				arr= af.getArray();
+				s+= "Array size: " + std::to_string(af.getArraySize()) + " ";
+			}
+		}
+		if(decaf->allQuit()){
+			break;
+		}
+
+		fprintf(stderr, "Consumer rank %d received %s\n", rank, s.c_str());
 
 	}
+*/
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
 }

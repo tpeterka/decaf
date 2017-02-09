@@ -61,19 +61,35 @@ namespace decaf
 		// returns true = ok, false = function terminate() has been called
 		bool put(pConstructData container);
 
-        // put a message on a particular outbound links
+		// put a message on a particular outbound link
 		// returns true = ok, false = function terminate() has been called
 		bool put(pConstructData container, int i);
+
+		// put a message on outbound link(s) associated to the output port
+		// returns true = ok, false = function terminate() has been called
+		bool put(pConstructData container, string port);
+
+		// get a message from an inbound link associated to the input port
+		// returns true = process message, false = error occured or quit message
+		bool get(pConstructData container, string port);
+
+		// get message from all input ports
+		// returns true = process messages, false = erroc occured or all quit messages
+		// if an input port is closed, the container in the returned map is empty
+		bool get(map<string, pConstructData> &containers);
 
         // get messages from all inbound links
         // returns true = process messages, false = break (quit received)
         bool get(vector< pConstructData >& containers);
 
         // determine whether to continue processing a node task by checking for a quit message
-        bool iterate();
+		//bool iterate(); //TODO Remove this
 
         // terminate a node task by sending a quit message to the rest of the workflow
         void terminate();
+
+		// Checks if there are still alive input Dataflows for this node
+		bool allQuit(){ return inCount == 0; }
 
         // whether my rank belongs to this workflow node, identified by the name of its func field
         bool my_node(const char* name);
@@ -163,11 +179,12 @@ namespace decaf
         vector<RoutingLink> my_links_;             // indices of my workflow links
         vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
         vector<Dataflow*>   out_dataflows;         // all my outbound dataflows
-        vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
+		vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
         vector<Dataflow*>   node_in_dataflows;     // all my inbound dataflows in case I am a node
 
-		map<string, Dataflow*> inPortMap;		   // Map between an input port and its associated Dataflow
+		map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
 		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
+		int inCount;								// Counter of input Dataflows still alive, i.e. that did not send quit message yet
     };
 
 } // namespace
@@ -227,6 +244,7 @@ Decaf::Decaf(CommHandle world_comm,
 			inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
 		}
     }
+	inCount = inPortMap.size();
 
     // outbound dataflows
     set <Dataflow*> unique_out_dataflows;               // set prevents adding duplicates
@@ -306,7 +324,7 @@ Decaf::put(pConstructData container)
 	return true;
 }
 
-// put a message on a particular outbound links
+// put a message on a particular outbound link
 bool
 decaf::
 Decaf::put(pConstructData container, int i)
@@ -318,7 +336,7 @@ Decaf::put(pConstructData container, int i)
 		return false;
 	}
 
-	// TODO remove the loop, with the given i in argument we know which one should be taken
+	// TODO remove the loop, with the given i in argument we know whether there is an ovelapping or not
 	// link ranks that do overlap this node need to be run in one-time mode
 	for (size_t i = 0; i < workflow_.links.size(); i++){
 		if (workflow_.my_link(world->rank(), i))
@@ -330,12 +348,134 @@ Decaf::put(pConstructData container, int i)
 	return true;
 }
 
+
+// put a message on the outbound link(s) associated to the output port given in argument
+bool
+decaf::
+Decaf::put(pConstructData container, string port){
+	auto it = outPortMap.find(port);
+	if(it == outPortMap.end()){
+		fprintf(stderr, "ERROR: the output port %s is not present or not associated to a Dataflow. Aborting.\n", port.c_str());
+		terminate();
+		return false;
+	}
+
+	bool ret_ok;
+	for(Dataflow* out_df : it->second){
+		ret_ok = out_df->put(container, DECAF_NODE);
+		if(!ret_ok){
+			terminate();
+			return false;
+		}
+	}
+	// TODO remove the loop, with the given port in argument we know whether there is an ovelapping or not
+	// link ranks that do overlap this node need to be run in one-time mode
+	for (size_t i = 0; i < workflow_.links.size(); i++){
+		if (workflow_.my_link(world->rank(), i))
+		{
+			run_links(true);
+			break;
+		}
+	}
+
+	return true;
+}
+
+// get message from inbound link associated to the input port
+// returns true = process messages, false = error occured or quit message
+bool
+decaf::
+Decaf::get(pConstructData container, string port){
+	container->purgeData();
+	auto it = inPortMap.find(port);
+	if(it == inPortMap.end()){
+		fprintf(stderr, "ERROR: the input port %s is not present or not associated to a Dataflow. Aborting.\n", port.c_str());
+		terminate();
+		return false;
+	}
+
+	if(it->second->isClose()){// A quit message has already been received, nothing to get anymore
+		return false;
+	}
+
+	// TODO remove the loop, with the given port in argument we know whether there is an ovelapping or not
+	// link ranks that do overlap this node need to be run in one-time mode, unless
+	// the same rank also was a producer node for this link, in which case
+	// the link was already run by the producer node during Decaf::put()
+	for (size_t i = 0; i < workflow_.links.size(); i++){
+		if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+		{
+			run_links(true);
+			break;
+		}
+	}
+
+	bool ret_ok;
+	ret_ok = it->second->get(container, DECAF_NODE);
+	if(!ret_ok){
+		terminate();
+		return false;
+	}
+
+	if(Dataflow::test_quit(container)){
+		inCount--;
+		return false;
+	}
+
+	return true;
+}
+
+// get messages from all input ports
+// returns true = process messages, false = error occured or ALL quit messages
+// if an input port is closed, the container in the returned map is empty
+bool
+decaf::
+Decaf::get(map<string, pConstructData> &containers){
+	// TODO verify this
+	// link ranks that do overlap this node need to be run in one-time mode, unless
+	// the same rank also was a producer node for this link, in which case
+	// the link was already run by the producer node during Decaf::put()
+	for (size_t i = 0; i < workflow_.links.size(); i++){
+		if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+		{
+			run_links(true);
+			break;
+		}
+	}
+
+	containers.clear();
+	bool ret_ok;
+
+	for(std::pair<string, Dataflow*> pair : inPortMap){
+		pConstructData container;
+		if(pair.second->isClose()){
+			containers.emplace(pair.first, container);
+		}
+		else{
+			ret_ok = pair.second->get(container, DECAF_NODE);
+			if(!ret_ok){
+				terminate();
+				return false;
+			}
+			containers.emplace(pair.first, container);
+
+			if(Dataflow::test_quit(container)){
+				inCount--;
+			}
+		}
+	}
+
+	return !allQuit(); // If allQuit return false
+}
+
+
 // get messages from all inbound links
 // returns true = process messages, false = quit received or error occured
 bool
 decaf::
 Decaf::get(vector< pConstructData >& containers)
 {
+	// TODO verify this
     // link ranks that do overlap this node need to be run in one-time mode, unless
     // the same rank also was a producer node for this link, in which case
     // the link was already run by the producer node during Decaf::put()
@@ -379,8 +519,9 @@ Decaf::get(vector< pConstructData >& containers)
     return true;
 }
 
+
 // determine whether to continue processing a node task by checking for a quit message
-bool
+/*bool  TODO remove this, not used and very ugly call to get(in_data)
 decaf::
 Decaf::iterate()
 {
@@ -390,7 +531,7 @@ Decaf::iterate()
         if (Dataflow::test_quit(in_data[i]))
             return false;
     return true;
-}
+}*/
 
 // terminate a node task by sending a quit message to the rest of the workflow
 void

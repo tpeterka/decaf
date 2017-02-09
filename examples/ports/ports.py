@@ -26,7 +26,7 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/ports/mod_ports.so'
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod", "prod2", "con", "dflow1", "dflow2"],[1,1,2,0,0])
+subtopos = topo.splitTopology(["prod", "prod2", "con", "dflow1", "dflow2"],[1,1,2,1,1])
 
 
 prod = wf.nodeFromTopo("prod", "prod", "ports", subtopos[0])
@@ -35,14 +35,13 @@ prod.addOutput("Out", "value", "Vector_int")
 
 prod2 = wf.nodeFromTopo("prod2", "prod2", "ports", subtopos[1])
 prod2.addOutPort("Out")
-prod2.addOutput("Out", "value2", "Array_int")
-prod2.addOutput("Out", "toto", "int")
+prod2.addOutput("Out", "value", "Array_int")
 
 con = wf.nodeFromTopo("con", "con", "ports", subtopos[2])
 con.addInPort("In1")
 con.addInput("In1", "value", "Vector_int")
 con.addInPort("In2")
-con.addInput("In2", "value2", "Array_int")
+con.addInput("In2", "value", "Array_int")
 
 
 w = nx.DiGraph()

@@ -3,7 +3,7 @@
   add_subdirectory            (ports)
   #add_subdirectory            (direct)
   #add_subdirectory            (buffer)
-  add_subdirectory			  (contract)
+  #add_subdirectory			  (contract)
 
   #add_subdirectory            (flowvr)
   if                           (LAMMPS_INCLUDE_DIR AND

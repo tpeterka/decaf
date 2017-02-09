@@ -76,6 +76,9 @@ namespace decaf
 		string srcPort(){ return srcPort_; }
 		string destPort(){ return destPort_; }
 
+		bool isClose(){ return bClose_; }
+		void setClose(){ bClose_ = true; }
+
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
         void clearBuffers(TaskType role);
@@ -123,6 +126,7 @@ namespace decaf
 
 		string srcPort_;				// Portname of the source
 		string destPort_;				// Portname of the destination
+		bool bClose_;					// Determines if a quit message has been received when calling a get
 
 		bool bContract_;			 // boolean to say if the dataflow has a contract or not
 		int check_types_;			 // level of typechecking used; Relevant if bContract_ is set to true
@@ -155,6 +159,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     check_types_(check_types),
     srcPort_(srcPort),
     destPort_(destPort),
+    bClose_(false),
     no_link(false)
 {
     // DEPRECATED
@@ -494,14 +499,14 @@ Dataflow::put(pConstructData data, TaskType role)
 			for(ContractField field : keys()){
 				if( (it_put % field.period) == 0){ // This field is sent during this iteration
 					if(!data->hasData(field.name)){// If the key is not present in the data the contract is not respected.
-						fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
+						fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
 						return false;
 					}
 					// Performing typechecking if needed
 					if(check_types_ > 1){
 						string typeName = data->getTypename(field.name);
 						if(typeName.compare(field.type) != 0){ //The two types do not match
-							fprintf(stderr, "ERROR : Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+							fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
 							return false;
 						}
 					}
@@ -663,6 +668,7 @@ Dataflow::get(pConstructData data, TaskType role)
     }
 
 	if(test_quit(data)){
+		setClose();
 		return true;
 	}
 
@@ -671,14 +677,14 @@ Dataflow::get(pConstructData data, TaskType role)
 		for(ContractField field : keys()){
 			if( (it_get % field.period) == 0){ // This field should be received during this iteration
 				if(! data->hasData(field.name)){
-					fprintf(stderr, "ERROR : Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
+					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
 					return false;
 				}
 				// Performing typechecking if needed
 				if(check_types_ > 1){
 					string typeName = data->getTypename(field.name);
 					if(typeName.compare(field.type) != 0){ //The two types do not match
-						fprintf(stderr, "ERROR : Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+						fprintf(stderr, "ERROR: Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
 						return false;
 					}
 				}
