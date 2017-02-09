@@ -13,6 +13,7 @@
 #define DECAF_STORAGE_INTERFACE
 
 #include <decaf/data_model/pconstructtype.h>
+#include <decaf/types.hpp>
 
 namespace decaf
 {
@@ -29,6 +30,7 @@ namespace decaf
         virtual void erase(unsigned int id) = 0;
         virtual bool hasData(unsigned int id) = 0;
         virtual pConstructData getData(unsigned int id) = 0;
+        virtual void processCommand(FrameCommand command, unsigned int frame_id) = 0;
     };
 } // namespace decaf
 

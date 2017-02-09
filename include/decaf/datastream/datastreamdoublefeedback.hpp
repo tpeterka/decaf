@@ -306,7 +306,7 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
     unsigned int frame_id;
     FrameCommand command = framemanager_->getNextFrame(&frame_id);
     data->merge(storage_collection_->getData(frame_id).getPtr());
-    storage_collection_->erase(frame_id);
+    storage_collection_->processCommand(command, frame_id);
 
     // Unblock the producer if necessary
     if(is_blocking_ && !storage_collection_->isFull())

@@ -27,6 +27,7 @@ namespace decaf
 
         virtual bool insert(unsigned int id, pConstructData data);
         virtual void erase(unsigned int id);
+        virtual void processCommand(FrameCommand command, unsigned int frame_id);
     };
 }
 
@@ -54,5 +55,37 @@ StorageCollectionGreedy::erase(unsigned int id)
     }
 }
 
+void
+decaf::
+StorageCollectionGreedy::processCommand(FrameCommand command, unsigned int frame_id)
+{
+    switch(command)
+    {
+        case DECAF_FRAME_REMOVE:
+        {
+            this->erase(frame_id);
+            break;
+        }
+        case DECAF_FRAME_REMOVE_UNTIL:
+        {
+            for(Storage* storage : storages)
+            {
+                storage->processCommand(command, frame_id);
+            }
+        }
+        case DECAF_FRAME_REMOVE_UNTIL_EXCLUDED:
+        {
+            for(Storage* storage : storages)
+            {
+                storage->processCommand(command, frame_id);
+            }
+        }
+        default:
+        {
+            fprintf(stderr, "ERROR: unknown FrameCommand.\n");
+            break;
+        }
+    };
+}
 
 #endif

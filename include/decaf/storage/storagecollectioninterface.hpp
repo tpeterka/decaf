@@ -16,6 +16,7 @@
 #define DECAF_STORAGE_COLLECTION_INTERFACE
 
 #include <decaf/storage/storageinterface.hpp>
+#include <decaf/types.hpp>
 #include <vector>
 using namespace decaf;
 
@@ -35,7 +36,7 @@ namespace decaf
         virtual void erase(unsigned int id) = 0;
         virtual bool hasData(unsigned int id);
         virtual pConstructData getData(unsigned int id);
-
+        virtual void processCommand(FrameCommand command, unsigned int frame_id) = 0;
         void addBuffer(Storage* storage);
 
     protected:

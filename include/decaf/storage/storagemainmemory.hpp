@@ -16,6 +16,7 @@
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/storage/storageinterface.hpp>
 #include <map>
+#include <set>
 
 namespace decaf
 {
@@ -33,6 +34,7 @@ namespace decaf
         virtual void erase(unsigned int id);
         virtual bool hasData(unsigned int id);
         virtual pConstructData getData(unsigned int id);
+        virtual void processCommand(FrameCommand command, unsigned int frame_id);
 
     protected:
         unsigned int buffer_max_size_;
@@ -85,6 +87,39 @@ decaf::
 StorageMainMemory::getData(unsigned int id)
 {
     return buffer_.at(id);
+}
+
+void
+decaf::
+StorageMainMemory::processCommand(FrameCommand command, unsigned int frame_id)
+{
+    switch(command)
+    {
+        case DECAF_FRAME_REMOVE:
+        {
+            buffer_.erase(frame_id);
+            break;
+        }
+        case DECAF_FRAME_REMOVE_UNTIL:
+        {
+            auto it = buffer_.begin();
+            while(it != buffer_.end() && it->first <= frame_id)
+                buffer_.erase(it++);
+            break;
+        }
+        case DECAF_FRAME_REMOVE_UNTIL_EXCLUDED:
+        {
+            auto it = buffer_.begin();
+            while(it != buffer_.end() && it->first < frame_id)
+                buffer_.erase(it++);
+            break;
+        }
+        default:
+        {
+            fprintf(stderr, "ERROR: unknown FrameCommand.\n");
+            break;
+        }
+    }
 }
 
 

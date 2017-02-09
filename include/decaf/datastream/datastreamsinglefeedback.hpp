@@ -216,7 +216,7 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
     unsigned int frame_id;
     FrameCommand command = framemanager_->getNextFrame(&frame_id);
     data->merge(storage_collection_->getData(frame_id).getPtr());
-    storage_collection_->erase(frame_id);
+    storage_collection_->processCommand(command, frame_id);
 }
 
 void

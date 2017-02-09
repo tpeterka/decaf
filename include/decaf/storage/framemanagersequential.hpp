@@ -94,7 +94,7 @@ FrameManagerSeq::getNextFrame(unsigned int* frame_id)
 
     *frame_id = frame;
 
-    return FRAME_REMOVE;
+    return DECAF_FRAME_REMOVE;
 }
 
 #endif
