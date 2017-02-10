@@ -133,7 +133,7 @@ FrameManagerRecent::getNextFrame(unsigned int* frame_id)
         buffer_.pop_front();
 
     // We will remove all frames before the frame sent
-    return DECAF_FRAME_REMOVE_UNTIL;
+    return DECAF_FRAME_COMMAND_REMOVE_UNTIL;
 }
 
 #endif

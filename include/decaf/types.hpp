@@ -48,6 +48,20 @@ enum StorageType
     DECAF_STORAGE_DATASPACE,
 };
 
+enum FrameCommand
+{
+    DECAF_FRAME_COMMAND_REMOVE,
+    DECAF_FRAME_COMMAND_REMOVE_UNTIL,
+    DECAF_FRAME_COMMAND_REMOVE_UNTIL_EXCLUDED,
+};
+
+enum FramePolicyManagment
+{
+    DECAF_FRAME_POLICY_NONE,
+    DECAF_FRAME_POLICY_SEQ,
+    DECAF_FRAME_POLICY_RECENT,
+};
+
 // workflow entity types
 typedef unsigned char TaskType;
 #define DECAF_NONE      0x00
@@ -144,6 +158,19 @@ StorageType stringToStoragePolicy(std::string name)
     {
         std::cerr<<"ERROR: unknown storage type: "<<name<<". Disabling storage capability."<<std::endl;
         return DECAF_STORAGE_NONE;
+    }
+}
+
+FramePolicyManagment stringToFramePolicyManagment(std::string name)
+{
+    if(name.compare(std::string("seq")) == 0)
+        return DECAF_FRAME_POLICY_SEQ;
+    else if(name.compare(std::string("recent")) == 0)
+        return DECAF_FRAME_POLICY_RECENT;
+    else
+    {
+        std::cerr<<"ERROR: unknown frame policy type: "<<name<<". Disabling frame managment.\n"<<std::endl;
+        return DECAF_FRAME_POLICY_NONE;
     }
 }
 

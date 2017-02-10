@@ -16,13 +16,6 @@
 #include <decaf/transport/mpi/channel.hpp>
 #include <mpi.h>
 
-enum FrameCommand
-{
-    DECAF_FRAME_REMOVE,
-    DECAF_FRAME_REMOVE_UNTIL,
-    DECAF_FRAME_REMOVE_UNTIL_EXCLUDED
-};
-
 namespace decaf
 {
     class FrameManager

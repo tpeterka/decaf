@@ -95,12 +95,12 @@ StorageMainMemory::processCommand(FrameCommand command, unsigned int frame_id)
 {
     switch(command)
     {
-        case DECAF_FRAME_REMOVE:
+        case DECAF_FRAME_COMMAND_REMOVE:
         {
             buffer_.erase(frame_id);
             break;
         }
-        case DECAF_FRAME_REMOVE_UNTIL:
+        case DECAF_FRAME_COMMAND_REMOVE_UNTIL:
         {
             auto it = buffer_.begin();
             while(it != buffer_.end() && it->first <= frame_id)
@@ -109,7 +109,7 @@ StorageMainMemory::processCommand(FrameCommand command, unsigned int frame_id)
             }
             break;
         }
-        case DECAF_FRAME_REMOVE_UNTIL_EXCLUDED:
+        case DECAF_FRAME_COMMAND_REMOVE_UNTIL_EXCLUDED:
         {
             auto it = buffer_.begin();
             while(it != buffer_.end() && it->first < frame_id)

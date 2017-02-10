@@ -61,18 +61,18 @@ StorageCollectionGreedy::processCommand(FrameCommand command, unsigned int frame
 {
     switch(command)
     {
-        case DECAF_FRAME_REMOVE:
+        case DECAF_FRAME_COMMAND_REMOVE:
         {
             this->erase(frame_id);
             break;
         }
-        case DECAF_FRAME_REMOVE_UNTIL:
+        case DECAF_FRAME_COMMAND_REMOVE_UNTIL:
         {
             for(Storage* storage : storages)
                 storage->processCommand(command, frame_id);
             break;
         }
-        case DECAF_FRAME_REMOVE_UNTIL_EXCLUDED:
+        case DECAF_FRAME_COMMAND_REMOVE_UNTIL_EXCLUDED:
         {
             for(Storage* storage : storages)
                 storage->processCommand(command, frame_id);

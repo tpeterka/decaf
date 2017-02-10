@@ -39,6 +39,7 @@ namespace decaf
                int nb_con,
                RedistComp* prod_dflow,
                RedistComp* dflow_con,
+               FramePolicyManagment policy,
                vector<StorageType>& storage_types,
                vector<unsigned int>& max_storage_sizes);
         virtual ~Datastream();
@@ -91,6 +92,7 @@ Datastream::Datastream(CommHandle world_comm,
               int start_con, int nb_con,
               RedistComp* redist_prod_dflow,
               RedistComp* redist_dflow_con,
+              FramePolicyManagment policy,
               vector<StorageType>& storage_types,
               vector<unsigned int>& max_storage_sizes) :
     initialized_(false), world_comm_(world_comm),
@@ -133,7 +135,25 @@ Datastream::Datastream(CommHandle world_comm,
         MPI_Group_free(&newgroup);
 
         //framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
-        framemanager_ = new FrameManagerRecent(dflow_comm_handle_);
+        switch(policy)
+        {
+            case DECAF_FRAME_POLICY_RECENT:
+            {
+                framemanager_ = new FrameManagerRecent(dflow_comm_handle_);
+                break;
+            }
+            case DECAF_FRAME_POLICY_SEQ:
+            {
+                framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
+                break;
+            }
+            default:
+            {
+                fprintf(stderr,"WARNING: unrecognized frame policy. Using sequential.\n");
+                framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
+                break;
+            }
+        };
 
         storage_collection_ = new StorageCollectionGreedy();
 

@@ -181,6 +181,7 @@ def workflowToJson(graph, libPath, outputFile):
         content +="       \"target\" : "+str(con)+" ,\n"
         if 'stream' in edge[2]:
             content +="       \"stream\" : \""+edge[2]['stream']+"\", \n"
+            content +="       \"frame_policy\" : \""+edge[2]['frame_policy']+"\", \n"
             content +="       \"storage_types\" : "+str(edge[2]['storage_types']).replace("\'","\"")+", \n"
             content +="       \"max_storage_sizes\" : "+str(edge[2]['max_storage_sizes'])+" \n"
         else:

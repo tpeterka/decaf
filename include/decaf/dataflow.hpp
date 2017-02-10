@@ -51,6 +51,7 @@ namespace decaf
                  Decomposition prod_dflow_redist, // decompositon between producer and dataflow
                  Decomposition dflow_cons_redist, // decomposition between dataflow and consumer
                  StreamPolicy streamPolicy,
+                 FramePolicyManagment framePolicy,
                  vector<StorageType>& storage_types,
                  vector<unsigned int>& max_storage_sizes);
         ~Dataflow();
@@ -112,6 +113,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist,
                    StreamPolicy stream_policy,
+                   FramePolicyManagment framePolicy,
                    vector<StorageType>& storage_types,
                    vector<unsigned int>& max_storage_sizes) :
     world_comm_(world_comm),
@@ -433,6 +435,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.con_size,
                                                    redist_prod_dflow_,
                                                    redist_dflow_con_,
+                                                   framePolicy,
                                                    storage_types,
                                                    max_storage_sizes);
                 break;
@@ -448,6 +451,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.con_size,
                                                    redist_prod_dflow_,
                                                    redist_dflow_con_,
+                                                   framePolicy,
                                                    storage_types,
                                                    max_storage_sizes);
                 break;

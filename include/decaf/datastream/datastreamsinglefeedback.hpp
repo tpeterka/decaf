@@ -38,6 +38,7 @@ namespace decaf
                int nb_con,
                RedistComp* prod_dflow,
                RedistComp* dflow_con,
+               FramePolicyManagment policy,
                vector<StorageType>& storage_types,
                vector<unsigned int>& max_storage_sizes);
 
@@ -77,9 +78,10 @@ DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
        int nb_con,
        RedistComp* prod_dflow,
        RedistComp* dflow_con,
+       FramePolicyManagment policy,
        vector<StorageType>& storage_types,
        vector<unsigned int>& max_storage_sizes):
-    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, storage_types, max_storage_sizes),
+    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, policy, storage_types, max_storage_sizes),
     channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
     first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
 {

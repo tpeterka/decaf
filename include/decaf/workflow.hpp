@@ -82,6 +82,7 @@ struct WorkflowLink                          // a dataflow
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
     string stream;              // Type of stream policy to use (none, single, double)
+    string frame_policy;        // Policy to use to manage the incoming frames
     vector<StorageType> storages;               // Different level of storage availables
     vector<unsigned int> storage_max_buffer;    // Maximum number of frame
 };
@@ -211,7 +212,7 @@ struct Workflow                              // an entire workflow
 	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
 	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
         link.stream = v.second.get<std::string>("stream", "none");
-
+        link.frame_policy = v.second.get<std::string>("frame_policy","none");
         if(v.second.count("storage_types") > 0)
         {
             for (auto &types : v.second.get_child("storage_types"))
