@@ -40,4 +40,4 @@ w.add_node("con",  topology=subtopos[2], contract=contractC, func='con', cmdline
 w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='test_object')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "test_object", check_types = 2)
+wf.processGraph(w, "test_object", check_types = wf.Check_types.PY_AND_SOURCE)

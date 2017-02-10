@@ -18,11 +18,11 @@ args = parser.parse_args()
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/ports/mod_ports.so'
 
 # define workflow graph
-# prod(2 procs)    prod2(2 procs)
+# prod(1 proc)    prod2(1 proc)
 #             \   /
 #			   \ /
 #           con (2 procs)
-# entire workflow takes 8 procs (1 proc per link)
+# entire workflow takes 6 procs (1 proc per link)
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
@@ -52,12 +52,6 @@ wf.addNode(w, con)
 wf.addEdgeWithTopo(w, "prod.Out", "con.In1", subtopos[3], 'count', 'dflow', mod_path, 'count', 'ports')
 wf.addEdgeWithTopo(w, "prod2.Out", "con.In2", subtopos[4], 'count', 'dflow', mod_path, 'count', 'ports')
 
-"""
-# TODO THIS is for testing an out connected to multiple in
-con2 = wf.Node("con2", 4, 1, "con2", "ports")
-con2.addInPort("In")
-wf.addNode(w, con2)
-wf.addEdge(w, "prod2.Out", "con2.In", 4, 0, 'count')
-"""
+
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "ports", check_types = 2)
+wf.processGraph(w, "ports", check_types = wf.Check_types.PYTHON)

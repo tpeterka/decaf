@@ -13,6 +13,8 @@ from collections import defaultdict
 import fractions  #Definition of the least common multiple of two numbers; Used for the period in Contracts
 def lcm(a,b): return abs(a * b) / fractions.gcd(a,b) if a and b else 0
 
+class Check_types:
+  NONE, PYTHON, PY_AND_SOURCE, EVERYWHERE = range(4)   
 
 """ Object holding information about a Node """
 class Node:
@@ -33,6 +35,7 @@ class Node:
     else:
       self.inports[name] = contract.inputs
 
+
   def addInput(self, portname, key, typename, period=1):
     if not portname in self.inports:
       raise ValueError("ERROR in addInput: the IN port %s is not present in %s." % (portname, self.name))
@@ -46,11 +49,20 @@ class Node:
         val.append(1)
       self.inports[portname][key] = val
 
+  def addInputFromContract(self, portname, contract):
+    if not portname in self.inports:
+      raise ValueError("ERROR in addInputFromContract: the IN port %s is not present in %s." %(portname, self.name))
+    if contract.inputs == {}:
+      raise ValueError("ERROR in addInputFromContract: the contract does not have inputs.")
+    self.addInputFromDict(self, portname, contract.inputs)
+
+
   def addOutPort(self, name, contract=0):
     if contract == 0:
       self.outports[name] = {}
     else:
       self.outports[name] = contract.outputs
+
 
   def addOutput(self, portname, key, typename, period=1):
     if not portname in self.outports:
@@ -65,6 +77,12 @@ class Node:
         val.append(1)
       self.outports[portname][key] = val
 
+def addOutputFromContract(self, portname, contract):
+    if not portname in self.outports:
+      raise ValueError("ERROR in addOutputFromContract: the OUT port %s is not present in %s." %(portname, self.name))
+    if contract.outputs == {}:
+      raise ValueError("ERROR in addOutputFromContract: the contract does not have outputs.")
+    self.addOutputFromDict(self, portname, contract.outputs)
 # End of class Node
 
 """ To create a Node using a Topology """
@@ -139,7 +157,7 @@ class Contract:
 # End of class Contract
 
 # Checks if the input port (consumer) contract of an edge is a subset of the output port (producer) contract
-def check_contracts(graph, check_types):
+def check_contracts(graph, check):
     my_list = [] # To check if an input port is connected to only one output port
 
     dict = defaultdict(set)
@@ -162,9 +180,11 @@ def check_contracts(graph, check_types):
             my_list.append(s)
 
           if len(Inport) == 0: # The Input port accepts anything, no need to perform check or filtering
+            print "WARNING: The port \"%s\" will accept anything sent by \"%s.%s\", continuing." % (s, edge[0], OutportName)
             continue
 
           if len(Outport) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
+            print "WARNING: Only fields needed by the port \"%s\" will be sent by \"%s.%s\", continuing." % (s, edge[0], OutportName)
             list_fields = Inport          
 
           else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
@@ -174,7 +194,7 @@ def check_contracts(graph, check_types):
               if not key in Outport : # The key is not sent by the producer
                 s+= key + " "
               else:
-                if (check_types == 0) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
+                if (check == Check_types.NONE) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
                   lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
                   list_fields[key] = [val[0], lcm_val]
                 else:
@@ -200,13 +220,13 @@ def check_contracts(graph, check_types):
                 con_in = con["contract"].inputs
 
             # We add for each edge the list of pairs key/type which is the intersection of the two contracts
-            intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (check_types == 0) or (con_in[key][0] == prod_out[key][0]) ) }
+            intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (check == Check_types.NONE) or (con_in[key][0] == prod_out[key][0]) ) }
             for key in intersection_keys.keys():
                 dict[edge[1]].add(key)
                 lcm_val = lcm(con_in[key][1], prod_out[key][1])
                 intersection_keys[key].append(lcm_val)
                 if(lcm_val != con_in[key][1]):
-                  print "WARNING: %s will receive %s with periodicity %s instead of %s. Continuing" % (edge[1], key, lcm_val, con_in[key][1])
+                  print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (edge[1], key, lcm_val, con_in[key][1])
 
             if len(intersection_keys) == 0:
                 raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
@@ -365,7 +385,7 @@ def workflowToJson(graph, outputFile, check_types):
     content +="{\n"
     content +="   \"workflow\" :\n"
     content +="   {\n"
-    content +="   \"check_types\" : \""+str(check_types)+"\",\n"
+    content +="   \"check_types\" : \""+str(check_types)+"\",\n" # TODO Do we need to write the "real" string value of check_type or just the int value is ok ?
     content +="   \"nodes\" : [\n"
 
     i = 0
@@ -406,8 +426,6 @@ def workflowToJson(graph, outputFile, check_types):
         if "prodPort" in edge[2]:
           content += ",\n       \"sourcePort\" : \""+str(edge[2]['prodPort'])+"\""
           content += ",\n       \"targetPort\" : \""+str(edge[2]['conPort'])+"\""
-        #if "keys" in edge[2]:
-          #content +=",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
 
         content +="\n      },\n"
 
@@ -483,7 +501,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
   check_types = 0 means no typechecking; 1 means typechecking at python script only
   2 means typechecking both at python script and at runtime; Only relevant if contracts are used
 """
-def processGraph(graph, name, check_types = 1, mpirunPath = "", mpirunOpt = ""):
+def processGraph(graph, name, check_types = Check_types.NONE, mpirunPath = "", mpirunOpt = ""):
     check_contracts(graph, check_types)
     processTopology(graph)
     workflowToJson(graph, name+".json", check_types)

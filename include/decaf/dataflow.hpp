@@ -46,8 +46,8 @@ namespace decaf
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
                  int con,                        // id in workflow structure of consumer node
-		         vector<ContractField> list_key, // list of key/type if related to a contract
-		         int check_types = 0,					   // level of typechecking if related to a contract
+		         vector<ContractKey> list_key, // list of key/type if related to a contract
+		         Check_types check_types = CHECK_NONE,   // level of typechecking if related to a contract
                  Decomposition prod_dflow_redist // decompositon between producer and dataflow
                  = DECAF_CONTIG_DECOMP,
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
@@ -70,7 +70,7 @@ namespace decaf
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
-		vector<ContractField>& keys(){ return list_keys_; }
+		vector<ContractKey>& keys(){ return list_keys_; }
 		bool is_contract(){		return bContract_;}
 
 		string srcPort(){ return srcPort_; }
@@ -129,8 +129,8 @@ namespace decaf
 		bool bClose_;					// Determines if a quit message has been received when calling a get
 
 		bool bContract_;			 // boolean to say if the dataflow has a contract or not
-		int check_types_;			 // level of typechecking used; Relevant if bContract_ is set to true
-		vector<ContractField> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+		Check_types check_types_;			 // level of typechecking used; Relevant if bContract_ is set to true
+		vector<ContractKey> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
         };
 
 } // namespace
@@ -141,8 +141,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int prod,
                    int dflow,
                    int con,
-                   vector<ContractField> list_keys,
-                   int check_types,
+                   vector<ContractKey> list_keys,
+                   Check_types check_types,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist,
                    string srcPort,
@@ -487,7 +487,7 @@ decaf::
 Dataflow::put(pConstructData data, TaskType role)
 {
 	pConstructData data_filtered;
-	bool period_filtered = false;
+	bool data_removed_by_period = false; // i.e.: Has some data field been removed due to the periodicity?
 
 	// If this dataflow is related to a contract, need to filter the data to be sent
 	// If it's a DECAF_LINK or the data is empty no need to check the contract
@@ -496,14 +496,14 @@ Dataflow::put(pConstructData data, TaskType role)
 			set_quit(data_filtered);
 		}
 		else{
-			for(ContractField field : keys()){
+			for(ContractKey field : keys()){
 				if( (it_put % field.period) == 0){ // This field is sent during this iteration
 					if(!data->hasData(field.name)){// If the key is not present in the data the contract is not respected.
 						fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
 						return false;
 					}
 					// Performing typechecking if needed
-					if(check_types_ > 1){
+					if(check_types_ >= CHECK_PY_AND_SOURCE){
 						string typeName = data->getTypename(field.name);
 						if(typeName.compare(field.type) != 0){ //The two types do not match
 							fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
@@ -513,7 +513,8 @@ Dataflow::put(pConstructData data, TaskType role)
 					data_filtered->appendData(data, field.name);
 				}
 				else{
-					period_filtered = true; //A field has been removed, we need to clear the buffers of the RedistComp
+					//TODO need a clearBuffer on a specifit field name
+					data_removed_by_period = true; //A field has been removed, we need to clear the buffers of the RedistComp
 				}
 			}
 		}
@@ -527,6 +528,7 @@ Dataflow::put(pConstructData data, TaskType role)
 	else{ // No contract in this dataflow, we just send all data
 		data_filtered = data;
 	}
+
 
 	data_filtered->removeData("src_type");
 	data_filtered->removeData("link_id");
@@ -564,12 +566,12 @@ Dataflow::put(pConstructData data, TaskType role)
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
 				return false;
 			}
-			if(period_filtered){
+			if(data_removed_by_period){
 				redist_prod_con_->clearBuffers(); // We clear the buffers before and after the sending
 			}
 			redist_prod_con_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_con_->flush();
-			if(period_filtered){
+			if(data_removed_by_period){
 				redist_prod_con_->clearBuffers();
 			}
         }
@@ -587,12 +589,12 @@ Dataflow::put(pConstructData data, TaskType role)
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
 				return false;
 			}
-			if(period_filtered){
+			if(data_removed_by_period){
 				redist_prod_dflow_->clearBuffers(); // We clear the buffers before and after the sending
 			}
 			redist_prod_dflow_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_dflow_->flush();
-			if(period_filtered){
+			if(data_removed_by_period){
 				redist_prod_dflow_->clearBuffers();
 			}
         }
@@ -611,12 +613,12 @@ Dataflow::put(pConstructData data, TaskType role)
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
 			return false;
 		}
-		if(period_filtered){
+		if(data_removed_by_period){
 			redist_dflow_con_->clearBuffers(); // We clear the buffers before and after the sending
 		}
 		redist_dflow_con_->process(data_filtered, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
-		if(period_filtered){
+		if(data_removed_by_period){
 			redist_dflow_con_->clearBuffers();
 		}
 	}
@@ -665,23 +667,25 @@ Dataflow::get(pConstructData data, TaskType role)
             redist_dflow_con_->process(data, DECAF_REDIST_DEST);
             redist_dflow_con_->flush();
         }
+
+
+		if(test_quit(data)){
+			setClose();
+			return true;
+		}
     }
 
-	if(test_quit(data)){
-		setClose();
-		return true;
-	}
-
+	//TODO add a check_type level to do this checking only if paranoia maximal
 	// Checks if all keys of the contract are in the data
 	if(is_contract() && !data->isEmpty()){ //If the data received is empty, no need to check the contract
-		for(ContractField field : keys()){
+		for(ContractKey field : keys()){
 			if( (it_get % field.period) == 0){ // This field should be received during this iteration
 				if(! data->hasData(field.name)){
 					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
 					return false;
 				}
 				// Performing typechecking if needed
-				if(check_types_ > 1){
+				if(check_types_ >= CHECK_EVERYWHERE){
 					string typeName = data->getTypename(field.name);
 					if(typeName.compare(field.type) != 0){ //The two types do not match
 						fprintf(stderr, "ERROR: Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());

@@ -41,4 +41,4 @@ w.add_edge("node1", "node2", topology=subtopos[3], func='dflow', path=mod_path, 
 w.add_edge("node2", "node3", topology=subtopos[4], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='period_3nodes')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "period_3nodes", check_types = 1)
+wf.processGraph(w, "period_3nodes", check_types = wf.Check_types.PYTHON)

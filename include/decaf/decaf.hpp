@@ -82,14 +82,11 @@ namespace decaf
         // returns true = process messages, false = break (quit received)
         bool get(vector< pConstructData >& containers);
 
-        // determine whether to continue processing a node task by checking for a quit message
-		//bool iterate(); //TODO Remove this
+		// Checks if there are still alive input Dataflows for this node
+		bool allQuit();
 
         // terminate a node task by sending a quit message to the rest of the workflow
         void terminate();
-
-		// Checks if there are still alive input Dataflows for this node
-		bool allQuit(){ return inCount == 0; }
 
         // whether my rank belongs to this workflow node, identified by the name of its func field
         bool my_node(const char* name);
@@ -184,7 +181,6 @@ namespace decaf
 
 		map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
 		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
-		int inCount;								// Counter of input Dataflows still alive, i.e. that did not send quit message yet
     };
 
 } // namespace
@@ -243,8 +239,7 @@ Decaf::Decaf(CommHandle world_comm,
             node_in_dataflows.push_back(dataflows[i]);
 			inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
 		}
-    }
-	inCount = inPortMap.size();
+	}
 
     // outbound dataflows
     set <Dataflow*> unique_out_dataflows;               // set prevents adding duplicates
@@ -418,7 +413,6 @@ Decaf::get(pConstructData container, string port){
 	}
 
 	if(Dataflow::test_quit(container)){
-		inCount--;
 		return false;
 	}
 
@@ -459,18 +453,15 @@ Decaf::get(map<string, pConstructData> &containers){
 			}
 			containers.emplace(pair.first, container);
 
-			if(Dataflow::test_quit(container)){
-				inCount--;
-			}
 		}
 	}
 
-	return !allQuit(); // If allQuit return false
+	return !allQuit(); // If all in dataflows are quit return false
 }
 
 
 // get messages from all inbound links
-// returns true = process messages, false = quit received or error occured
+// returns true = process messages, false = ALL quit received or error occured
 bool
 decaf::
 Decaf::get(vector< pConstructData >& containers)
@@ -510,28 +501,26 @@ Decaf::get(vector< pConstructData >& containers)
 		}
         containers.push_back(container);
     }
-	for (size_t i = 0; i < containers.size(); i++){
-        if (Dataflow::test_quit(containers[i]))
-        {
-            return false;
-        }
-	}
-    return true;
+
+	return !allQuit(); // If all in dataflows are quit return false
 }
 
-
-// determine whether to continue processing a node task by checking for a quit message
-/*bool  TODO remove this, not used and very ugly call to get(in_data)
+// Checks if there are still alive input Dataflows for this node
+bool
 decaf::
-Decaf::iterate()
-{
-    vector< pConstructData > in_data;
-    get(in_data);
-    for (size_t i = 0; i < in_data.size(); i++)
-        if (Dataflow::test_quit(in_data[i]))
-            return false;
-    return true;
-}*/
+Decaf::allQuit(){
+	for(Dataflow* df : node_in_dataflows){
+		if(!df->isClose()){
+			return false;
+		}
+	}
+	for(Dataflow* df : link_in_dataflows){
+		if(!df->isClose()){
+			return false;
+		}
+	}
+	return true;
+}
 
 // terminate a node task by sending a quit message to the rest of the workflow
 void

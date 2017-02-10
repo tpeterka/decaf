@@ -62,8 +62,8 @@ struct WorkflowLink                          // a dataflow
 	             string dflow_con_redist_,
 	             string srcPort_,
 	             string destPort_,
-	             vector<ContractField> list_keys_,
-	             int check_types_) :
+	             vector<ContractKey> list_keys_,
+	             Check_types check_types_) :
         prod(prod_),
         con(con_),
         start_proc(start_proc_),
@@ -91,8 +91,8 @@ struct WorkflowLink                          // a dataflow
 	string destPort;			// Portname of the dest
 
 	// The following two are only relevant if the dataflow is related to a contract
-	vector<ContractField> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
-	int check_types;						  // level of checking for the type of data to be exchanged
+	vector<ContractKey> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
+	Check_types check_types;						  // level of checking for the types of data to be exchanged
 
 };
 
@@ -198,7 +198,18 @@ struct Workflow                              // an entire workflow
 		workflow.nodes.push_back( node );
       }
 
-	  int check_types = root.get<int>("workflow.check_types");
+	  Check_types check_types;
+	  switch(root.get<int>("workflow.check_types")){
+	    case 0: check_types = CHECK_NONE;
+		        break;
+	    case 1: check_types = CHECK_PYTHON;
+		        break;
+	    case 2: check_types = CHECK_PY_AND_SOURCE;
+		        break;
+	    case 3: check_types = CHECK_EVERYWHERE;
+		        break;
+	    default: check_types = CHECK_NONE;
+	  }
 
       /* 
        * similarly for the edges
@@ -234,7 +245,7 @@ struct Workflow                              // an entire workflow
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
 		if(pt_keys){
 			for(bpt::ptree::value_type &value: pt_keys.get()){
-				ContractField field;
+				ContractKey field;
 				field.name = value.first;
 
 				// Didn't find a nicer way of doing this...

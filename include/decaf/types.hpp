@@ -66,11 +66,19 @@ struct DecafSizes
 	int con_nsteps;        // number of consumer timesteps
 };
 
-struct ContractField
+struct ContractKey
 {
-	std::string name;		// Name of the field
-	std::string type;		// Type of the field
-	int period;				// The field is sent every "period" iteration
+	std::string name;		// Name of the data field
+	std::string type;		// Type of the data field
+	int period;				// The data field is sent every "period" iteration
+};
+
+enum Check_types
+{
+	CHECK_NONE,				// NO typechecking
+	CHECK_PYTHON,			// Only at python script
+	CHECK_PY_AND_SOURCE,	// Python script AND in Dataflow->put
+	CHECK_EVERYWHERE,		// PYthon script, Dataflow->put AND Dataflow->get
 };
 
 

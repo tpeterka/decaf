@@ -1,8 +1,8 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts
+// 4 nodes example for testing ports
 //
-// clement Mommessin
+// Clement Mommessin
 // Argonne National Laboratory
 // 9700 S. Cass Ave.
 // Argonne, IL 60439
@@ -29,7 +29,6 @@ using namespace std;
 
 void prod(Decaf* decaf)
 {
-	std::srand(std::time(0));
 	int rank = decaf->world->rank();
 	std::vector<int> vect(3);
 
@@ -39,23 +38,26 @@ void prod(Decaf* decaf)
 			fprintf(stderr, "\n----- ITERATION %d -----\n", timestep);
 		}
 
-		vect[0] = std::rand() % 100;
-		vect[1] = std::rand() % 100;
-		vect[2] = std::rand() % 100;
+		vect[0] = rank*100 + std::rand() % 100;
+		vect[1] = rank*100 + std::rand() % 100;
+		vect[2] = rank*100 + std::rand() % 100;
 
 		pConstructData container;
 		VectorFieldi vf(vect, 1);
+
+		SimpleFieldf sf(float(3.14));
+		container->appendData("pi", sf);
 
 		container->appendData("value", vf,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		//fprintf(stderr, "Prod sent\n");
-		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->put(container) ){
+		// send the data on the given port, the translation to the correct dataflow is done internally
 		//if(! decaf->put(container, "Out")){
+		if(!decaf->put(container)){
 			break;
 		}
+
 		usleep(100000);
 	}
 
@@ -67,16 +69,15 @@ void prod(Decaf* decaf)
 // prod2
 void prod2(Decaf* decaf)
 {
-	std::srand(std::time(0));
 	int rank = decaf->world->rank();
 	int arr[3];
 
 	// produce data for some number of timesteps
 	for (int timestep = 0; timestep < 5; timestep++){
 
-		arr[0] = 100 + std::rand() % 100;
-		arr[1] = 100 + std::rand() % 100;
-		arr[2] = 100 + std::rand() % 100;
+		arr[0] = rank*100 + std::rand() % 100;
+		arr[1] = rank*100 + std::rand() % 100;
+		arr[2] = rank*100 + std::rand() % 100;
 
 		pConstructData container;
 		ArrayFieldi af(arr, 3, 1);
@@ -85,10 +86,8 @@ void prod2(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		//fprintf(stderr, "Prod2 sent\n");
-		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->put(container) ){
-		//if(! decaf->put(container, "Out")){
+		// send the data on the given port, the translation to the correct dataflow is done internally
+		if(! decaf->put(container, "Out")){
 			break;
 		}
 		usleep(100000);
@@ -116,7 +115,7 @@ void con(Decaf* decaf)
 	while(decaf->get(in_data)){
 		s = "";
 
-		if(!in_data["In1"]->isEmpty()){
+		//if(!in_data["In1"]->isEmpty()){
 			vf = in_data["In1"]->getFieldData<VectorFieldi>("value");
 			if(vf){
 				vect = vf.getVector();
@@ -125,8 +124,8 @@ void con(Decaf* decaf)
 				}
 				//s+= "Vector size: " + std::to_string(vect.size()) + " ";
 			}
-		}
-		if(!in_data["In2"]->isEmpty()){
+		//}
+		//if(!in_data["In2"]->isEmpty()){
 			af = in_data["In2"]->getFieldData<ArrayFieldi>("value");
 			if(af){
 				arr= af.getArray();
@@ -135,38 +134,51 @@ void con(Decaf* decaf)
 				}
 				//s+= "Array size: " + std::to_string(af.getArraySize()) + " ";
 			}
-		}
+		//}
 
 		fprintf(stderr, "Consumer rank %d received %s\n", rank, s.c_str());
 	}
+	decaf->terminate();
+}
 
-/*	pConstructData data1, data2;
-	while(true){
-		s = "";
+// Con2
+void con2(Decaf* decaf)
+{
+	int rank = decaf->world->rank();
+	float pi;
+	pConstructData data;
 
-		if(decaf->get(data1, "In1")){
-			vf = data1->getFieldData<VectorFieldi>("value");
-			if(vf){
-				vect = vf.getVector();
-				s+= "Vector size: " + std::to_string(vect.size()) + " ";
+	SimpleFieldf sf;
+
+	vector<pConstructData> in_data;
+	while(decaf->get(in_data)){
+		for(pConstructData d : in_data){
+			if(d->hasData("pi")){
+				sf = d->getFieldData<SimpleFieldf>("pi");
+				if(sf){
+					pi = sf.getData();
+					fprintf(stderr, "I received the value of pi: %.2f!!\n", pi);
+				}
+				fprintf(stderr, "I%s received the field value!\n", data->hasData("value")?" have" : " have not");
 			}
 		}
-
-		if(decaf->get(data2, "In2")){
-			af = data2->getFieldData<ArrayFieldi>("value2");
-			if(af){
-				arr= af.getArray();
-				s+= "Array size: " + std::to_string(af.getArraySize()) + " ";
-			}
-		}
-		if(decaf->allQuit()){
-			break;
-		}
-
-		fprintf(stderr, "Consumer rank %d received %s\n", rank, s.c_str());
-
 	}
-*/
+
+	/*bool ok = true;
+	while(ok){
+		if(ok = decaf->get(data, "In")){
+			sf = data->getFieldData<SimpleFieldf>("pi");
+			if(sf){
+				pi = sf.getData();
+				fprintf(stderr, "I received the value of pi: %.2f!!\n", pi);
+			}
+			fprintf(stderr, "I%s received the field value!\n", data->hasData("value")?" have" : " have not");
+		}
+
+		print
+
+	}*/
+
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
 }
@@ -205,7 +217,9 @@ void run(Workflow& workflow)                             // workflow
 		prod2(decaf);
 	if (decaf->my_node("con"))
 		con(decaf);
-	
+	if(decaf->my_node("con2"))
+		con2(decaf);
+
 	// cleanup
 	delete decaf;
 	MPI_Finalize();
