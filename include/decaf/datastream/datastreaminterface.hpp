@@ -16,6 +16,7 @@
 #include <decaf/transport/mpi/types.h>
 #include <decaf/transport/mpi/comm.hpp>
 #include <decaf/storage/framemanagersequential.hpp>
+#include <decaf/storage/framemanagermostrecent.hpp>
 #endif
 
 #include <decaf/storage/storagecollectiongreedy.hpp>
@@ -131,7 +132,8 @@ Datastream::Datastream(CommHandle world_comm,
         MPI_Group_free(&group);
         MPI_Group_free(&newgroup);
 
-        framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
+        //framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
+        framemanager_ = new FrameManagerRecent(dflow_comm_handle_);
 
         storage_collection_ = new StorageCollectionGreedy();
 

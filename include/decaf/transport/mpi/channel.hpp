@@ -49,6 +49,16 @@ namespace decaf
         DecafChannelCommand checkSelfCommand();
         bool checkAndReplaceSelfCommand(DecafChannelCommand wanted_command,
                                         DecafChannelCommand replace_command);
+        void sendInt(int value);
+        void updateSelfValue(int value);
+        bool checkAndReplaceSelfInt(int wanted_value,
+                                    int replace_value);
+        bool checkDifferentAndReplaceSelfInt(int different_value,
+                                             int replace_value,
+                                             int* received_value);
+
+        int checkSelfInt();
+
 
     private:
         CommHandle world_comm_;
@@ -251,6 +261,112 @@ OneWayChannel::checkAndReplaceSelfCommand(
     MPI_Win_unlock(channel_rank_, window_);
 
     return false;
+}
+
+void
+decaf::
+OneWayChannel::sendInt(int value)
+{
+    if(!initialized_)
+    {
+        fprintf(stderr,"ERROR: the ChannelCommand is not initialized.\n");
+        return;
+
+    }
+
+    for(int i = rank_start_recep_; i < rank_start_recep_ + nb_recep_; i++)
+    {
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, i, 0, window_);
+        int flag_to_send = value;
+        MPI_Put(&flag_to_send, 1, MPI_INT, i, 0, 1, MPI_INT, window_);
+        MPI_Win_unlock(i, window_);
+    }
+}
+
+void
+decaf::
+OneWayChannel::updateSelfValue(int value)
+{
+    if(!initialized_)
+    {
+        fprintf(stderr,"ERROR: the ChannelCommand is not initialized.\n");
+        return;
+
+    }
+
+
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, channel_rank_, 0, window_);
+    int flag_to_send = value;
+    MPI_Put(&flag_to_send, 1, MPI_INT, channel_rank_, 0, 1, MPI_INT, window_);
+    MPI_Win_unlock(channel_rank_, window_);
+}
+
+bool
+decaf::
+OneWayChannel::checkAndReplaceSelfInt(int wanted_value,
+                            int replace_value)
+{
+    if(!initialized_)
+        return false;
+
+    int localCommand = 0;
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, channel_rank_, 0, window_);
+    MPI_Get(&localCommand, 1, MPI_INT, channel_rank_, 0, 1, MPI_INT, window_);
+    if(localCommand == wanted_value)
+    {
+        int newCommand = replace_value;
+        MPI_Put(&newCommand, 1, MPI_INT, channel_rank_, 0, 1, MPI_INT, window_);
+        MPI_Win_unlock(channel_rank_, window_);
+        return true;
+    }
+
+    // We didn't have the command
+    MPI_Win_unlock(channel_rank_, window_);
+
+    return false;
+}
+
+bool
+decaf::
+OneWayChannel::checkDifferentAndReplaceSelfInt(int different_value,
+                                     int replace_value, int* received_value)
+{
+    if(!initialized_)
+        return false;
+
+    int localCommand = 0;
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, channel_rank_, 0, window_);
+    MPI_Get(&localCommand, 1, MPI_INT, channel_rank_, 0, 1, MPI_INT, window_);
+    if(localCommand != different_value)
+    {
+        int newCommand = replace_value;
+        MPI_Put(&newCommand, 1, MPI_INT, channel_rank_, 0, 1, MPI_INT, window_);
+        MPI_Win_unlock(channel_rank_, window_);
+        *received_value = localCommand;
+        return true;
+    }
+
+    // We didn't have the command
+    MPI_Win_unlock(channel_rank_, window_);
+
+    return false;
+}
+
+int
+decaf::
+OneWayChannel::checkSelfInt()
+{
+    if(!initialized_)
+        return DECAF_CHANNEL_OK;
+
+    int localCommand = 0;
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, channel_rank_, 0, window_);
+    MPI_Get(&localCommand, 1, MPI_INT, channel_rank_, 0, 1, MPI_INT, window_);
+
+    // We didn't have the command
+    MPI_Win_unlock(channel_rank_, window_);
+
+    return localCommand;
 }
 
 

@@ -104,19 +104,23 @@ StorageMainMemory::processCommand(FrameCommand command, unsigned int frame_id)
         {
             auto it = buffer_.begin();
             while(it != buffer_.end() && it->first <= frame_id)
+            {
                 buffer_.erase(it++);
+            }
             break;
         }
         case DECAF_FRAME_REMOVE_UNTIL_EXCLUDED:
         {
             auto it = buffer_.begin();
             while(it != buffer_.end() && it->first < frame_id)
+            {
                 buffer_.erase(it++);
+            }
             break;
         }
         default:
         {
-            fprintf(stderr, "ERROR: unknown FrameCommand.\n");
+            fprintf(stderr, "ERROR: unknown FrameCommand in storagemainmemory.\n");
             break;
         }
     }

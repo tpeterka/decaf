@@ -148,7 +148,7 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
 {
     bool receivedDflowSignal = false;
 
-    // First phase: Waiting for the signal and checking incoming msgs
+    // First phase: Waiting for the signal from con and checking incoming msgs
     while(!receivedDflowSignal)
     {
         // Checking the root communication
@@ -211,6 +211,7 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
             if(msgtools::test_quit(container))
                 doGet_ = false;
         }
+        usleep(100);
     }
 
     unsigned int frame_id;
