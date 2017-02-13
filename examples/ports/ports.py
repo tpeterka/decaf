@@ -26,22 +26,15 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/ports/mod_ports.so'
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod", "prod2", "con", "dflow1", "dflow2"],[1,1,2,1,1])
+subtopos = topo.splitTopology(["prod", "prod2", "con", "dflow1", "dflow2"],[1,1,1,1,1])
 
 
 prod = wf.nodeFromTopo("prod", "prod", "ports", subtopos[0])
-prod.addOutPort("Out")
-prod.addOutput("Out", "value", "Vector_int")
-
 prod2 = wf.nodeFromTopo("prod2", "prod2", "ports", subtopos[1])
-prod2.addOutPort("Out")
-prod2.addOutput("Out", "value", "Array_int")
-
 con = wf.nodeFromTopo("con", "con", "ports", subtopos[2])
-con.addInPort("In1")
-con.addInput("In1", "value", "Vector_int")
-con.addInPort("In2")
-con.addInput("In2", "value", "Array_int")
+
+Cedge0 = wf.ContractEdge({"Index0":["int", 1]})
+Cedge1 = wf.ContractEdge({"Index1":["int", 1]})
 
 
 w = nx.DiGraph()
@@ -49,9 +42,9 @@ wf.addNode(w, prod)
 wf.addNode(w, prod2)
 wf.addNode(w, con)
 
-wf.addEdgeWithTopo(w, "prod.Out", "con.In1", subtopos[3], 'count', 'dflow', mod_path, 'count', 'ports')
-wf.addEdgeWithTopo(w, "prod2.Out", "con.In2", subtopos[4], 'count', 'dflow', mod_path, 'count', 'ports')
+w.add_edge("prod", "con", edge_id=0, topology=subtopos[3], contract=Cedge0, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='ports')
+w.add_edge("prod2", "con", edge_id=1, topology=subtopos[4], contract=Cedge1, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='ports')
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "ports", check_types = wf.Check_types.PYTHON)
+wf.processGraph(w, "ports", filter_level = wf.Filter_level.EVERYWHERE)

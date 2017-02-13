@@ -65,6 +65,10 @@ namespace decaf
 		// returns true = ok, false = function terminate() has been called
 		bool put(pConstructData container, int i);
 
+		// put a message on the Dataflow corresponding to edge_id
+		// returns true = ok, false = function terminate() has been called
+		bool putInEdge(pConstructData container, int edge_id);
+
 		// put a message on outbound link(s) associated to the output port
 		// returns true = ok, false = function terminate() has been called
 		bool put(pConstructData container, string port);
@@ -81,6 +85,9 @@ namespace decaf
         // get messages from all inbound links
         // returns true = process messages, false = break (quit received)
         bool get(vector< pConstructData >& containers);
+
+		// retrieve the container coming from a specific edge_id
+		pConstructData getFromEdge(vector<pConstructData> in_data, int edge_id);
 
 		// Checks if there are still alive input Dataflows for this node
 		bool allQuit();
@@ -174,13 +181,16 @@ namespace decaf
         int err_;                                  // last error
         vector<RoutingNode> my_nodes_;             // indices of my workflow nodes
         vector<RoutingLink> my_links_;             // indices of my workflow links
-        vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
+		vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
         vector<Dataflow*>   out_dataflows;         // all my outbound dataflows
 		vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
         vector<Dataflow*>   node_in_dataflows;     // all my inbound dataflows in case I am a node
 
 		map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
 		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
+
+		map<int, int> inIndexMap;			// maps the edge_id of a Dataflow to its index in the vector node_in_dataflows
+		map<int, Dataflow*> outDataflowMap;			// maps the edge_id to the related Dataflow in case this is an output for this node
     };
 
 } // namespace
@@ -237,7 +247,10 @@ Decaf::Decaf(CommHandle world_comm,
             link_in_dataflows.push_back(dataflows[i]);
 		if (workflow_.my_in_link(world->rank(), i)){     // I am a node and this dataflow is an input
             node_in_dataflows.push_back(dataflows[i]);
-			inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
+			if(dataflows[i]->destPort() != "")
+				inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
+			if(dataflows[i]->hasEdgeId())
+				inIndexMap.emplace(dataflows[i]->edge_id(), node_in_dataflows.size()-1);
 		}
 	}
 
@@ -256,12 +269,17 @@ Decaf::Decaf(CommHandle world_comm,
 	// TODO once we are sure the unique_out_dataflows set is used for the overlapping thing,
 	// move this creation of the outPortMap ~5lines above in the "if i am a node"
 	for(Dataflow* df : out_dataflows){
-		if(outPortMap.count(df->srcPort()) == 1){
-			outPortMap[df->srcPort()].push_back(df);
+		if(df->srcPort() != ""){
+			if(outPortMap.count(df->srcPort()) == 1){
+				outPortMap[df->srcPort()].push_back(df);
+			}
+			else{
+				vector<Dataflow*> vect(1, df);
+				outPortMap.emplace(df->srcPort(), vect);
+			}
 		}
-		else{
-			vector<Dataflow*> vect(1, df);
-			outPortMap.emplace(df->srcPort(), vect);
+		if(df->hasEdgeId()){
+			outDataflowMap.emplace(df->edge_id(), df);
 		}
 	}
 
@@ -344,6 +362,36 @@ Decaf::put(pConstructData container, int i)
 }
 
 
+bool
+decaf::
+Decaf::putInEdge(pConstructData container, int edge_id){
+	auto it = outDataflowMap.find(edge_id);
+	if(it == outDataflowMap.end()){
+		fprintf(stderr, "ERROR: the edge_id %d is not associated to any Dataflow. Aborting.\n", edge_id);
+		MPI_Abort(MPI_COMM_WORLD, 0);
+		//terminate();
+		//return false;
+	}
+
+	bool ret_ok = it->second->put(container, DECAF_NODE);
+	if(!ret_ok){
+		terminate();
+		return false;
+	}
+
+	// TODO remove the loop, with the given i in argument we know whether there is an ovelapping or not
+	// link ranks that do overlap this node need to be run in one-time mode
+	for (size_t i = 0; i < workflow_.links.size(); i++){
+		if (workflow_.my_link(world->rank(), i))
+		{
+			run_links(true);
+			break;
+		}
+	}
+	return true;
+}
+
+
 // put a message on the outbound link(s) associated to the output port given in argument
 bool
 decaf::
@@ -351,8 +399,9 @@ Decaf::put(pConstructData container, string port){
 	auto it = outPortMap.find(port);
 	if(it == outPortMap.end()){
 		fprintf(stderr, "ERROR: the output port %s is not present or not associated to a Dataflow. Aborting.\n", port.c_str());
-		terminate();
-		return false;
+		MPI_Abort(MPI_COMM_WORLD, 0);
+		//terminate();
+		//return false;
 	}
 
 	bool ret_ok;
@@ -385,8 +434,9 @@ Decaf::get(pConstructData container, string port){
 	auto it = inPortMap.find(port);
 	if(it == inPortMap.end()){
 		fprintf(stderr, "ERROR: the input port %s is not present or not associated to a Dataflow. Aborting.\n", port.c_str());
-		terminate();
-		return false;
+		MPI_Abort(MPI_COMM_WORLD, 0);
+		//terminate();
+		//return false;
 	}
 
 	if(it->second->isClose()){// A quit message has already been received, nothing to get anymore
@@ -425,6 +475,10 @@ Decaf::get(pConstructData container, string port){
 bool
 decaf::
 Decaf::get(map<string, pConstructData> &containers){
+	if(inPortMap.empty()){
+		fprintf(stderr, "ERROR: Cannot call get on ports, there is no existing input ports. Aborting.\n");
+		MPI_Abort(MPI_COMM_WORLD, 0);
+	}
 	// TODO verify this
 	// link ranks that do overlap this node need to be run in one-time mode, unless
 	// the same rank also was a producer node for this link, in which case
@@ -436,6 +490,7 @@ Decaf::get(map<string, pConstructData> &containers){
 			break;
 		}
 	}
+
 
 	containers.clear();
 	bool ret_ok;
@@ -495,6 +550,7 @@ Decaf::get(vector< pConstructData >& containers)
     {
         pConstructData container;
 		ret_ok = node_in_dataflows[i]->get(container, DECAF_NODE);
+
 		if(!ret_ok){
 			terminate();
 			return false;
@@ -503,6 +559,14 @@ Decaf::get(vector< pConstructData >& containers)
     }
 
 	return !allQuit(); // If all in dataflows are quit return false
+}
+
+
+decaf::pConstructData
+decaf::
+Decaf::getFromEdge(vector<pConstructData> in_data, int edge_id){
+	int index = inIndexMap[edge_id];
+	return in_data[index];
 }
 
 // Checks if there are still alive input Dataflows for this node
@@ -699,17 +763,20 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
             stringToDecomposition(workflow_.links[dflow].prod_dflow_redist);
         Decomposition dflow_con_redist =
             stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
-        dataflows.push_back(new Dataflow(world_comm_,
-                                         decaf_sizes,
-                                         prod,
-                                         dflow,
-		                                 con,
-		                                 workflow_.links[i].list_keys,
-		                                 workflow_.links[i].check_types,
-		                                 prod_dflow_redist,
-		                                 dflow_con_redist,
-		                                 workflow_.links[i].srcPort,
-		                                 workflow_.links[i].destPort));
+
+		dataflows.push_back(new Dataflow(world_comm_,
+		                             decaf_sizes,
+		                             prod,
+		                             dflow,
+		                             con,
+		                             workflow_.links[i].list_keys,
+		                             workflow_.links[i].bEdge_id,
+		                             workflow_.links[i].edge_id,
+		                             workflow_.links[i].check_level,
+		                             prod_dflow_redist,
+		                             dflow_con_redist,
+		                             workflow_.links[i].srcPort,
+		                             workflow_.links[i].destPort));
 
         dataflows[i]->err();
     }

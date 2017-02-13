@@ -57,4 +57,4 @@ w.add_edge("prod2", "con2", topology=subtopos[7], prod_dflow_redist='count', fun
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "contract", check_types = wf.Check_types.PY_AND_SOURCE)
+wf.processGraph(w, "contract", filter_level = wf.Filter_level.PY_AND_SOURCE)

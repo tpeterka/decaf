@@ -13,8 +13,14 @@ from collections import defaultdict
 import fractions  #Definition of the least common multiple of two numbers; Used for the period in Contracts
 def lcm(a,b): return abs(a * b) / fractions.gcd(a,b) if a and b else 0
 
-class Check_types:
-  NONE, PYTHON, PY_AND_SOURCE, EVERYWHERE = range(4)   
+class Filter_level:
+  NONE, PYTHON, PY_AND_SOURCE, EVERYWHERE = range(4)
+  dictReverse = {
+    NONE : "NONE",
+    PYTHON : "PYTHON",
+    PY_AND_SOURCE : "PY_AND_SOURCE",
+    EVERYWHERE : "EVERYWHERE"
+  }
 
 """ Object holding information about a Node """
 class Node:
@@ -100,6 +106,8 @@ def addNode(graph, n):
 
 
 def addEdgeWithTopo(graph, prodString, conString, topology, prod_dflow_redist, func='', path='', dflow_con_redist='', cmdline=''):
+  if topology.nProcs != 0 and func == '':
+    raise ValueError("ERROR: Missing links arguments for the edge \"%s->%s\", aborting." % (prodString, conString))
   prod, prodP = prodString.split('.')
   con, conP = conString.split('.')
   graph.add_edge(prod, con, prodPort=prodP, conPort=conP, topology=topology, prod_dflow_redist=prod_dflow_redist, func=func, path=path, dflow_con_redist=dflow_con_redist, cmdline=cmdline)
@@ -107,12 +115,29 @@ def addEdgeWithTopo(graph, prodString, conString, topology, prod_dflow_redist, f
 
 def addEdge(graph, prodString, conString, start_proc, nprocs, prod_dflow_redist, func='', path='', dflow_con_redist='', cmdline=''):
   if nprocs != 0 and func == '':
-    raise ValueError("ERROR: Missing links arguments for the edge \"%s->%s\", aborting.")
+    raise ValueError("ERROR: Missing links arguments for the edge \"%s->%s\", aborting." % (prodString, conString))
   prod, prodP = prodString.split('.')
   con, conP = conString.split('.')
   graph.add_edge(prod, con, prodPort=prodP, conPort=conP, nprocs=nprocs, start_proc=start_proc, prod_dflow_redist=prod_dflow_redist, func=func, path=path, dflow_con_redist=dflow_con_redist, cmdline=cmdline)
 
 
+
+""" Object for contract associated to an edge """
+class ContractEdge:
+  def __init__(self, dict_ = {}, bany = False):
+    self.dict = dict_ # Dictionary of keys to exchange
+    self.bAny = bany  # Accept anything or not?
+  """ If bAny set to True, the content of dict is required but anything else will be forwarded as well """  
+
+  def addKey(self, key, typename, period=1):
+    self.dict[key] = [typeame, period]
+
+  def addKeyFromDict(self, dict):
+    for key, val in dict.items():
+      if len(val) == 1:
+        val.append(1) # Periodicity is 1 by default
+      self.dict[key] = val
+#End class ContractEdge
 
 
 """ Object holding information about input/output data name, type and periodicity """
@@ -157,7 +182,7 @@ class Contract:
 # End of class Contract
 
 # Checks if the input port (consumer) contract of an edge is a subset of the output port (producer) contract
-def check_contracts(graph, check):
+def check_contracts(graph, filter_level):
     my_list = [] # To check if an input port is connected to only one output port
 
     dict = defaultdict(set)
@@ -180,11 +205,12 @@ def check_contracts(graph, check):
             my_list.append(s)
 
           if len(Inport) == 0: # The Input port accepts anything, no need to perform check or filtering
-            print "WARNING: The port \"%s\" will accept anything sent by \"%s.%s\", continuing." % (s, edge[0], OutportName)
+            print "WARNING: The port \"%s\" will accept anything sent by \"%s.%s\" and the periodicity may not be correct, continuing." % (s, edge[0], OutportName)
             continue
 
           if len(Outport) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
-            print "WARNING: Only fields needed by the port \"%s\" will be sent by \"%s.%s\", continuing." % (s, edge[0], OutportName)
+          #TODO in this case, must perform the checks at runtime at the dataflow->get, need to find a way to enforce that
+            print "WARNING: Only fields needed by the port \"%s\" will be sent by \"%s.%s\" and the periodicity may not be correct, continuing." % (s, edge[0], OutportName)
             list_fields = Inport          
 
           else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
@@ -194,7 +220,7 @@ def check_contracts(graph, check):
               if not key in Outport : # The key is not sent by the producer
                 s+= key + " "
               else:
-                if (check == Check_types.NONE) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
+                if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
                   lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
                   list_fields[key] = [val[0], lcm_val]
                 else:
@@ -220,7 +246,7 @@ def check_contracts(graph, check):
                 con_in = con["contract"].inputs
 
             # We add for each edge the list of pairs key/type which is the intersection of the two contracts
-            intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (check == Check_types.NONE) or (con_in[key][0] == prod_out[key][0]) ) }
+            intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (filter_level == Filter_level.NONE) or (con_in[key][0] == prod_out[key][0]) ) }
             for key in intersection_keys.keys():
                 dict[edge[1]].add(key)
                 lcm_val = lcm(con_in[key][1], prod_out[key][1])
@@ -374,18 +400,19 @@ def processTopology(graph):
             edge[2]['nprocs'] = topo.nProcs
 
 
-def workflowToJson(graph, outputFile, check_types):
+def workflowToJson(graph, outputFile, filter_level):
     print "Generating graph description file "+outputFile
 
     nodes   = []
     links   = []
 
-    f = open(outputFile, "w")
+    list_id = []
+
     content = ""
     content +="{\n"
     content +="   \"workflow\" :\n"
     content +="   {\n"
-    content +="   \"check_types\" : \""+str(check_types)+"\",\n" # TODO Do we need to write the "real" string value of check_type or just the int value is ok ?
+    content +="   \"filter_level\" : \""+Filter_level.dictReverse[filter_level]+"\",\n"
     content +="   \"nodes\" : [\n"
 
     i = 0
@@ -405,6 +432,11 @@ def workflowToJson(graph, outputFile, check_types):
     content +="\"edges\" : [\n"
 
     for edge in graph.edges_iter(data=True):
+        if "edge_id" in edge[2]:
+          if edge[2]['edge_id'] in list_id:
+            raise ValueError("ERROR: edge index %s is present multiple times in the graph, aborting." % str(edge[2]['edge_id']))
+          list_id.append(edge[2]['edge_id'])
+
         prod  = graph.node[edge[0]]['index']
         con   = graph.node[edge[1]]['index']
 
@@ -414,12 +446,18 @@ def workflowToJson(graph, outputFile, check_types):
         content +=",\n       \"nprocs\" : "+str(edge[2]['nprocs'])
         content +=",\n       \"source\" : "+str(prod)
         content +=",\n       \"target\" : "+str(con)
+
+        if "edge_id" in edge[2]:
+          content +=",\n       \"edge_id\" : "+str(edge[2]['edge_id'])
         content +=",\n       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\""
 
         if edge[2]['nprocs'] != 0 :
           content +=",\n       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\""
           content +=",\n       \"func\" : \""+edge[2]['func']+"\""
           content +=",\n       \"path\" : \""+edge[2]['path']+"\""
+
+        if "contract" in edge[2]:
+          content += ",\n       \"keys\" : "+json.dumps(edge[2]['contract'].dict, sort_keys=True)
 
         if "keys" in edge[2]:
           content += ",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
@@ -435,6 +473,7 @@ def workflowToJson(graph, outputFile, check_types):
     content +="   }\n"
     content +="}"
 
+    f = open(outputFile, "w")
     f.write(content)
     f.close()
 
@@ -498,11 +537,9 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     os.system("chmod a+rx "+outputFile)
 
 """ Process the graph and generate the necessary files
-  check_types = 0 means no typechecking; 1 means typechecking at python script only
-  2 means typechecking both at python script and at runtime; Only relevant if contracts are used
 """
-def processGraph(graph, name, check_types = Check_types.NONE, mpirunPath = "", mpirunOpt = ""):
-    check_contracts(graph, check_types)
+def processGraph(graph, name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = ""):
+    check_contracts(graph, filter_level)
     processTopology(graph)
-    workflowToJson(graph, name+".json", check_types)
+    workflowToJson(graph, name+".json", filter_level)
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)

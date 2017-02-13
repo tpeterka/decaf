@@ -60,10 +60,8 @@ struct WorkflowLink                          // a dataflow
                  string path_,
                  string prod_dflow_redist_,
 	             string dflow_con_redist_,
-	             string srcPort_,
-	             string destPort_,
 	             vector<ContractKey> list_keys_,
-	             Check_types check_types_) :
+	             Check_level check_level_) :
         prod(prod_),
         con(con_),
         start_proc(start_proc_),
@@ -73,10 +71,8 @@ struct WorkflowLink                          // a dataflow
         path(path_),
         prod_dflow_redist(prod_dflow_redist_),
 	    dflow_con_redist(dflow_con_redist_),
-	    srcPort(srcPort_),
-	    destPort(destPort_),
 	    list_keys(list_keys_),
-	    check_types(check_types_)				{}
+	    check_level(check_level_)				{}
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -90,9 +86,12 @@ struct WorkflowLink                          // a dataflow
 	string srcPort;				// Portname of the source
 	string destPort;			// Portname of the dest
 
+	int edge_id;				// Id of the link in the entire dataflow, user defined
+	bool bEdge_id;				// edge_id is relevant only is bEdge_id is set to true
+
 	// The following two are only relevant if the dataflow is related to a contract
 	vector<ContractKey> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
-	Check_types check_types;						  // level of checking for the types of data to be exchanged
+	Check_level check_level;						  // level of checking for the types of data to be exchanged
 
 };
 
@@ -148,11 +147,12 @@ struct Workflow                              // an entire workflow
             return false;
         }
 
+
   static void
   make_wflow_from_json( Workflow& workflow, const string& json_path )
   {
 
-    std::string json_filename = json_path;
+	string json_filename = json_path;
     if(json_filename.length() == 0)
     {
         fprintf(stderr, "No name filename provided for the JSON file. Falling back on the DECAF_JSON environment variable\n");
@@ -162,7 +162,7 @@ struct Workflow                              // an entire workflow
             fprintf(stderr, "ERROR: The environment variable DECAF_JSON is not defined. Unable to find the workflow graph definition.\n");
             exit(1);
         }
-        json_filename = std::string(env_path);
+		json_filename = string(env_path);
     }
 
     try {
@@ -193,23 +193,13 @@ struct Workflow                              // an entire workflow
 
 		node.start_proc = v.second.get<int>("start_proc");
 		node.nprocs = v.second.get<int>("nprocs");
-		node.func = v.second.get<std::string>("func");
+		node.func = v.second.get<string>("func");
 
 		workflow.nodes.push_back( node );
       }
 
-	  Check_types check_types;
-	  switch(root.get<int>("workflow.check_types")){
-	    case 0: check_types = CHECK_NONE;
-		        break;
-	    case 1: check_types = CHECK_PYTHON;
-		        break;
-	    case 2: check_types = CHECK_PY_AND_SOURCE;
-		        break;
-	    case 3: check_types = CHECK_EVERYWHERE;
-		        break;
-	    default: check_types = CHECK_NONE;
-	  }
+	  string sCheck = root.get<string>("workflow.filter_level");
+	  Check_level check_level = stringToCheckLevel(sCheck);
 
       /* 
        * similarly for the edges
@@ -226,20 +216,28 @@ struct Workflow                              // an entire workflow
 	 
 		link.start_proc = v.second.get<int>("start_proc");
 		link.nprocs = v.second.get<int>("nprocs");
-		link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
+		link.prod_dflow_redist = v.second.get<string>("prod_dflow_redist");
 
 		if(link.nprocs != 0){
-			link.path = v.second.get<std::string>("path");
-			link.func = v.second.get<std::string>("func");
-			link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+			link.path = v.second.get<string>("path");
+			link.func = v.second.get<string>("func");
+			link.dflow_con_redist = v.second.get<string>("dflow_con_redist");
 		}
 
 		boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
 		boost::optional<string> destP = v.second.get_optional<string>("targetPort");
-
 		if(srcP && destP){
 			link.srcPort = srcP.get();
 			link.destPort = destP.get();
+		}
+
+		boost::optional<int> edge_id = v.second.get_optional<int>("edge_id");
+		if(edge_id){
+			link.edge_id = edge_id.get();
+			link.bEdge_id = true;
+		}
+		else{
+			link.bEdge_id = false;
 		}
 
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
@@ -250,14 +248,14 @@ struct Workflow                              // an entire workflow
 
 				// Didn't find a nicer way of doing this...
 				auto i = value.second.begin();
-				field.type = i->second.get<std::string>("");
+				field.type = i->second.get<string>("");
 				i++;
 				field.period = i->second.get<int>("");
 				//////
 
 				link.list_keys.push_back(field);
 			}
-			link.check_types = check_types;
+			link.check_level = check_level;
 		}
 
         workflow.links.push_back( link );
