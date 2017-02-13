@@ -124,7 +124,7 @@ Decomposition stringToDecomposition(std::string name)
         return DECAF_PROC_DECOMP;
     else
     {
-        std::cerr<<"ERROR : unknown Decomposition name: "<<name<<". Using count instead."<<std::endl;
+        std::cerr<<"WARNING: unknown Decomposition name: "<<name<<". Using count instead."<<std::endl;
         return DECAF_CONTIG_DECOMP;
     }
 }
@@ -139,7 +139,7 @@ StreamPolicy stringToStreamPolicy(std::string name)
         return DECAF_STREAM_DOUBLE;
     else
     {
-        std::cerr<<"ERROR: unknown stream policy name: "<<name<<". Disabling streaming capability."<<std::endl;
+        std::cerr<<"WARNING: unknown stream policy name: "<<name<<"."<<std::endl;
         return DECAF_STREAM_NONE;
     }
 }
@@ -156,20 +156,22 @@ StorageType stringToStoragePolicy(std::string name)
         return DECAF_STORAGE_DATASPACE;
     else
     {
-        std::cerr<<"ERROR: unknown storage type: "<<name<<". Disabling storage capability."<<std::endl;
+        std::cerr<<"WARNING: unknown storage type: "<<name<<"."<<std::endl;
         return DECAF_STORAGE_NONE;
     }
 }
 
 FramePolicyManagment stringToFramePolicyManagment(std::string name)
 {
-    if(name.compare(std::string("seq")) == 0)
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_FRAME_POLICY_NONE;
+    else if(name.compare(std::string("seq")) == 0)
         return DECAF_FRAME_POLICY_SEQ;
     else if(name.compare(std::string("recent")) == 0)
         return DECAF_FRAME_POLICY_RECENT;
     else
     {
-        std::cerr<<"ERROR: unknown frame policy type: "<<name<<". Disabling frame managment.\n"<<std::endl;
+        std::cerr<<"WARNING: unknown frame policy type: "<<name<<"."<<std::endl;
         return DECAF_FRAME_POLICY_NONE;
     }
 }

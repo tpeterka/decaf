@@ -197,6 +197,22 @@ def workflowToJson(graph, libPath, outputFile):
     f.write(content)
     f.close()
 
+# Add streaming information to a link
+def updateLinkStream(graph, prod, con, stream, frame_policy, storage_types, max_storage_sizes):
+    graph.edge[prod][con]['stream'] = stream
+    graph.edge[prod][con]['frame_policy'] = frame_policy
+    graph.edge[prod][con]['storage_types'] = storage_types
+    graph.edge[prod][con]['max_storage_sizes'] = max_storage_sizes
+
+# Shortcut function to define a sequential streaming dataflow
+def addSeqStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
+    updateLinkStream(graph, prod, con, 'double', 'seq', buffers, max_buffer_sizes)
+
+# Shortcut function to define a stream sending the most recent frame to the consumer
+def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
+    updateLinkStream(graph, prod, con, 'single', 'recent', buffers, max_buffer_sizes)
+
+
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):
 
