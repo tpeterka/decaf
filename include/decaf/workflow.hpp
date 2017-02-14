@@ -52,7 +52,7 @@ struct WorkflowNode                          // a producer or consumer
 struct WorkflowLink                          // a dataflow
 {
     WorkflowLink()                                {}
-    WorkflowLink(int prod_,
+	/*WorkflowLink(int prod_,
                  int con_,
                  int start_proc_,
                  int nprocs_,
@@ -72,7 +72,7 @@ struct WorkflowLink                          // a dataflow
         prod_dflow_redist(prod_dflow_redist_),
 	    dflow_con_redist(dflow_con_redist_),
 	    list_keys(list_keys_),
-	    check_level(check_level_)				{}
+		check_level(check_level_)				{}*/
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -85,9 +85,6 @@ struct WorkflowLink                          // a dataflow
 
 	string srcPort;				// Portname of the source
 	string destPort;			// Portname of the dest
-
-	int edge_id;				// Id of the link in the entire dataflow, user defined
-	bool bEdge_id;				// edge_id is relevant only is bEdge_id is set to true
 
 	// The following two are only relevant if the dataflow is related to a contract
 	vector<ContractKey> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
@@ -229,15 +226,6 @@ struct Workflow                              // an entire workflow
 		if(srcP && destP){
 			link.srcPort = srcP.get();
 			link.destPort = destP.get();
-		}
-
-		boost::optional<int> edge_id = v.second.get_optional<int>("edge_id");
-		if(edge_id){
-			link.edge_id = edge_id.get();
-			link.bEdge_id = true;
-		}
-		else{
-			link.bEdge_id = false;
 		}
 
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");

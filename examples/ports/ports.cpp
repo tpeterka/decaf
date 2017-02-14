@@ -53,8 +53,9 @@ void prod(Decaf* decaf)
 
 		//fprintf(stderr, "Prod sent\n");
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->putInEdge(container, 0) ){
+		if(! decaf->put(container, 1) ){
 		//if(! decaf->put(container, "Out")){
+		//if(!decaf->put(container)){
 			break;
 		}
 		usleep(100000);
@@ -89,8 +90,9 @@ void prod2(Decaf* decaf)
 
 		//fprintf(stderr, "Prod2 sent\n");
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->putInEdge(container, 5) ){
+		//if(! decaf->put(container, 0) ){
 		//if(! decaf->put(container, "Out")){
+		if(!decaf->put(container)){
 			break;
 		}
 		usleep(100000);
@@ -121,7 +123,7 @@ void con(Decaf* decaf)
 		s = "";
 
 		//vf = in_data["In1"]->getFieldData<VectorFieldi>("value");
-		vf = decaf->getFromEdge(in_data, 0)->getFieldData<VectorFieldi>("value");
+		vf = in_data[1]->getFieldData<VectorFieldi>("value");
 		if(vf){
 			vect = vf.getVector();
 			for (int i : vect){
@@ -130,7 +132,7 @@ void con(Decaf* decaf)
 			//s+= "Vector size: " + std::to_string(vect.size()) + " ";
 		}
 		//af = in_data["In2"]->getFieldData<ArrayFieldi>("value");
-		af = decaf->getFromEdge(in_data, 5)->getFieldData<ArrayFieldi>("value");
+		af = in_data[0]->getFieldData<ArrayFieldi>("value");
 		if(af){
 			arr= af.getArray();
 			for(int i = 0; i<af.getArraySize(); i++){

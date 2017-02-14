@@ -6,8 +6,8 @@ import os
 import exceptions
 import getopt
 import argparse
-
 import json
+
 from collections import defaultdict
 
 import fractions  #Definition of the least common multiple of two numbers; Used for the period in Contracts
@@ -392,12 +392,16 @@ def processTopology(graph):
             topo = node[1]['topology']
             node[1]['start_proc'] = topo.offsetRank
             node[1]['nprocs'] = topo.nProcs
+            # Clear the graph
+            del node[1]['topology'] #TODO is it really useful to remove this ? Not real memory consumption
 
     for edge in graph.edges_iter(data=True):
         if 'topology' in edge[2]:
             topo = edge[2]['topology']
             edge[2]['start_proc'] = topo.offsetRank
             edge[2]['nprocs'] = topo.nProcs
+            # Clear the graph
+            del edge[2]['topology'] #TODO is it really useful to remove this ? Not real memory consumption
 
 
 def workflowToJson(graph, outputFile, filter_level):
@@ -405,77 +409,57 @@ def workflowToJson(graph, outputFile, filter_level):
 
     nodes   = []
     links   = []
-
     list_id = []
 
-    content = ""
-    content +="{\n"
-    content +="   \"workflow\" :\n"
-    content +="   {\n"
-    content +="   \"filter_level\" : \""+Filter_level.dictReverse[filter_level]+"\",\n"
-    content +="   \"nodes\" : [\n"
+    data = {}
+    data["workflow"] = {}
+    data["workflow"]["filter_level"] = Filter_level.dictReverse[filter_level]
+    
 
+    data["workflow"]["nodes"] = []
     i = 0
     for node in graph.nodes_iter(data=True):
-        content +="      {\n"
-        content +="       \"start_proc\" : "+str(node[1]['start_proc'])
-        content +=",\n       \"nprocs\" : "+str(node[1]['nprocs'])
-        content +=",\n       \"func\" : \""+node[1]['func']+"\""
-        content +="\n      },\n"
-
+        data["workflow"]["nodes"].append({"start_proc" : node[1]['start_proc'],
+                                          "nprocs" : node[1]['nprocs'],
+                                          "func" : node[1]['func']})
         node[1]['index'] = i
         i += 1
+    
 
-    content = content.rstrip(",\n")
-    content += "\n"
-    content +="   ],\n"
-    content +="\"edges\" : [\n"
-
+    data["workflow"]["edges"] = []
+    i = 0
     for edge in graph.edges_iter(data=True):
-        if "edge_id" in edge[2]:
-          if edge[2]['edge_id'] in list_id:
-            raise ValueError("ERROR: edge index %s is present multiple times in the graph, aborting." % str(edge[2]['edge_id']))
-          list_id.append(edge[2]['edge_id'])
-
         prod  = graph.node[edge[0]]['index']
         con   = graph.node[edge[1]]['index']
+        data["workflow"]["edges"].append({"start_proc" : edge[2]['start_proc'],
+                                          "nprocs" : edge[2]['nprocs'],
+                                          "source" : prod,
+                                          "target" : con,
+                                          "prod_dflow_redist" : edge[2]['prod_dflow_redist']})
 
-
-        content +="      {\n"
-        content +="       \"start_proc\" : "+str(edge[2]['start_proc'])
-        content +=",\n       \"nprocs\" : "+str(edge[2]['nprocs'])
-        content +=",\n       \"source\" : "+str(prod)
-        content +=",\n       \"target\" : "+str(con)
-
-        if "edge_id" in edge[2]:
-          content +=",\n       \"edge_id\" : "+str(edge[2]['edge_id'])
-        content +=",\n       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\""
-
-        if edge[2]['nprocs'] != 0 :
-          content +=",\n       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\""
-          content +=",\n       \"func\" : \""+edge[2]['func']+"\""
-          content +=",\n       \"path\" : \""+edge[2]['path']+"\""
-
-        if "contract" in edge[2]:
-          content += ",\n       \"keys\" : "+json.dumps(edge[2]['contract'].dict, sort_keys=True)
-
+        if edge[2]["nprocs"] != 0:
+          data["workflow"]["edges"][i].update({"func" : edge[2]['func'],
+                                          "dflow_con_redist" : edge[2]['dflow_con_redist'],
+                                          "path" : edge[2]['path']})
+         
+        # TODO VERIFY THIS, used with link any + contract 
+        if "linkContract" in edge[2]:
+          data["workflow"]["edges"][i]["linkContract"] = edge[2]["linkContract"].dict
+        
         if "keys" in edge[2]:
-          content += ",\n       \"keys\" : "+json.dumps(edge[2]['keys'], sort_keys=True)
+          data["workflow"]["edges"][i]["keys"] = edge[2]["keys"]
+
         if "prodPort" in edge[2]:
-          content += ",\n       \"sourcePort\" : \""+str(edge[2]['prodPort'])+"\""
-          content += ",\n       \"targetPort\" : \""+str(edge[2]['conPort'])+"\""
+          data["workflow"]["edges"][i].update({"sourcePort":edge[2]['prodPort'],
+                                              "targetPort":edge[2]['conPort']})
 
-        content +="\n      },\n"
+        i += 1
 
-    content = content.rstrip(",\n")
-    content += "\n"
-    content +="   ]\n"
-    content +="   }\n"
-    content +="}"
 
-    f = open(outputFile, "w")
-    f.write(content)
+    f = open(outputFile, 'w')
+    json.dump(data, f, indent=4)
     f.close()
+
 
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):

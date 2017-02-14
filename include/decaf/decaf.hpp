@@ -65,10 +65,6 @@ namespace decaf
 		// returns true = ok, false = function terminate() has been called
 		bool put(pConstructData container, int i);
 
-		// put a message on the Dataflow corresponding to edge_id
-		// returns true = ok, false = function terminate() has been called
-		bool putInEdge(pConstructData container, int edge_id);
-
 		// put a message on outbound link(s) associated to the output port
 		// returns true = ok, false = function terminate() has been called
 		bool put(pConstructData container, string port);
@@ -85,9 +81,6 @@ namespace decaf
         // get messages from all inbound links
         // returns true = process messages, false = break (quit received)
         bool get(vector< pConstructData >& containers);
-
-		// retrieve the container coming from a specific edge_id
-		pConstructData getFromEdge(vector<pConstructData> in_data, int edge_id);
 
 		// Checks if there are still alive input Dataflows for this node
 		bool allQuit();
@@ -188,9 +181,6 @@ namespace decaf
 
 		map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
 		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
-
-		map<int, int> inIndexMap;			// maps the edge_id of a Dataflow to its index in the vector node_in_dataflows
-		map<int, Dataflow*> outDataflowMap;			// maps the edge_id to the related Dataflow in case this is an output for this node
     };
 
 } // namespace
@@ -249,8 +239,6 @@ Decaf::Decaf(CommHandle world_comm,
             node_in_dataflows.push_back(dataflows[i]);
 			if(dataflows[i]->destPort() != "")
 				inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
-			if(dataflows[i]->hasEdgeId())
-				inIndexMap.emplace(dataflows[i]->edge_id(), node_in_dataflows.size()-1);
 		}
 	}
 
@@ -277,9 +265,6 @@ Decaf::Decaf(CommHandle world_comm,
 				vector<Dataflow*> vect(1, df);
 				outPortMap.emplace(df->srcPort(), vect);
 			}
-		}
-		if(df->hasEdgeId()){
-			outDataflowMap.emplace(df->edge_id(), df);
 		}
 	}
 
@@ -338,42 +323,14 @@ Decaf::put(pConstructData container)
 }
 
 // put a message on a particular outbound link
+// i is the index of the link in the json format of the workflow.
 bool
 decaf::
 Decaf::put(pConstructData container, int i)
 {
-	bool ret_ok = out_dataflows[i]->put(container, DECAF_NODE);
+	//bool ret_ok = out_dataflows[i]->put(container, DECAF_NODE);
+	bool ret_ok = dataflows[i]->put(container, DECAF_NODE);
 
-	if(!ret_ok){
-		terminate();
-		return false;
-	}
-
-	// TODO remove the loop, with the given i in argument we know whether there is an ovelapping or not
-	// link ranks that do overlap this node need to be run in one-time mode
-	for (size_t i = 0; i < workflow_.links.size(); i++){
-		if (workflow_.my_link(world->rank(), i))
-		{
-			run_links(true);
-			break;
-		}
-	}
-	return true;
-}
-
-
-bool
-decaf::
-Decaf::putInEdge(pConstructData container, int edge_id){
-	auto it = outDataflowMap.find(edge_id);
-	if(it == outDataflowMap.end()){
-		fprintf(stderr, "ERROR: the edge_id %d is not associated to any Dataflow. Aborting.\n", edge_id);
-		MPI_Abort(MPI_COMM_WORLD, 0);
-		//terminate();
-		//return false;
-	}
-
-	bool ret_ok = it->second->put(container, DECAF_NODE);
 	if(!ret_ok){
 		terminate();
 		return false;
@@ -561,13 +518,6 @@ Decaf::get(vector< pConstructData >& containers)
 	return !allQuit(); // If all in dataflows are quit return false
 }
 
-
-decaf::pConstructData
-decaf::
-Decaf::getFromEdge(vector<pConstructData> in_data, int edge_id){
-	int index = inIndexMap[edge_id];
-	return in_data[index];
-}
 
 // Checks if there are still alive input Dataflows for this node
 bool
@@ -769,14 +719,9 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
 		                             prod,
 		                             dflow,
 		                             con,
-		                             workflow_.links[i].list_keys,
-		                             workflow_.links[i].bEdge_id,
-		                             workflow_.links[i].edge_id,
-		                             workflow_.links[i].check_level,
+		                             workflow_.links[i],
 		                             prod_dflow_redist,
-		                             dflow_con_redist,
-		                             workflow_.links[i].srcPort,
-		                             workflow_.links[i].destPort));
+		                             dflow_con_redist));
 
         dataflows[i]->err();
     }

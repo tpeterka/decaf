@@ -34,6 +34,7 @@
 #endif
 
 #include "types.hpp"
+#include "workflow.hpp"
 
 namespace decaf
 {
@@ -45,17 +46,12 @@ namespace decaf
                  DecafSizes& decaf_sizes,        // sizes of producer, dataflow, consumer
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
-                 int con,                        // id in workflow structure of consumer node
-		         vector<ContractKey> list_key, // list of key/type if related to a contract
-		         bool bEdge_id,
-		         int edge_id,
-		         Check_level check_level = CHECK_NONE,   // level of typechecking if related to a contract
+		         int con,   // level of typechecking if related to a contract
+		         WorkflowLink wflowLink,
                  Decomposition prod_dflow_redist // decompositon between producer and dataflow
                  = DECAF_CONTIG_DECOMP,
                  Decomposition dflow_cons_redist // decomposition between dataflow and consumer
-		         = DECAF_CONTIG_DECOMP,
-		         string srcPort = "",
-		         string destPort = "");
+		         = DECAF_CONTIG_DECOMP);
         ~Dataflow();
 		bool put(pConstructData data, TaskType role);
 		bool get(pConstructData data, TaskType role);
@@ -80,9 +76,6 @@ namespace decaf
 
 		bool isClose(){ return bClose_; }
 		void setClose(){ bClose_ = true; }
-
-		bool hasEdgeId(){ return bEdge_id_; }
-		int edge_id(){ return edge_id_; }
 
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
@@ -129,9 +122,6 @@ namespace decaf
 		int it_put;						 // Counting the put iterations
 		int it_get;						 // Counting the get iterations
 
-		bool bEdge_id_;
-		int edge_id_;					 // User defined id of this dataflow, same utility as ports
-
 		string srcPort_;				// Portname of the source
 		string destPort_;				// Portname of the destination
 		bool bClose_;					// Determines if a quit message has been received when calling a get
@@ -149,14 +139,9 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int prod,
                    int dflow,
                    int con,
-                   vector<ContractKey> list_keys,
-                   bool bEdge_id,
-                   int edge_id,
-                   Check_level check_level,
+                   WorkflowLink wflowLink,
                    Decomposition prod_dflow_redist,
-                   Decomposition dflow_cons_redist,
-                   string srcPort,
-                   string destPort) :
+                   Decomposition dflow_cons_redist) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -166,11 +151,9 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_dflow_con_(NULL),
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
-    check_level_(check_level),
-    bEdge_id_(bEdge_id),
-    edge_id_(edge_id),
-    srcPort_(srcPort),
-    destPort_(destPort),
+    check_level_(wflowLink.check_level),
+    srcPort_(wflowLink.srcPort),
+    destPort_(wflowLink.destPort),
     bClose_(false),
     no_link(false)
 {
@@ -206,12 +189,12 @@ Dataflow::Dataflow(CommHandle world_comm,
 	}
 
 	// Sets the boolean value to true/false whether the dataflow is related to a contract or not
-	if(list_keys.size() == 0){
+	if(wflowLink.list_keys.size() == 0){
 		bContract_ = false;
 	}
 	else{
 		bContract_ = true;
-		list_keys_ = list_keys;
+		list_keys_ = wflowLink.list_keys;
 		it_put = 0;
 		it_get = 0;
 	}
