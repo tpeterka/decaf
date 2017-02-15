@@ -35,19 +35,19 @@ void node1(Decaf* decaf)
 		//fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
 
 		pConstructData container;
-		SimpleFieldi var(timestep);
+		SimpleFieldi var(timestep+10);
 
 		container->appendData("var", var,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		fprintf(stderr, "\nNode1 sent timestep %d\n", timestep);
+		fprintf(stderr, "\nNode1 sent %d\n", timestep+10);
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){
 			break;
 		}
-		usleep(500000);
+		usleep(200000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -67,14 +67,12 @@ void node2(Decaf* decaf)
 	SimpleFieldi recv;
 
 	while(decaf->get(in_data)){
-		var = 10;
+		var = 0;
 		for(pConstructData data : in_data){
 			fprintf(stderr, "Node2 it=%d %sreceived var\n", timestep, data->isEmpty()?"did not " : "");
-			if(data->hasData("var")){
-				recv = data->getFieldData<SimpleFieldi>("var");
-				if(recv){
-					var += recv.getData();
-				}
+			recv = data->getFieldData<SimpleFieldi>("var");
+			if(recv){
+				var += recv.getData();
 			}
 		}
 
@@ -85,7 +83,6 @@ void node2(Decaf* decaf)
 			break;
 		}
 		timestep++;
-		usleep(50000);
 	}
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();

@@ -56,8 +56,8 @@ void prod(Decaf* decaf)
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
 
-		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->put(container) ){
+		// sends the data to the output port, the filtering of data will be done internally
+		if(! decaf->put(container, "Out") ){
 			break;
 		}
 		usleep(200000);
@@ -73,36 +73,38 @@ void prod2(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
 	float den = 2.71828;
-	float vel = 1.618;
-	float vel_array[3], den_array[3];
+	float den_array[3];
 
 	for (int timestep = 0; timestep <= 6; timestep++){
 		//fprintf(stderr, "prod2 rank %d timestep %d\n", rank, timestep);
 
 		for(int i = 0; i<3; ++i){
-			vel_array[i] = timestep*vel*(i+1);
 			den_array[i] = (rank+1)*2*timestep*den*(i+1);
 		}
 
-		ArrayFieldf d_vel(vel_array, 3, 1);
 		ArrayFieldf d_density(den_array, 3, 1);
 		SimpleFieldi d_id(rank);
 
-		pConstructData container;
-		container->appendData("id", d_id,
+		pConstructData container1, container2;
+
+		// Container1 is for the port Out1
+		container1->appendData("id", d_id,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
-		container->appendData("density", d_density,
+		container1->appendData("density", d_density,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-		//Data vel is produced but not used by the consumers in this example
-		container->appendData("vel", d_vel,
-		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+		// Container2 is for the port Out2
+		container2->appendData("id", d_id,
+		                       DECAF_NOFLAG, DECAF_PRIVATE,
+		                       DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
-		if(! decaf->put(container) ){
+		if(! decaf->put(container1, "Out1")){
+			break;
+		}
+		if(! decaf->put(container2, "Out2")){
 			break;
 		}
 		usleep(200000);
@@ -116,7 +118,7 @@ void prod2(Decaf* decaf)
 void con(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	vector< pConstructData > in_data;
+	map<string, pConstructData> in_data;
 
 	while (decaf->get(in_data))
 	{
@@ -124,23 +126,17 @@ void con(Decaf* decaf)
 		ArrayFieldf a_density, a_velocity;
 
 		string s = "";
-		for (size_t i = 0; i < in_data.size(); i++)
-		{
-			if(in_data[i]->hasData("index")){
-				index = in_data[i]->getFieldData<SimpleFieldi>("index");
-				if(index)
-					s+= "index ";
-			}
-			if(in_data[i]->hasData("velocity")){
-				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
-				if(a_velocity)
-					s+= "velocity ";
-			}
-			if(in_data[i]->hasData("density")){
-				a_density = in_data[i]->getFieldData<ArrayFieldf>("density");
-				if(a_density)
-					s+= "density ";
-			}
+		index = in_data["In1"]->getFieldData<SimpleFieldi>("index");
+		if(index){
+			s+= "index ";
+		}
+		a_velocity = in_data["In1"]->getFieldData<ArrayFieldf>("velocity");
+		if(a_velocity){
+			s+= "velocity ";
+		}
+		a_density = in_data["In2"]->getFieldData<ArrayFieldf>("density");
+		if(a_density){
+			s+= "density ";
 		}
 
 		fprintf(stderr, "con of rank %d received: %s\n", rank, s.c_str());
@@ -155,7 +151,7 @@ void con(Decaf* decaf)
 void con2(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	vector< pConstructData > in_data;
+	map<string, pConstructData> in_data;
 
 	while (decaf->get(in_data))
 	{
@@ -163,18 +159,13 @@ void con2(Decaf* decaf)
 		ArrayFieldf a_velocity;
 
 		string s = "";
-		for (size_t i = 0; i < in_data.size(); i++)
-		{
-			if(in_data[i]->hasData("id")){
-				id = in_data[i]->getFieldData<SimpleFieldi >("id");
-				if(id)
-					s+= "id ";
-			}
-			if(in_data[i]->hasData("velocity")){
-				a_velocity = in_data[i]->getFieldData<ArrayFieldf>("velocity");
-				if(a_velocity)
-					s+= "velocity ";
-			}
+		id = in_data["In2"]->getFieldData<SimpleFieldi >("id");
+		if(id){
+			s+= "id ";
+		}
+		a_velocity = in_data["In1"]->getFieldData<ArrayFieldf>("velocity");
+		if(a_velocity){
+			    s+= "velocity ";
 		}
 
 		fprintf(stderr, "con2 of rank %d received: %s\n", rank, s.c_str());
@@ -232,7 +223,7 @@ int main(int argc,
          char** argv)
 {
 	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "contract.json");
+	Workflow::make_wflow_from_json(workflow, "contract_ports.json");
 
 	// run decaf
 	run(workflow);

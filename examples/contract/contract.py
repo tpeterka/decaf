@@ -18,12 +18,12 @@ args = parser.parse_args()
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract.so'
 
 # define workflow graph
-# prod (3 procs)  ---> con (2 procs) 
+# prod (1 proc)  ---> con (1 proc) 
 #				  \/
 #				  /\
-# prod2 (2 procs) ---> con2 (2 procs)
+# prod2 (1 proc) ---> con2 (1 proc)
 #
-# entire workflow takes 13 procs (1 proc per link)
+# entire workflow takes 4 procs (0 proc per link)
 
 
 
@@ -33,27 +33,27 @@ subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dfl
 
 # Add outputs contracts for prod1 and prod2
 contractP1 = wf.Contract()
-contractP1.addOutputFromDict({"index":["int", 1], "velocity":["Array_float", 1]})
+contractP1.addOutputFromDict({"index":["int", 1], "velocity":["Array_float", 2]})
 contractP2 = wf.Contract()
 contractP2.addOutputFromDict({"vel":["Array_float"], "id":["int"], "density":["Array_float", 3]})
 # Add inputs contracts for con1 and con2
 contractC1 = wf.Contract()
 contractC1.addInputFromDict({"index":["int"], "velocity":["Array_float", 2], "density":["Array_float"]})
 contractC2 = wf.Contract()
-contractC2.addInputFromDict({"velocity":["Array_float", 1], "id":["int"]})
+contractC2.addInputFromDict({"velocity":["Array_float", 2], "id":["int"]})
 
 
 w = nx.DiGraph()
 w.add_node("prod1", topology=subtopos[0], contract=contractP1, func='prod', cmdline='contract')
 w.add_node("con1",  topology=subtopos[2], contract=contractC1, func='con', cmdline='contract')
-w.add_edge("prod1", "con1", topology=subtopos[4], func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='contract')
 
 w.add_node("prod2", topology=subtopos[1], contract=contractP2, func='prod2', cmdline='contract')
 w.add_node("con2",  topology=subtopos[3], contract=contractC2, func='con2', cmdline='contract')
 
+w.add_edge("prod1", "con1", topology=subtopos[4], prod_dflow_redist='count')
 w.add_edge("prod1", "con2", topology=subtopos[5], prod_dflow_redist='count')
-w.add_edge("prod2", "con1", topology=subtopos[6], prod_dflow_redist='count', func='dflow', path=mod_path, dflow_con_redist='count', cmdline='contract')
-w.add_edge("prod2", "con2", topology=subtopos[7], prod_dflow_redist='count', func='dflow', path=mod_path, dflow_con_redist='count', cmdline='contract')
+w.add_edge("prod2", "con1", topology=subtopos[6], prod_dflow_redist='count')
+w.add_edge("prod2", "con2", topology=subtopos[7], prod_dflow_redist='count')
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---

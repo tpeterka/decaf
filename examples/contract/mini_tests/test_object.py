@@ -15,7 +15,7 @@ args = parser.parse_args()
 # --- set your options here ---
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_test_object.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mini_tests/mod_test_object.so'
 
 # define workflow graph
 # prod(3 procs) --> con(2 procs)

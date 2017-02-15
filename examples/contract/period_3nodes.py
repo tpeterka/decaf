@@ -15,7 +15,7 @@ args = parser.parse_args()
 # --- set your options here ---
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/ports/mod_ports.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_period_3nodes.so'
 
 
 # Creating the topology
