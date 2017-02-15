@@ -267,8 +267,8 @@ def check_contracts(graph, filter_level):
 
           if len(Outport) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
           #TODO in this case, must perform the checks at runtime at the dataflow->get, need to find a way to enforce that
-            print "WARNING: Only fields needed by the port \"%s\" will be sent by \"%s.%s\" and the periodicity may not be correct, continuing." % (s, edge[0], OutportName)
-            list_fields = Inport          
+            print "WARNING: The output port \"%s.%s\" can send anything, only fields needed by the port \"%s\" will be kept, the periodicity may not be correct, continuing." % (edge[0], OutportName, s)
+            list_fields = Inport
 
           else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
             list_fields = {}
