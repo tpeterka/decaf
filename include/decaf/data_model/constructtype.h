@@ -144,7 +144,8 @@ public:
             const std::vector<Block<3> >& range,
             std::vector<pConstructData >& buffers);
 
-    virtual bool merge(std::shared_ptr<BaseData> other);
+    //virtual bool merge(std::shared_ptr<BaseData> other);
+    virtual bool merge(std::shared_ptr<ConstructData> otherConstruct);
 
     virtual bool merge(char* buffer, int size);
 
