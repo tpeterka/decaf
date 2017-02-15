@@ -60,8 +60,8 @@ class Topology:
   def subTopology(self, name, nProcs, procOffset):
 
       # Enough rank check
-      if nProcs > self.nProcs:
-        raise ValueError("Not enough rank available")
+      if procOffset + nProcs > self.nProcs:
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (procOffset + nProcs, self.nProcs))
 
       subTopo = Topology(name, nProcs, offsetRank = procOffset)
 
@@ -80,7 +80,7 @@ class Topology:
 
       # Enough rank check
       if sum(nProcs) > self.nProcs:
-        raise ValueError("Not enough rank available")
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (sum(nProcs), self.nProcs))
 
       offset = 0
       splits = []
