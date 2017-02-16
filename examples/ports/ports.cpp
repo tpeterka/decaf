@@ -45,7 +45,7 @@ void prod(Decaf* decaf)
 		vect[2] = std::rand() % 100;
 
 		pConstructData container;
-		VectorFieldi vf(vect, 1);
+		VectorFieldi vf(vect, 3);
 
 		container->appendData("value", vf,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
@@ -54,8 +54,6 @@ void prod(Decaf* decaf)
 		//fprintf(stderr, "Prod sent\n");
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container, 1) ){
-		//if(! decaf->put(container, "Out")){
-		//if(!decaf->put(container)){
 			break;
 		}
 		usleep(100000);
@@ -90,9 +88,7 @@ void prod2(Decaf* decaf)
 
 		//fprintf(stderr, "Prod2 sent\n");
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		//if(! decaf->put(container, 0) ){
-		//if(! decaf->put(container, "Out")){
-		if(!decaf->put(container)){
+		if(! decaf->put(container, 0) ){
 			break;
 		}
 		usleep(100000);
@@ -107,46 +103,54 @@ void prod2(Decaf* decaf)
 void con(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	int* arr;
 	std::vector<int> vect;
 
-	//map<string, pConstructData> in_data;
-	vector<pConstructData> in_data;
+	map<int, pConstructData> in_data;
 
-
-	ArrayFieldi af;
 	VectorFieldi vf;
 	string s;
-
 
 	while(decaf->get(in_data)){
 		s = "";
 
-		//vf = in_data["In1"]->getFieldData<VectorFieldi>("value");
-		vf = in_data[1]->getFieldData<VectorFieldi>("value");
+		vf = in_data.at(1)->getFieldData<VectorFieldi>("value");
 		if(vf){
-			vect = vf.getVector();
-			for (int i : vect){
-				s+= to_string(i) + " ";
-			}
-			//s+= "Vector size: " + std::to_string(vect.size()) + " ";
+			fprintf(stderr, "Consumer rank %d received Vector\n", rank);
 		}
-		//af = in_data["In2"]->getFieldData<ArrayFieldi>("value");
-		af = in_data[0]->getFieldData<ArrayFieldi>("value");
-		if(af){
-			arr= af.getArray();
-			for(int i = 0; i<af.getArraySize(); i++){
-				s+= to_string(arr[i]) + " ";
-			}
-			//s+= "Array size: " + std::to_string(af.getArraySize()) + " ";
+		else{
+			fprintf(stderr, "Con rank %d did not received it\n", rank);
 		}
 
-		fprintf(stderr, "Consumer rank %d received %s\n", rank, s.c_str());
 	}
 
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
 }
+
+
+void con2(Decaf* decaf)
+{
+	int rank = decaf->world->rank();
+	int* arr;
+
+	map<int, pConstructData> in_data;
+
+	ArrayFieldi af;
+	string s;
+
+	while(decaf->get(in_data)){
+		s = "";
+
+		af = in_data.at(0)->getFieldData<ArrayFieldi>("value");
+		if(af){
+			fprintf(stderr, "Con2 rank %d received Array\n", rank);
+		}
+	}
+
+	//fprintf(stderr, "prod2 %d terminating\n", rank);
+	decaf->terminate();
+}
+
 
 
 // link callback function
@@ -163,8 +167,16 @@ extern "C"
 
 } // extern "C"
 
-void run(Workflow& workflow)                             // workflow
+
+// test driver for debugging purposes
+// this is hard-coding the no overlap case
+int main(int argc,
+         char** argv)
 {
+	Workflow workflow;
+	Workflow::make_wflow_from_json(workflow, "ports.json");
+
+	// run decaf
 	MPI_Init(NULL, NULL);
 
 	// create decaf
@@ -182,22 +194,12 @@ void run(Workflow& workflow)                             // workflow
 		prod2(decaf);
 	if (decaf->my_node("con"))
 		con(decaf);
-	
+	if (decaf->my_node("con2"))
+		con2(decaf);
+
 	// cleanup
 	delete decaf;
 	MPI_Finalize();
-}
-
-// test driver for debugging purposes
-// this is hard-coding the no overlap case
-int main(int argc,
-         char** argv)
-{
-	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "ports.json");
-
-	// run decaf
-	run(workflow);
 
 	return 0;
 }

@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts
+// 4 nodes example for contracts using indexes of dataflows
 //
 // clement Mommessin
 // Argonne National Laboratory
@@ -56,8 +56,11 @@ void prod(Decaf* decaf)
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
 
-		// sends the data to the output port, the filtering of data will be done internally
-		if(! decaf->put(container, "Out") ){
+		// sends the data to the output links, the filtering of data will be done internally
+		if(!decaf->put(container, 0)){
+			break;
+		}
+		if(!decaf->put(container, 1)){
 			break;
 		}
 		usleep(200000);
@@ -95,10 +98,10 @@ void prod2(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-		if(! decaf->put(container, "Out1")){
+		if(! decaf->put(container, 2)){
 			break;
 		}
-		if(! decaf->put(container, "Out2")){
+		if(! decaf->put(container, 3)){
 			break;
 		}
 		usleep(200000);
@@ -112,7 +115,7 @@ void prod2(Decaf* decaf)
 void con(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	map<string, pConstructData> in_data;
+	map<int, pConstructData> in_data;
 
 	while (decaf->get(in_data))
 	{
@@ -120,15 +123,15 @@ void con(Decaf* decaf)
 		ArrayFieldf a_density, a_velocity;
 
 		string s = "";
-		index = in_data.at("In1")->getFieldData<SimpleFieldi>("index");
+		index = in_data.at(0)->getFieldData<SimpleFieldi>("index");
 		if(index){
 			s+= "index ";
 		}
-		a_velocity = in_data.at("In1")->getFieldData<ArrayFieldf>("velocity");
+		a_velocity = in_data.at(0)->getFieldData<ArrayFieldf>("velocity");
 		if(a_velocity){
 			s+= "velocity ";
 		}
-		a_density = in_data.at("In2")->getFieldData<ArrayFieldf>("density");
+		a_density = in_data.at(2)->getFieldData<ArrayFieldf>("density");
 		if(a_density){
 			s+= "density ";
 		}
@@ -145,7 +148,7 @@ void con(Decaf* decaf)
 void con2(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	map<string, pConstructData> in_data;
+	map<int, pConstructData> in_data;
 
 	while (decaf->get(in_data))
 	{
@@ -153,11 +156,11 @@ void con2(Decaf* decaf)
 		ArrayFieldf a_velocity;
 
 		string s = "";
-		id = in_data.at("In2")->getFieldData<SimpleFieldi >("id");
+		id = in_data.at(3)->getFieldData<SimpleFieldi >("id");
 		if(id){
 			s+= "id ";
 		}
-		a_velocity = in_data.at("In1")->getFieldData<ArrayFieldf>("velocity");
+		a_velocity = in_data.at(1)->getFieldData<ArrayFieldf>("velocity");
 		if(a_velocity){
 			    s+= "velocity ";
 		}
@@ -217,7 +220,7 @@ int main(int argc,
          char** argv)
 {
 	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "contract_ports.json");
+	Workflow::make_wflow_from_json(workflow, "contract_index.json");
 
 	// run decaf
 	run(workflow);

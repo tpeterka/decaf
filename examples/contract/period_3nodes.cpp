@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts
+// 3 nodes example for testing periodicity
 //
 // clement Mommessin
 // Argonne National Laboratory

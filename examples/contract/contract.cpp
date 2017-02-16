@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts
+// 4 nodes example for contracts without ports
 //
 // clement Mommessin
 // Argonne National Laboratory

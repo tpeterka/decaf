@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 2 nodes example for contracts
+// 2 nodes example for contracts and filtering fields
 //
 // clement Mommessin
 // Argonne National Laboratory
@@ -60,7 +60,7 @@ void con(Decaf* decaf)
 
 	while(decaf->get(in_data))
 	{
-		SimpleFieldi var = in_data["In"]->getFieldData<SimpleFieldi>("var");
+		SimpleFieldi var = in_data.at("In")->getFieldData<SimpleFieldi>("var");
 		if(var){
 			fprintf(stderr, "Consumer of rank %d received the value %d\n", rank, var.getData());
 		}

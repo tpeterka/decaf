@@ -4,15 +4,8 @@
 import os
 import imp
 import networkx as nx
-import argparse
 
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
-
-parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-wf.initParserForTopology(parser)
-args = parser.parse_args()
-
-# --- set your options here ---
 
 # path to .so module for dataflow callback functions
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/ports/mod_ports.so'
@@ -25,26 +18,33 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/ports/mod_ports.so'
 # entire workflow takes 6 procs (1 proc per link)
 
 # Creating the topology
-topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod", "prod2", "con", "dflow1", "dflow2"],[1,1,1,1,1])
+topo = wf.Topology("topo", 16)
+subtopos = topo.splitTopology(["prod", "prod2", "con", "dflow1", "dflow2"],[1,1,2,1,1])
 
 
 prod = wf.nodeFromTopo("prod", "prod", "ports", subtopos[0])
+prod.addOutput("Out", "value", "Vector_int")
+
 prod2 = wf.nodeFromTopo("prod2", "prod2", "ports", subtopos[1])
+prod2.addOutput("Out", "value", "Array_int")
+
 con = wf.nodeFromTopo("con", "con", "ports", subtopos[2])
+con.addInput("In1", "value", "Vector_int")
+con.addInput("In2", "value", "Array_int")
 
-Cedge0 = wf.ContractEdge({"Index0":["int", 1]})
-Cedge1 = wf.ContractEdge({"Index1":["int", 1]})
+edge1 = wf.edgeFromTopo("prod.Out", "con.In1", subtopos[3], 'count', 'dflow', mod_path, 'count', 'ports')
+edge2 = wf.edgeFromTopo("prod2.Out", "con.In2", subtopos[4], 'count', 'dflow', mod_path, 'count', 'ports')
 
 
-w = nx.DiGraph()
-wf.addNode(w, prod)
-wf.addNode(w, prod2)
-wf.addNode(w, con)
+graph = nx.DiGraph()
+wf.addNode(graph, prod)
+wf.addNode(graph, prod2)
+wf.addNode(graph, con)
 
-w.add_edge("prod", "con", edge_id=0, topology=subtopos[3], contract=Cedge0, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='ports')
-w.add_edge("prod2", "con", edge_id=1, topology=subtopos[4], contract=Cedge1, func='dflow', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='ports')
+wf.addEdge(graph, edge1)
+wf.addEdge(graph, edge2)
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "ports", filter_level = wf.Filter_level.EVERYWHERE)
+#wf.processGraph(graph, "ports", filter_level = wf.Filter_level.EVERYWHERE)
+wf.processGraph(graph, "ports", filter_level = wf.Filter_level.PYTHON)

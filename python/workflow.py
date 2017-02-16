@@ -523,7 +523,7 @@ def workflowToJson(graph, outputFile, filter_level):
         if "keys" in edge[2]:
           data["workflow"]["edges"][i]["keys"] = edge[2]["keys"]
 
-        if "prodPort" in edge[2]:
+        if "prodPort" in edge[2] and edge[2]["prodPort"] != '':
           data["workflow"]["edges"][i].update({"sourcePort":edge[2]['prodPort'],
                                               "targetPort":edge[2]['conPort']})
 

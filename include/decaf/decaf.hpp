@@ -73,10 +73,15 @@ namespace decaf
 		// returns true = process message, false = error occured or quit message
 		bool get(pConstructData container, string port);
 
-		// get message from all input ports
-		// returns true = process messages, false = erroc occured or all quit messages
+		// get message from all input ports of a node
+		// returns true = process messages, false = error occured or all quit messages
 		// if an input port is closed, the container in the returned map is empty
 		bool get(map<string, pConstructData> &containers);
+
+		// get message from all input links of a node
+		// returns true = process messages, false = error occured or all quit messages
+		// if an input link is closed, the container in the returned map is empty
+		bool get(map<int, pConstructData> &containers);
 
         // get messages from all inbound links
         // returns true = process messages, false = break (quit received)
@@ -105,7 +110,7 @@ namespace decaf
 
         // return a pointer to this node's producer or consumer communicator
         Comm* prod_comm() { return out_dataflows[0]->prod_comm();    }
-        Comm* con_comm()  { return node_in_dataflows[0]->con_comm(); }
+		Comm* con_comm()  { return node_in_dataflows[0].first->con_comm(); }
 
         Comm* world;
 
@@ -177,10 +182,13 @@ namespace decaf
 		vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
         vector<Dataflow*>   out_dataflows;         // all my outbound dataflows
 		vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
-        vector<Dataflow*>   node_in_dataflows;     // all my inbound dataflows in case I am a node
+		//vector<Dataflow*>   node_in_dataflows;     // all my inbound dataflows in case I am a node
+		vector<pair<Dataflow*, int>> node_in_dataflows; // all my inbound dataflows in case I am a node, and the corresponding index in the vector dataflows
 
 		map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
 		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
+
+		//map<int, Dataflow*> inIndexMap; // Map between the index of the Dataflow in node_in_dataflows into this Dataflow*; May be used for get(container, index)
     };
 
 } // namespace
@@ -236,7 +244,7 @@ Decaf::Decaf(CommHandle world_comm,
         if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
             link_in_dataflows.push_back(dataflows[i]);
 		if (workflow_.my_in_link(world->rank(), i)){     // I am a node and this dataflow is an input
-            node_in_dataflows.push_back(dataflows[i]);
+			node_in_dataflows.push_back(pair<Dataflow*, int>(dataflows[i], i));
 			if(dataflows[i]->destPort() != "")
 				inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
 		}
@@ -472,6 +480,44 @@ Decaf::get(map<string, pConstructData> &containers){
 }
 
 
+bool
+decaf::
+Decaf::get(map<int, pConstructData> &containers){
+	// TODO verify this
+	// link ranks that do overlap this node need to be run in one-time mode, unless
+	// the same rank also was a producer node for this link, in which case
+	// the link was already run by the producer node during Decaf::put()
+	for (size_t i = 0; i < workflow_.links.size(); i++){
+		if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+		{
+			run_links(true);
+			break;
+		}
+	}
+
+	containers.clear();
+	bool ret_ok;
+
+	for (std::pair<Dataflow*, int> pair : node_in_dataflows) // I am a node
+	{
+		pConstructData container;
+		if(pair.first->isClose()){
+			containers.emplace(pair.second, container);
+		}
+		else{
+			ret_ok = pair.first->get(container, DECAF_NODE);
+			if(!ret_ok){
+				terminate();
+				return false;
+			}
+			containers.emplace(pair.second, container);
+		}
+	}
+
+	return !allQuit(); // If all in dataflows are quit return false
+
+}
+
 // get messages from all inbound links
 // returns true = process messages, false = ALL quit received or error occured
 bool
@@ -493,7 +539,8 @@ Decaf::get(vector< pConstructData >& containers)
     containers.clear();
 	bool ret_ok;
 
-    for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
+	/* //TODO remove this; My guess is it is never reached since this get is never called by a link
+	for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
     {
         pConstructData container;
 		ret_ok = link_in_dataflows[i]->get(container, DECAF_LINK);
@@ -502,11 +549,12 @@ Decaf::get(vector< pConstructData >& containers)
 			return false;
 		}
         containers.push_back(container);
-    }
+
+	}*/
     for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
     {
         pConstructData container;
-		ret_ok = node_in_dataflows[i]->get(container, DECAF_NODE);
+		ret_ok = node_in_dataflows[i].first->get(container, DECAF_NODE);
 
 		if(!ret_ok){
 			terminate();
@@ -523,8 +571,8 @@ Decaf::get(vector< pConstructData >& containers)
 bool
 decaf::
 Decaf::allQuit(){
-	for(Dataflow* df : node_in_dataflows){
-		if(!df->isClose()){
+	for(pair<Dataflow*, int> df : node_in_dataflows){
+		if(!df.first->isClose()){
 			return false;
 		}
 	}
@@ -1012,7 +1060,7 @@ decaf::
 Decaf::con_comm_handle()
 {
     if(!node_in_dataflows.empty())
-        return node_in_dataflows[0]->con_comm_handle();
+		return node_in_dataflows[0].first->con_comm_handle();
     else
         return world_comm_; // The task is the only one in the graph
 }
@@ -1036,7 +1084,7 @@ decaf::
 Decaf::con_comm_size()
 {
     if(!node_in_dataflows.empty())
-        return node_in_dataflows[0]->sizes()->con_size;
+		return node_in_dataflows[0].first->sizes()->con_size;
     else // The task is the only one in the graph
     {
         int size_comm;
