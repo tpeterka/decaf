@@ -46,6 +46,10 @@ public:
     {
         ptr_ = std::make_shared<VectorConstructData<T> >(Vector, size, element_per_items, map, bCountable);
     }
+    VectorField(int element_per_items, int capacity, mapConstruct map = mapConstruct(), bool bCountable = true)
+    {
+        ptr_ = std::make_shared<VectorConstructData<T> >(element_per_items, capacity, map, bCountable);
+    }
 
     virtual ~VectorField(){}
 

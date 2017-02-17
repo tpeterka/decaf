@@ -31,6 +31,8 @@
 using namespace decaf;
 using namespace std;
 
+int tot_blocks;
+
 // a light copy of small data (quantities, bounding boxes, etc) and pointer to the heavy data
 // (particles, tets)
 void copy_block(SerBlock* dest, DBlock* src, diy::Master& master, int lid)
@@ -57,16 +59,22 @@ void copy_block(SerBlock* dest, DBlock* src, diy::Master& master, int lid)
     // copy (deep) block to binary buffer
     diy::MemoryBuffer bb;
     save_block_light(master.block(lid), bb);
-    dest->diy_bb.resize(bb.buffer.size());
-    swap(bb.buffer, dest->diy_bb);
+    //dest->diy_bb.resize(bb.buffer.size());
+    //swap(bb.buffer, dest->diy_bb);
+    //dest->diy_bb.reserve(bb.buffer.size());
+    //copy(bb.buffer.begin(), bb.buffer.end(), dest->diy_bb.begin());
+    dest->diy_bb = vector<char>(bb.buffer);
 
  #endif
 
     // copy (deep) link to binary buffer
     diy::MemoryBuffer lb;
     diy::LinkFactory::save(lb, master.link(lid));
-    dest->diy_lb.resize(lb.buffer.size());
-    swap(lb.buffer, dest->diy_lb);
+    //dest->diy_lb.resize(lb.buffer.size());
+    //swap(lb.buffer, dest->diy_lb);
+    //dest->diy_lb.reserve(lb.buffer.size());
+    //copy(lb.buffer.begin(), lb.buffer.end(), dest->diy_lb.begin());
+    dest->diy_lb = vector<char>(lb.buffer);
 
     // debug
     // fprintf(stderr, "tess: lid=%d gid=%d\n", lid, src->gid);
@@ -199,9 +207,10 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         }
 
         // 1 block per process in this example
-        int size;
-        MPI_Comm_size(comm, &size);
-        int tot_blocks    = size;                      // total number of blocks in the domain
+        //int size;
+        //MPI_Comm_size(comm, &size);
+        //int tot_blocks    = size;                      // total number of blocks in the domain
+        // MATTHIEU: the total number of block is now given by the python script
 
         float* xyz        = xyzpos.getArray();      // points
         Block<3>* blk     = block.getBlock();       // domain and block info
@@ -327,14 +336,19 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         // fill containers for the blocks and send them
         pConstructData container;
 
-        vector<SerBlock> ser_blocks(master.size());
+        // Create empty vector
+        VectorField<SerBlock> blocks_vector(1, 0);
+
+        vector<SerBlock>& ser_blocks = blocks_vector.getVector();
+        ser_blocks.resize(master.size());
+
         for (size_t i = 0; i < master.size(); i++)
             copy_block(&ser_blocks[i], (DBlock*)master.block(i), master, i);
 
-        ArrayField<SerBlock> blocks_array(&ser_blocks[0], master.size(), 1, false);
-        container->appendData(string("blocks_array"), blocks_array,
+        container->appendData(string("blocks_array"), blocks_vector,
                               DECAF_NOFLAG, DECAF_PRIVATE,
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+
         decaf->put(container);
 
         step++;
@@ -348,11 +362,20 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
 int main(int argc,
          char** argv)
 {
+    MPI_Init(NULL, NULL);
+
+    if(argc != 2)
+    {
+        fprintf(stderr, "Usage: tess tot_block\n");
+        MPI_Abort(MPI_COMM_WORLD, 0);
+    }
+
+    tot_blocks = atoi(argv[1]);
+    fprintf(stderr,"Generating %i blocks total.\n", tot_blocks);
+
     // define the workflow
     Workflow workflow;
     Workflow::make_wflow_from_json(workflow, "tess_dense.json");
-
-    MPI_Init(NULL, NULL);
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
