@@ -81,6 +81,10 @@ namespace decaf
         // This function is the only one that should be called from the main program
         void process(pConstructData& data, RedistRole role);
 
+        // Run the pipeline of operation to receive a msg
+        // False if no msg are waiting
+        bool IGet(pConstructData& data);
+
         int getRankSource();
         int getNbSources();
         int getRankDest();

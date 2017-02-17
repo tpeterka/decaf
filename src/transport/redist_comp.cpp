@@ -71,33 +71,30 @@ decaf::
 RedistComp::process(pConstructData& data,
                     RedistRole role)
 {
-    double timeGlobal = 0.0, timeSplit = 0.0, timeRedist = 0.0;
-
-    struct timeval begin;
-    struct timeval end;
-
     if(data->isSystem())
         splitSystemData(data, role);
     else
     {
-        gettimeofday(&begin, NULL);
         computeGlobal(data, role);
-        gettimeofday(&end, NULL);
-        timeGlobal = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-
-        gettimeofday(&begin, NULL);
         splitData(data, role);
-        gettimeofday(&end, NULL);
-        //timeSplit = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
     }
 
-    gettimeofday(&begin, NULL);
     redistribute(data, role);
-    gettimeofday(&end, NULL);
-    //timeRedist = end.tv_sec+(end.tv_usec/1000000.0) - begin.tv_sec - (begin.tv_usec/1000000.0);
-    //if(role == DECAF_REDIST_SOURCE)
-    //    printf(" [SOURCE] Global : %f, Split : %f, Redist : %f\n", timeGlobal, timeSplit, timeRedist);
-    //if(role == DECAF_REDIST_DEST)
-    //    printf(" [DEST] Global : %f, Split : %f, Redist : %f\n", timeGlobal, timeSplit, timeRedist);
-    //timeGlobalRedist += timeRedist;
+
+}
+
+bool
+decaf::
+RedistComp::IGet(pConstructData& data)
+{
+    if(data->isSystem())
+        splitSystemData(data, DECAF_REDIST_DEST);
+    else
+    {
+        computeGlobal(data, DECAF_REDIST_DEST);
+        splitData(data, DECAF_REDIST_DEST);
+    }
+
+    // TODO: replace with asynchronous version
+    redistribute(data, DECAF_REDIST_DEST);
 }

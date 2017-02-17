@@ -311,7 +311,7 @@ Decaf::get(vector< pConstructData >& containers)
         containers.push_back(container);
     }
     for (size_t i = 0; i < containers.size(); i++)
-        if (Dataflow::test_quit(containers[i]))
+        if (msgtools::test_quit(containers[i]))
         {
             return false;
         }
@@ -326,7 +326,7 @@ Decaf::iterate()
     vector< pConstructData > in_data;
     get(in_data);
     for (size_t i = 0; i < in_data.size(); i++)
-        if (Dataflow::test_quit(in_data[i]))
+        if (msgtools::test_quit(in_data[i]))
             return false;
     return true;
 }
@@ -337,7 +337,7 @@ decaf::
 Decaf::terminate()
 {
     pConstructData quit_container;
-    Dataflow::set_quit(quit_container);
+    msgtools::set_quit(quit_container);
     put(quit_container);
 }
 
@@ -390,11 +390,11 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
              it != containers.end(); it++)
         {
             // add quit flag to containers object, initialize to false
-            if (Dataflow::test_quit(*it))
+            if (msgtools::test_quit(*it))
             {
                 // send quit to destinations
                 pConstructData quit_container;
-                Dataflow::set_quit(quit_container);
+                msgtools::set_quit(quit_container);
 
                 for (size_t i = 0; i < ready_ids.size(); i++)
                 {
@@ -508,13 +508,21 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
             stringToDecomposition(workflow_.links[dflow].prod_dflow_redist);
         Decomposition dflow_con_redist =
             stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
+        StreamPolicy stream_mode =
+            stringToStreamPolicy(workflow_.links[dflow].stream);
+        FramePolicyManagment frame_policy =
+            stringToFramePolicyManagment(workflow_.links[dflow].frame_policy);
         dataflows.push_back(new Dataflow(world_comm_,
                                          decaf_sizes,
                                          prod,
                                          dflow,
                                          con,
                                          prod_dflow_redist,
-                                         dflow_con_redist));
+                                         dflow_con_redist,
+                                         stream_mode,
+                                         frame_policy,
+                                         workflow_.links[dflow].storages,
+                                         workflow_.links[dflow].storage_max_buffer));
         dataflows[i]->err();
     }
 }
@@ -626,7 +634,7 @@ Decaf::router(list< pConstructData >& in_data, // input messages
 
         if (dest_node >= 0)               // destination is a node
         {
-            if (Dataflow::test_quit(*it)) // done
+            if (msgtools::test_quit(*it)) // done
             {
                 size_t j;
                 for (j = 0; j < my_nodes_.size(); j++)
@@ -653,7 +661,7 @@ Decaf::router(list< pConstructData >& in_data, // input messages
 
         else                              // destination is a link
         {
-            if (Dataflow::test_quit(*it)) // done
+            if (msgtools::test_quit(*it)) // done
             {
                 size_t j;
                 for (j = 0; j < my_links_.size(); j++)

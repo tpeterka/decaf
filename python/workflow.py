@@ -6,6 +6,7 @@ import os
 import exceptions
 import getopt
 import argparse
+import json
 
 class Topology:
   """ Object holder for informations about the plateform to use """
@@ -59,8 +60,8 @@ class Topology:
   def subTopology(self, name, nProcs, procOffset):
 
       # Enough rank check
-      if nProcs > self.nProcs:
-        raise ValueError("Not enough rank available")
+      if procOffset + nProcs > self.nProcs:
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (procOffset + nProcs, self.nProcs))
 
       subTopo = Topology(name, nProcs, offsetRank = procOffset)
 
@@ -79,7 +80,7 @@ class Topology:
 
       # Enough rank check
       if sum(nProcs) > self.nProcs:
-        raise ValueError("Not enough rank available")
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (sum(nProcs), self.nProcs))
 
       offset = 0
       splits = []
@@ -128,12 +129,16 @@ def processTopology(graph):
             topo = node[1]['topology']
             node[1]['start_proc'] = topo.offsetRank
             node[1]['nprocs'] = topo.nProcs
+            #Clear the graph
+            del node[1]['topology']
 
     for edge in graph.edges_iter(data=True):
         if 'topology' in edge[2]:
             topo = edge[2]['topology']
             edge[2]['start_proc'] = topo.offsetRank
             edge[2]['nprocs'] = topo.nProcs
+            #Clear the graph
+            del edge[2]['topology']
 
 
 def workflowToJson(graph, libPath, outputFile):
@@ -144,51 +149,62 @@ def workflowToJson(graph, libPath, outputFile):
     links   = []
 
     f = open(outputFile, "w")
-    content = ""
-    content +="{\n"
-    content +="   \"workflow\" :\n"
-    content +="   {\n"
-    content +="   \"path\" : \""+libPath+"\",\n"
-    content +="   \"nodes\" : [\n"
+
+    data = {}
+    data["workflow"] = {}
+    data["workflow"]["path"] = libPath
+    data["workflow"]["nodes"] = []
 
     i = 0
     for node in graph.nodes_iter(data=True):
-
-        content +="       {\n"
-        content +="       \"start_proc\" : "+str(node[1]['start_proc'])+" ,\n"
-        content +="       \"nprocs\" : "+str(node[1]['nprocs'])+" ,\n"
-        content +="       \"func\" : \""+node[1]['func']+"\"\n"
-        content +="       },\n"
-
+        data["workflow"]["nodes"].append({"start_proc" : node[1]['start_proc'],
+                                          "nprocs" : node[1]['nprocs'],
+                                          "func" : node[1]['func']})
         node[1]['index'] = i
         i += 1
+    data["workflow"]["edges"] = []
 
-    content = content.rstrip(",\n")
-    content += "\n"
-    content +="   ],\n"
-    content +="\"edges\" : [\n"
-
+    i = 0
     for edge in graph.edges_iter(data=True):
         prod  = graph.node[edge[0]]['index']
         con   = graph.node[edge[1]]['index']
-        content +="       {\n"
-        content +="       \"start_proc\" : "+str(edge[2]['start_proc'])+" ,\n"
-        content +="       \"nprocs\" : "+str(edge[2]['nprocs'])+" ,\n"
-        content +="       \"func\" : \""+edge[2]['func']+"\" ,\n"
-        content +="       \"prod_dflow_redist\" : \""+edge[2]['prod_dflow_redist']+"\" ,\n"
-        content +="       \"dflow_con_redist\" : \""+edge[2]['dflow_con_redist']+"\" ,\n"
-        content +="       \"source\" : "+str(prod)+" ,\n"
-        content +="       \"target\" : "+str(con)+" \n"
-        content +="       },\n"
+        data["workflow"]["edges"].append({"start_proc" : edge[2]['start_proc'],
+                                          "nprocs" : edge[2]['nprocs'],
+                                          "func" : edge[2]['func'],
+                                          "prod_dflow_redist" : edge[2]['prod_dflow_redist'],
+                                          "dflow_con_redist" : edge[2]['dflow_con_redist'],
+                                          "source" : prod,
+                                          "target" : con})
+        if 'stream' in edge[2]:
+            data["workflow"]["edges"][i]["stream"] = edge[2]['stream']
+            data["workflow"]["edges"][i]["frame_policy"] = edge[2]['frame_policy']
+            data["workflow"]["edges"][i]["storage_types"] = edge[2]['storage_types']
+            data["workflow"]["edges"][i]["max_storage_sizes"] = edge[2]['max_storage_sizes']
+        else:
+            data["workflow"]["edges"][i]["stream"] = "none"
+        i += 1
 
-    content = content.rstrip(",\n")
-    content += "\n"
-    content +="   ]\n"
-    content +="   }\n"
-    content +="}"
 
-    f.write(content)
+
+    json.dump(data, f, indent=4)
     f.close()
+
+
+# Add streaming information to a link
+def updateLinkStream(graph, prod, con, stream, frame_policy, storage_types, max_storage_sizes):
+    graph.edge[prod][con]['stream'] = stream
+    graph.edge[prod][con]['frame_policy'] = frame_policy
+    graph.edge[prod][con]['storage_types'] = storage_types
+    graph.edge[prod][con]['max_storage_sizes'] = max_storage_sizes
+
+# Shortcut function to define a sequential streaming dataflow
+def addSeqStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
+    updateLinkStream(graph, prod, con, 'double', 'seq', buffers, max_buffer_sizes)
+
+# Shortcut function to define a stream sending the most recent frame to the consumer
+def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
+    updateLinkStream(graph, prod, con, 'single', 'recent', buffers, max_buffer_sizes)
+
 
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):

@@ -33,6 +33,35 @@ enum Decomposition
     DECAF_NUM_DECOMPS,
 };
 
+enum StreamPolicy
+{
+    DECAF_STREAM_NONE,
+    DECAF_STREAM_SINGLE,
+    DECAF_STREAM_DOUBLE,
+};
+
+enum StorageType
+{
+    DECAF_STORAGE_NONE,
+    DECAF_STORAGE_MAINMEM,
+    DECAF_STORAGE_FILE,
+    DECAF_STORAGE_DATASPACE,
+};
+
+enum FrameCommand
+{
+    DECAF_FRAME_COMMAND_REMOVE,
+    DECAF_FRAME_COMMAND_REMOVE_UNTIL,
+    DECAF_FRAME_COMMAND_REMOVE_UNTIL_EXCLUDED,
+};
+
+enum FramePolicyManagment
+{
+    DECAF_FRAME_POLICY_NONE,
+    DECAF_FRAME_POLICY_SEQ,
+    DECAF_FRAME_POLICY_RECENT,
+};
+
 // workflow entity types
 typedef unsigned char TaskType;
 #define DECAF_NONE      0x00
@@ -95,8 +124,55 @@ Decomposition stringToDecomposition(std::string name)
         return DECAF_PROC_DECOMP;
     else
     {
-        std::cerr<<"ERROR : unknown Decomposition name : "<<name<<". Using count instead."<<std::endl;
+        std::cerr<<"WARNING: unknown Decomposition name: "<<name<<". Using count instead."<<std::endl;
         return DECAF_CONTIG_DECOMP;
+    }
+}
+
+StreamPolicy stringToStreamPolicy(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_STREAM_NONE;
+    else if(name.compare(std::string("single")) == 0)
+        return DECAF_STREAM_SINGLE;
+    else if(name.compare(std::string("double")) == 0)
+        return DECAF_STREAM_DOUBLE;
+    else
+    {
+        std::cerr<<"WARNING: unknown stream policy name: "<<name<<"."<<std::endl;
+        return DECAF_STREAM_NONE;
+    }
+}
+
+StorageType stringToStoragePolicy(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_STORAGE_NONE;
+    else if(name.compare(std::string("mainmem")) == 0)
+        return DECAF_STORAGE_MAINMEM;
+    else if(name.compare(std::string("file")) == 0)
+        return DECAF_STORAGE_FILE;
+    else if(name.compare(std::string("dataspace")) == 0)
+        return DECAF_STORAGE_DATASPACE;
+    else
+    {
+        std::cerr<<"WARNING: unknown storage type: "<<name<<"."<<std::endl;
+        return DECAF_STORAGE_NONE;
+    }
+}
+
+FramePolicyManagment stringToFramePolicyManagment(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_FRAME_POLICY_NONE;
+    else if(name.compare(std::string("seq")) == 0)
+        return DECAF_FRAME_POLICY_SEQ;
+    else if(name.compare(std::string("recent")) == 0)
+        return DECAF_FRAME_POLICY_RECENT;
+    else
+    {
+        std::cerr<<"WARNING: unknown frame policy type: "<<name<<"."<<std::endl;
+        return DECAF_FRAME_POLICY_NONE;
     }
 }
 

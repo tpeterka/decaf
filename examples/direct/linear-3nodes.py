@@ -20,14 +20,14 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_3nodes.so'
 #  entire workflow takes 12 procs because of no overlap
 
 w = nx.DiGraph()
-w.add_node('node0', start_proc=0,  nprocs=4, func='node0')
-w.add_node('node1', start_proc=7,  nprocs=2, func='node1')
-w.add_node('node2', start_proc=11, nprocs=1, func='node2')
+w.add_node('node0', start_proc=0,  nprocs=4, func='node0', cmdline='linear_3nodes')
+w.add_node('node1', start_proc=7,  nprocs=2, func='node1', cmdline='linear_3nodes')
+w.add_node('node2', start_proc=11, nprocs=1, func='node2', cmdline='linear_3nodes')
 w.add_edge('node0', 'node1', start_proc=4, nprocs=3, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='linear_3nodes')
 w.add_edge('node1', 'node2', start_proc=9, nprocs=2, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='linear_3nodes')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
 
-wf.workflowToJson(w, mod_path, "linear3.json")
+wf.processGraph(w, "linear3", mod_path)

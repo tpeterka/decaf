@@ -6,6 +6,8 @@ import networkx as nx
 import os
 import imp
 import sys
+import argparse
+
 
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
@@ -34,9 +36,9 @@ topoCon = topo.subTopology("con", 2, 6)
 
 # Creating the graph
 w = nx.DiGraph()
-w.add_node("prod", topology=subtopos[0], func='prod', cmdline='linear_2nodes')
-w.add_node("con", topology=subtopos[2], func='con', cmdline='linear_2nodes')
-w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path,
+w.add_node("prod", topology=topoProd, func='prod', cmdline='linear_2nodes')
+w.add_node("con", topology=topoCon, func='con', cmdline='linear_2nodes')
+w.add_edge("prod", "con", topology=topoDflow, func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count', cmdline='linear_2nodes')
 
 

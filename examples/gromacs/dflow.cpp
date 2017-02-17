@@ -190,7 +190,7 @@ void computeMorton(Dataflow* dataflow, pConstructData in_data, string& model, fl
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     //TODO : find a way to pass the value as a global argument
-    BlockField globalBox;
+    BlockField globalBox(true);
     updateGlobalBox(model, globalBox, gridspace);
 
     // We compute the morton codes which will be used
