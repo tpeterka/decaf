@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# directives for TITAN
+#PBS -A csc242
+#PBS -N test
+#PBS -j oe
+#PBS -l walltime=0:10:00,nodes=1
+
+# directives for CORI and EDISON
+#SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 00:10:00
+#SBATCH -J my_job
+#SBATCH -o my_job.o%j
+
 #----------------------------------------------------------------------------
 #
 # mpi run script
@@ -15,7 +28,9 @@
 ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
-#ARCH=CRAY
+#ARCH=TITAN
+#ARCH=EDISON
+#ARCH=CORI
 
 # number of procs
 num_procs=8
@@ -70,8 +85,22 @@ qsub -n $num_nodes --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:DECAF_PREFIX=$DECAF_PR
 
 fi
 
-if [ "$ARCH" = "CRAY" ]; then
+if [ "$ARCH" = "EDISON" ]; then
 
+srun -n $num_procs $exe
+
+fi
+
+if [ "$ARCH" = "CORI" ]; then
+
+srun -C haswell -n $num_procs $exe
+
+fi
+
+if [ "$ARCH" = "TITAN" ]; then
+
+cd /ccs/proj/csc242/decaf/install/examples/direct
+date
 aprun -n $num_procs $exe
 
 fi
