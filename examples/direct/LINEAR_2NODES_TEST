@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#PBS -A csc242
+#PBS -N test
+#PBS -j oe
+#PBS -l walltime=0:10:00,nodes=1
+
 #----------------------------------------------------------------------------
 #
 # mpi run script
@@ -15,7 +20,7 @@
 ARCH=LINUX
 #ARCH=BGQ
 #ARCH=FUSION
-#ARCH=CRAY
+#ARCH=TITAN
 
 # number of procs
 num_procs=8
@@ -70,8 +75,10 @@ qsub -n $num_nodes --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:DECAF_PREFIX=$DECAF_PR
 
 fi
 
-if [ "$ARCH" = "CRAY" ]; then
+if [ "$ARCH" = "TITAN" ]; then
 
+cd /ccs/proj/csc242/decaf/install/examples/direct
+date
 aprun -n $num_procs $exe
 
 fi
