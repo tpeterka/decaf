@@ -4,22 +4,15 @@
 import os
 import imp
 import networkx as nx
-import argparse
 
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
-
-parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-wf.initParserForTopology(parser)
-args = parser.parse_args()
-
-# --- set your options here ---
 
 # path to .so module for dataflow callback functions
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_period_3nodes.so'
 
 
 # Creating the topology
-topo = wf.topologyFromArgs(args)
+topo = wf.Topology("topo", 16)
 subtopos = topo.splitTopology(["node1", "node2", "node3", "dflow1", "dflow2"],[1,1,1,0,0])
 
 contractA = wf.Contract()

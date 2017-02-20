@@ -182,13 +182,11 @@ namespace decaf
 		vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
         vector<Dataflow*>   out_dataflows;         // all my outbound dataflows
 		vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
-		//vector<Dataflow*>   node_in_dataflows;     // all my inbound dataflows in case I am a node
 		vector<pair<Dataflow*, int>> node_in_dataflows; // all my inbound dataflows in case I am a node, and the corresponding index in the vector dataflows
 
 		map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
 		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
 
-		//map<int, Dataflow*> inIndexMap; // Map between the index of the Dataflow in node_in_dataflows into this Dataflow*; May be used for get(container, index)
     };
 
 } // namespace
@@ -309,14 +307,10 @@ bool
 decaf::
 Decaf::put(pConstructData container)
 {
-	bool ret_ok;
-	for (size_t i = 0; i < out_dataflows.size(); i++){
-		ret_ok = (out_dataflows[i]->put(container, DECAF_NODE) );
-
-		if(!ret_ok){
-			terminate();
-			return false;
-		}
+	//bool ret_ok;
+	for(Dataflow* df : out_dataflows){
+	//for (size_t i = 0; i < out_dataflows.size(); i++){
+		df->put(container, DECAF_NODE);
 	}
 
     // link ranks that do overlap this node need to be run in one-time mode
@@ -336,13 +330,7 @@ bool
 decaf::
 Decaf::put(pConstructData container, int i)
 {
-	//bool ret_ok = out_dataflows[i]->put(container, DECAF_NODE);
-	bool ret_ok = dataflows[i]->put(container, DECAF_NODE);
-
-	if(!ret_ok){
-		terminate();
-		return false;
-	}
+	dataflows[i]->put(container, DECAF_NODE);
 
 	// TODO remove the loop, with the given i in argument we know whether there is an ovelapping or not
 	// link ranks that do overlap this node need to be run in one-time mode
@@ -365,17 +353,12 @@ Decaf::put(pConstructData container, string port){
 	if(it == outPortMap.end()){
 		fprintf(stderr, "ERROR: the output port %s is not present or not associated to a Dataflow. Aborting.\n", port.c_str());
 		MPI_Abort(MPI_COMM_WORLD, 0);
-		//terminate();
-		//return false;
 	}
 
-	bool ret_ok;
+	//bool ret_ok;
 	for(Dataflow* out_df : it->second){
-		ret_ok = out_df->put(container, DECAF_NODE);
-		if(!ret_ok){
-			terminate();
-			return false;
-		}
+		out_df->put(container, DECAF_NODE);
+
 	}
 	// TODO remove the loop, with the given port in argument we know whether there is an ovelapping or not
 	// link ranks that do overlap this node need to be run in one-time mode
@@ -400,8 +383,6 @@ Decaf::get(pConstructData container, string port){
 	if(it == inPortMap.end()){
 		fprintf(stderr, "ERROR: the input port %s is not present or not associated to a Dataflow. Aborting.\n", port.c_str());
 		MPI_Abort(MPI_COMM_WORLD, 0);
-		//terminate();
-		//return false;
 	}
 
 	if(it->second->isClose()){// A quit message has already been received, nothing to get anymore
@@ -420,12 +401,8 @@ Decaf::get(pConstructData container, string port){
 		}
 	}
 
-	bool ret_ok;
-	ret_ok = it->second->get(container, DECAF_NODE);
-	if(!ret_ok){
-		terminate();
-		return false;
-	}
+	//bool ret_ok;
+	it->second->get(container, DECAF_NODE);
 
 	if(Dataflow::test_quit(container)){
 		return false;
@@ -458,7 +435,7 @@ Decaf::get(map<string, pConstructData> &containers){
 
 
 	containers.clear();
-	bool ret_ok;
+	//bool ret_ok;
 
 	for(std::pair<string, Dataflow*> pair : inPortMap){
 		pConstructData container;
@@ -466,13 +443,9 @@ Decaf::get(map<string, pConstructData> &containers){
 			containers.emplace(pair.first, container);
 		}
 		else{
-			ret_ok = pair.second->get(container, DECAF_NODE);
-			if(!ret_ok){
-				terminate();
-				return false;
-			}
-			containers.emplace(pair.first, container);
+			pair.second->get(container, DECAF_NODE);
 
+			containers.emplace(pair.first, container);
 		}
 	}
 
@@ -496,7 +469,7 @@ Decaf::get(map<int, pConstructData> &containers){
 	}
 
 	containers.clear();
-	bool ret_ok;
+	//bool ret_ok;
 
 	for (std::pair<Dataflow*, int> pair : node_in_dataflows) // I am a node
 	{
@@ -505,11 +478,8 @@ Decaf::get(map<int, pConstructData> &containers){
 			containers.emplace(pair.second, container);
 		}
 		else{
-			ret_ok = pair.first->get(container, DECAF_NODE);
-			if(!ret_ok){
-				terminate();
-				return false;
-			}
+			pair.first->get(container, DECAF_NODE);
+
 			containers.emplace(pair.second, container);
 		}
 	}
@@ -537,7 +507,7 @@ Decaf::get(vector< pConstructData >& containers)
 	}
 
     containers.clear();
-	bool ret_ok;
+	//bool ret_ok;
 
 	/* //TODO remove this; My guess is it is never reached since this get is never called by a link
 	for (size_t i = 0; i < link_in_dataflows.size(); i++) // I am a link
@@ -551,16 +521,14 @@ Decaf::get(vector< pConstructData >& containers)
         containers.push_back(container);
 
 	}*/
-    for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
+	//for (size_t i = 0; i < node_in_dataflows.size(); i++) // I am a node
+	for(std::pair<Dataflow*, int> pair : node_in_dataflows)
     {
-        pConstructData container;
-		ret_ok = node_in_dataflows[i].first->get(container, DECAF_NODE);
-
-		if(!ret_ok){
-			terminate();
-			return false;
+		if(!pair.first->isClose()){
+			pConstructData container;
+			pair.first->get(container, DECAF_NODE);
+			containers.push_back(container);
 		}
-        containers.push_back(container);
     }
 
 	return !allQuit(); // If all in dataflows are quit return false
@@ -624,7 +592,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
 
     // links are driven by receiving messages
     while (1)
-    {
+	{
         // get incoming data
         for (size_t i = 0; i < link_in_dataflows.size(); i++)
         {
@@ -675,8 +643,9 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
         for (size_t i = 0; i < ready_ids.size(); i++)
         {
             if (ready_types[i] & DECAF_LINK)
-            {
-                list< pConstructData >::iterator it = containers.begin();
+			{
+
+				list< pConstructData >::iterator it = containers.begin();
                 // using while instead of for: erase inside loop disrupts the iteration
                 while (it != containers.end())
                 {
@@ -697,9 +666,10 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                     }
                     else
                         it++;
-                }
-            }                                           // workflow link
+				}
+			}                                           // workflow link
         }                                               // for i = 0; i < ready_ids.size()
+
         if (run_once)
             break;
         usleep(10);
@@ -720,7 +690,10 @@ Decaf::print_workflow()
     fprintf(stderr, "%ld nodes:\n", workflow_.nodes.size());
     for (size_t i = 0; i < workflow_.nodes.size(); i++)
     {
-        fprintf(stderr, "i %ld out_links.size %ld in_links.size %ld\n",
+		fprintf(stderr, "node:\n");
+		fprintf(stderr, "start_proc %d, nprocs %d\n",
+		        workflow_.nodes[i].start_proc, workflow_.nodes[i].nprocs);
+		fprintf(stderr, "i %ld, out_links.size %ld, in_links.size %ld\n",
                 i, workflow_.nodes[i].out_links.size(),
                 workflow_.nodes[i].in_links.size());
         fprintf(stderr, "out_links:\n");
@@ -729,14 +702,12 @@ Decaf::print_workflow()
         fprintf(stderr, "in_links:\n");
         for (size_t j = 0; j < workflow_.nodes[i].in_links.size(); j++)
             fprintf(stderr, "%d\n", workflow_.nodes[i].in_links[j]);
-        fprintf(stderr, "node:\n");
-        fprintf(stderr, "%d %d\n",
-                workflow_.nodes[i].start_proc, workflow_.nodes[i].nprocs);
+
     }
 
     fprintf(stderr, "%ld links:\n", workflow_.links.size());
     for (size_t i = 0; i < workflow_.links.size(); i++)
-        fprintf(stderr, "%d %d %d %d\n", workflow_.links[i].prod, workflow_.links[i].con,
+		fprintf(stderr, "%d -> %d, start_proc %d, nprocs %d\n", workflow_.links[i].prod, workflow_.links[i].con,
                 workflow_.links[i].start_proc, workflow_.links[i].nprocs);
 }
 

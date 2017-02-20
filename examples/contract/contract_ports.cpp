@@ -34,10 +34,7 @@ void prod(Decaf* decaf)
 	float array[3];
 	// produce data for some number of timesteps
 	for (int timestep = 0; timestep <= 6; timestep++){
-		if(rank == 0){
-			fprintf(stderr, "\n----- ITERATION %d -----\n", timestep);
-		}
-		//fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
+		fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
 		for(int i = 0; i<3; ++i){
 			array[i] = (i+1)*timestep*(rank+1)*pi;
 		}
@@ -76,7 +73,7 @@ void prod2(Decaf* decaf)
 	float den_array[3];
 
 	for (int timestep = 0; timestep <= 6; timestep++){
-		//fprintf(stderr, "prod2 rank %d timestep %d\n", rank, timestep);
+		fprintf(stderr, "prod2 rank %d timestep %d\n", rank, timestep);
 
 		for(int i = 0; i<3; ++i){
 			den_array[i] = (rank+1)*2*timestep*den*(i+1);
@@ -184,8 +181,15 @@ extern "C"
 
 } // extern "C"
 
-void run(Workflow& workflow)                             // workflow
+
+// test driver for debugging purposes
+// this is hard-coding the no overlap case
+int main(int argc,
+         char** argv)
 {
+	Workflow workflow;
+	Workflow::make_wflow_from_json(workflow, "contract_ports.json");
+
 	MPI_Init(NULL, NULL);
 
 	// create decaf
@@ -205,22 +209,10 @@ void run(Workflow& workflow)                             // workflow
 		prod2(decaf);
 	if (decaf->my_node("con2"))
 		con2(decaf);
-	
+
 	// cleanup
 	delete decaf;
 	MPI_Finalize();
-}
-
-// test driver for debugging purposes
-// this is hard-coding the no overlap case
-int main(int argc,
-         char** argv)
-{
-	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "contract_ports.json");
-
-	// run decaf
-	run(workflow);
 
 	return 0;
 }

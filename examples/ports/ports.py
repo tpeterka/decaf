@@ -23,14 +23,14 @@ subtopos = topo.splitTopology(["prod", "prod2", "con", "dflow1", "dflow2"],[1,1,
 
 
 prod = wf.nodeFromTopo("prod", "prod", "ports", subtopos[0])
-prod.addOutput("Out", "value", "Vector_int")
+prod.addOutput("Out", "value", "int", 1)
 
 prod2 = wf.nodeFromTopo("prod2", "prod2", "ports", subtopos[1])
-prod2.addOutput("Out", "value", "Array_int")
+prod2.addOutput("Out", "value", "int", 1)
 
 con = wf.nodeFromTopo("con", "con", "ports", subtopos[2])
-con.addInput("In1", "value", "Vector_int")
-con.addInput("In2", "value", "Array_int")
+con.addInput("In1", "value", "int", 1)
+con.addInput("In2", "value", "int", 2)
 
 edge1 = wf.edgeFromTopo("prod.Out", "con.In1", subtopos[3], 'count', 'dflow', mod_path, 'count', 'ports')
 edge2 = wf.edgeFromTopo("prod2.Out", "con.In2", subtopos[4], 'count', 'dflow', mod_path, 'count', 'ports')
@@ -46,5 +46,4 @@ wf.addEdge(graph, edge2)
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-#wf.processGraph(graph, "ports", filter_level = wf.Filter_level.EVERYWHERE)
-wf.processGraph(graph, "ports", filter_level = wf.Filter_level.PYTHON)
+wf.processGraph(graph, "ports", filter_level = wf.Filter_level.EVERYWHERE)

@@ -29,73 +29,52 @@ using namespace std;
 
 void prod(Decaf* decaf)
 {
-	//std::srand(std::time(0));
-	std::srand(1);
 	int rank = decaf->world->rank();
-	std::vector<int> vect(3);
-
 	// produce data for some number of timesteps
 	for (int timestep = 0; timestep < 5; timestep++){
-		if(rank == 0){
-			fprintf(stderr, "\n----- ITERATION %d -----\n", timestep);
-		}
-
-		vect[0] = std::rand() % 100;
-		vect[1] = std::rand() % 100;
-		vect[2] = std::rand() % 100;
 
 		pConstructData container;
-		VectorFieldi vf(vect, 3);
+		SimpleFieldi vf(timestep);
 
 		container->appendData("value", vf,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
-							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		//fprintf(stderr, "Prod sent\n");
-		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->put(container, 1) ){
+		//fprintf(stderr, "Prod sent %d\n", timestep);
+		if(! decaf->put(container, "Out") ){
+		//if(!decaf->put(container)){
 			break;
 		}
-		usleep(100000);
+		usleep(200000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	//fprintf(stderr, "prod1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
 // prod2
 void prod2(Decaf* decaf)
 {
-	//std::srand(std::time(0));
-	std::srand(2);
-	int rank = decaf->world->rank();
-	int arr[3];
 
 	// produce data for some number of timesteps
 	for (int timestep = 0; timestep < 5; timestep++){
 
-		arr[0] = 100 + std::rand() % 100;
-		arr[1] = 100 + std::rand() % 100;
-		arr[2] = 100 + std::rand() % 100;
-
 		pConstructData container;
-		ArrayFieldi af(arr, 3, 1);
+		SimpleFieldi af(timestep+10);
 
 		container->appendData("value", af,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		//fprintf(stderr, "Prod2 sent\n");
-		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->put(container, 0) ){
+		//fprintf(stderr, "Prod2 sent %d\n", timestep+10);
+		if(! decaf->put(container, "Out") ){
+		//if(!decaf->put(container)){
 			break;
 		}
-		usleep(100000);
+		usleep(200000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	//fprintf(stderr, "prod1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
@@ -105,25 +84,28 @@ void con(Decaf* decaf)
 	int rank = decaf->world->rank();
 	std::vector<int> vect;
 
-	map<int, pConstructData> in_data;
+	map<string, pConstructData> in_data;
+	SimpleFieldi var;
 
-	VectorFieldi vf;
 	string s;
-
+	int step = 0;
 	while(decaf->get(in_data)){
 		s = "";
 
-		vf = in_data.at(1)->getFieldData<VectorFieldi>("value");
-		if(vf){
-			fprintf(stderr, "Consumer rank %d received Vector\n", rank);
-		}
-		else{
-			fprintf(stderr, "Con rank %d did not received it\n", rank);
+		var = in_data.at("In1")->getFieldData<SimpleFieldi>("value");
+		if(var){
+			s+= to_string(var.getData()) + " ";
 		}
 
+		var = in_data.at("In2")->getFieldData<SimpleFieldi>("value");
+		if(var){
+			s+= to_string(var.getData());
+		}
+
+		cout << "Con " << rank << " step= " << step << " values: " << s << endl;
+		step++;
 	}
 
-	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
 }
 

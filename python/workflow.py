@@ -240,6 +240,9 @@ class Contract:
 
 # Checks if the input port (consumer) contract of an edge is a subset of the output port (producer) contract
 def check_contracts(graph, filter_level):
+    if filter_level == Filter_level.NONE:
+      return
+      
     my_list = [] # To check if an input port is connected to only one output port
 
     dict = defaultdict(set)

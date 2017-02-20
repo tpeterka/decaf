@@ -4,7 +4,6 @@
 import os
 import imp
 import networkx as nx
-import argparse
 
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 

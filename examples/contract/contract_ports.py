@@ -4,15 +4,9 @@
 import os
 import imp
 import networkx as nx
-import argparse
 
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
-parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-wf.initParserForTopology(parser)
-args = parser.parse_args()
-
-# --- set your options here ---
 
 # path to .so module for dataflow callback functions
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract_ports.so'
@@ -23,12 +17,12 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract_ports.s
 #				  /\
 # prod2 (1 proc) ---> con2 (1 proc)
 #
-# entire workflow takes 4 procs (0 proc per link)
+# entire workflow takes 8 procs (1 proc per link)
 
 
 # Creating the topology
-topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[1,1,1,1,0,0,0,0])
+topo = wf.Topology("topo", 16)
+subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[1,1,1,1,1,1,1,1])
 
 
 prod1 = wf.nodeFromTopo("prod1", "prod", "contract_ports", subtopos[0])
@@ -46,10 +40,10 @@ con2 = wf.nodeFromTopo("con2", "con2", "contract_ports", subtopos[3])
 con2.addInput("In1", "velocity","Array_float", 2)
 con2.addInput("In2", "id", "int")
 
-edge11 = wf.edgeFromTopo("prod1.Out", "con1.In1", subtopos[4], 'count')
-edge12 = wf.edgeFromTopo("prod1.Out", "con2.In1", subtopos[5], 'count')
-edge21 = wf.edgeFromTopo("prod2.Out1", "con1.In2", subtopos[6], 'count')
-edge22 = wf.edgeFromTopo("prod2.Out2", "con2.In2", subtopos[7], 'count')
+edge11 = wf.edgeFromTopo("prod1.Out", "con1.In1", subtopos[4], 'count', 'dflow', mod_path, 'count', 'contract_ports')
+edge12 = wf.edgeFromTopo("prod1.Out", "con2.In1", subtopos[5], 'count', 'dflow', mod_path, 'count', 'contract_ports')
+edge21 = wf.edgeFromTopo("prod2.Out1", "con1.In2", subtopos[6], 'count', 'dflow', mod_path, 'count', 'contract_ports')
+edge22 = wf.edgeFromTopo("prod2.Out2", "con2.In2", subtopos[7], 'count', 'dflow', mod_path, 'count', 'contract_ports')
 
 
 w = nx.DiGraph()

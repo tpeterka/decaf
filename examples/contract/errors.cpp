@@ -100,7 +100,6 @@ int main(int argc,
 	Workflow workflow;
 	Workflow::make_wflow_from_json(workflow, "errors.json");
 
-	// run decaf
 	MPI_Init(NULL, NULL);
 
 	// create decaf

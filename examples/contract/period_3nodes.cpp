@@ -41,7 +41,7 @@ void node1(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		fprintf(stderr, "\nNode1 sent %d\n", timestep+10);
+		fprintf(stderr, "Node1 it=%d sent %d\n", timestep, timestep+10);
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){
@@ -66,13 +66,14 @@ void node2(Decaf* decaf)
 
 	SimpleFieldi recv;
 
-	while(decaf->get(in_data)){
+	bool need_to_break = false;
+	while(!need_to_break && decaf->get(in_data)){
 		var = 0;
 		for(pConstructData data : in_data){
-			fprintf(stderr, "Node2 it=%d %sreceived var\n", timestep, data->isEmpty()?"did not " : "");
 			recv = data->getFieldData<SimpleFieldi>("var");
 			if(recv){
 				var += recv.getData();
+				fprintf(stderr, "Node2 it=%d received var=%d, forwarding to Node3\n", timestep, recv.getData());
 			}
 		}
 
@@ -80,7 +81,7 @@ void node2(Decaf* decaf)
 		SimpleFieldi field(var);
 		d->appendData("var", field);
 		if(!decaf->put(d)){
-			break;
+			need_to_break = true;
 		}
 		timestep++;
 	}
@@ -100,10 +101,15 @@ void node3(Decaf* decaf)
 	while(decaf->get(in_data)){
 		for(pConstructData data : in_data){
 			if(data->hasData("var")){
-				var = data->getFieldData<SimpleFieldi>("var").getData();
+				SimpleFieldi varf =data->getFieldData<SimpleFieldi>("var");
+				if(varf){
+					var = varf.getData();
+					fprintf(stderr, "Node3 it=%d received %d\n", timestep, var);
+				}
+				else{
+					fprintf(stderr, "Node3 it=%d did not received var", timestep);
+				}
 			}
-
-			fprintf(stderr, "Node3 it=%d received %d\n", timestep, var);
 		}
 
 		timestep++;
@@ -127,8 +133,15 @@ extern "C"
 
 } // extern "C"
 
-void run(Workflow& workflow)                             // workflow
+
+// test driver for debugging purposes
+// this is hard-coding the no overlap case
+int main(int argc,
+         char** argv)
 {
+	Workflow workflow;
+	Workflow::make_wflow_from_json(workflow, "period_3nodes.json");
+
 	MPI_Init(NULL, NULL);
 
 	// create decaf
@@ -146,22 +159,10 @@ void run(Workflow& workflow)                             // workflow
 		node2(decaf);
 	if (decaf->my_node("node3"))
 		node3(decaf);
-	
+
 	// cleanup
 	delete decaf;
 	MPI_Finalize();
-}
-
-// test driver for debugging purposes
-// this is hard-coding the no overlap case
-int main(int argc,
-         char** argv)
-{
-	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "period_3nodes.json");
-
-	// run decaf
-	run(workflow);
 
 	return 0;
 }

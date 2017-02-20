@@ -214,6 +214,7 @@ struct Workflow                              // an entire workflow
 		link.start_proc = v.second.get<int>("start_proc");
 		link.nprocs = v.second.get<int>("nprocs");
 		link.prod_dflow_redist = v.second.get<string>("prod_dflow_redist");
+		link.check_level = check_level;
 
 		if(link.nprocs != 0){
 			link.path = v.second.get<string>("path");
@@ -243,7 +244,6 @@ struct Workflow                              // an entire workflow
 
 				link.list_keys.push_back(field);
 			}
-			link.check_level = check_level;
 		}
 
         workflow.links.push_back( link );
