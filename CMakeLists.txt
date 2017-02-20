@@ -1,10 +1,10 @@
 project                     (Decaf)
 cmake_minimum_required      (VERSION 2.8)
 
-option                      (transport_mpi      "Build Decaf with MPI transport layer"         ON)
-option                      (tess_dense         "Build tessellation density estimator example" OFF)
-option                      (bredala_only       "Build only Bredala libraries and exameples"   OFF      )
-
+option                      (transport_mpi      "Build Decaf with MPI transport layer"          ON)
+option                      (tess_dense         "Build tessellation density estimator example"  OFF)
+option                      (bredala_only       "Build only Bredala libraries and examples"     OFF)
+option                      (build_tests        "Build the tests examples"                      OFF)
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 # OSX flags
@@ -81,6 +81,10 @@ add_subdirectory            (examples)
 message                     (STATUS "Examples configured")
 if                          (PYTHONLIBS_FOUND)
   add_subdirectory          (python)
+endif                       ()
+
+if                          (build_tests)
+  add_subdirectory          (tests)
 endif                       ()
 
 # Install the headers

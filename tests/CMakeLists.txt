@@ -59,11 +59,11 @@ add_executable              (testserialization testSerialization.cpp)
 target_link_libraries       (testserialization ${libraries} bredala_transport bredala_datamodel)
 
 install(TARGETS testboost testzcurve testround test2count testblock testproc testmem testserialization testEmptyMessage
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/bredala/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   )
 install(FILES BOOST_TEST ZCURVE_TEST ROUND_TEST COUNT_TEST BLOCK_TEST PROC_TEST gdb.run
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/bredala/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   )
 

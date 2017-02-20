@@ -23,6 +23,5 @@ if(NOT ${bredala_only} )
   #add_subdirectory            (cfd)
 endif(NOT ${bredala_only})
 
-add_subdirectory            (bredala)
 add_subdirectory            (C)
 

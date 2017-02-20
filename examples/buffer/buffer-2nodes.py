@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod","dflow","con"],[1,1,1])
+subtopos = topo.splitTopologyByDict([{'name':'prod', 'nprocs':1},{'name':'dflow', 'nprocs':1},{'name':'con', 'nprocs':1}])
 
 # Creating the graph
 w = nx.DiGraph()

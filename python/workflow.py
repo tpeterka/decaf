@@ -97,6 +97,31 @@ class Topology:
 
       return splits
 
+  def splitTopologyByDict(self, info):
+
+      sum = 0
+      for item in info:
+          sum = sum + item['nprocs']
+
+      # Enough rank check
+      if sum > self.nProcs:
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (sum, self.nProcs))
+
+      offset = 0
+      splits = []
+
+      for key, value in info:
+        subTopo = Topology(item['name'], item['nprocs'], offsetRank = offset)
+
+        subTopo.hostlist = self.hostlist[offset:offset+item['nprocs']]
+        subTopo.nodes = list(set(subTopo.hostlist))
+        subTopo.nNodes = len(subTopo.nodes)
+        offset += item['nprocs']
+
+        splits.append(subTopo)
+
+      return splits
+
 def initParserForTopology(parser):
     """ Add the necessary arguments for initialize a topology.
         The parser might be completed by the user in other functions
