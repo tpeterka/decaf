@@ -77,6 +77,8 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
             bb.buffer = vector<char>(b[i].diy_bb);
 
             load_block_light(d, bb);
+            fprintf(stderr, "Loading %i particles\n", d->num_orig_particles );
+            fprintf(stderr, "Loading %i with ghost particles\n", d->num_particles );
 
 #endif
 
@@ -202,10 +204,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         //fprintf(stderr, "Number of dataflows available: %u\n", decaf->nb_dataflows());
         // MATTHIEU: the total number of blocks is now given by the cmdline
 
-        for(unsigned int i = 0; i < decaf->nb_dataflows(); i++)
-        {
-            fprintf(stderr, "Size of the producer %u: %u\n", i, decaf->dataflow(i)->sizes()->prod_size);
-        }
+        fprintf(stderr, "Size of my producer on inbound 0: %i\n", decaf->prod_comm_size(0));
 
         // init diy
         diy::mpi::communicator    world(comm);
@@ -234,6 +233,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         nblocks = master.size();                    // local number of blocks
         MPI_Allreduce(&nblocks, &maxblocks, 1, MPI_INT, MPI_MAX, comm);
         MPI_Allreduce(&nblocks, &tot_blocks, 1, MPI_INT, MPI_SUM, comm);
+        fprintf(stderr, "max_blocks per proc: %i, total_blocks: %i\n", maxblocks, tot_blocks);
 
         // compute the density
         dense(alg_type, num_given_bounds, given_mins, given_maxs, project, proj_plane,
@@ -283,6 +283,11 @@ int main(int argc,
     // define the workflow
     Workflow workflow;
     Workflow::make_wflow_from_json(workflow, "tess_dense.json");
+
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    fprintf(stderr,"My rank: %i\n", my_rank);
+
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);

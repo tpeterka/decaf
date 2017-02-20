@@ -59,6 +59,8 @@ void copy_block(SerBlock* dest, DBlock* src, diy::Master& master, int lid)
     // copy (deep) block to binary buffer
     diy::MemoryBuffer bb;
     save_block_light(master.block(lid), bb);
+    fprintf(stderr, "Serializing %i origin particles.\n", ((DBlock*)master.block(lid))->num_orig_particles);
+    fprintf(stderr, "Serializing %i with ghost particles.\n", ((DBlock*)master.block(lid))->num_particles);
     //dest->diy_bb.resize(bb.buffer.size());
     //swap(bb.buffer, dest->diy_bb);
     //dest->diy_bb.reserve(bb.buffer.size());
@@ -189,6 +191,8 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
     while (decaf->get(in_data))
     {
         fprintf(stderr, "tess: getting data for step %d\n", step);
+
+        //fprintf(stderr, "Size of my consumer on outbound 0: %i\n", decaf->con_comm_size(0));
 
         ArrayFieldf xyzpos = in_data[0]->getFieldData<ArrayFieldf>("xyz_pos");
         if(!xyzpos)
@@ -327,7 +331,7 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
         tess(master, quants, times);
 
         // debug: save file
-        // tess_save(master, outfile, times);
+        tess_save(master, outfile, times);
 
         // timing stats
         timing(times, -1, TOT_TIME, world);
@@ -376,6 +380,10 @@ int main(int argc,
     // define the workflow
     Workflow workflow;
     Workflow::make_wflow_from_json(workflow, "tess_dense.json");
+
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    fprintf(stderr,"My rank: %i\n", my_rank);
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);

@@ -35,6 +35,7 @@ extern "C"
                 Dataflow* dataflow,                  // dataflow
                 pConstructData in_data)              // input data
     {
+
         ArrayFieldf xposArray = in_data->getFieldData<ArrayFieldf>("x_pos");
         if(!xposArray)
         {

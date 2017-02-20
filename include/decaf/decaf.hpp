@@ -77,6 +77,9 @@ namespace decaf
         // return a pointer to a dataflow, identified by its index in the workflow structure
         Dataflow* dataflow(int i)  { return dataflows[i]; }
 
+        // Return the total number of dataflows build by this instance of Decaf
+        unsigned int nb_dataflows() { return dataflows.size(); }
+
         void clearBuffers(TaskType role);
 
         // return a handle for this node's producer or consumer communicator
@@ -84,6 +87,11 @@ namespace decaf
         CommHandle con_comm_handle();
         int prod_comm_size();
         int con_comm_size();
+
+        int local_comm_size();              // Return the size of the communicator of the local task
+        CommHandle local_comm_handle();     // Return the communicator of the local task
+        int prod_comm_size(int i);          // Return the size of the communicator of the producer of the in dataflow i
+        int con_comm_size(int i);           // Return the size of the communicator of the consumer of the out dataflow i
 
 
         // return a pointer to this node's producer or consumer communicator
@@ -822,11 +830,11 @@ decaf::
 Decaf::prod_comm_size()
 {
     if(!out_dataflows.empty())
-        return out_dataflows[0]->sizes()->con_size;
+        return out_dataflows[0]->sizes()->prod_size;
     else // The task is the only one in the graph
     {
         int size_comm;
-        MPI_Comm_rank(world_comm_, &size_comm);
+        MPI_Comm_size(world_comm_, &size_comm);
         return size_comm;
     }
 }
@@ -844,5 +852,73 @@ Decaf::con_comm_size()
         return size_comm;
     }
 }
+
+int
+decaf::
+Decaf::local_comm_size()
+{
+    // We are the consumer in the inbound dataflow
+    if(!node_in_dataflows.empty())
+        return node_in_dataflows[0]->sizes()->con_size;
+    else if(!link_in_dataflows.empty())
+        return link_in_dataflows[0]->sizes()->dflow_size;
+    // We are the producer in the outbound dataflow
+    else if(!out_dataflows.empty())
+        return out_dataflows[0]->sizes()->prod_size;
+
+    else
+    {
+        // We don't have nor inbound not outbound dataflows
+        // The task is alone in the graph, returning world comm
+        int comm_size;
+        MPI_Comm_size(world_comm_, &comm_size);
+        return comm_size;
+    }
+
+
+}
+
+CommHandle
+decaf::
+Decaf::local_comm_handle()
+{
+    // We are the consumer in the inbound dataflow
+    if(!node_in_dataflows.empty())
+        return node_in_dataflows[0]->con_comm_handle();
+    else if(!link_in_dataflows.empty())
+        return link_in_dataflows[0]->dflow_comm_handle();
+    // We are the producer in the outbound dataflow
+    else if(!out_dataflows.empty())
+        return out_dataflows[0]->prod_comm_handle();
+
+    else
+    {
+        // We don't have nor inbound not outbound dataflows
+        // The task is alone in the graph, returning world comm
+        return world_comm_;
+    }
+}
+
+int
+decaf::
+Decaf::prod_comm_size(int i)
+{
+    if(node_in_dataflows.size() > i)
+        return node_in_dataflows[i]->sizes()->prod_size;
+    else if(link_in_dataflows.size() > i)
+        return link_in_dataflows[i]->sizes()->prod_size;
+    return 0;
+}
+
+int
+decaf::
+Decaf::con_comm_size(int i)
+{
+    if(out_dataflows.size() > i)
+        return out_dataflows[i]->sizes()->con_size;
+
+    return 0;
+}
+
 
 #endif  // DECAF_HPP

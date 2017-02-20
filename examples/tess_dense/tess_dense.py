@@ -29,17 +29,18 @@ args = parser.parse_args()
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopology(["prod","dflow","tess","dense"],[4,4,4,2])
+subtopos = topo.splitTopology(["prod","dflow","tess","dense"],[4,4,2,1])
 
 tot_blocks = 4
+tot_particles = 80
 
 w = nx.DiGraph()
 w.add_node("prod",                           topology=subtopos[0], func='prod',
-           cmdline='points')
+           cmdline='points '+str(tot_particles))
 w.add_node("tessellate",                     topology=subtopos[2], func='tessellate',
-           cmdline='tess '+str(tot_blocks))
+           cmdline='xterm -hold -e tess '+str(tot_blocks))
 w.add_node("density_estimate",               topology=subtopos[3], func='density_estimate',
-           cmdline='dense '+str(tot_blocks))
+           cmdline='xterm -hold -e dense '+str(tot_blocks))
 w.add_edge("prod", "tessellate",             topology=subtopos[1], func='dflow1',
            path=mod_path, prod_dflow_redist='proc', dflow_con_redist='proc', cmdline='pts_dflow')
 w.add_edge("tessellate", "density_estimate", start_proc=0,  nprocs=0, func='dflow2',

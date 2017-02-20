@@ -69,7 +69,9 @@ namespace decaf
         bool is_con_root()     { return world_rank_ == sizes_.con_start; }
         CommHandle prod_comm_handle() { return prod_comm_->handle(); }
         CommHandle con_comm_handle()  { return con_comm_->handle();  }
+        CommHandle dflow_comm_handle(){ return dflow_comm_->handle();}
         Comm* prod_comm()             { return prod_comm_; }
+        Comm* dflow_comm()            { return dflow_comm_; }
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
