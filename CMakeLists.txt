@@ -3,8 +3,6 @@ cmake_minimum_required      (VERSION 2.8)
 
 option                      (transport_mpi      "Build Decaf with MPI transport layer"         ON)
 option                      (tess_dense         "Build tessellation density estimator example" OFF)
-option                      (gromacs_example    "Build Gromacs example"                        OFF)
-option                      (gromacs_flowvr     "Build Gromacs example with FlowVR enable"     OFF)
 option                      (bredala_only       "Build only Bredala libraries and exameples"   OFF      )
 
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
