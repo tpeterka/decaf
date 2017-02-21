@@ -24,9 +24,14 @@
 #include <mpi.h>
 #include <map>
 #include <cstdlib>
+#include <stack>
 
 using namespace decaf;
 using namespace std;
+
+
+// Everything static because dflow is a library call
+static int iteration = 0;
 
 // link callback function
 extern "C"
@@ -36,7 +41,9 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
-        fprintf(stderr, "Forwarding data in dflow\n");
+        fprintf(stderr, "It %i: Forwarding data in dflow\n", iteration);
+        iteration++;
+
         dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"

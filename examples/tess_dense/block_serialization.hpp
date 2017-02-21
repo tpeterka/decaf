@@ -14,6 +14,7 @@
 
 #include <decaf/data_model/baseconstructdata.hpp>
 #include <boost/serialization/array.hpp>
+#include <boost/serialization/vector.hpp>
 #include "tess/tess.h"
 #include "tess/tess.hpp"
 
@@ -156,5 +157,5 @@ namespace boost
 }
 
 BOOST_CLASS_EXPORT_GUID(decaf::ArrayConstructData<SerBlock>, "ArrayConstructData<SerBlock>")
-
+BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<SerBlock>, "VectorConstructData<SerBlock>")
 #endif

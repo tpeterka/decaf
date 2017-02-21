@@ -90,7 +90,7 @@ int main()
 
     char suffix[MAX_STRING_LENGTH];
     char path[MAX_STRING_LENGTH];
-    strcpy(suffix, "/examples/C/libmod_dflow_direct.so");
+    strcpy(suffix, "/examples/C/decaf/libmod_dflow_direct.so");
     strcpy(path, prefix);
     strcat(path, suffix);
 

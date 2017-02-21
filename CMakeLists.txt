@@ -1,18 +1,16 @@
 project                     (Decaf)
 cmake_minimum_required      (VERSION 2.8)
 
-option                      (transport_mpi      "Build Decaf with MPI transport layer"         ON)
-option                      (tess_dense         "Build tessellation density estimator example" OFF)
-option                      (gromacs_example    "Build Gromacs example"                        OFF)
-option                      (gromacs_flowvr     "Build Gromacs example with FlowVR enable"     OFF)
-option			    (bredala_only	"Build only Bredala libraries and exameples"   OFF)
-
+option                      (transport_mpi      "Build Decaf with MPI transport layer"          ON)
+option                      (tess_dense         "Build tessellation density estimator example"  OFF)
+option                      (bredala_only       "Build only Bredala libraries and examples"     OFF)
+option                      (build_tests        "Build the tests examples"                      OFF)
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 # OSX flags
 if                          (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    add_definitions	    (-DMAC_OSX)
-    set			    (CMAKE_MACOSX_RPATH	    on)
+    add_definitions         (-DMAC_OSX)
+    set                     (CMAKE_MACOSX_RPATH	  on)
 
     # --- following RPATH settings are for Sierra w/ Clang, hopefully they don't hurt other versions
     # ref: https://cmake.org/Wiki/CMake_RPATH_handling
@@ -59,6 +57,7 @@ endif                       ()
 
 # Boost
 find_package                (Boost COMPONENTS serialization REQUIRED)
+message                     (STATUS "Boost libraries: " ${Boost_LIBRARIES})
 
 # Set include directories
 set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")
@@ -74,6 +73,8 @@ set                         (libraries
                              ${transport_libraries}
                              ${CMAKE_DL_LIBS})
 
+set (CMAKE_LINKER_FLAGS ${CMAKE_LINKER_FLAGS} "-Wl,--export-dynamic -dynamic")
+
 # subdirectories
 add_subdirectory            (src)
 add_subdirectory            (examples)
@@ -82,16 +83,19 @@ if                          (PYTHONLIBS_FOUND)
   add_subdirectory          (python)
 endif                       ()
 
-# Install the headers
-file(GLOB DEPLOY_FILES_AND_DIRS "${PROJECT_SOURCE_DIR}/include/*")
-foreach(ITEM ${DEPLOY_FILES_AND_DIRS})
-   if( IS_DIRECTORY "${ITEM}" )
-      list( APPEND DIRS_TO_DEPLOY "${ITEM}" )
-   else()
-      list( APPEND FILES_TO_DEPLOY "${ITEM}" )
-   endif()
-endforeach()
-install( FILES ${FILES_TO_DEPLOY} DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
-install( DIRECTORY ${DIRS_TO_DEPLOY} DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
+if                          (build_tests)
+  add_subdirectory          (tests)
+endif                       ()
 
-install ( FILES cmake/FindDecaf.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/cmake )
+# Install the headers
+file                        (GLOB DEPLOY_FILES_AND_DIRS "${PROJECT_SOURCE_DIR}/include/*")
+foreach                     (ITEM ${DEPLOY_FILES_AND_DIRS})
+   if                       (IS_DIRECTORY "${ITEM}")
+      list                  (APPEND DIRS_TO_DEPLOY "${ITEM}")
+   else                     ()
+      list                  (APPEND FILES_TO_DEPLOY "${ITEM}")
+   endif                    ()
+endforeach                  ()
+install                     (FILES ${FILES_TO_DEPLOY} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install                     (DIRECTORY ${DIRS_TO_DEPLOY} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install                     ( FILES cmake/FindDecaf.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/cmake)

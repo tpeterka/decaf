@@ -704,7 +704,8 @@ extern "C"
     bca_field
     bca_create_blockfield(bca_block *block)
     {
-        BlockField* newBlock = new BlockField();
+        // We initiate manually
+        BlockField* newBlock = new BlockField(true);
         newBlock->getBlock()->setGridspace(block->gridspace);
         if(block->globalbbox != NULL)
         {

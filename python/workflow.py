@@ -399,8 +399,8 @@ class Topology:
   def subTopology(self, name, nProcs, procOffset):
 
       # Enough rank check
-      if nProcs > self.nProcs:
-        raise ValueError("Not enough rank available")
+      if procOffset + nProcs > self.nProcs:
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (procOffset + nProcs, self.nProcs))
 
       subTopo = Topology(name, nProcs, offsetRank = procOffset)
 
@@ -419,7 +419,7 @@ class Topology:
 
       # Enough rank check
       if sum(nProcs) > self.nProcs:
-        raise ValueError("Not enough rank available")
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (sum(nProcs), self.nProcs))
 
       offset = 0
       splits = []
@@ -437,6 +437,31 @@ class Topology:
       return splits
 # End of class Topology
 
+
+  def splitTopologyByDict(self, info):
+
+      sum = 0
+      for item in info:
+          sum = sum + item['nprocs']
+
+      # Enough rank check
+      if sum > self.nProcs:
+        raise ValueError("Not enough rank available. Asked %s, given %s." % (sum, self.nProcs))
+
+      offset = 0
+      splits = []
+
+      for key, value in info:
+        subTopo = Topology(item['name'], item['nprocs'], offsetRank = offset)
+
+        subTopo.hostlist = self.hostlist[offset:offset+item['nprocs']]
+        subTopo.nodes = list(set(subTopo.hostlist))
+        subTopo.nNodes = len(subTopo.nodes)
+        offset += item['nprocs']
+
+        splits.append(subTopo)
+
+      return splits
 
 def initParserForTopology(parser):
     """ Add the necessary arguments to initialize a topology.
@@ -470,7 +495,8 @@ def processTopology(graph):
             node[1]['start_proc'] = topo.offsetRank
             node[1]['nprocs'] = topo.nProcs
             # Clear the graph
-            del node[1]['topology'] #TODO is it really useful to remove this ? Not real memory consumption
+            del node[1]['topology'] #TODO is it really useful to remove this ? No real memory consumption
+
 
     for edge in graph.edges_iter(data=True):
         if 'topology' in edge[2]:
@@ -478,7 +504,8 @@ def processTopology(graph):
             edge[2]['start_proc'] = topo.offsetRank
             edge[2]['nprocs'] = topo.nProcs
             # Clear the graph
-            del edge[2]['topology'] #TODO is it really useful to remove this ? Not real memory consumption
+            del edge[2]['topology'] #TODO is it really useful to remove this ? No real memory consumption
+
 
 
 def workflowToJson(graph, outputFile, filter_level):
@@ -491,7 +518,6 @@ def workflowToJson(graph, outputFile, filter_level):
     data = {}
     data["workflow"] = {}
     data["workflow"]["filter_level"] = Filter_level.dictReverse[filter_level]
-    
 
     data["workflow"]["nodes"] = []
     i = 0
@@ -501,7 +527,7 @@ def workflowToJson(graph, outputFile, filter_level):
                                           "func" : node[1]['func']})
         node[1]['index'] = i
         i += 1
-    
+
 
     data["workflow"]["edges"] = []
     i = 0
@@ -519,6 +545,14 @@ def workflowToJson(graph, outputFile, filter_level):
                                           "dflow_con_redist" : edge[2]['dflow_con_redist'],
                                           "path" : edge[2]['path']})
          
+        if 'stream' in edge[2]:
+            data["workflow"]["edges"][i]["stream"] = edge[2]['stream']
+            data["workflow"]["edges"][i]["frame_policy"] = edge[2]['frame_policy']
+            data["workflow"]["edges"][i]["storage_types"] = edge[2]['storage_types']
+            data["workflow"]["edges"][i]["max_storage_sizes"] = edge[2]['max_storage_sizes']
+        else:
+            data["workflow"]["edges"][i]["stream"] = "none"
+
         # TODO VERIFY THIS, used with link any + contract 
         if "linkContract" in edge[2]:
           data["workflow"]["edges"][i]["linkContract"] = edge[2]["linkContract"].dict
@@ -536,6 +570,22 @@ def workflowToJson(graph, outputFile, filter_level):
     f = open(outputFile, 'w')
     json.dump(data, f, indent=4)
     f.close()
+# End workflowToJson
+
+# Add streaming information to a link
+def updateLinkStream(graph, prod, con, stream, frame_policy, storage_types, max_storage_sizes):
+    graph.edge[prod][con]['stream'] = stream
+    graph.edge[prod][con]['frame_policy'] = frame_policy
+    graph.edge[prod][con]['storage_types'] = storage_types
+    graph.edge[prod][con]['max_storage_sizes'] = max_storage_sizes
+
+# Shortcut function to define a sequential streaming dataflow
+def addSeqStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
+    updateLinkStream(graph, prod, con, 'double', 'seq', buffers, max_buffer_sizes)
+
+# Shortcut function to define a stream sending the most recent frame to the consumer
+def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
+    updateLinkStream(graph, prod, con, 'single', 'recent', buffers, max_buffer_sizes)
 
 
 # Looking for a node/edge starting at a particular rank

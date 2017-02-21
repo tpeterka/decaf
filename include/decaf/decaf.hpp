@@ -99,6 +99,9 @@ namespace decaf
         // return a pointer to a dataflow, identified by its index in the workflow structure
         Dataflow* dataflow(int i)  { return dataflows[i]; }
 
+        // Return the total number of dataflows build by this instance of Decaf
+        unsigned int nb_dataflows() { return dataflows.size(); }
+
         void clearBuffers(TaskType role);
 
         // return a handle for this node's producer or consumer communicator
@@ -106,6 +109,11 @@ namespace decaf
         CommHandle con_comm_handle();
         int prod_comm_size();
         int con_comm_size();
+
+        int local_comm_size();              // Return the size of the communicator of the local task
+        CommHandle local_comm_handle();     // Return the communicator of the local task
+        int prod_comm_size(int i);          // Return the size of the communicator of the producer of the in dataflow i
+        int con_comm_size(int i);           // Return the size of the communicator of the consumer of the out dataflow i
 
 
         // return a pointer to this node's producer or consumer communicator
@@ -532,6 +540,7 @@ Decaf::get(vector< pConstructData >& containers)
     }
 
 	return !allQuit(); // If all in dataflows are quit return false
+
 }
 
 
@@ -558,7 +567,7 @@ decaf::
 Decaf::terminate()
 {
     pConstructData quit_container;
-    Dataflow::set_quit(quit_container);
+    msgtools::set_quit(quit_container);
     put(quit_container);
 }
 
@@ -611,11 +620,11 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
              it != containers.end(); it++)
         {
             // add quit flag to containers object, initialize to false
-            if (Dataflow::test_quit(*it))
+            if (msgtools::test_quit(*it))
             {
                 // send quit to destinations
                 pConstructData quit_container;
-                Dataflow::set_quit(quit_container);
+                msgtools::set_quit(quit_container);
 
                 for (size_t i = 0; i < ready_ids.size(); i++)
                 {
@@ -733,6 +742,10 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
         Decomposition dflow_con_redist =
             stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
 
+		StreamPolicy stream_mode =
+		    stringToStreamPolicy(workflow_.links[dflow].stream);
+		FramePolicyManagment frame_policy =
+		    stringToFramePolicyManagment(workflow_.links[dflow].frame_policy);
 		dataflows.push_back(new Dataflow(world_comm_,
 		                             decaf_sizes,
 		                             prod,
@@ -740,7 +753,11 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
 		                             con,
 		                             workflow_.links[i],
 		                             prod_dflow_redist,
-		                             dflow_con_redist));
+		                             dflow_con_redist,
+		                             stream_mode,
+		                             frame_policy,
+		                             workflow_.links[dflow].storages,
+		                             workflow_.links[dflow].storage_max_buffer));
 
         dataflows[i]->err();
     }
@@ -853,7 +870,7 @@ Decaf::router(list< pConstructData >& in_data, // input messages
 
         if (dest_node >= 0)               // destination is a node
         {
-            if (Dataflow::test_quit(*it)) // done
+            if (msgtools::test_quit(*it)) // done
             {
                 size_t j;
                 for (j = 0; j < my_nodes_.size(); j++)
@@ -880,7 +897,7 @@ Decaf::router(list< pConstructData >& in_data, // input messages
 
         else                              // destination is a link
         {
-            if (Dataflow::test_quit(*it)) // done
+            if (msgtools::test_quit(*it)) // done
             {
                 size_t j;
                 for (j = 0; j < my_links_.size(); j++)
@@ -1041,11 +1058,11 @@ decaf::
 Decaf::prod_comm_size()
 {
     if(!out_dataflows.empty())
-        return out_dataflows[0]->sizes()->con_size;
+        return out_dataflows[0]->sizes()->prod_size;
     else // The task is the only one in the graph
     {
         int size_comm;
-        MPI_Comm_rank(world_comm_, &size_comm);
+        MPI_Comm_size(world_comm_, &size_comm);
         return size_comm;
     }
 }
@@ -1063,5 +1080,73 @@ Decaf::con_comm_size()
         return size_comm;
     }
 }
+
+int
+decaf::
+Decaf::local_comm_size()
+{
+    // We are the consumer in the inbound dataflow
+    if(!node_in_dataflows.empty())
+        return node_in_dataflows[0]->sizes()->con_size;
+    else if(!link_in_dataflows.empty())
+        return link_in_dataflows[0]->sizes()->dflow_size;
+    // We are the producer in the outbound dataflow
+    else if(!out_dataflows.empty())
+        return out_dataflows[0]->sizes()->prod_size;
+
+    else
+    {
+        // We don't have nor inbound not outbound dataflows
+        // The task is alone in the graph, returning world comm
+        int comm_size;
+        MPI_Comm_size(world_comm_, &comm_size);
+        return comm_size;
+    }
+
+
+}
+
+CommHandle
+decaf::
+Decaf::local_comm_handle()
+{
+    // We are the consumer in the inbound dataflow
+    if(!node_in_dataflows.empty())
+        return node_in_dataflows[0]->con_comm_handle();
+    else if(!link_in_dataflows.empty())
+        return link_in_dataflows[0]->dflow_comm_handle();
+    // We are the producer in the outbound dataflow
+    else if(!out_dataflows.empty())
+        return out_dataflows[0]->prod_comm_handle();
+
+    else
+    {
+        // We don't have nor inbound not outbound dataflows
+        // The task is alone in the graph, returning world comm
+        return world_comm_;
+    }
+}
+
+int
+decaf::
+Decaf::prod_comm_size(int i)
+{
+    if(node_in_dataflows.size() > i)
+        return node_in_dataflows[i]->sizes()->prod_size;
+    else if(link_in_dataflows.size() > i)
+        return link_in_dataflows[i]->sizes()->prod_size;
+    return 0;
+}
+
+int
+decaf::
+Decaf::con_comm_size(int i)
+{
+    if(out_dataflows.size() > i)
+        return out_dataflows[i]->sizes()->con_size;
+
+    return 0;
+}
+
 
 #endif  // DECAF_HPP
