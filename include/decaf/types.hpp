@@ -138,6 +138,8 @@ Decomposition stringToDecomposition(std::string name)
 		return DECAF_BLOCK_DECOMP;
 	else if (name.compare(std::string("proc")) == 0)
 		return DECAF_PROC_DECOMP;
+	else if (name.compare(std::string("")) == 0)
+		return DECAF_CONTIG_DECOMP;
 	else
 	{
 		std::cerr<<"WARNING: unknown Decomposition name: "<<name<<". Using count instead."<<std::endl;

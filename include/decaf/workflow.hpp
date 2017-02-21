@@ -254,12 +254,16 @@ struct Workflow                              // an entire workflow
 			}
 		}
 
-		boost::optional<string> opt_stream = v.second.get_optional<string>("stream", "none");
+		boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
 		if(opt_stream)
 			link.stream = opt_stream.get();
-		boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy","none");
+		else
+			link.stream = "none";
+		boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
 		if(opt_frame_policy)
 			link.frame_policy = opt_frame_policy.get();
+		else
+			link.frame_policy = "none";
 
 		// TODO CHECK if this is possible even when there are no "strorage_types" in the tree
 		if(v.second.count("storage_types") > 0)
@@ -269,7 +273,7 @@ struct Workflow                              // an entire workflow
                 StorageType type = stringToStoragePolicy(types.second.data());
                 link.storages.push_back(type);
             }
-        }
+		}
 
         if(v.second.count("max_storage_sizes") > 0)
         {

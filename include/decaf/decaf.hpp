@@ -1087,9 +1087,9 @@ Decaf::local_comm_size()
 {
     // We are the consumer in the inbound dataflow
     if(!node_in_dataflows.empty())
-        return node_in_dataflows[0]->sizes()->con_size;
+		return node_in_dataflows[0].first->sizes()->con_size;
     else if(!link_in_dataflows.empty())
-        return link_in_dataflows[0]->sizes()->dflow_size;
+		return link_in_dataflows[0]->sizes()->dflow_size;
     // We are the producer in the outbound dataflow
     else if(!out_dataflows.empty())
         return out_dataflows[0]->sizes()->prod_size;
@@ -1112,7 +1112,7 @@ Decaf::local_comm_handle()
 {
     // We are the consumer in the inbound dataflow
     if(!node_in_dataflows.empty())
-        return node_in_dataflows[0]->con_comm_handle();
+		return node_in_dataflows[0].first->con_comm_handle();
     else if(!link_in_dataflows.empty())
         return link_in_dataflows[0]->dflow_comm_handle();
     // We are the producer in the outbound dataflow
@@ -1132,7 +1132,7 @@ decaf::
 Decaf::prod_comm_size(int i)
 {
     if(node_in_dataflows.size() > i)
-        return node_in_dataflows[i]->sizes()->prod_size;
+		return node_in_dataflows[i].first->sizes()->prod_size;
     else if(link_in_dataflows.size() > i)
         return link_in_dataflows[i]->sizes()->prod_size;
     return 0;

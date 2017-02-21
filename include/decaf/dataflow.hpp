@@ -184,9 +184,7 @@ namespace decaf
 		bool bContract_;				// boolean to say if the dataflow has a contract or not
 		Check_level check_level_;			 // level of typechecking used; Relevant if bContract_ is set to true
 		vector<ContractKey> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
-	    };
-
-    };
+	};// End of class Dataflow
 
 } // namespace
 
@@ -864,7 +862,7 @@ Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool
 	data_filtered->copySystemFields(data);
 
 	// We attach the current iteration needed for the filtering at the get side or by a link for the put
-	if(check_level_ >= CHECK_EVERYWHERE || (role==DECAF_NODE && !no_link) ){
+	if(check_level_ >= CHECK_EVERYWHERE || (role==DECAF_NODE && !no_link_) ){
 		set_iteration(data_filtered, iteration);
 	}
 

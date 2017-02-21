@@ -441,6 +441,7 @@ class Topology:
   def splitTopologyByDict(self, info):
 
       sum = 0
+
       for item in info:
           sum = sum + item['nprocs']
 
@@ -451,7 +452,7 @@ class Topology:
       offset = 0
       splits = []
 
-      for key, value in info:
+      for item in info:
         subTopo = Topology(item['name'], item['nprocs'], offsetRank = offset)
 
         subTopo.hostlist = self.hostlist[offset:offset+item['nprocs']]
@@ -550,8 +551,8 @@ def workflowToJson(graph, outputFile, filter_level):
             data["workflow"]["edges"][i]["frame_policy"] = edge[2]['frame_policy']
             data["workflow"]["edges"][i]["storage_types"] = edge[2]['storage_types']
             data["workflow"]["edges"][i]["max_storage_sizes"] = edge[2]['max_storage_sizes']
-        else:
-            data["workflow"]["edges"][i]["stream"] = "none"
+        #else: NO need this, the Json reading at runtime sets "none" by default
+        #    data["workflow"]["edges"][i]["stream"] = "none"
 
         # TODO VERIFY THIS, used with link any + contract 
         if "linkContract" in edge[2]:
