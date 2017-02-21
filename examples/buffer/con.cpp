@@ -24,9 +24,20 @@
 #include <mpi.h>
 #include <map>
 #include <cstdlib>
+#include <unistd.h>
 
 using namespace decaf;
 using namespace std;
+
+// Command flag. 0 = put, other = block
+// MPI One-sided stuff
+MPI_Win winTest;
+int flag = 3;
+
+// Buffering stuff
+static MPI_Win winBuffer;
+static int send = 0;
+
 
 // consumer
 void con(Decaf* decaf)
@@ -47,6 +58,13 @@ void con(Decaf* decaf)
                 fprintf(stderr, "Error: null pointer in con\n");
         }
         fprintf(stderr, "consumer sum = %d\n", sum);
+
+        // Signaling the dflow to forward the next message
+        //decaf->dataflow(0)->signalRootDflowReady();
+
+        // Producer is putting every second
+        // Generate an overflow between the dflow and the consumer
+        sleep(5);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

@@ -21,6 +21,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
@@ -52,16 +53,17 @@ struct WorkflowNode                          // a producer or consumer
 struct WorkflowLink                          // a dataflow
 {
     WorkflowLink()                                {}
-    WorkflowLink(int prod_,
-                 int con_,
+	/*WorkflowLink(int prod_,			// This constructor is never used
+				 int con_,
                  int start_proc_,
                  int nprocs_,
                  string func_,
                  string path_,
                  string prod_dflow_redist_,
-	             string dflow_con_redist_,
-	             vector<ContractField> list_keys_,
-	             int check_types_) :
+				 string dflow_con_redist_,
+				 vector<ContractKey> list_keys_,
+				 Check_level check_level_,
+                 string stream_) :
         prod(prod_),
         con(con_),
         start_proc(start_proc_),
@@ -70,9 +72,10 @@ struct WorkflowLink                          // a dataflow
         args(NULL),
         path(path_),
         prod_dflow_redist(prod_dflow_redist_),
-	    dflow_con_redist(dflow_con_redist_),
-	    list_keys(list_keys_),
-	    check_types(check_types_)				{}
+		dflow_con_redist(dflow_con_redist_),
+		list_keys(list_keys_),
+		check_level(check_level_),
+        stream(stream_){} */
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -82,10 +85,17 @@ struct WorkflowLink                          // a dataflow
     string path;                // path to callback function module
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
+    string stream;              // Type of stream policy to use (none, single, double)
+    string frame_policy;        // Policy to use to manage the incoming frames
+    vector<StorageType> storages;               // Different level of storage availables
+    vector<unsigned int> storage_max_buffer;    // Maximum number of frame
+
+  	string srcPort;				// Portname of the source
+	string destPort;			// Portname of the dest
 
 	// The following two are only relevant if the dataflow is related to a contract
-	vector<ContractField> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
-	int check_types;						  // level of checking for the type of data to be exchanged
+	vector<ContractKey> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
+	Check_level check_level;		 // level of checking for the types of data to be exchanged
 };
 
 struct Workflow                              // an entire workflow
@@ -140,11 +150,12 @@ struct Workflow                              // an entire workflow
             return false;
         }
 
+
   static void
   make_wflow_from_json( Workflow& workflow, const string& json_path )
   {
 
-    std::string json_filename = json_path;
+	string json_filename = json_path;
     if(json_filename.length() == 0)
     {
         fprintf(stderr, "No name filename provided for the JSON file. Falling back on the DECAF_JSON environment variable\n");
@@ -154,7 +165,7 @@ struct Workflow                              // an entire workflow
             fprintf(stderr, "ERROR: The environment variable DECAF_JSON is not defined. Unable to find the workflow graph definition.\n");
             exit(1);
         }
-        json_filename = std::string(env_path);
+		json_filename = string(env_path);
     }
 
     try {
@@ -185,12 +196,13 @@ struct Workflow                              // an entire workflow
 
 		node.start_proc = v.second.get<int>("start_proc");
 		node.nprocs = v.second.get<int>("nprocs");
-		node.func = v.second.get<std::string>("func");
+		node.func = v.second.get<string>("func");
 
 		workflow.nodes.push_back( node );
-      }
+	  } // End for workflow.nodes
 
-	  int check_types = root.get<int>("workflow.check_types");
+	  string sCheck = root.get<string>("workflow.filter_level");
+	  Check_level check_level = stringToCheckLevel(sCheck);
 
       /* 
        * similarly for the edges
@@ -207,34 +219,73 @@ struct Workflow                              // an entire workflow
 	 
 		link.start_proc = v.second.get<int>("start_proc");
 		link.nprocs = v.second.get<int>("nprocs");
-		link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
+		link.prod_dflow_redist = v.second.get<string>("prod_dflow_redist");
+		link.check_level = check_level;
 
-		if(link.nprocs != 0){
-			link.path = v.second.get<std::string>("path");
-			link.func = v.second.get<std::string>("func");
-			link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
+		if(link.nprocs != 0){ // Only used if there are procs on this link
+			link.path = v.second.get<string>("path");
+			link.func = v.second.get<string>("func");
+			link.dflow_con_redist = v.second.get<string>("dflow_con_redist");
 		}
 
+		// Retrieving the name of source and target ports
+		boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
+		boost::optional<string> destP = v.second.get_optional<string>("targetPort");
+		if(srcP && destP){
+			link.srcPort = srcP.get();
+			link.destPort = destP.get();
+		}
+
+		// Retrieving the contract
 		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
 		if(pt_keys){
 			for(bpt::ptree::value_type &value: pt_keys.get()){
-				ContractField field;
+				ContractKey field;
 				field.name = value.first;
 
 				// Didn't find a nicer way of doing this...
 				auto i = value.second.begin();
-				field.type = i->second.get<std::string>("");
+				field.type = i->second.get<string>("");
 				i++;
 				field.period = i->second.get<int>("");
 				//////
 
 				link.list_keys.push_back(field);
 			}
-			link.check_types = check_types;
 		}
 
+		boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
+		if(opt_stream)
+			link.stream = opt_stream.get();
+		else
+			link.stream = "none";
+		boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
+		if(opt_frame_policy)
+			link.frame_policy = opt_frame_policy.get();
+		else
+			link.frame_policy = "none";
+
+		// TODO CHECK if this is possible even when there are no "strorage_types" in the tree
+		if(v.second.count("storage_types") > 0)
+        {
+            for (auto &types : v.second.get_child("storage_types"))
+            {
+                StorageType type = stringToStoragePolicy(types.second.data());
+                link.storages.push_back(type);
+            }
+		}
+
+        if(v.second.count("max_storage_sizes") > 0)
+        {
+            for (auto &max_size : v.second.get_child("max_storage_sizes"))
+            {
+                link.storage_max_buffer.push_back(max_size.second.get_value<unsigned int>());
+            }
+        }
+
+
         workflow.links.push_back( link );
-      }
+	  } // End for workflow.links
     }
     catch( const bpt::json_parser_error& jpe ) {
       cerr << "JSON parser exception: " << jpe.what() << endl;

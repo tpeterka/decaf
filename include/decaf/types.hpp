@@ -33,6 +33,35 @@ enum Decomposition
 	DECAF_NUM_DECOMPS,
 };
 
+enum StreamPolicy
+{
+    DECAF_STREAM_NONE,
+    DECAF_STREAM_SINGLE,
+    DECAF_STREAM_DOUBLE,
+};
+
+enum StorageType
+{
+    DECAF_STORAGE_NONE,
+    DECAF_STORAGE_MAINMEM,
+    DECAF_STORAGE_FILE,
+    DECAF_STORAGE_DATASPACE,
+};
+
+enum FrameCommand
+{
+    DECAF_FRAME_COMMAND_REMOVE,
+    DECAF_FRAME_COMMAND_REMOVE_UNTIL,
+    DECAF_FRAME_COMMAND_REMOVE_UNTIL_EXCLUDED,
+};
+
+enum FramePolicyManagment
+{
+    DECAF_FRAME_POLICY_NONE,
+    DECAF_FRAME_POLICY_SEQ,
+    DECAF_FRAME_POLICY_RECENT,
+};
+
 // workflow entity types
 typedef unsigned char TaskType;
 #define DECAF_NONE      0x00
@@ -66,11 +95,19 @@ struct DecafSizes
 	int con_nsteps;        // number of consumer timesteps
 };
 
-struct ContractField
+struct ContractKey
 {
-	std::string name;		// Name of the field
-	std::string type;		// Type of the field
-	int period;				// The field is sent every "period" iteration
+	std::string name;		// Name of the data field
+	std::string type;		// Type of the data field
+	int period;				// The data field is sent every "period" iteration
+};
+
+enum Check_level // Level of checking/filtering for the contracts, types, periodicity
+{
+	CHECK_NONE,				// NO filtering or typechecking
+	CHECK_PYTHON,			// Only at python script
+	CHECK_PY_AND_SOURCE,	// Python script AND in Dataflow->put
+	CHECK_EVERYWHERE,		// PYthon script, Dataflow->put AND Dataflow->get
 };
 
 
@@ -105,9 +142,69 @@ Decomposition stringToDecomposition(std::string name)
 		return DECAF_CONTIG_DECOMP;
 	else
 	{
-		std::cerr<<"ERROR : unknown Decomposition name : "<<name<<". Using count instead."<<std::endl;
+		std::cerr<<"WARNING: unknown Decomposition name: "<<name<<". Using count instead."<<std::endl;
 		return DECAF_CONTIG_DECOMP;
 	}
+}
+
+
+Check_level stringToCheckLevel(string check){
+	if(!check.compare("PYTHON"))
+		return CHECK_PYTHON;
+	if(!check.compare("PY_AND_SOURCE"))
+		return CHECK_PY_AND_SOURCE;
+	if(!check.compare("EVERYWHERE"))
+		return CHECK_EVERYWHERE;
+
+	return CHECK_NONE;
+}
+
+
+StreamPolicy stringToStreamPolicy(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_STREAM_NONE;
+    else if(name.compare(std::string("single")) == 0)
+        return DECAF_STREAM_SINGLE;
+    else if(name.compare(std::string("double")) == 0)
+        return DECAF_STREAM_DOUBLE;
+    else
+    {
+        std::cerr<<"WARNING: unknown stream policy name: "<<name<<"."<<std::endl;
+        return DECAF_STREAM_NONE;
+    }
+}
+
+StorageType stringToStoragePolicy(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_STORAGE_NONE;
+    else if(name.compare(std::string("mainmem")) == 0)
+        return DECAF_STORAGE_MAINMEM;
+    else if(name.compare(std::string("file")) == 0)
+        return DECAF_STORAGE_FILE;
+    else if(name.compare(std::string("dataspace")) == 0)
+        return DECAF_STORAGE_DATASPACE;
+    else
+    {
+        std::cerr<<"WARNING: unknown storage type: "<<name<<"."<<std::endl;
+        return DECAF_STORAGE_NONE;
+    }
+}
+
+FramePolicyManagment stringToFramePolicyManagment(std::string name)
+{
+    if(name.compare(std::string("none")) == 0)
+        return DECAF_FRAME_POLICY_NONE;
+    else if(name.compare(std::string("seq")) == 0)
+        return DECAF_FRAME_POLICY_SEQ;
+    else if(name.compare(std::string("recent")) == 0)
+        return DECAF_FRAME_POLICY_RECENT;
+    else
+    {
+        std::cerr<<"WARNING: unknown frame policy type: "<<name<<"."<<std::endl;
+        return DECAF_FRAME_POLICY_NONE;
+    }
 }
 
 #endif

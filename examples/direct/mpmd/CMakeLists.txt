@@ -1,6 +1,6 @@
-if                          (python_examples)
-  add_subdirectory          (python)
-endif                       (python_examples)
+﻿#if                          (python_examples)
+#  add_subdirectory          (python)
+#endif                       (python_examples)
 
 message("Building direct mpmd example")
 

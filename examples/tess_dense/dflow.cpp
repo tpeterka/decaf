@@ -22,9 +22,9 @@
 #include <map>
 #include <cstdlib>
 
-#include "wflow.hpp"                                // defines the workflow for this example
 #include "block_serialization.hpp"
 
+using namespace decaf;
 using namespace std;
 
 // link callback function
@@ -35,6 +35,7 @@ extern "C"
                 Dataflow* dataflow,                  // dataflow
                 pConstructData in_data)              // input data
     {
+
         ArrayFieldf xposArray = in_data->getFieldData<ArrayFieldf>("x_pos");
         if(!xposArray)
         {
@@ -109,7 +110,6 @@ int main(int argc,
 {
     // define the workflow
     Workflow workflow;
-    // make_wflow(workflow);
     Workflow::make_wflow_from_json(workflow, "tess_dense.json");
 
     MPI_Init(NULL, NULL);
@@ -121,6 +121,5 @@ int main(int argc,
     delete decaf;
     MPI_Finalize();
 
-    fprintf(stderr, "finished dflow1\n");
     return 0;
 }

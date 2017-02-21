@@ -24,6 +24,7 @@
 #include <mpi.h>
 #include <map>
 #include <cstdlib>
+#include <unistd.h>
 
 using namespace decaf;
 using namespace std;
@@ -32,7 +33,7 @@ using namespace std;
 void prod(Decaf* decaf)
 {
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 2; timestep++)
+    for (int timestep = 0; timestep < 10; timestep++)
     {
         fprintf(stderr, "producer timestep %d\n", timestep);
 
@@ -48,6 +49,9 @@ void prod(Decaf* decaf)
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
+
+        // Sleeping 1 sec to slow down the producer
+        sleep(1);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

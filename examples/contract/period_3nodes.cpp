@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 3 nodes example for contracts with periodicity of fields
+// 3 nodes example for testing periodicity
 //
 // clement Mommessin
 // Argonne National Laboratory
@@ -35,19 +35,19 @@ void node1(Decaf* decaf)
 		//fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
 
 		pConstructData container;
-		SimpleFieldi var(10+timestep);
+		SimpleFieldi var(timestep+10);
 
 		container->appendData("var", var,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 							  DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		fprintf(stderr, "\nNode1 it=%d sent %d\n", timestep, 10+timestep);
+		fprintf(stderr, "Node1 it=%d sent %d\n", timestep, timestep+10);
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
 		if(! decaf->put(container) ){
 			break;
 		}
-		usleep(100000);
+		usleep(200000);
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -66,15 +66,14 @@ void node2(Decaf* decaf)
 
 	SimpleFieldi recv;
 
-	while(decaf->get(in_data)){
+	bool need_to_break = false;
+	while(!need_to_break && decaf->get(in_data)){
 		var = 0;
 		for(pConstructData data : in_data){
-			fprintf(stderr, "Node2 it=%d %sreceived var\n", timestep, data->isEmpty()?"did not " : "");
-			if(data->hasData("var")){
-				recv = data->getFieldData<SimpleFieldi>("var");
-				if(recv){
-					var += recv.getData();
-				}
+			recv = data->getFieldData<SimpleFieldi>("var");
+			if(recv){
+				var += recv.getData();
+				fprintf(stderr, "Node2 it=%d received var=%d, forwarding to Node3\n", timestep, recv.getData());
 			}
 		}
 
@@ -82,10 +81,9 @@ void node2(Decaf* decaf)
 		SimpleFieldi field(var);
 		d->appendData("var", field);
 		if(!decaf->put(d)){
-			break;
+			need_to_break = true;
 		}
 		timestep++;
-		usleep(50000);
 	}
 	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
@@ -103,10 +101,15 @@ void node3(Decaf* decaf)
 	while(decaf->get(in_data)){
 		for(pConstructData data : in_data){
 			if(data->hasData("var")){
-				var = data->getFieldData<SimpleFieldi>("var").getData();
+				SimpleFieldi varf =data->getFieldData<SimpleFieldi>("var");
+				if(varf){
+					var = varf.getData();
+					fprintf(stderr, "Node3 it=%d received %d\n", timestep, var);
+				}
+				else{
+					fprintf(stderr, "Node3 it=%d did not received var", timestep);
+				}
 			}
-
-			fprintf(stderr, "Node3 it=%d received %d\n", timestep, var);
 		}
 
 		timestep++;
@@ -130,8 +133,15 @@ extern "C"
 
 } // extern "C"
 
-void run(Workflow& workflow)                             // workflow
+
+// test driver for debugging purposes
+// this is hard-coding the no overlap case
+int main(int argc,
+         char** argv)
 {
+	Workflow workflow;
+	Workflow::make_wflow_from_json(workflow, "period_3nodes.json");
+
 	MPI_Init(NULL, NULL);
 
 	// create decaf
@@ -149,22 +159,10 @@ void run(Workflow& workflow)                             // workflow
 		node2(decaf);
 	if (decaf->my_node("node3"))
 		node3(decaf);
-	
+
 	// cleanup
 	delete decaf;
 	MPI_Finalize();
-}
-
-// test driver for debugging purposes
-// this is hard-coding the no overlap case
-int main(int argc,
-         char** argv)
-{
-	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "period_3nodes.json");
-
-	// run decaf
-	run(workflow);
 
 	return 0;
 }

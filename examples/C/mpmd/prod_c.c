@@ -73,7 +73,7 @@ int main(int argc,
 
     char libpath[MAX_STRING_LENGTH];
     char path[MAX_STRING_LENGTH];
-    strcpy(libpath, "/examples/C/mpmd/mod_dflow_c.so");
+    strcpy(libpath, "/examples/C/decaf/mpmd/mod_dflow_c.so");
     strcpy(path, prefix);
     strcat(path, libpath);
 

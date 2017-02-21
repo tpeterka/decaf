@@ -22,10 +22,11 @@
 #include <map>
 #include <cstdlib>
 
-#include "wflow.hpp"                         // defines the workflow for this example
-
 using namespace decaf;
 using namespace std;
+
+
+int tot_nb_particles;
 
 // producer
 void prod(Decaf* decaf)
@@ -34,7 +35,8 @@ void prod(Decaf* decaf)
     // we're making up some synthetic data instead
 
     // number of points, randomly placed in a box of size [0, npts - 1]^3
-    int npts = 20;
+    int npts = tot_nb_particles / decaf->local_comm_size();
+    fprintf(stderr, "Generates locally %i particles.\n", npts);
 
     // add 1 to the rank because on some compilers, srand(0) = srand(1)
     srand(decaf->world->rank() + 1);
@@ -86,7 +88,7 @@ void prod(Decaf* decaf)
         vector<float> bboxBlock = {0.0, 0.0, 0.0, (float)npts, float(npts), float(npts)};
 
         // describe to decaf the global and local domain
-        BlockField domainData;
+        BlockField domainData(true);
         Block<3>* domainBlock = domainData.getBlock();
         domainBlock->setGridspace(1.0);
         domainBlock->setGlobalExtends(extendsBlock);
@@ -134,12 +136,20 @@ void prod(Decaf* decaf)
 int main(int argc,
          char** argv)
 {
+    MPI_Init(NULL, NULL);
+
+    if(argc != 2)
+    {
+        fprintf(stderr, "Usage: points tot_nb_particles\n");
+        MPI_Abort(MPI_COMM_WORLD, 0);
+    }
+
+    tot_nb_particles = atoi(argv[1]);
+    fprintf(stderr, "Will generate %i particles in total.\n", tot_nb_particles);
+
     // define the workflow
     Workflow workflow;
-    // make_wflow(workflow);
     Workflow::make_wflow_from_json(workflow, "tess_dense.json");
-
-    MPI_Init(NULL, NULL);
 
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);

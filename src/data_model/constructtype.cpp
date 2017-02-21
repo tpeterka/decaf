@@ -1391,14 +1391,15 @@ ConstructData::split(
 //Todo : remove the code redundancy
 bool
 decaf::
-ConstructData::merge(shared_ptr<BaseData> other)
+//ConstructData::merge(shared_ptr<BaseData> other)
+ConstructData::merge(shared_ptr<ConstructData> otherConstruct)
 {
-    std::shared_ptr<ConstructData> otherConstruct = std::dynamic_pointer_cast<ConstructData>(other);
+    /*std::shared_ptr<ConstructData> otherConstruct = std::dynamic_pointer_cast<ConstructData>(other);
     if(!otherConstruct)
     {
         std::cout<<"ERROR : Trying to merge two objects which have not the same dynamic type"<<std::endl;
         return false;
-    }
+    }*/
 
     //No data yet, we simply copy the data from the other map
     if(container_->empty())
