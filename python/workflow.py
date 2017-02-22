@@ -10,7 +10,7 @@ import json
 
 from collections import defaultdict
 
-import fractions  #Definition of the least common multiple of two numbers; Used for the period in Contracts
+import fractions  #Definition of the least common multiple of two numbers; Used for the periodicity
 def lcm(a,b): return abs(a * b) / fractions.gcd(a,b) if a and b else 0
 
 class Filter_level:
@@ -86,6 +86,9 @@ class Node:
     if contract.outputs == {}:
       raise ValueError("ERROR in addOutputFromContract: the contract does not have outputs.")
     self.addOutputFromDict(self, portname, contract.outputs)
+
+  def addContract(self, contract):
+    self.contract = contract
 # End of class Node
 
 """ To create a Node using a Topology """
@@ -106,7 +109,7 @@ class Edge:
     self.nprocs = nprocs
     self.prod_dflow_redist = prod_dflow_redist
 
-    if nprocs != 0 and func == '':
+    if nprocs != 0 and cmdline == '':
       raise ValueError("ERROR: Missing links arguments for the Edge \"%s->%s\"." % (src, dest))
 
     if nprocs != 0:
@@ -122,18 +125,46 @@ class Edge:
       self.srcPort = ''
       self.destPort = ''
 
-    self.contract = 0
+    self.inputs = {}
+    self.outputs = {}
 
-  def addContractLink(self, contractLink):
+  def setAny(self, bany): # If bAny is set to true, the runtime considers there is a ContractLink, even if inputs and outputs are empty
+    self.bAny = bany
+
+
+  def addContractLink(self, cLink):
     if self.nprocs == 0:
-      print "WARNING: There is no proc in the Edge \"%s->%s\", adding a contractLink is useless, continuing." % (self.src, self.dest)
-    self.contract = contractLink
+      print "WARNING: There is no proc in the Edge \"%s->%s\", adding a ContractLink is useless, continuing." % (self.src, self.dest)
+    self.inputs = cLink.inputs
+    self.outputs = cLink.outputs
+    self.bAny = cLink.bAny
 
-  def addContractFromDict(self, dict):
-    if self.contract == 0:
-      self.contract = ContractLink()
+  def addInputFromDict(self, dict):
+    if self.nprocs == 0:
+      print "WARNING: There is no proc in the Edge \"%s->%s\", adding Inputs is useless, continuing." % (self.src, self.dest)
     for key, val in dict.items():
-      self.contract.dict[key] = val
+      if len(val) == 1:
+        val.append(1)
+      self.inputs[key] = val
+
+  def addInput(self, portname, key, typename, period=1):
+    if self.nprocs == 0:
+      print "WARNING: There is no proc in the Edge \"%s->%s\", adding Inputs is useless, continuing." % (self.src, self.dest)
+    self.inputs[key] = [typename, period]
+
+
+  def addOutputFromDict(self, dict):
+    if self.nprocs == 0:
+      print "WARNING: There is no proc in the Edge \"%s->%s\", adding Outputs is useless, continuing." % (self.src, self.dest)   
+    for key, val in dict.items():
+      if len(val) == 1:
+        val.append(1)
+      self.outputs[key] = val
+
+  def addOutput(self, portname, key, typename, period=1):
+    if self.nprocs == 0:
+      print "WARNING: There is no proc in the Edge \"%s->%s\", adding Outputs is useless, continuing." % (self.src, self.dest)
+    self.outputs[key] = [typename, period]
 # End of class Edge
 
 """ To create an Edge with a Topology """
@@ -143,15 +174,19 @@ def edgeFromTopo(src, dest, topology, prod_dflow_redist, func='', path='', dflow
     return e
 
 
+""" To easily add a Node to the nx graph """
 def addNode(graph, n):
-  if hasattr(n, 'topology'):
+  graph.add_node(n.name, node=n)
+  """if hasattr(n, 'topology'):
     graph.add_node(n.name, topology=n.topology, func=n.func, cmdline=n.cmdline, inports=n.inports, outports=n.outports)
   else:
     graph.add_node(n.name, nprocs=n.nprocs, start_proc=n.start_proc, func=n.func, cmdline=n.cmdline, inports=n.inports, outports=n.outports)
+  """
 
-
+""" To easily add an Edge to the nx graph """
 def addEdge(graph, e):
-  if hasattr(e, 'topology'):
+  graph.add_edge(e.src, e.dest, edge=e)
+  """if hasattr(e, 'topology'):
     if hasattr(e, 'srcPort'):
       if e.topology.nProcs != 0:
         graph.add_edge(e.src, e.dest, prodPort = e.srcPort, conPort=e.destPort, topology=e.topology, contractLink = e.contract, prod_dflow_redist=e.prod_dflow_redist,
@@ -179,23 +214,8 @@ def addEdge(graph, e):
                 func=e.func, path=e.path, dflow_con_redist=e.dflow_con_redist, cmdline=e.cmdline)
       else:
         graph.add_edge(e.src, e.dest, nprocs=e.nprocs, start_proc=e.start_proc, contractLink = e.contract, prod_dflow_redist=e.prod_dflow_redist)
-
-
-""" Object for contract associated to a link """
-"""class ContractLink:
-  def __init__(self, dict_ = {}):#, bany = False):
-    self.dict = dict_ # Dictionary of keys to exchange
-    #self.bAny = bany  # Accept anything or not? #TODO Is this really useful ?
-    #If bAny set to True, the content of dict is required but anything else will be forwarded as well
-
-  def addKey(self, key, typename):
-    self.dict[key] = typeame
-
-  def addKeyFromDict(self, dict):
-    for key, val in dict.items():
-      self.dict[key] = val
-#End class ContractEdge
-"""
+# End of addEdge
+  """
 
 """ Object holding information about input/output data name, type and periodicity """
 class Contract:
@@ -235,8 +255,16 @@ class Contract:
       if len(val) == 1:
         val.append(1) # period=1 by default
       self.outputs[key] = val
-
 # End of class Contract
+
+""" Object for contract associated to a link """
+class ContractLink(Contract):
+  def __init__(self, bany = True, jsonfilename = ""):
+    Contract.__init__(self, jsonfilename) 
+    self.bAny = bany #If bAny set to True, the fields of contract are required but anything else will be forwarded as well
+#End class ContractLink(Contract)
+
+
 
 # Checks if the input port (consumer) contract of an edge is a subset of the output port (producer) contract
 def check_contracts(graph, filter_level):
@@ -247,30 +275,31 @@ def check_contracts(graph, filter_level):
 
     dict = defaultdict(set)
     
-    for edge in graph.edges_iter(data=True):
-        prod = graph.node[edge[0]]
-        con = graph.node[edge[1]]
+    for graphEdge in graph.edges_iter(data=True):
+        edge = graphEdge[2]["edge"]       # Edge object
+        prod = graph.node[graphEdge[0]]["node"]  # Node object for prod
+        con = graph.node[graphEdge[1]]["node"]   # Node object for con
         
-        if 'prodPort' in edge[2] and edge[2]['prodPort'] != '' : # If the prod/con of this edge have ports          
-          OutportName = edge[2]['prodPort']
-          Outport = graph.node[edge[0]]['outports'][OutportName]
+        if edge.srcPort != '' and edge.destPort != '' : # If the prod/con of this edge have ports          
+          OutportName = edge.srcPort
+          Outport = prod.outports[OutportName]
 
-          InportName = edge[2]['conPort']
-          Inport = graph.node[edge[1]]['inports'][InportName]
+          InportName = edge.destPort
+          Inport = con.inports[InportName]
 
-          s = edge[1]+'.'+InportName
+          s = edge.dest+'.'+InportName
           if s in my_list: # This input port is already connected to an output port
             raise ValueError("ERROR: The port \"%s\" cannot be connected to more than one Output port, aborting." % (s) )
           else:
             my_list.append(s)
 
           if len(Inport) == 0: # The Input port accepts anything, no need to perform check or filtering
-            print "WARNING: The port \"%s\" will accept anything sent by \"%s.%s\" and the periodicity may not be correct, continuing." % (s, edge[0], OutportName)
+            print "WARNING: The port \"%s\" will accept anything sent by \"%s.%s\" and the periodicity may not be correct, continuing." % (s, graphEdge[0], OutportName)
             continue
 
           if len(Outport) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
           #TODO in this case, must perform the checks at runtime at the dataflow->get, need to find a way to enforce that
-            print "WARNING: The output port \"%s.%s\" can send anything, only fields needed by the port \"%s\" will be kept, the periodicity may not be correct, continuing." % (edge[0], OutportName, s)
+            print "WARNING: The output port \"%s.%s\" can send anything, only fields needed by the port \"%s\" will be kept, the periodicity may not be correct, continuing." % (graphEdge[0], OutportName, s)
             list_fields = Inport
 
           else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
@@ -284,69 +313,53 @@ def check_contracts(graph, filter_level):
                   lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
                   list_fields[key] = [val[0], lcm_val]
                   if lcm_val != val[1]:
-                    print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (edge[1], key, lcm_val, val[1])
+                    print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (graphEdge[1], key, lcm_val, val[1])
                 else:
-                  raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\"." % (key, edge[0], OutportName, edge[1], InportName))
+                  raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\"." % (key, graphEdge[0], OutportName, graphEdge[1], InportName))
 
             if s != "":
-              raise ValueError("ERROR: the keys \"%s\" are not sent in the output port \"%s.%s\"." % (s.rstrip(), edge[0], OutportName))
+              raise ValueError("ERROR: the keys \"%s\" are not sent in the output port \"%s.%s\"." % (s.rstrip(), graphEdge[0], OutportName))
 
           # We add the dict of fields to be exchanged in this edge; A field is an entry of a dict: name:[type, period]
-          edge[2]['keys'] = list_fields
+          graphEdge[2]['keys'] = list_fields
         #End if
         else: # This edge does not deal with ports
-        #This is the old checking of keys/types with contracts without ports
-          if ("contract" in prod) and ("contract" in con):
-            if prod["contract"].outputs == {}:
-                raise ValueError("ERROR while checking contracts: %s has no outputs" % edge[0])
+          #This is the old checking of keys/types with contracts without ports
+          if hasattr(prod, 'contract') and hasattr(con, 'contract'):
+            if prod.contract.outputs == {}:
+                raise ValueError("ERROR while checking contracts: %s has no outputs" % prod.name)
             else:
-                prod_out = prod["contract"].outputs
+                prod_out = prod.contract.outputs
 
-            if con["contract"].inputs == {}:
-                raise ValueError("ERROR while checking contracts: %s has no inputs" % edge[1])
+            if con.contract.inputs == {}:
+                raise ValueError("ERROR while checking contracts: %s has no inputs" % con.name)
             else:
-                con_in = con["contract"].inputs
+                con_in = con.contract.inputs
 
             # We add for each edge the list of pairs key/type which is the intersection of the two contracts
             intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (filter_level == Filter_level.NONE) or (con_in[key][0] == prod_out[key][0]) ) }
             for key in intersection_keys.keys():
-                dict[edge[1]].add(key)
+                dict[con.name].add(key)
                 lcm_val = lcm(con_in[key][1], prod_out[key][1])
                 intersection_keys[key].append(lcm_val)
                 if(lcm_val != con_in[key][1]):
-                  print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (edge[1], key, lcm_val, con_in[key][1])
+                  print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (con.name, key, lcm_val, con_in[key][1])
 
             if len(intersection_keys) == 0:
-                raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
+                raise ValueError("ERROR intersection of keys from %s and %s is empty" % (prod.name, con.name))
 
             # We add the list of pairs key/type to be exchanged b/w the producer and consumer
-            edge[2]['keys'] = intersection_keys
-        #End else
-        """ TODO work in progress here
-        # Here we check if there is a contractLink and if it is a subset of the general contract of the edge
-        # TODO VERIFY THIS BEHAVIOR, does it do as planned ?
-        if 'contractLink' in edge[2] and edge[2]['contractLink'] != 0:
-          s = ""
-          for key, val in edge[2]['contractLink'].dict.items():
-            if not key in edge[2]['keys']:
-              s+= key + " "
-            else:
-              if(filter_level != Filter_level.NONE) and (val != edge[2]['keys'][key][0]) : #If the types does not match
-                raise ValueError("ERROR: the types of \"%s\" does not match for the contract and the contractLink of \"%s.%s\" and \"%s.%s\"." % (key, edge[0], OutportName, edge[1], InportName))
-
-          if s != "":
-            raise ValueError("ERROR: the keys \"%s\" required by the link are not sent in the output port \"%s.%s\"." % (s.rstrip(), edge[0], OutportName))
-        """
+            graphEdge[2]['keys'] = intersection_keys
+          #End else
         
     for name, set_k in dict.items():
-      needed = graph.node[name]['contract'].inputs
+      needed = graph.node[name]["node"].contract.inputs
       received = list(set_k)
       complement = [item for item in needed if item not in received]
       if len(complement) != 0:
         s = "ERROR %s does not receive the following:" % name
         for key in complement:
           s+= " %s:%s," %(key, needed[key])
-        #print s.rstrip(',')
         raise ValueError(s.rstrip(','))
 # End of function check_contracts
 
@@ -486,10 +499,11 @@ def initParserForTopology(parser):
 def topologyFromArgs(args):
     return Topology("global", args.nprocs, hostfilename = args.hostfile)
 
+""" Not used anymore if we are using Node and Edge objects
 def processTopology(graph):
-    """ Check all nodes and edge if a topology is present.
-        If yes, fill the fields start_proc and nprocs 
-    """
+    # Check in all nodes and edge if a topology is present.
+    #    If yes, fill the fields start_proc and nprocs 
+    
     for node in graph.nodes_iter(data=True):
         if 'topology' in node[1]:
             topo = node[1]['topology']
@@ -506,7 +520,7 @@ def processTopology(graph):
             edge[2]['nprocs'] = topo.nProcs
             # Clear the graph
             del edge[2]['topology'] #TODO is it really useful to remove this ? No real memory consumption
-
+"""
 
 
 def workflowToJson(graph, outputFile, filter_level):
@@ -522,48 +536,52 @@ def workflowToJson(graph, outputFile, filter_level):
 
     data["workflow"]["nodes"] = []
     i = 0
-    for node in graph.nodes_iter(data=True):
-        data["workflow"]["nodes"].append({"start_proc" : node[1]['start_proc'],
-                                          "nprocs" : node[1]['nprocs'],
-                                          "func" : node[1]['func']})
-        node[1]['index'] = i
+    for val in graph.nodes_iter(data=True):
+        node = val[1]["node"]
+        data["workflow"]["nodes"].append({"start_proc" : node.start_proc,
+                                          "nprocs" : node.nprocs,
+                                          "func" : node.func})
+        val[1]['index'] = i
         i += 1
 
 
     data["workflow"]["edges"] = []
     i = 0
-    for edge in graph.edges_iter(data=True):
-        prod  = graph.node[edge[0]]['index']
-        con   = graph.node[edge[1]]['index']
-        data["workflow"]["edges"].append({"start_proc" : edge[2]['start_proc'],
-                                          "nprocs" : edge[2]['nprocs'],
-                                          "source" : prod,
-                                          "target" : con,
-                                          "prod_dflow_redist" : edge[2]['prod_dflow_redist']})
+    for graphEdge in graph.edges_iter(data=True):
+        edge = graphEdge[2]["edge"]
+        prod_id  = graph.node[graphEdge[0]]['index']
+        con_id   = graph.node[graphEdge[1]]['index']
+        data["workflow"]["edges"].append({"start_proc" : edge.start_proc,
+                                          "nprocs" : edge.nprocs,
+                                          "source" : prod_id,
+                                          "target" : con_id,
+                                          "prod_dflow_redist" : edge.prod_dflow_redist})
 
-        if edge[2]["nprocs"] != 0:
-          data["workflow"]["edges"][i].update({"func" : edge[2]['func'],
-                                          "dflow_con_redist" : edge[2]['dflow_con_redist'],
-                                          "path" : edge[2]['path']})
-         
-        if 'stream' in edge[2]:
-            data["workflow"]["edges"][i]["stream"] = edge[2]['stream']
-            data["workflow"]["edges"][i]["frame_policy"] = edge[2]['frame_policy']
-            data["workflow"]["edges"][i]["storage_types"] = edge[2]['storage_types']
-            data["workflow"]["edges"][i]["max_storage_sizes"] = edge[2]['max_storage_sizes']
-        #else: NO need this, the Json reading at runtime sets "none" by default
-        #    data["workflow"]["edges"][i]["stream"] = "none"
-
-        # TODO VERIFY THIS, used with link any + contract 
-        if "linkContract" in edge[2]:
-          data["workflow"]["edges"][i]["linkContract"] = edge[2]["linkContract"].dict
+        if edge.nprocs != 0:
+          data["workflow"]["edges"][i].update({"func" : edge.func,
+                                          "dflow_con_redist" : edge.dflow_con_redist,
+                                          "path" : edge.path})
         
-        if "keys" in edge[2]:
-          data["workflow"]["edges"][i]["keys"] = edge[2]["keys"]
+        # TODO put stream and others in the Edge object?
+        if 'stream' in graphEdge[2]:
+            data["workflow"]["edges"][i]["stream"] = graphEdge[2]['stream']
+            data["workflow"]["edges"][i]["frame_policy"] = graphEdge[2]['frame_policy']
+            data["workflow"]["edges"][i]["storage_types"] = graphEdge[2]['storage_types']
+            data["workflow"]["edges"][i]["max_storage_sizes"] = graphEdge[2]['max_storage_sizes']
+        
+        # Used for ContractLink
+        # TODO update this when check_contrac takes into account the links
+        """if hasattr(edge, 'bAny'):
+          data["workflow"]["edges"][i]["linkInput"] = edge.inputs
+          data["workflow"]["edges"][i]["linkOutput"] = edge.outputs
+          data["workflow"]["edges"][i]["bAny"] = edge.bAny"""
+        
+        if "keys" in graphEdge[2]:
+          data["workflow"]["edges"][i]["keys"] = graphEdge[2]["keys"]
 
-        if "prodPort" in edge[2] and edge[2]["prodPort"] != '':
-          data["workflow"]["edges"][i].update({"sourcePort":edge[2]['prodPort'],
-                                              "targetPort":edge[2]['conPort']})
+        if edge.srcPort != '' and edge.destPort != '':
+          data["workflow"]["edges"][i].update({"sourcePort":edge.srcPort,
+                                              "targetPort":edge.destPort})
 
         i += 1
 
@@ -592,12 +610,14 @@ def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_size
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):
 
-    for node in graph.nodes_iter(data=True):
-        if node[1]['start_proc'] == rank:
+    for val in graph.nodes_iter(data=True):
+        node = val[1]["node"]
+        if node.start_proc == rank:
             return ('node', node)
 
-    for edge in graph.edges_iter(data=True):
-        if (edge[2]['start_proc'] == rank) and (edge[2]['nprocs'] != 0):
+    for val in graph.edges_iter(data=True):
+        edge = val[2]["edge"]
+        if (edge.start_proc == rank) and (edge.nprocs != 0):
             return ('edge', edge)
 
     return ('notfound', graph.nodes_iter())
@@ -622,20 +642,20 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
       if type == 'node':
 
-        if exe[1]['nprocs'] == 0:
+        if exe.nprocs == 0:
           print 'ERROR: a node can not have 0 MPI rank.'
           exit()
 
-        mpirunCommand += "-np "+str(exe[1]['nprocs'])
-        mpirunCommand += " "+str(exe[1]['cmdline'])+" : "
-        currentRank += exe[1]['nprocs']
+        mpirunCommand += "-np "+str(exe.nprocs)
+        mpirunCommand += " "+str(exe.cmdline)+" : "
+        currentRank += exe.nprocs
 
       if type == 'edge':
 
-        if exe[2]['nprocs'] != 0:
-          mpirunCommand += "-np "+str(exe[2]['nprocs'])
-          mpirunCommand += " "+str(exe[2]['cmdline'])+" : "
-          currentRank += exe[2]['nprocs']
+        if exe.nprocs != 0:
+          mpirunCommand += "-np "+str(exe.nprocs)
+          mpirunCommand += " "+str(exe.cmdline)+" : "
+          currentRank += exe.nprocs
 
     # Writting the final file
     f = open(outputFile, "w")
@@ -652,6 +672,6 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 """
 def processGraph(graph, name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = ""):
     check_contracts(graph, filter_level)
-    processTopology(graph)
+    #processTopology(graph) Not used anymore if we are using Node and Edge objects in the graph
     workflowToJson(graph, name+".json", filter_level)
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
