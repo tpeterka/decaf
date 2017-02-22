@@ -31,6 +31,54 @@
 using namespace decaf;
 using namespace std;
 
+void output(DBlock* d, const diy::Master::ProxyWithLink& cp)
+{
+     fprintf(stderr, "dense: lid=%d gid=%d\n", 0, d->gid);
+     fprintf(stderr, "mins [%.3f %.3f %.3f] maxs [%.3f %.3f %.3f]\n",
+             d->bounds.min[0], d->bounds.min[1], d->bounds.min[2],
+             d->bounds.max[0], d->bounds.max[1], d->bounds.max[2]);
+     fprintf(stderr, "box min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+             d->box.min[0], d->box.min[1], d->box.min[2],
+             d->box.max[0], d->box.max[1], d->box.max[2]);
+     fprintf(stderr, "data_bounds min [%.3f %.3f %.3f] max [%.3f %.3f %.3f]\n",
+             d->data_bounds.min[0], d->data_bounds.min[1], d->data_bounds.min[2],
+             d->data_bounds.max[0], d->data_bounds.max[1], d->data_bounds.max[2]);
+     fprintf(stderr, "num_orig_particles %d num_particles %d\n",
+             d->num_orig_particles, d->num_particles);
+     fprintf(stderr, "complete %d num_tets %d\n", d->complete, d->num_tets);
+
+     fprintf(stderr, "particles:\n");
+     for (int j = 0; j < d->num_particles; j++)
+         fprintf(stderr, "gid=%d j=%d [%.3f %.3f %.3f] ", d->gid, j,
+                 d->particles[3 * j], d->particles[3 * j + 1], d->particles[3 * j + 2]);
+     fprintf(stderr, "\n");
+
+     fprintf(stderr, "rem_gids:\n");
+     for (int j = 0; j < d->num_particles - d->num_orig_particles; j++)
+         fprintf(stderr, "gid=%d j=%d rem_gid=%d ", d->gid, j, d->rem_gids[j]);
+     fprintf(stderr, "\n");
+
+     fprintf(stderr, "rem_lids:\n");
+     for (int j = 0; j < d->num_particles - d->num_orig_particles; j++)
+         fprintf(stderr, "gid=%d j=%d rem_lid=%d ", d->gid, j, d->rem_lids[j]);
+     fprintf(stderr, "\n");
+
+     fprintf(stderr, "tets:\n");
+     for (int j = 0; j < d->num_tets; j++)
+         fprintf(stderr, "gid=%d tet[%d]=[%d %d %d %d; %d %d %d %d] ",
+                 d->gid, j,
+                 d->tets[j].verts[0], d->tets[j].verts[1],
+                 d->tets[j].verts[2], d->tets[j].verts[3],
+                 d->tets[j].tets[0], d->tets[j].tets[1],
+                 d->tets[j].tets[2], d->tets[j].tets[3]);
+     fprintf(stderr, "\n");
+
+     fprintf(stderr, "vert_to_tet:\n");
+     for (int j = 0; j < d->num_particles; j++)
+         fprintf(stderr, "gid=%d vert_to_tet[%d]=%d ", d->gid, j, d->vert_to_tet[j]);
+     fprintf(stderr, "\n");
+}
+
 int tot_blocks;
 
 // fill blocks with incoming data
@@ -218,16 +266,22 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
                                          &save_block,
                                          &load_block);
         // debug: for reading file
-        // diy::RoundRobinAssigner   assigner(world.size(), -1);  // tot_blocks found by read_blocks
+        //diy::RoundRobinAssigner   assigner(world.size(), -1);  // tot_blocks found by read_blocks
 
-        diy::RoundRobinAssigner   assigner(world.size(), tot_blocks);
+        //diy::RoundRobinAssigner   assigner(world.size(), tot_blocks);
+        diy::ContiguousAssigner   assigner(world.size(), tot_blocks);
 
         // fill blocks with incoming data
         fill_blocks(in_data, master, assigner);
 
+
         // debug: read the tessellation
-        // diy::io::read_blocks("del.out", world, assigner, master, &load_block_light);
-        // tot_blocks = assigner.nblocks();
+        //diy::io::read_blocks("del-4-2.out", world, assigner, master, &load_block_light);
+        //tot_blocks = assigner.nblocks();
+
+        // debug: displaying the content of the block
+        //master.foreach(&output);
+
 
         // get global block quantities
         nblocks = master.size();                    // local number of blocks
