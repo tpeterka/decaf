@@ -796,6 +796,8 @@ Dataflow::get(pConstructData data, TaskType role)
 		}
     }
 
+	//TODO remove the 3 data src_type, link_id and dest_id? Useless for the user, he doesn't need to know that
+
 	// Performs the filtering and checking of data if needed
 	filterGet(data, role);
 

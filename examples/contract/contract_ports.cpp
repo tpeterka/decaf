@@ -92,10 +92,7 @@ void prod2(Decaf* decaf)
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-		if(! decaf->put(container, "Out1")){
-			break;
-		}
-		if(! decaf->put(container, "Out2")){
+		if(! decaf->put(container, "Out")){
 			break;
 		}
 		usleep(200000);

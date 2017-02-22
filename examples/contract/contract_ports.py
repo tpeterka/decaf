@@ -29,8 +29,7 @@ prod1 = wf.nodeFromTopo("prod1", "prod", "contract_ports", subtopos[0])
 prod1.addOutputFromDict("Out", {"index":["int"], "velocity":["Array_float", 2]})
 
 prod2 = wf.nodeFromTopo("prod2", "prod2", "contract_ports", subtopos[1])
-prod2.addOutput("Out1", "density", "Array_float", 3)
-prod2.addOutput("Out2", "id", "int")
+prod2.addOutputFromDict("Out", {"id":["int"], "density":["Array_float", 3]})
 
 con1 = wf.nodeFromTopo("con1", "con", "contract_ports", subtopos[2])
 con1.addInputFromDict("In1", {"index":["int"], "velocity":["Array_float", 2]})
@@ -42,8 +41,8 @@ con2.addInput("In2", "id", "int")
 
 edge11 = wf.edgeFromTopo("prod1.Out", "con1.In1", subtopos[4], 'count', 'dflow', mod_path, 'count', 'contract_ports')
 edge12 = wf.edgeFromTopo("prod1.Out", "con2.In1", subtopos[5], 'count', 'dflow', mod_path, 'count', 'contract_ports')
-edge21 = wf.edgeFromTopo("prod2.Out1", "con1.In2", subtopos[6], 'count', 'dflow', mod_path, 'count', 'contract_ports')
-edge22 = wf.edgeFromTopo("prod2.Out2", "con2.In2", subtopos[7], 'count', 'dflow', mod_path, 'count', 'contract_ports')
+edge21 = wf.edgeFromTopo("prod2.Out", "con1.In2", subtopos[6], 'count', 'dflow', mod_path, 'count', 'contract_ports')
+edge22 = wf.edgeFromTopo("prod2.Out", "con2.In2", subtopos[7], 'count', 'dflow', mod_path, 'count', 'contract_ports')
 
 
 w = nx.DiGraph()

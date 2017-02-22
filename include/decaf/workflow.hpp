@@ -266,6 +266,7 @@ struct Workflow                              // an entire workflow
 			link.frame_policy = "none";
 
 		// TODO CHECK if this is possible even when there are no "strorage_types" in the tree
+		// TODO is it better to use get_optional? What does v.second.count do?
 		if(v.second.count("storage_types") > 0)
         {
             for (auto &types : v.second.get_child("storage_types"))

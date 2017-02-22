@@ -2,9 +2,11 @@
 
   #add_subdirectory            (direct)
   #add_subdirectory            (buffer)
-  add_subdirectory			  (contract)
+  add_subdirectory			       (contract)
+  add_subdirectory             (small_tests)
 
-  add_subdirectory            (flowvr)
+  #add_subdirectory            (flowvr)
+
   if                           (LAMMPS_INCLUDE_DIR AND
                                LAMMPS_LIBRARY     AND
                                FFTW_INCLUDE_DIR   AND
