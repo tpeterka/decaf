@@ -38,33 +38,33 @@
 using namespace decaf;
 using namespace std;
 
-class particules
+class particles
 {
 public:
-    int nbParticules;
+    int nbparticles;
     int sizeArray;
     float *x;
     float *v;
 
-    particules(int nb = 0) //To test if we can switch array for vector with FFS
+    particles(int nb = 0) //To test if we can switch array for vector with FFS
     {
-        nbParticules = nb;
+        nbparticles = nb;
         sizeArray = nb * 3;
-        if(nbParticules > 0){
+        if(nbparticles > 0){
             x = (float*)malloc(sizeArray * sizeof(float));
             v = (float*)malloc(sizeArray * sizeof(float));
         }
     }
 
-    particules(int nb, float* x_, float* v_)
+    particles(int nb, float* x_, float* v_)
     {
-        nbParticules = nb;
+        nbparticles = nb;
         sizeArray = nb * 3;
         x = x_;
         v = v_;
     }
 
-    ~particules()
+    ~particles()
     {
         if(sizeArray > 0){
             free(x);
@@ -74,7 +74,7 @@ public:
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version){
-        ar & nbParticules;
+        ar & nbparticles;
         ar & sizeArray;
         ar & boost::serialization::make_array<float>(x,sizeArray);
         ar & boost::serialization::make_array<float>(v,sizeArray);
@@ -85,21 +85,21 @@ public:
 namespace boost { namespace serialization {
 template<class Archive>
 inline void save_construct_data(
-    Archive & ar, const particules * t, const unsigned int file_version
+    Archive & ar, const particles * t, const unsigned int file_version
 ){
     // save data required to construct instance
-    ar << t->nbParticules;
+    ar << t->nbparticles;
 }
 
 template<class Archive>
 inline void load_construct_data(
-    Archive & ar, particules * t, const unsigned int file_version
+    Archive & ar, particles * t, const unsigned int file_version
 ){
     // retrieve data from archive required to construct new instance
-    int nbParticules;
-    ar >> nbParticules;
+    int nbparticles;
+    ar >> nbparticles;
     // invoke inplace constructor to initialize instance of my_class
-    ::new(t)particules(nbParticules);
+    ::new(t)particles(nbparticles);
 }
 }}
 
@@ -116,7 +116,7 @@ void simpleSerializeMPI()
 
     if(rank == 0)
     {
-        particules *p = new particules(10);
+        particles *p = new particles(10);
         for(unsigned int i = 0; i < p->sizeArray; i++)
         {
             p->v[i] = 1.0 * (float)(i+1);
@@ -155,17 +155,19 @@ void simpleSerializeMPI()
         boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
         boost::archive::binary_iarchive ia(sout);
 
-        particules * newparticule;
-        ia >> newparticule;
-        std::cout<<"Le nouvel object a "<<newparticule->nbParticules<<" particules"<<std::endl;
+        particles * newparticle;
+        ia >> newparticle;
+        std::cout<<"Le nouvel object a "<<newparticle->nbparticles<<" particles"<<std::endl;
         std::cout<<"Test with normal object successful"<<std::endl;
+
+        delete newparticle;
     }
 
 }
 
 void simpleSerializeTest()
 {
-    particules *p = new particules(10);
+    particles *p = new particles(10);
     for(unsigned int i = 0; i < p->sizeArray; i++)
     {
         p->v[i] = 1.0 * (float)(i+1);
@@ -188,14 +190,14 @@ void simpleSerializeTest()
     boost::iostreams::stream<boost::iostreams::basic_array_source<char> > sout(device);
     boost::archive::binary_iarchive ia(sout);
 
-    particules * newparticule;
-    ia >> newparticule;
-    std::cout<<"Le nouvel object a "<<newparticule->nbParticules<<" particules"<<std::endl;
+    particles * newparticle;
+    ia >> newparticle;
+    std::cout<<"Le nouvel object a "<<newparticle->nbparticles<<" particles"<<std::endl;
     std::cout<<"Test with normal object successful"<<std::endl;
 
 
     delete p;
-    delete [] newparticule;
+    delete newparticle;
 }
 
 
@@ -204,13 +206,13 @@ void testConstructType()
     std::cout<<"Test of the serialization fonctionnality with ContructType"<<std::endl;
 
     std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0};
-    int nbParticule = pos.size() / 3;
+    int nbparticle = pos.size() / 3;
 
     std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
-    std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+    std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbparticle );
 
     ConstructData container;
-    container.appendData(std::string("nbParticules"), data);
+    container.appendData(std::string("nbparticles"), data);
     container.appendData(std::string("pos"), array);
 
     /*std::stringstream ss;
@@ -257,9 +259,9 @@ void testConstructType()
 void printMap(pConstructData map)
 {
     std::shared_ptr<VectorConstructData<float> > array = dynamic_pointer_cast<VectorConstructData<float> >(map->getData("pos"));
-    std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map->getData("nbParticules"));
+    std::shared_ptr<SimpleConstructData<int> > data = dynamic_pointer_cast<SimpleConstructData<int> >(map->getData("nbparticles"));
 
-    std::cout<<"Number of particule : "<<data->getData()<<std::endl;
+    std::cout<<"Number of particle : "<<data->getData()<<std::endl;
     std::cout<<"Positions : [";
     for(unsigned int i = 0; i < array->getVector().size(); i++)
         std::cout<<array->getVector().at(i)<<",";
@@ -271,13 +273,13 @@ void printMap(pConstructData map)
     std::cout<<"Test of the serialization fonctionnality with ContructType"<<std::endl;
     std::cout<<"SPLITTING BASE OBJECT"<<std::endl;
     std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0,3.0,4.0,5.0};
-    int nbParticule = pos.size() / 3;
+    int nbparticle = pos.size() / 3;
 
     std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
-    std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+    std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbparticle );
 
     pConstructData container;
-    container->appendData(std::string("nbParticules"), data,
+    container->appendData(std::string("nbparticles"), data,
                          DECAF_NOFLAG, DECAF_SHARED,
                          DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
     container->appendData(std::string("pos"), array,
@@ -338,13 +340,13 @@ void testConstructTypeSplitMPI()
         std::cout<<"Test of the serialization fonctionnality with ContructType and MPI"<<std::endl;
         std::cout<<"SPLITTING BASE OBJECT"<<std::endl;
         std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0,3.0,4.0,5.0};
-        int nbParticule = pos.size() / 3;
+        int nbparticle = pos.size() / 3;
 
         std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
-        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbparticle );
 
         pConstructData container;
-        container->appendData(std::string("nbParticules"), data,
+        container->appendData(std::string("nbparticles"), data,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         container->appendData(std::string("pos"), array,
@@ -477,13 +479,13 @@ void runTestParallelRedist(int nbSource, int nbReceptors)
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
         std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
-        int nbParticule = pos.size() / 3;
+        int nbparticle = pos.size() / 3;
         std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
-        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbparticle );
 
 
         pConstructData container;
-        container->appendData(std::string("nbParticules"), data,
+        container->appendData(std::string("nbparticles"), data,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         container->appendData(std::string("pos"), array,
@@ -537,14 +539,14 @@ void runTestParallelRedistOverlap(int startSource, int nbSource, int startRecept
                    "and "<<nbReceptors<<" consummers"<<std::endl;
 
         /*std::vector<float> pos{0.0,1.0,2.0,3.0,4.0,5.0,0.0,1.0,2.0};
-        int nbParticule = pos.size() / 3;
+        int nbparticle = pos.size() / 3;
         std::shared_ptr<VectorConstructData<float> > array = std::make_shared<VectorConstructData<float> >( pos, 3 );
-        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbParticule );
+        std::shared_ptr<SimpleConstructData<int> > data  = std::make_shared<SimpleConstructData<int> >( nbparticle );
 
 
         std::shared_ptr<BaseData> container = std::shared_ptr<ConstructData>(new ConstructData());
         std::shared_ptr<ConstructData> object = dynamic_pointer_cast<ConstructData>(container);
-        object->appendData(std::string("nbParticules"), data,
+        object->appendData(std::string("nbparticles"), data,
                              DECAF_NOFLAG, DECAF_SHARED,
                              DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
         object->appendData(std::string("pos"), array,
