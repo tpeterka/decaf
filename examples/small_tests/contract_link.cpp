@@ -20,6 +20,7 @@
 #include <mpi.h>
 #include <map>
 #include <cstdlib>
+#include <cmath>
 
 using namespace decaf;
 using namespace std;
@@ -27,26 +28,24 @@ using namespace std;
 void prod(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
+	float val = 0;
+	std::srand(std::time(0));
 
-	for (int timestep = 0; timestep < 3; timestep++){
-		if(rank == 0){
-			fprintf(stderr, "\n----- ITERATION %d -----\n", timestep);
-		}
-
+	for (int timestep = 0; timestep < 5; timestep++){
 		pConstructData container;
-		SimpleFieldi var(timestep);
-		SimpleFieldi dummy(10);
 
-		// Sends two different fields
+		val = ((double) std::rand() / RAND_MAX);
 
-		// The field var is not sent in the port Out, this raises an error.
-		// Uncomment the next line to get rid of the runtime error
-		//container->appendData("var", var);
+		SimpleFieldf var(val);
 
-		container->appendData("dummy", dummy);
+		container->appendData("var", var);
+
+		SimpleFieldi toto(23);
+		container->appendData("toto", toto);
 
 		if(!decaf->put(container, "Out"))
 			break;
+		fprintf(stderr, "Prod %d sent var=%f\n", rank, val);
 		usleep(100000);
 	}
 
@@ -64,6 +63,8 @@ void con(Decaf* decaf)
 		if(var){
 			fprintf(stderr, "Consumer of rank %d received the value %d\n", rank, var.getData());
 		}
+
+		std::cout << "Con " << rank << " received toto? " << in_data.at("In")->hasData("toto") << std::endl;
 	}
 
 
@@ -79,7 +80,19 @@ extern "C"
 	           Dataflow* dataflow,                  // dataflow
 	           pConstructData in_data)   // input data
 	{
-		fprintf(stderr, "The field dummy is %sin the dflow\n", in_data->hasData("dummy")?"" : "not ");
+
+		int new_var;
+		float var = -1;
+		SimpleFieldf varf = in_data->getFieldData<SimpleFieldf>("var");
+		if(varf){
+			var = varf.getData();
+		}
+		std::cout << "Toto present in link? " << in_data->hasData("toto") << std::endl;
+
+		new_var = std::round(var);
+		SimpleFieldi vari(new_var);
+		in_data->removeData("var");
+		in_data->appendData("var", vari);
 
 		dataflow->put(in_data, DECAF_LINK);
 	}

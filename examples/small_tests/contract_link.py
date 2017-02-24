@@ -17,13 +17,15 @@ subtopos = topo.splitTopology(["prod", "con", "dflow"], [1,1,1])
 # Creating the nodes
 prod = wf.nodeFromTopo("prod", "prod", "contract_link", subtopos[0])
 prod.addOutput("Out", "var", "float")
+prod.addOutput("Out", "toto", "int")
 
 con = wf.nodeFromTopo("con", "con", "contract_link", subtopos[1])
 con.addInput("In", "var", "int")
+con.addInput("In", "toto", "int")
 
 # Creating the edge
 edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'contract_link')
-clink = wf.ContractLink(bAny = True)
+clink = wf.ContractLink(bany = True)
 clink.addInput("var", "float", 1)
 clink.addOutput("var", "int", 1)
 edge.addContractLink(clink)
@@ -34,4 +36,4 @@ wf.addNode(graph, con)
 wf.addEdge(graph, edge)
 
 # --- convert the nx graph into a worflow data structure and performs all the checks ---
-wf.processGraph(graph, "contract_link", filter_level=wf.Filter_level.EVERYWHERE)
+wf.processGraph(graph, "contract_link", filter_level=wf.Filter_level.PY_AND_SOURCE)

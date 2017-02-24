@@ -93,9 +93,11 @@ struct WorkflowLink                          // a dataflow
   	string srcPort;				// Portname of the source
 	string destPort;			// Portname of the dest
 
-	// The following two are only relevant if the dataflow is related to a contract
-	vector<ContractKey> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
+	vector<ContractKey> keys_link;   // List of keys to be exchanged b/w the link and the consumer
+	vector<ContractKey> list_keys;   // list of key to be exchanged b/w the producer and consumer or producer and link
 	Check_level check_level;		 // level of checking for the types of data to be exchanged
+
+
 };
 
 struct Workflow                              // an entire workflow
@@ -226,6 +228,24 @@ struct Workflow                              // an entire workflow
 			link.path = v.second.get<string>("path");
 			link.func = v.second.get<string>("func");
 			link.dflow_con_redist = v.second.get<string>("dflow_con_redist");
+
+			// The two following are used when a contract for a link is present
+			boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys_link");
+			if(pt_keys){
+				for(bpt::ptree::value_type &value: pt_keys.get()){
+					ContractKey field;
+					field.name = value.first;
+
+					// Didn't find a nicer way of doing this...
+					auto i = value.second.begin();
+					field.type = i->second.get<string>("");
+					i++;
+					field.period = i->second.get<int>("");
+					//////
+
+					link.keys_link.push_back(field);
+				}
+			}
 		}
 
 		// Retrieving the name of source and target ports

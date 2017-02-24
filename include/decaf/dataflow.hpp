@@ -56,9 +56,7 @@ namespace decaf
 		         Decomposition prod_dflow_redist, // decompositon between producer and dataflow
 		         Decomposition dflow_cons_redist, // decomposition between dataflow and consumer
 		         StreamPolicy streamPolicy,
-		         FramePolicyManagment framePolicy,
-		         vector<StorageType>& storage_types,
-		         vector<unsigned int>& max_storage_sizes);
+		         FramePolicyManagment framePolicy);
 
         ~Dataflow();
 		bool put(pConstructData data, TaskType role);
@@ -87,6 +85,9 @@ namespace decaf
 
 		vector<ContractKey>& keys(){ return list_keys_; }
 		bool is_contract(){		return bContract_;}
+
+		vector<ContractKey>& keys_link(){ return keys_link_; }
+		bool is_contract_link(){ return bContractLink_;}
 
 		string srcPort(){ return srcPort_; }
 		string destPort(){ return destPort_; }
@@ -170,20 +171,24 @@ namespace decaf
 		bool no_link_;                   // True if the Dataflow doesn't have a Link
 		bool use_stream_;                // True if the Dataflow manages a buffer.
 
-		// Buffer infos
-		StreamPolicy stream_policy_;         // Type of stream to use
-		Datastream* stream_;
-
-		int iteration;					// Iterations counter
-		bool prod_link_overlap;		// Whether the is overlaping between producer and link
-
 		string srcPort_;				// Portname of the source
 		string destPort_;				// Portname of the destination
 		bool bClose_;					// Determines if a quit message has been received when calling a get
 
+		// Buffer infos
+		StreamPolicy stream_policy_;         // Type of stream to use
+		Datastream* stream_;
+
+		// Used for filtering/checking of contracts
+		int iteration;					// Iterations counter
+		bool prod_link_overlap;			// Whether there is overlaping between producer and link
+
 		bool bContract_;				// boolean to say if the dataflow has a contract or not
-		Check_level check_level_;			 // level of typechecking used; Relevant if bContract_ is set to true
-		vector<ContractKey> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+		bool bContractLink_;			// boolean to say if there is a contract on the link of the dataflow
+		Check_level check_level_;   	// level of typechecking used; Relevant if bContract_ is set to true
+		vector<ContractKey> list_keys_; // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+		                                //									b/w the producer and link if bContractLink_ is set to true
+		vector<ContractKey> keys_link_;	// keys of the data to be exchanged b/w the link and consumer, is bContractLink_ is set to true
 	};// End of class Dataflow
 
 } // namespace
@@ -198,9 +203,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist,
                    StreamPolicy stream_policy,
-                   FramePolicyManagment framePolicy,
-                   vector<StorageType>& storage_types,
-                   vector<unsigned int>& max_storage_sizes) :
+                   FramePolicyManagment framePolicy) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -249,6 +252,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         return;
 	}
 
+	iteration = 0;
 	// Sets the boolean value to true/false whether the dataflow is related to a contract or not
 	if(wflowLink.list_keys.size() == 0){
 		bContract_ = false;
@@ -256,7 +260,14 @@ Dataflow::Dataflow(CommHandle world_comm,
 	else{
 		bContract_ = true;
 		list_keys_ = wflowLink.list_keys;
-		iteration = 0;
+
+	}
+	if(wflowLink.keys_link.size() == 0){
+		bContractLink_ = false;
+	}
+	else{
+		bContractLink_ = true;
+		keys_link_ = wflowLink.keys_link;
 	}
 
     // debug
@@ -453,6 +464,7 @@ Dataflow::Dataflow(CommHandle world_comm,
         (world_rank_ >= sizes_.con_start && world_rank_ < sizes_.con_start + sizes_.con_size)))
     {
         no_link_ = true;
+		bContractLink_ = false; //TO be sure
 
         switch(prod_dflow_redist)
         {
@@ -522,7 +534,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     else
         redist_prod_con_ = NULL;
 
-    if(stream_policy_ != DECAF_STREAM_NONE && !no_link_ && storage_types.size() > 0)
+	if(stream_policy_ != DECAF_STREAM_NONE && !no_link_ && wflowLink.storages.size() > 0)
     {
         fprintf(stderr, "Stream mode activated.\n");
         use_stream_ = true;
@@ -545,8 +557,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    redist_prod_dflow_,
                                                    redist_dflow_con_,
                                                    framePolicy,
-                                                   storage_types,
-                                                   max_storage_sizes);
+				                                   wflowLink.storages,
+				                                   wflowLink.storage_max_buffer);
                 break;
             }
             case DECAF_STREAM_DOUBLE:
@@ -561,8 +573,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    redist_prod_dflow_,
                                                    redist_dflow_con_,
                                                    framePolicy,
-                                                   storage_types,
-                                                   max_storage_sizes);
+				                                   wflowLink.storages,
+				                                   wflowLink.storage_max_buffer);
                 break;
             }
             default:
@@ -730,7 +742,6 @@ Dataflow::put(pConstructData data, TaskType role)
 		}
 	}
 
-	// TODO remove this? It is data_filtered, the variale lives only in this function call
 	data_filtered->removeData("src_type");
 	data_filtered->removeData("link_id");
 	data_filtered->removeData("dest_id");
@@ -797,7 +808,6 @@ Dataflow::get(pConstructData data, TaskType role)
     }
 
 	//TODO remove the 3 data src_type, link_id and dest_id? Useless for the user, he doesn't need to know that
-
 	// Performs the filtering and checking of data if needed
 	filterGet(data, role);
 
@@ -828,12 +838,8 @@ Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool
 		}
 	}
 
-	// Performs the check/filtering
-	//if(role == DECAF_LINK && is_link_contract()){ // use the contract link
-	    //TODO after big merge with master branch
-	//}
-	//else{ // use the contract on nodes
-	    for(ContractKey field : keys()){
+	if(is_contract() || is_contract_link()){
+		for(ContractKey field : ( (role == DECAF_LINK && is_contract_link()) ? keys_link() : keys() ) ){
 			if( (iteration % field.period) == 0){ // This field is sent during this iteration
 				if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
 					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
@@ -852,7 +858,10 @@ Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool
 				data_changed = true;
 			}
 		}
-	//}
+	}
+	else{
+		data_filtered = data;
+	}
 
 	// If all fields are filtered during this iteration, the message is empty and should not be sent
 	if(data_filtered->isEmpty()){
@@ -880,11 +889,8 @@ Dataflow::filterGet(pConstructData data, TaskType role){
 
 	int it = get_iteration(data);
 
-	//if(role == DECAF_NODE && is_link_contract()){ // perfoms filtering with respect to the contract link
-	    //TODO after big merge with master branch
-	//}
-	//else{
-	    for(ContractKey field : keys()){
+	if(is_contract() || is_contract_link()){
+		for(ContractKey field : ( (role == DECAF_NODE && is_contract_link()) ? keys_link() : keys() ) ){
 			if( (it % field.period) == 0){ // This field should be received during this iteration
 				if(! data->hasData(field.name)){
 					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
@@ -900,7 +906,7 @@ Dataflow::filterGet(pConstructData data, TaskType role){
 				data->removeData(field.name);
 			}
 		}
-	//}
+	}
 }
 
 

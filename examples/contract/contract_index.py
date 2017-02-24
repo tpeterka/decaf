@@ -23,22 +23,22 @@ topo = wf.Topology("topo", 17)
 subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[2,1,3,1,4,2,3,1])
 
 # Creating Node objects
-P1 = wf.nodeFromTopo("prod1", "prod", "contract", subtopos[0])
+P1 = wf.nodeFromTopo("prod1", "prod", "contract_index", subtopos[0])
 contractP1 = wf.Contract()
 contractP1.addOutputFromDict({"index":["int", 1], "velocity":["Array_float", 2]})
 P1.addContract(contractP1)
 
-P2 = wf.nodeFromTopo("prod2", "prod2", "contract", subtopos[1])
+P2 = wf.nodeFromTopo("prod2", "prod2", "contract_index", subtopos[1])
 contractP2 = wf.Contract()
 contractP2.addOutputFromDict({"vel":["Array_float"], "id":["int"], "density":["Array_float", 3]})
 P2.addContract(contractP2)
 
-C1 = wf.nodeFromTopo("con1", "con", "contract", subtopos[2])
+C1 = wf.nodeFromTopo("con1", "con", "contract_index", subtopos[2])
 contractC1 = wf.Contract()
 contractC1.addInputFromDict({"index":["int"], "velocity":["Array_float", 2], "density":["Array_float"]})
 C1.addContract(contractC1)
 
-C2 = wf.nodeFromTopo("con2", "con2", "contract", subtopos[3])
+C2 = wf.nodeFromTopo("con2", "con2", "contract_index", subtopos[3])
 contractC2 = wf.Contract()
 contractC2.addInputFromDict({"velocity":["Array_float", 2], "id":["int"]})
 C2.addContract(contractC2)

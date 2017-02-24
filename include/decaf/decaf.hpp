@@ -200,7 +200,7 @@ namespace decaf
 } // namespace
 
 // every user application needs to implement the following run function
-void run(Workflow& workflow);
+//void run(Workflow& workflow); //TODO not used anymore?
 
 // constructor
 decaf::
@@ -364,7 +364,7 @@ Decaf::put(pConstructData container, string port){
 	}
 
 	//bool ret_ok;
-	for(Dataflow* out_df : it->second){
+	for(Dataflow* out_df : it->second){		
 		out_df->put(container, DECAF_NODE);
 
 	}
@@ -746,6 +746,7 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
 		    stringToStreamPolicy(workflow_.links[dflow].stream);
 		FramePolicyManagment frame_policy =
 		    stringToFramePolicyManagment(workflow_.links[dflow].frame_policy);
+
 		dataflows.push_back(new Dataflow(world_comm_,
 		                             decaf_sizes,
 		                             prod,
@@ -755,9 +756,7 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
 		                             prod_dflow_redist,
 		                             dflow_con_redist,
 		                             stream_mode,
-		                             frame_policy,
-		                             workflow_.links[dflow].storages,
-		                             workflow_.links[dflow].storage_max_buffer));
+		                             frame_policy));
 
         dataflows[i]->err();
     }

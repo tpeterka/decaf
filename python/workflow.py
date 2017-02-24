@@ -129,7 +129,10 @@ class Edge:
     self.outputs = {}
 
   def setAny(self, bany): # If bAny is set to true, the runtime considers there is a ContractLink, even if inputs and outputs are empty
-    self.bAny = bany
+    if self.nprocs == 0:
+      print "WARNING: There is no proc in the Edge \"%s->%s\", setting the boolean bAny failed, continuing" % (self.src, self.dest)
+    else:
+      self.bAny = bany
 
 
   def addContractLink(self, cLink):
@@ -265,94 +268,39 @@ class ContractLink(Contract):
 #End class ContractLink(Contract)
 
 
-
-# Checks if the input port (consumer) contract of an edge is a subset of the output port (producer) contract
+# Checks the contracts between each pair of producer/consumer, taking into account the contracts on links if any
 def check_contracts(graph, filter_level):
     if filter_level == Filter_level.NONE:
       return
+    # TODO remove all checks of filter_level == NONE in the rest of this function (and function checkWithPorts, checkWithoutPorts also) !!!
+    # Well, check if we can remove it...
       
     my_list = [] # To check if an input port is connected to only one output port
-
-    dict = defaultdict(set)
+    my_dict = defaultdict(set)
     
     for graphEdge in graph.edges_iter(data=True):
-        edge = graphEdge[2]["edge"]       # Edge object
+        edge = graphEdge[2]["edge"]              # Edge object
         prod = graph.node[graphEdge[0]]["node"]  # Node object for prod
         con = graph.node[graphEdge[1]]["node"]   # Node object for con
-        
-        if edge.srcPort != '' and edge.destPort != '' : # If the prod/con of this edge have ports          
-          OutportName = edge.srcPort
-          Outport = prod.outports[OutportName]
 
-          InportName = edge.destPort
-          Inport = con.inports[InportName]
-
-          s = edge.dest+'.'+InportName
-          if s in my_list: # This input port is already connected to an output port
-            raise ValueError("ERROR: The port \"%s\" cannot be connected to more than one Output port, aborting." % (s) )
-          else:
-            my_list.append(s)
-
-          if len(Inport) == 0: # The Input port accepts anything, no need to perform check or filtering
-            print "WARNING: The port \"%s\" will accept anything sent by \"%s.%s\" and the periodicity may not be correct, continuing." % (s, graphEdge[0], OutportName)
-            continue
-
-          if len(Outport) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
-          #TODO in this case, must perform the checks at runtime at the dataflow->get, need to find a way to enforce that
-            print "WARNING: The output port \"%s.%s\" can send anything, only fields needed by the port \"%s\" will be kept, the periodicity may not be correct, continuing." % (graphEdge[0], OutportName, s)
-            list_fields = Inport
-
-          else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
-            list_fields = {}
-            s = ""
-            for key, val in Inport.items():
-              if not key in Outport : # The key is not sent by the producer
-                s+= key + " "
-              else:
-                if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
-                  lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
-                  list_fields[key] = [val[0], lcm_val]
-                  if lcm_val != val[1]:
-                    print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (graphEdge[1], key, lcm_val, val[1])
-                else:
-                  raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\"." % (key, graphEdge[0], OutportName, graphEdge[1], InportName))
-
-            if s != "":
-              raise ValueError("ERROR: the keys \"%s\" are not sent in the output port \"%s.%s\"." % (s.rstrip(), graphEdge[0], OutportName))
-
-          # We add the dict of fields to be exchanged in this edge; A field is an entry of a dict: name:[type, period]
-          graphEdge[2]['keys'] = list_fields
-        #End if
-        else: # This edge does not deal with ports
-          #This is the old checking of keys/types with contracts without ports
+        if edge.srcPort != '' and edge.destPort != '' : # If the prod/con of this edge have ports
+          (keys, keys_link) = checkWithPorts(edge, prod, con, my_list, filter_level)
+          if keys != 0:
+            graphEdge[2]['keys'] = keys
+          if keys_link != 0:
+            graphEdge[2]['keys_link'] = keys_link
+          
+        else: #This is the old checking of keys/types with contracts without ports
           if hasattr(prod, 'contract') and hasattr(con, 'contract'):
-            if prod.contract.outputs == {}:
-                raise ValueError("ERROR while checking contracts: %s has no outputs" % prod.name)
-            else:
-                prod_out = prod.contract.outputs
-
-            if con.contract.inputs == {}:
-                raise ValueError("ERROR while checking contracts: %s has no inputs" % con.name)
-            else:
-                con_in = con.contract.inputs
-
-            # We add for each edge the list of pairs key/type which is the intersection of the two contracts
-            intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (filter_level == Filter_level.NONE) or (con_in[key][0] == prod_out[key][0]) ) }
-            for key in intersection_keys.keys():
-                dict[con.name].add(key)
-                lcm_val = lcm(con_in[key][1], prod_out[key][1])
-                intersection_keys[key].append(lcm_val)
-                if(lcm_val != con_in[key][1]):
-                  print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (con.name, key, lcm_val, con_in[key][1])
-
-            if len(intersection_keys) == 0:
-                raise ValueError("ERROR intersection of keys from %s and %s is empty" % (prod.name, con.name))
-
-            # We add the list of pairs key/type to be exchanged b/w the producer and consumer
-            graphEdge[2]['keys'] = intersection_keys
-          #End else
+            (keys, keys_link) = checkWithoutPorts(edge, prod, con, my_dict, filter_level)
+            graphEdge[2]['keys'] = keys
+            if keys_link != 0 :
+              graphEdge[2]['keys_link'] = keys_link
         
-    for name, set_k in dict.items():
+    # This for loop is used with the old checking without ports
+    for name, set_k in my_dict.items():
+      print name
+      print set_k
       needed = graph.node[name]["node"].contract.inputs
       received = list(set_k)
       complement = [item for item in needed if item not in received]
@@ -362,6 +310,234 @@ def check_contracts(graph, filter_level):
           s+= " %s:%s," %(key, needed[key])
         raise ValueError(s.rstrip(','))
 # End of function check_contracts
+
+# Returns the list of fields to be exchanged between the corresponding ports of prod and con in this edge
+def checkWithPorts(edge, prod, con, my_list, filter_level):
+	OutportName = edge.srcPort
+	Outport = prod.outports[OutportName]
+
+	InportName = edge.destPort
+	Inport = con.inports[InportName]
+
+	s = edge.dest+'.'+InportName
+	if s in my_list: # This input port is already connected to an output port
+		raise ValueError("ERROR: The Input port \"%s\" cannot be connected to more than one Output port, aborting." % (s) )
+	else:
+		my_list.append(s)
+
+	if edge.nprocs != 0 and hasattr(edge,'bAny'):
+		keys = {}
+		keys_link = {}
+		#Match contract Prod with link input
+		if len(edge.inputs) == 0:
+			if edge.bAny == False:
+				raise ValueError("ERROR: The link \"%s.%s->%s\" has no inputs and bAny is set to False, aborting." % (edge.src, OutportName, s))
+			else:
+				if len(Outport) == 0:
+					keys = 0 # No need to perform filtering at runtime
+				else:
+					keys = Outport
+		else: # len(edge.inputs) != 0
+			if len(Outport) == 0:
+				if edge.bAny == True:
+					print "WARNING: The link \"%s.%s->%s\" will accept anything from the Output port, cannot guarantee the fields will be present." % (edge.src, OutportName, s)
+					keys = 0
+				else:
+					print "WARNING: The Output port of \"%s.%s->%s\" can send anything, only fields needed by the link will be kept, the periodicity may not be correct." % (edge.src, OutportName, s)
+					keys = edge.inputs
+			else : # len(Outport) != 0
+				list_fields = {}
+				sk = ""
+				for key, val in edge.inputs.items():
+					if not key in Outport:
+						sk += key + " "
+					else:
+						if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]):
+							lcm_val = lcm(val[1], Outport[key][1])
+							list_fields[key] = [val[0], lcm_val]
+							if lcm_val != val[1]:
+								print "WARNING: the link of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, lcm_val, val[1])
+						else:
+							raise ValueError("ERROR: the types of \"%s\" does not match for the Output port and the link of \"%s.%s->%s\", aborting." % (key, edge.src, OutportName, s))
+				if sk != "":
+					raise ValueError("ERROR: the keys \"%s\" are not sent in the Output port of \"%s.%s->%s\", aborting." % (sk.rstrip(), edge.src, OutportName, s))
+				keys = list_fields
+				if edge.bAny == True: # We complete with the other keys in Outport if they are in Inport and of the same type
+					for key, val in Outport.items():
+						if (not key in keys) and (key in Inport) and (Outport[key][0] == Inport[key][0]): #TODO verify this
+							keys[key] = val
+
+		#Match link output with contract Con
+		if len(edge.outputs) == 0:
+			if edge.bAny == False:
+				raise ValueError("ERROR: The link \"%s.%s->%s\" has no outputs and bAny is set to False, aborting." % (edge.src, OutportName, s))
+			else:
+				if len(Inport) == 0:
+					keys_link = 0 # No need to perform filtering at runtime
+				else:
+					keys_link = Inport
+		else: # len(edge.outputs) != 0
+			if len(Inport) == 0:
+				if edge.bAny == False:
+					keys_link = edge.outputs
+				else: # Need to attach keys of output link and of output Port
+						for key, val in edge.outputs.items():
+							keys_link[key] = val
+						for key, val in Outport.items():
+							if not key in keys_link:
+								keys_link[key] = val
+			else: # len(Inport) != 0
+				list_fields = {}
+				tmp = {}
+				for key, val in Inport.items():
+					if not key in edge.outputs:
+						tmp[key] = val
+					else:
+						if (filter_level == Filter_level.NONE) or (val[0] == edge.outputs[key][0]):
+							lcm_val = lcm(val[1], edge.outputs[key][1])
+							list_fields[key] = [val[0], lcm_val]
+							if lcm_val != val[1]:
+								print "WARNING: the Input port of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, lcm_val, val[1])
+						else:
+							raise ValueError("ERROR: the types of \"%s\" does not match for the link and the Input port of \"%s.%s->%s\", aborting." % (key, edge.src, OutportName, s))
+				if edge.bAny == False:
+					if len(tmp) == 0:
+						keys_link = list_fields
+					else:
+						sk = ""
+						for key in tmp.keys():
+							sk += key + " "
+						raise ValueError("ERROR: the keys \"%s\" are not sent by the link \"%s.%s->%s\", aborting" % (sk.rstrip(), edge.src, OutportName, s))
+				else: #bAny == True, need to complete with the keys sent by the Prod
+					sk = ""
+					for key, val in tmp.items():
+						if not key in Outport:
+							sk += key + " "
+						else:
+							if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]):
+								lcm_val = lcm(val[1], Outport[key][1])
+								list_fields[key] = [val[0], lcm_val]
+								if lcm_val != val[1]:
+									print "WARNING: the Input port of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, lcm_val, val[1])
+							else:
+								raise ValueError("ERROR: the types of \"%s\" does not match for the Output port and the Input port of \"%s.%s->%s\", aborting." % (key, edge.src, OutportName, s))
+					if sk != "":
+						raise ValueError("ERROR: the keys \"%s\" are not sent in the Output port of \"%s.%s->%s\", aborting." % (sk.rstrip(), edge.src, OutportName, s))
+					keys_link = list_fields
+
+		return (keys, keys_link)
+	# End of if hasattr(edge,'bAny')
+	else:
+	  if len(Inport) == 0: # The Input port accepts anything, send only keys in the output port contract
+	    if len(Outport) == 0:
+	      print "WARNING: The port \"%s\" will accept everything sent by \"%s.%s\"." % (s, edge.src, OutportName)
+	      return (0,0)
+	    else:
+	      return (Outport, 0)
+
+	  if len(Outport) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
+	    print "WARNING: The Output port \"%s.%s\" can send anything, only fields needed by the Input port \"%s\" will be kept, the periodicity may not be correct." % (edge.src, OutportName, s)
+	    return (Inport, 0)
+
+	  else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
+	    list_fields = {}
+	    sk = ""
+	    for key, val in Inport.items():
+	      if not key in Outport : # The key is not sent by the producer
+	        sk+= key + " "
+	      else:
+	        if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
+	          lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
+	          list_fields[key] = [val[0], lcm_val]
+	          if lcm_val != val[1]:
+	            print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, lcm_val, val[1])
+	        else:
+	          raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
+
+	    if sk != "":
+	      raise ValueError("ERROR: the keys \"%s\" are not sent in the Output port \"%s.%s\", aborting." % (sk.rstrip(), edge.src, OutportName))
+	  return (list_fields, 0) # This is the dict of fields to be exchanged in this edge; A field is an entry of a dict: name:[type, period]
+# end of checkWithPorts
+
+def checkWithoutPorts(edge, prod, con, my_dict, filter_level):
+    if prod.contract.outputs == {}:
+        raise ValueError("ERROR while checking contracts: %s has no outputs, aborting." % prod.name)
+    else:
+        prod_out = prod.contract.outputs
+
+    if con.contract.inputs == {}:
+        raise ValueError("ERROR while checking contracts: %s has no inputs, aborting." % con.name)
+    else:
+        con_in = con.contract.inputs
+
+    if hasattr(edge, 'bAny'):
+      if edge.inputs == {}:
+        raise ValueError("ERROR while checking contracts: the link %s->%s has no inputs, aborting." % (prod.name, con.name))
+      if edge.outputs == {}:
+        raise ValueError("ERROR while checking contracts: the link %s->%s has no outputs, aborting." % (prod.name, con.name))
+      keys = {}
+      keys_link = {}
+      # Match contract prod with link input
+      list_fields = {}
+      sk = ""
+      for key, val in edge.inputs.items(): # Check if edge.inputs included in prod_out
+        if not key in prod_out:
+          sk += key + " "
+        else:
+          if (filter_level == Filter_level.NONE) or (val[0] == prod_out[key][0]):
+            lcm_val = lcm(val[1], prod_out[key][1])
+            list_fields[key] = [val[0], lcm_val]
+            if lcm_val != val[1]:
+              print "WARNING: the link of \"%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, edge.dest, key, lcm_val, val[1])
+          else:
+            raise ValueError("ERROR: the types of \"%s\" does not match for the producer and the link of \"%s->%s\", aborting." % (key, edge.src, edge.dest))
+      if sk != "":
+        raise ValueError("ERROR: the keys \"%s\" are not sent to the link of \"%s->%s\", aborting." % (sk.rstrip(), edge.src, edge.dest))
+      keys = list_fields
+      if edge.bAny == True: # We complete with the other keys in prod_out if they are in con_in and of same type
+        for key, val in prod_out.items():
+          if (not key in keys) and (key in con_in) and (prod_out[key][0] == con_in[key][0]): #TODO verify this
+            keys[key] = val
+
+      # Match link output with contract Con
+      intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in edge.outputs) and ( (filter_level == Filter_level.NONE) or (con_in[key][0] == edge.outputs[key][0]) ) }
+      for key in intersection_keys.keys():
+        my_dict[con.name].add(key)
+        lcm_val = lcm(con_in[key][1], edge.outputs[key][1])
+        intersection_keys[key].append(lcm_val)
+        if lcm_val != con_in[key][1]:
+          print "WARNING: %s will receive %s with periodicity %s instead of %s." % (con.name, key, lcm_val, con_in[key][1])
+      if len(intersection_keys) == 0:
+        raise ValueError("ERROR: the intersection of keys between the link and consumer of \"%s->%s\" is empty, aborting.", prod.name, con.name)
+
+      keys_link = intersection_keys
+      if edge.bAny == True: # Complete keys_link with the keys that are both in Prod and Con contracts
+        intersect = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (filter_level == Filter_level.NONE) or (con_in[key][0] == prod_out[key][0]) ) }
+        for key in intersect.keys():
+          my_dict[con.name].add(key)
+          lcm_val = lcm(con_in[key][1], prod_out[key][1])
+          intersect[key].append(lcm_val)
+          if lcm_val != con_in[key][1]:
+            print "WARNING: %s will receive %s with periodicity %s instead of %s." % (con.name, key, lcm_val, con_in[key][1])
+        # Add keys if in intersection but not in keys_link
+        for key, val in intersect.items():
+          if not key in keys_link:
+            keys_link[key] = val
+
+      return (keys, keys_link)
+    else: # no attr 'bAny'
+      # We add for each edge the list of pairs key/type which is the intersection of the two contracts
+      intersection_keys = {key:[con_in[key][0]] for key in con_in.keys() if (key in prod_out) and ( (filter_level == Filter_level.NONE) or (con_in[key][0] == prod_out[key][0]) ) }
+      for key in intersection_keys.keys():
+          my_dict[con.name].add(key)
+          lcm_val = lcm(con_in[key][1], prod_out[key][1])
+          intersection_keys[key].append(lcm_val)
+          if lcm_val != con_in[key][1]:
+            print "WARNING: %s will receive %s with periodicity %s instead of %s." % (con.name, key, lcm_val, con_in[key][1])
+
+      if len(intersection_keys) == 0:
+          raise ValueError("ERROR: the intersection of keys between %s and %s is empty, aborting." % (prod.name, con.name))
+      return (intersection_keys, 0)
 
 
 class Topology:
@@ -561,6 +737,9 @@ def workflowToJson(graph, outputFile, filter_level):
           data["workflow"]["edges"][i].update({"func" : edge.func,
                                           "dflow_con_redist" : edge.dflow_con_redist,
                                           "path" : edge.path})
+          # Used for ContractLink
+          if "keys_link" in graphEdge[2]:
+            data["workflow"]["edges"][i]["keys_link"] = graphEdge[2]['keys_link']
         
         # TODO put stream and others in the Edge object?
         if 'stream' in graphEdge[2]:
@@ -569,16 +748,11 @@ def workflowToJson(graph, outputFile, filter_level):
             data["workflow"]["edges"][i]["storage_types"] = graphEdge[2]['storage_types']
             data["workflow"]["edges"][i]["max_storage_sizes"] = graphEdge[2]['max_storage_sizes']
         
-        # Used for ContractLink
-        # TODO update this when check_contrac takes into account the links
-        """if hasattr(edge, 'bAny'):
-          data["workflow"]["edges"][i]["linkInput"] = edge.inputs
-          data["workflow"]["edges"][i]["linkOutput"] = edge.outputs
-          data["workflow"]["edges"][i]["bAny"] = edge.bAny"""
-        
+        # Used for Contract
         if "keys" in graphEdge[2]:
-          data["workflow"]["edges"][i]["keys"] = graphEdge[2]["keys"]
+          data["workflow"]["edges"][i]["keys"] = graphEdge[2]['keys']
 
+        # If there are ports for this edge
         if edge.srcPort != '' and edge.destPort != '':
           data["workflow"]["edges"][i].update({"sourcePort":edge.srcPort,
                                               "targetPort":edge.destPort})
