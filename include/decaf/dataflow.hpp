@@ -826,11 +826,7 @@ Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool
 		}
 	}
 
-	// Performs the check/filtering
-	//if(role == DECAF_LINK && is_link_contract()){ // use the contract link
-	    //TODO after big merge with master branch
-	//}
-	//else{ // use the contract on nodes
+	if(is_contract()){
 	    for(ContractKey field : keys()){
 			if( (iteration % field.period) == 0){ // This field is sent during this iteration
 				if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
@@ -850,7 +846,10 @@ Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool
 				data_changed = true;
 			}
 		}
-	//}
+	}
+	else{
+		data_filtered = data;
+	}
 
 	// If all fields are filtered during this iteration, the message is empty and should not be sent
 	if(data_filtered->isEmpty()){
@@ -878,10 +877,7 @@ Dataflow::filterGet(pConstructData data, TaskType role){
 
 	int it = get_iteration(data);
 
-	//if(role == DECAF_NODE && is_link_contract()){ // perfoms filtering with respect to the contract link
-	    //TODO after big merge with master branch
-	//}
-	//else{
+	if(is_contract()){
 	    for(ContractKey field : keys()){
 			if( (it % field.period) == 0){ // This field should be received during this iteration
 				if(! data->hasData(field.name)){
@@ -898,7 +894,7 @@ Dataflow::filterGet(pConstructData data, TaskType role){
 				data->removeData(field.name);
 			}
 		}
-	//}
+	}
 }
 
 
