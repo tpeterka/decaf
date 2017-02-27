@@ -887,10 +887,47 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     f.close()
     os.system("chmod a+rx "+outputFile)
 
+""" Used for the retrocompatibility when not using Node and Edge objects in the graph
+    For each node and edge of the graph, retrieves its attributes and replace them by the corresponding object
+"""
+def createObjects(graph):
+  for node in graph.nodes_iter(data=True):
+    if not 'node' in node[1]:
+      if 'topology' in node[1]:
+        my_node = nodeFromTopo(node[0], node[1]['func'], node[1]['cmdline'], node[1]['topology'])
+        del node[1]['topology']
+      else:
+        my_node = Node(node[0], node[1]['start_proc'], node[1]['nprocs'], node[1]['func'], node[1]['cmdline'])
+        del node[1]['start_proc']
+        del node[1]['nprocs']
+
+      node[1]['node'] = my_node # Insert the object and clean the other attributes
+      del node[1]['func']
+      del node[1]['cmdline']
+      
+  for edge in graph.edges_iter(data=True):
+    if not 'edge' in edge[2]:
+      if 'topology' in edge[2]:
+        my_edge = edgeFromTopo(edge[0], edge[1], edge[2]['topology'], edge[2]['prod_dflow_redist'], edge[2]['func'], edge[2]['path'],
+                              edge[2]['dflow_con_redist'], edge[2]['cmdline'])
+        del edge[2]['topology']
+      else:
+        my_edge = Edge(edge[0], edge[1], edge[2]['start_proc'], edge[2]['nprocs'], edge[2]['prod_dflow_redist'], edge[2]['func'],
+                      edge[2]['path'], edge[2]['dflow_con_redist'], edge[2]['cmdline'])
+        del edge[2]['nprocs']
+        del edge[2]['start_proc']
+
+      edge[2]['edge'] = my_edge # Insert the object and clean the other attributes
+      del edge[2]['prod_dflow_redist']
+      del edge[2]['func']
+      del edge[2]['path']
+      del edge[2]['dflow_con_redist']
+      del edge[2]['cmdline']
+
 """ Process the graph and generate the necessary files
 """
 def processGraph(graph, name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = ""):
     check_contracts(graph, filter_level)
-    #processTopology(graph) Not used anymore if we are using Node and Edge objects in the graph
+    createObjects(graph)
     workflowToJson(graph, name+".json", filter_level)
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
