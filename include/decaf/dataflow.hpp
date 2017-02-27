@@ -59,11 +59,11 @@ namespace decaf
 		         FramePolicyManagment framePolicy);
 
         ~Dataflow();
-		bool put(pConstructData data, TaskType role);
-		bool get(pConstructData data, TaskType role);
+		bool put(pConstructData& data, TaskType role);
+		bool get(pConstructData& data, TaskType role);
 
-		pConstructData filterPut(pConstructData data, TaskType role, bool& data_changed, bool& filtered_empty);
-		void filterGet(pConstructData data, TaskType role);
+		pConstructData filterPut(pConstructData& data, TaskType role, bool& data_changed, bool& filtered_empty);
+		void filterGet(pConstructData& data, TaskType role);
 
         DecafSizes* sizes()    { return &sizes_; }
         void shutdown();
@@ -83,11 +83,12 @@ namespace decaf
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
-		vector<ContractKey>& keys(){ return list_keys_; }
-		bool is_contract(){		return bContract_;}
+		vector<ContractKey>& keys(){ return keys_; }
+		bool has_contract(){		return bContract_;}
 
 		vector<ContractKey>& keys_link(){ return keys_link_; }
-		bool is_contract_link(){ return bContractLink_;}
+		bool has_contract_link(){ return bContractLink_;}
+		bool isAny() { return bAny_; }
 
 		string srcPort(){ return srcPort_; }
 		string destPort(){ return destPort_; }
@@ -185,8 +186,9 @@ namespace decaf
 
 		bool bContract_;				// boolean to say if the dataflow has a contract or not
 		bool bContractLink_;			// boolean to say if there is a contract on the link of the dataflow
+		bool bAny_;						// Whether the filtering will check the contracts but keep any other field or not
 		Check_level check_level_;   	// level of typechecking used; Relevant if bContract_ is set to true
-		vector<ContractKey> list_keys_; // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+		vector<ContractKey> keys_; // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
 		                                //									b/w the producer and link if bContractLink_ is set to true
 		vector<ContractKey> keys_link_;	// keys of the data to be exchanged b/w the link and consumer, is bContractLink_ is set to true
 	};// End of class Dataflow
@@ -259,7 +261,7 @@ Dataflow::Dataflow(CommHandle world_comm,
 	}
 	else{
 		bContract_ = true;
-		list_keys_ = wflowLink.list_keys;
+		keys_ = wflowLink.list_keys;
 
 	}
 	if(wflowLink.keys_link.size() == 0){
@@ -269,6 +271,7 @@ Dataflow::Dataflow(CommHandle world_comm,
 		bContractLink_ = true;
 		keys_link_ = wflowLink.keys_link;
 	}
+	bAny_ = wflowLink.bAny;
 
     // debug
     // if (world_rank == 0)
@@ -621,7 +624,7 @@ Dataflow::~Dataflow()
 // Returns true if ok, false if an ERROR occured
 bool
 decaf::
-Dataflow::put(pConstructData data, TaskType role)
+Dataflow::put(pConstructData& data, TaskType role)
 {
 	pConstructData data_filtered; // container to be sent
 	bool data_removed_by_period; // i.e.: Has some data field been removed due to the periodicity during the call of filterAndCheck?
@@ -755,7 +758,7 @@ Dataflow::put(pConstructData data, TaskType role)
 // return true if ok, false if an ERROR occured
 bool
 decaf::
-Dataflow::get(pConstructData data, TaskType role)
+Dataflow::get(pConstructData& data, TaskType role)
 {
     if (role == DECAF_LINK)
     {
@@ -817,7 +820,7 @@ Dataflow::get(pConstructData data, TaskType role)
 
 decaf::pConstructData
 decaf::
-Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool& filtered_empty){
+Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, bool& filtered_empty){
 	pConstructData data_filtered;
 	data_changed = data->isEmpty();
 	filtered_empty = false;
@@ -838,26 +841,57 @@ Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool
 		}
 	}
 
-	if(is_contract() || is_contract_link()){
-		for(ContractKey field : ( (role == DECAF_LINK && is_contract_link()) ? keys_link() : keys() ) ){
-			if( (iteration % field.period) == 0){ // This field is sent during this iteration
-				if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
-					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
-					MPI_Abort(MPI_COMM_WORLD, 0);
-				}
-				// Performing typechecking
-				string typeName = data->getTypename(field.name);
-				if(typeName.compare(field.type) != 0){ //The two types do not match
-					fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
-					MPI_Abort(MPI_COMM_WORLD, 0);
-				}
-				data_filtered->appendData(data, field.name); // The field is present of correct type, send it
+	if(has_contract() || has_contract_link()){
+		vector<ContractKey> &list_keys = (role == DECAF_LINK && has_contract_link()) ? keys_link() : keys() ;
+		if(isAny()){ // No filtering of other fields, just need to check if the contract is respected
+			// TODO This is an ugly way of doing this, by adding all fields then removing the ones not needed during the current iteration
+			// maybe a better solution? In terms of cost, number of operations, ...
+			for(string key : data->listUserKeys()){ // Append all user data from data to data_filtered.
+				data_filtered->appendData(data, key);
 			}
-			else{ // The field should not be sent in this iteration, we clear the buffers of the RedistComp
-				//TODO need a clearBuffer on a specific field name
-				data_changed = true;
+			// Then check the contracts
+			for(ContractKey field : list_keys){
+				if( (iteration % field.period) == 0){ // This field is sent during this iteration
+					if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
+						fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
+						MPI_Abort(MPI_COMM_WORLD, 0);
+					}
+					// Performing typechecking
+					string typeName = data->getTypename(field.name);
+					if(typeName.compare(field.type) != 0){ //The two types do not match
+						fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+						MPI_Abort(MPI_COMM_WORLD, 0);
+					}
+				}
+				else{ // The field should not be sent in this iteration, we clear the buffers of the RedistComp
+					//TODO need a clearBuffer on a specific field name
+					data_changed = true;
+					data_filtered->removeData(field.name);
+				}
 			}
 		}
+		else{ // Perform filtering and checking of contract
+			for(ContractKey field : list_keys ){
+				if( (iteration % field.period) == 0){ // This field is sent during this iteration
+					if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
+						fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
+						MPI_Abort(MPI_COMM_WORLD, 0);
+					}
+					// Performing typechecking
+					string typeName = data->getTypename(field.name);
+					if(typeName.compare(field.type) != 0){ //The two types do not match
+						fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+						MPI_Abort(MPI_COMM_WORLD, 0);
+					}
+					data_filtered->appendData(data, field.name); // The field is present of correct type, send it
+				}
+				else{ // The field should not be sent in this iteration, we clear the buffers of the RedistComp
+					//TODO need a clearBuffer on a specific field name
+					data_changed = true;
+				}
+			}
+		}
+
 	}
 	else{
 		data_filtered = data;
@@ -882,15 +916,16 @@ Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool
 
 void
 decaf::
-Dataflow::filterGet(pConstructData data, TaskType role){
+Dataflow::filterGet(pConstructData& data, TaskType role){
 	if(data->isEmpty() || check_level_ < CHECK_EVERYWHERE){ // If there is no user data or if there is no need to perform the check/filtering
 		return;
 	}
 
 	int it = get_iteration(data);
 
-	if(is_contract() || is_contract_link()){
-		for(ContractKey field : ( (role == DECAF_NODE && is_contract_link()) ? keys_link() : keys() ) ){
+	if(has_contract() || has_contract_link()){
+		vector<ContractKey> &list_keys = (role == DECAF_NODE && has_contract_link()) ? keys_link() : keys() ;
+		for(ContractKey field : list_keys ){
 			if( (it % field.period) == 0){ // This field should be received during this iteration
 				if(! data->hasData(field.name)){
 					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
@@ -902,7 +937,7 @@ Dataflow::filterGet(pConstructData data, TaskType role){
 					MPI_Abort(MPI_COMM_WORLD, 0);
 				}
 			}
-			else{// The field is not supposed to be received in this iteration, remove it
+			else{// The field is not supposed to be received in this iteration
 				data->removeData(field.name);
 			}
 		}

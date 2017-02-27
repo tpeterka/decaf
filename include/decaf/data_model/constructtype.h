@@ -106,6 +106,8 @@ public:
 
     void printKeys();
 
+	std::vector<std::string> listUserKeys();
+
     virtual bool hasZCurveKey();
 
     virtual const float* getZCurveKey(int *nbItems);

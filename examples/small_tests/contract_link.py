@@ -36,4 +36,4 @@ wf.addNode(graph, con)
 wf.addEdge(graph, edge)
 
 # --- convert the nx graph into a worflow data structure and performs all the checks ---
-wf.processGraph(graph, "contract_link", filter_level=wf.Filter_level.PY_AND_SOURCE)
+wf.processGraph(graph, "contract_link", filter_level=wf.Filter_level.EVERYWHERE)

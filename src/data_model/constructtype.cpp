@@ -366,10 +366,22 @@ ConstructData::printKeys()
 {
     fprintf(stderr, "Current state of the map: \n");
     for(std::map<std::string, datafield>::iterator it = container_->begin();
-        it != container_->end(); it++)
+	            it != container_->end(); it++)
         fprintf(stderr, "Key: %s; nbItems: %d\n", it->first.c_str(), getNbItemsField(it->second));
     fprintf(stderr, "End of display of the map\n");
 
+}
+
+vector<std::string>
+decaf::
+ConstructData::listUserKeys(){
+	vector<string> list;
+	for(std::map<std::string, datafield>::iterator it = container_->begin();
+	            it != container_->end(); it++){
+		if( getScope(it->second) != DECAF_SYSTEM ){
+			list.push_back(it->first);
+		}
+	}
 }
 
 bool

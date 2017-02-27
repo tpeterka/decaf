@@ -96,6 +96,7 @@ struct WorkflowLink                          // a dataflow
 	vector<ContractKey> keys_link;   // List of keys to be exchanged b/w the link and the consumer
 	vector<ContractKey> list_keys;   // list of key to be exchanged b/w the producer and consumer or producer and link
 	Check_level check_level;		 // level of checking for the types of data to be exchanged
+	bool bAny;						 // Whether the filtering will check the contracts but keep any other field or not
 
 
 };
@@ -244,6 +245,14 @@ struct Workflow                              // an entire workflow
 					//////
 
 					link.keys_link.push_back(field);
+				}
+
+				boost::optional<bool> pt_any = v.second.get_optional<bool>("bAny");
+				if (pt_any){
+					link.bAny = pt_any.get();
+				}
+				else{
+					link.bAny = false;
 				}
 			}
 		}
