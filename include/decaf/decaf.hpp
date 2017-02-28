@@ -412,7 +412,7 @@ Decaf::get(pConstructData container, string port){
 	//bool ret_ok;
 	it->second->get(container, DECAF_NODE);
 
-	if(Dataflow::test_quit(container)){
+	if(msgtools::test_quit(container)){
 		return false;
 	}
 

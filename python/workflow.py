@@ -317,27 +317,14 @@ def check_contracts(graph, filter_level):
                   print "WARNING: %s will receive %s with periodicity %s instead of %s, continuing" % (edge[1], key, lcm_val, con_in[key][1])
 
             if len(intersection_keys) == 0:
-                raise ValueError("ERROR intersection of keys from %s and %s is empty" % (edge[0], edge[1]))
+              sk = ""
+              for key, val in con_in.items():
+                sk += key + ":" + val[0] + ", " 
+                raise ValueError("ERROR intersection of keys from %s and %s is empty, the consumer needs the following: %s" % (edge[0], edge[1], sk.rstrip(", ")))
 
             # We add the list of pairs key/type to be exchanged b/w the producer and consumer
             edge[2]['keys'] = intersection_keys
-        #End else
-        """ TODO work in progress here
-        # Here we check if there is a contractLink and if it is a subset of the general contract of the edge
-        # TODO VERIFY THIS BEHAVIOR, does it do as planned ?
-        if 'contractLink' in edge[2] and edge[2]['contractLink'] != 0:
-          s = ""
-          for key, val in edge[2]['contractLink'].dict.items():
-            if not key in edge[2]['keys']:
-              s+= key + " "
-            else:
-              if(filter_level != Filter_level.NONE) and (val != edge[2]['keys'][key][0]) : #If the types does not match
-                raise ValueError("ERROR: the types of \"%s\" does not match for the contract and the contractLink of \"%s.%s\" and \"%s.%s\"." % (key, edge[0], OutportName, edge[1], InportName))
-
-          if s != "":
-            raise ValueError("ERROR: the keys \"%s\" required by the link are not sent in the output port \"%s.%s\"." % (s.rstrip(), edge[0], OutportName))
-        """
-        
+     
     for name, set_k in dict.items():
       needed = graph.node[name]['contract'].inputs
       received = list(set_k)
