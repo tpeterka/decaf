@@ -1,4 +1,4 @@
-#ifndef BLOCK_CONSTRUCT_DATA
+﻿#ifndef BLOCK_CONSTRUCT_DATA
 #define BLOCK_CONSTRUCT_DATA
 
 #include "baseconstructdata.hpp"
@@ -24,6 +24,8 @@ public:
     virtual bool isBlockSplitable(){ return true; }
 
     virtual int getNbItems(){ return 1; }
+
+	virtual std::string getTypename(){ return std::string("Block"); } //TODO VERIFY !!
 
     Block<3>& getData(){ return value_; }
 

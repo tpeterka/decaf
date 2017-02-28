@@ -1,4 +1,4 @@
-#ifndef BASE_CONSTRUCT_DATA
+﻿#ifndef BASE_CONSTRUCT_DATA
 #define BASE_CONSTRUCT_DATA
 
 #include <decaf/data_model/basedata.h>
@@ -16,6 +16,8 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <boost/unordered_map.hpp>
+
+#include <boost/type_index.hpp>
 
 #include <decaf/data_model/maptools.h>
 
@@ -90,6 +92,8 @@ public:
     }
 
     virtual int getNbItems() = 0;
+
+	virtual std::string getTypename() = 0;
 
     virtual bool isBlockSplitable() = 0;
 

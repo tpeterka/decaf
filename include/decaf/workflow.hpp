@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // workflow definition
 //
@@ -35,17 +35,17 @@ struct WorkflowNode                          // a producer or consumer
     WorkflowNode()                                {}
     WorkflowNode(int start_proc_,
                  int nprocs_,
-                 string func_) :
+	             string func_) :
         start_proc(start_proc_),
         nprocs(nprocs_),
-        func(func_),
+	    func(func_),
         args(NULL)                                {}
     vector<int> out_links; // indices of outgoing links
     vector<int> in_links;  // indices of incoming links
     int start_proc;        // starting proc rank in world communicator for this producer or consumer
     int nprocs;            // number of processes for this producer or consumer
     string func;           // name of node callback
-    void* args;            // callback arguments
+	void* args;            // callback arguments
     void add_out_link(int link) { out_links.push_back(link); }
     void add_in_link(int link) { in_links.push_back(link); }
 };
@@ -53,14 +53,16 @@ struct WorkflowNode                          // a producer or consumer
 struct WorkflowLink                          // a dataflow
 {
     WorkflowLink()                                {}
-    WorkflowLink(int prod_,
-                 int con_,
+	/*WorkflowLink(int prod_,			// This constructor is never used
+				 int con_,
                  int start_proc_,
                  int nprocs_,
                  string func_,
                  string path_,
                  string prod_dflow_redist_,
-                 string dflow_con_redist_,
+				 string dflow_con_redist_,
+				 vector<ContractKey> list_keys_,
+				 Check_level check_level_,
                  string stream_) :
         prod(prod_),
         con(con_),
@@ -70,8 +72,10 @@ struct WorkflowLink                          // a dataflow
         args(NULL),
         path(path_),
         prod_dflow_redist(prod_dflow_redist_),
-        dflow_con_redist(dflow_con_redist_),
-        stream(stream_){}
+		dflow_con_redist(dflow_con_redist_),
+		list_keys(list_keys_),
+		check_level(check_level_),
+        stream(stream_){} */
     int prod;                   // index in vector of all workflow nodes of producer
     int con;                    // index in vector of all workflow nodes of consumer
     int start_proc;             // starting process rank in world communicator for the dataflow
@@ -85,6 +89,13 @@ struct WorkflowLink                          // a dataflow
     string frame_policy;        // Policy to use to manage the incoming frames
     vector<StorageType> storages;               // Different level of storage availables
     vector<unsigned int> storage_max_buffer;    // Maximum number of frame
+
+  	string srcPort;				// Portname of the source
+	string destPort;			// Portname of the dest
+
+	// The following two are only relevant if the dataflow is related to a contract
+	vector<ContractKey> list_keys;   // pairs key/type of the data to be exchanged b/w the producer and consumer
+	Check_level check_level;		 // level of checking for the types of data to be exchanged
 };
 
 struct Workflow                              // an entire workflow
@@ -139,11 +150,12 @@ struct Workflow                              // an entire workflow
             return false;
         }
 
+
   static void
   make_wflow_from_json( Workflow& workflow, const string& json_path )
   {
 
-    std::string json_filename = json_path;
+	string json_filename = json_path;
     if(json_filename.length() == 0)
     {
         fprintf(stderr, "No name filename provided for the JSON file. Falling back on the DECAF_JSON environment variable\n");
@@ -153,7 +165,7 @@ struct Workflow                              // an entire workflow
             fprintf(stderr, "ERROR: The environment variable DECAF_JSON is not defined. Unable to find the workflow graph definition.\n");
             exit(1);
         }
-        json_filename = std::string(env_path);
+		json_filename = string(env_path);
     }
 
     try {
@@ -177,50 +189,91 @@ struct Workflow                              // an entire workflow
        * iterate over the list of nodes, creating and populating WorkflowNodes as we go
        */
       for( auto &&v : root.get_child( "workflow.nodes" ) ) {
-	WorkflowNode node;
-	node.out_links.clear();
-	node.in_links.clear();
-	/* we defer actually linking nodes until we read the edge list */
+		WorkflowNode node;
+		node.out_links.clear();
+		node.in_links.clear();
+		/* we defer actually linking nodes until we read the edge list */
 
-	node.start_proc = v.second.get<int>("start_proc");
-	node.nprocs = v.second.get<int>("nprocs");
-	node.func = v.second.get<std::string>("func");
-	
-	workflow.nodes.push_back( node );
-      }
+		node.start_proc = v.second.get<int>("start_proc");
+		node.nprocs = v.second.get<int>("nprocs");
+		node.func = v.second.get<string>("func");
 
-      string path = root.get<std::string>("workflow.path");
+		workflow.nodes.push_back( node );
+	  } // End for workflow.nodes
+
+	  string sCheck = root.get<string>("workflow.filter_level");
+	  Check_level check_level = stringToCheckLevel(sCheck);
 
       /* 
        * similarly for the edges
        */
       for( auto &&v : root.get_child( "workflow.edges" ) ) {
+		WorkflowLink link;
 
-	WorkflowLink link;
-	
-	/* link the nodes correctly(?) */      
-	link.prod = v.second.get<int>("source");
-	link.con = v.second.get<int>("target");
+		/* link the nodes correctly(?) */
+		link.prod = v.second.get<int>("source");
+		link.con = v.second.get<int>("target");
 
         workflow.nodes.at( link.prod ).out_links.push_back( workflow.links.size() );
         workflow.nodes.at( link.con ).in_links.push_back( workflow.links.size() );
 	 
-	link.path = path;
-	link.start_proc = v.second.get<int>("start_proc");
-	link.nprocs = v.second.get<int>("nprocs");
-	link.func = v.second.get<std::string>("func");
-	link.prod_dflow_redist = v.second.get<std::string>("prod_dflow_redist");
-	link.dflow_con_redist = v.second.get<std::string>("dflow_con_redist");
-        link.stream = v.second.get<std::string>("stream", "none");
-        link.frame_policy = v.second.get<std::string>("frame_policy","none");
-        if(v.second.count("storage_types") > 0)
+		link.start_proc = v.second.get<int>("start_proc");
+		link.nprocs = v.second.get<int>("nprocs");
+		link.prod_dflow_redist = v.second.get<string>("prod_dflow_redist");
+		link.check_level = check_level;
+
+		if(link.nprocs != 0){ // Only used if there are procs on this link
+			link.path = v.second.get<string>("path");
+			link.func = v.second.get<string>("func");
+			link.dflow_con_redist = v.second.get<string>("dflow_con_redist");
+		}
+
+		// Retrieving the name of source and target ports
+		boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
+		boost::optional<string> destP = v.second.get_optional<string>("targetPort");
+		if(srcP && destP){
+			link.srcPort = srcP.get();
+			link.destPort = destP.get();
+		}
+
+		// Retrieving the contract
+		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
+		if(pt_keys){
+			for(bpt::ptree::value_type &value: pt_keys.get()){
+				ContractKey field;
+				field.name = value.first;
+
+				// Didn't find a nicer way of doing this...
+				auto i = value.second.begin();
+				field.type = i->second.get<string>("");
+				i++;
+				field.period = i->second.get<int>("");
+				//////
+
+				link.list_keys.push_back(field);
+			}
+		}
+
+		boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
+		if(opt_stream)
+			link.stream = opt_stream.get();
+		else
+			link.stream = "none";
+		boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
+		if(opt_frame_policy)
+			link.frame_policy = opt_frame_policy.get();
+		else
+			link.frame_policy = "none";
+
+		// TODO CHECK if this is possible even when there are no "strorage_types" in the tree
+		if(v.second.count("storage_types") > 0)
         {
             for (auto &types : v.second.get_child("storage_types"))
             {
                 StorageType type = stringToStoragePolicy(types.second.data());
                 link.storages.push_back(type);
             }
-        }
+		}
 
         if(v.second.count("max_storage_sizes") > 0)
         {
@@ -230,8 +283,9 @@ struct Workflow                              // an entire workflow
             }
         }
 
+
         workflow.links.push_back( link );
-      }
+	  } // End for workflow.links
     }
     catch( const bpt::json_parser_error& jpe ) {
       cerr << "JSON parser exception: " << jpe.what() << endl;

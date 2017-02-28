@@ -27,4 +27,5 @@ w.add_edge("prod", "con", start_proc=4, nprocs=2, func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count', cmdline='linear_2nodes')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "linear2", mod_path)
+
+wf.processGraph(w, "linear2")

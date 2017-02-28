@@ -1,4 +1,4 @@
-#ifndef ARRAY_N_DIMENSION_CONSTRUCT_DATA
+﻿#ifndef ARRAY_N_DIMENSION_CONSTRUCT_DATA
 #define ARRAY_N_DIMENSION_CONSTRUCT_DATA
 
 #include <decaf/data_model/baseconstructdata.hpp>
@@ -38,6 +38,8 @@ public:
     virtual boost::multi_array<T, Dim> getArray(){ return value_; }
 
     virtual int getNbItems(){ return value_.size(); }
+
+	virtual std::string getTypename(){ return std::string("ArrayNDim_" + Dim + "_" + boost::typeindex::type_id<T>().pretty_name()); }
 
     virtual std::vector<std::shared_ptr<BaseConstructData> > split(
             const std::vector<int>& range,

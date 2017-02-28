@@ -1,4 +1,4 @@
-#ifndef CONSTRUCT_TYPE
+﻿#ifndef CONSTRUCT_TYPE
 #define CONSTRUCT_TYPE
 
 //#include <decaf/decaf.hpp>
@@ -82,6 +82,11 @@ public:
                     ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
                     ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
     
+	// Append the field of given name taken from the container data
+	bool appendData(pConstructData data, const std::string name);
+	bool appendData(pConstructData data, const char* name);
+
+
     bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
     //void preallocMultiple(int nbCopies , int nbItems, std::vector<pConstructData >& result);
@@ -92,6 +97,8 @@ public:
                     std::shared_ptr<BaseConstructData>  data);
 
     int getNbFields();
+
+	std::string getTypename(std::string name);
 
     bool isCoherent();
 
@@ -267,6 +274,7 @@ ConstructData::getFieldData(const char* key)
 
     return T(field);
 }
+
 
 } //namespace
 

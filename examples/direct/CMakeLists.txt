@@ -1,4 +1,4 @@
-add_subdirectory            (mpmd)
+﻿add_subdirectory            (mpmd)
 
 message("Building direct example")
 
@@ -8,6 +8,7 @@ add_executable              (cycle_4nodes              cycle_4nodes.cpp)
 add_library                 (mod_linear_2nodes  MODULE linear_2nodes.cpp)
 add_library                 (mod_linear_3nodes  MODULE linear_3nodes.cpp)
 add_library                 (mod_cycle_4nodes   MODULE cycle_4nodes.cpp)
+
 
 target_link_libraries       (linear_2nodes
                             ${libraries} bredala_transport bredala_datamodel)
@@ -41,7 +42,7 @@ install                     (TARGETS linear_2nodes mod_linear_2nodes
                             GROUP_READ GROUP_WRITE GROUP_EXECUTE
                             WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-install                     (FILES LINEAR_2NODES_TEST LINEAR_3NODES_TEST CYCLE_4NODES_TEST
+install                     (FILES LINEAR_2NODES_TEST #LINEAR_3NODES_TEST CYCLE_4NODES_TEST
                             linear-2nodes.py linear-3nodes.py cycle-4nodes.py
                             linear-2nodes-topo1.py linear-2nodes-topo2.py linear-2nodes-topo3.py
                             DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/direct/

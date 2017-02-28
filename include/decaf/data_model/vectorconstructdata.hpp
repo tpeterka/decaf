@@ -1,4 +1,4 @@
-#ifndef VECTOR_CONSTRUCT_DATA
+﻿#ifndef VECTOR_CONSTRUCT_DATA
 #define VECTOR_CONSTRUCT_DATA
 
 #include "baseconstructdata.hpp"
@@ -98,6 +98,8 @@ public:
     virtual std::vector<T>& getVector(){ return value_; }
 
     virtual int getNbItems(){ return value_.size() / element_per_items_; }
+
+	virtual std::string getTypename(){ return std::string("Vector_" + boost::typeindex::type_id<T>().pretty_name()); }
 
     virtual void split(
             const std::vector< std::vector<int> >& range,

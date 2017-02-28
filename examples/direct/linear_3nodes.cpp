@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // 3-node linear coupling example
 //
@@ -163,68 +163,7 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    /*char * prefix = getenv("DECAF_PREFIX");
-    if(prefix == NULL)
-    {
-        fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
-                "DECAF_PREFIX to point to the root of your decaf install directory.\n");
-        exit(1);
-    }
-
-    string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/direct/mod_linear_3nodes.so"));
-
-    // fill workflow nodes
-    WorkflowNode node;
-    node.out_links.clear();                        // node0
-    node.in_links.clear();
-    node.out_links.push_back(0);
-    node.start_proc = 0;
-    node.nprocs = 4;
-    node.func = "node0";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();                        // node1
-    node.in_links.clear();
-    node.in_links.push_back(0);
-    node.out_links.push_back(1);
-    node.start_proc = 7;
-    node.nprocs = 2;
-    node.func = "node1";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();                        // node2
-    node.in_links.clear();
-    node.in_links.push_back(1);
-    node.start_proc = 11;
-    node.nprocs = 1;
-    node.func = "node2";
-    workflow.nodes.push_back(node);
-
-    // fill workflow links
-    WorkflowLink link;
-    link.prod = 0;                               // dataflow between node0 and node1
-    link.con = 1;
-    link.start_proc = 4;
-    link.nprocs = 3;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
-    link.prod = 1;                               // dataflow between node1 and node2
-    link.con = 2;
-    link.start_proc = 9;
-    link.nprocs = 2;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);*/
-
     Workflow::make_wflow_from_json(workflow, "linear3.json");
-    //Workflow::make_wflow_from_json(workflow, "");
 
     // run decaf
     run(workflow);

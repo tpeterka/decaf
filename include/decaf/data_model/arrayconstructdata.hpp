@@ -1,4 +1,4 @@
-#ifndef ARRAY_CONSTRUCT_DATA
+﻿#ifndef ARRAY_CONSTRUCT_DATA
 #define ARRAY_CONSTRUCT_DATA
 
 #include <decaf/data_model/baseconstructdata.hpp>
@@ -180,6 +180,8 @@ public:
     virtual T* getArray(){ segmentsToArray(); return value_; }
 
     virtual int getNbItems(){ return size_ / element_per_items_; }
+
+	virtual std::string getTypename(){ return std::string("Array_" + boost::typeindex::type_id<T>().pretty_name()); }
 
     int getSize(){ return size_; }
 

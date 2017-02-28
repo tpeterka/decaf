@@ -1,4 +1,4 @@
-#ifndef ARRAY_3D_CONSTRUCT_DATA
+﻿#ifndef ARRAY_3D_CONSTRUCT_DATA
 #define ARRAY_3D_CONSTRUCT_DATA
 
 #include <decaf/data_model/baseconstructdata.hpp>
@@ -89,6 +89,8 @@ public:
     Block<3>& getBlock(){ return block_; }
 
     virtual int getNbItems(){ return value_->shape()[0] * value_->shape()[1] * value_->shape()[2]; }
+
+	virtual std::string getTypename(){ return std::string("Array3D_" + boost::typeindex::type_id<T>().pretty_name()); }
 
     virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy = DECAF_MERGE_DEFAULT)
     {

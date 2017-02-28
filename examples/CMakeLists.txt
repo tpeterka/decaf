@@ -1,9 +1,10 @@
-if(NOT ${bredala_only} )
+﻿if(NOT ${bredala_only} )
 
-  add_subdirectory            (direct)
-  add_subdirectory            (buffer)
+  #add_subdirectory            (direct)
+  #add_subdirectory            (buffer)
+  add_subdirectory			  (contract)
 
-  add_subdirectory            (flowvr)
+  #add_subdirectory            (flowvr)
   if                           (LAMMPS_INCLUDE_DIR AND
                                LAMMPS_LIBRARY     AND
                                FFTW_INCLUDE_DIR   AND
@@ -23,5 +24,5 @@ if(NOT ${bredala_only} )
   #add_subdirectory            (cfd)
 endif(NOT ${bredala_only})
 
-add_subdirectory            (C)
+  #add_subdirectory            (C)
 

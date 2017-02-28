@@ -42,4 +42,4 @@ w.add_edge("node_b", "node_a", start_proc=10, nprocs=1, func='dflow', path=mod_p
            prod_dflow_redist='count', dflow_con_redist='count', cmdline='cycle_4nodes')
 
 # --- convert the nx graph into a workflow data structure and generate the JSON ---
-wf.processGraph(w, "cycle", mod_path)
+wf.processGraph(w, "cycle")

@@ -8,7 +8,6 @@ import imp
 import sys
 import argparse
 
-
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
 # --- set your options here ---
@@ -43,4 +42,4 @@ w.add_edge("prod", "con", topology=topoDflow, func='dflow', path=mod_path,
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "linear2", mod_path)
+wf.processGraph(w, "linear2")

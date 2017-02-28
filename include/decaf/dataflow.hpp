@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 // dataflow interface
 //
 // Tom Peterka
@@ -13,10 +13,13 @@
 #define DECAF_DATAFLOW_HPP
 
 #include <map>
+#include <string>
 
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/simpleconstructdata.hpp>
 #include <decaf/data_model/msgtool.hpp>
+
+#include <boost/type_index.hpp>
 
 // transport layer specific types
 #ifdef TRANSPORT_MPI
@@ -36,6 +39,7 @@
 #endif
 
 #include "types.hpp"
+#include "workflow.hpp"
 
 namespace decaf
 {
@@ -47,16 +51,22 @@ namespace decaf
                  DecafSizes& decaf_sizes,        // sizes of producer, dataflow, consumer
                  int prod,                       // id in workflow structure of producer node
                  int dflow,                      // id in workflow structure of dataflow link
-                 int con,                        // id in workflow structure of consumer node
-                 Decomposition prod_dflow_redist, // decompositon between producer and dataflow
-                 Decomposition dflow_cons_redist, // decomposition between dataflow and consumer
-                 StreamPolicy streamPolicy,
-                 FramePolicyManagment framePolicy,
-                 vector<StorageType>& storage_types,
-                 vector<unsigned int>& max_storage_sizes);
+		         int con,					   	 // id in workflow structure of consumer node
+		         WorkflowLink wflowLink,
+		         Decomposition prod_dflow_redist, // decompositon between producer and dataflow
+		         Decomposition dflow_cons_redist, // decomposition between dataflow and consumer
+		         StreamPolicy streamPolicy,
+		         FramePolicyManagment framePolicy,
+		         vector<StorageType>& storage_types,
+		         vector<unsigned int>& max_storage_sizes);
+
         ~Dataflow();
-        void put(pConstructData data, TaskType role);
-        void get(pConstructData data, TaskType role);
+		bool put(pConstructData data, TaskType role);
+		bool get(pConstructData data, TaskType role);
+
+		pConstructData filterPut(pConstructData data, TaskType role, bool& data_changed, bool& filtered_empty);
+		void filterGet(pConstructData data, TaskType role);
+
         DecafSizes* sizes()    { return &sizes_; }
         void shutdown();
         void err()             { ::all_err(err_); }
@@ -74,6 +84,15 @@ namespace decaf
         Comm* dflow_comm()            { return dflow_comm_; }
         Comm* con_comm()              { return con_comm_;  }
         void forward();
+
+		vector<ContractKey>& keys(){ return list_keys_; }
+		bool is_contract(){		return bContract_;}
+
+		string srcPort(){ return srcPort_; }
+		string destPort(){ return destPort_; }
+
+		bool isClose(){ return bClose_; }
+		void setClose(){ bClose_ = true; }
 
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
@@ -96,13 +115,24 @@ namespace decaf
         int wflow_prod_id_;              // index of corresponding producer in the workflow
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
-        bool no_link_;                   // True if the Dataflow doesn't have a Link
-        bool use_stream_;                // True if the Dataflow manages a buffer.
+		bool no_link_;                   // True if the Dataflow doesn't have a Link
+		bool use_stream_;                // True if the Dataflow manages a buffer.
 
-        // Buffer infos
-        StreamPolicy stream_policy_;         // Type of stream to use
-        Datastream* stream_;
-    };
+		// Buffer infos
+		StreamPolicy stream_policy_;         // Type of stream to use
+		Datastream* stream_;
+
+		int iteration;					// Iterations counter
+		bool prod_link_overlap;		// Whether the is overlaping between producer and link
+
+		string srcPort_;				// Portname of the source
+		string destPort_;				// Portname of the destination
+		bool bClose_;					// Determines if a quit message has been received when calling a get
+
+		bool bContract_;				// boolean to say if the dataflow has a contract or not
+		Check_level check_level_;			 // level of typechecking used; Relevant if bContract_ is set to true
+		vector<ContractKey> list_keys_;   // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+	};// End of class Dataflow
 
 } // namespace
 
@@ -112,6 +142,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int prod,
                    int dflow,
                    int con,
+                   WorkflowLink wflowLink,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist,
                    StreamPolicy stream_policy,
@@ -127,6 +158,10 @@ Dataflow::Dataflow(CommHandle world_comm,
     redist_dflow_con_(NULL),
     redist_prod_con_(NULL),
     type_(DECAF_OTHER_COMM),
+    check_level_(wflowLink.check_level),
+    srcPort_(wflowLink.srcPort),
+    destPort_(wflowLink.destPort),
+    bClose_(false),
     no_link_(false),
     use_stream_(false),
     stream_policy_(stream_policy)
@@ -160,7 +195,17 @@ Dataflow::Dataflow(CommHandle world_comm,
     {
         err_ = DECAF_COMM_SIZES_ERR;
         return;
-    }
+	}
+
+	// Sets the boolean value to true/false whether the dataflow is related to a contract or not
+	if(wflowLink.list_keys.size() == 0){
+		bContract_ = false;
+	}
+	else{
+		bContract_ = true;
+		list_keys_ = wflowLink.list_keys;
+		iteration = 0;
+	}
 
     // debug
     // if (world_rank == 0)
@@ -175,19 +220,29 @@ Dataflow::Dataflow(CommHandle world_comm,
     {
         type_ |= DECAF_PRODUCER_COMM;
         prod_comm_ = new Comm(world_comm, sizes_.prod_start, sizes_.prod_start + sizes_.prod_size - 1);
-    }
+	}
+
     if (world_rank_ >= sizes_.dflow_start &&                  // dataflow
         world_rank_ < sizes_.dflow_start + sizes_.dflow_size)
     {
         type_ |= DECAF_DATAFLOW_COMM;
         dflow_comm_ = new Comm(world_comm, sizes_.dflow_start, sizes_.dflow_start + sizes_.dflow_size - 1);
     }
-    if (world_rank_ >= sizes_.con_start &&                    // consumer
+
+	if (world_rank_ >= sizes_.con_start &&                    // consumer
         world_rank_ < sizes_.con_start + sizes_.con_size)
     {
         type_ |= DECAF_CONSUMER_COMM;
         con_comm_ = new Comm(world_comm, sizes_.con_start, sizes_.con_start + sizes_.con_size - 1);
     }
+
+	if( (type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM && (type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM){
+		prod_link_overlap = true;
+	}
+	else{
+		prod_link_overlap = false;
+	}
+
 
     // producer and dataflow
     if (sizes_.dflow_size > 0 && (
@@ -486,7 +541,8 @@ Dataflow::~Dataflow()
         delete redist_dflow_con_;
     if (redist_prod_dflow_)
         delete redist_prod_dflow_;
-    if (redist_prod_con_)
+
+	if (redist_prod_con_)
         delete redist_prod_con_;
 
     if(stream_) delete stream_;
@@ -498,20 +554,35 @@ Dataflow::~Dataflow()
 // - workflow link id corresponding to this dataflow
 // - destination workflow node id or link id, depending on type of destination
 // NB: source is *link* id while destination is *either node or link* id
-void
+// Returns true if ok, false if an ERROR occured
+bool
 decaf::
 Dataflow::put(pConstructData data, TaskType role)
 {
+	pConstructData data_filtered; // container to be sent
+	bool data_removed_by_period; // i.e.: Has some data field been removed due to the periodicity during the call of filterAndCheck?
+	bool data_filtered_empty;
 
-    // clear old identifiers
-    data->removeData("src_type");
-    data->removeData("link_id");
-    data->removeData("dest_id");
+	data_filtered = filterPut(data, role, data_removed_by_period, data_filtered_empty);
+
+	// If the filtered message does not contain user data, no need to send
+	if(data_filtered_empty){
+		iteration++;
+		return false;
+	}
+
+	if(role==DECAF_LINK || !prod_link_overlap){
+		iteration++;
+	}
+
+	data_filtered->removeData("src_type");
+	data_filtered->removeData("link_id");
+	data_filtered->removeData("dest_id");
 
     // encode type into message (producer/consumer or dataflow)
     shared_ptr<SimpleConstructData<TaskType> > value  =
         make_shared<SimpleConstructData<TaskType> >(role);
-    data->appendData(string("src_type"), value,
+	data_filtered->appendData(string("src_type"), value,
                     DECAF_NOFLAG, DECAF_SYSTEM,
                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -519,7 +590,7 @@ Dataflow::put(pConstructData data, TaskType role)
     // encode dataflow link id into message
     shared_ptr<SimpleConstructData<int> > value1  =
         make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-    data->appendData(string("link_id"), value1,
+	data_filtered->appendData(string("link_id"), value1,
                      DECAF_NOFLAG, DECAF_SYSTEM,
                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
@@ -531,37 +602,55 @@ Dataflow::put(pConstructData data, TaskType role)
             // encode destination link id into message
             shared_ptr<SimpleConstructData<int> > value2  =
                 make_shared<SimpleConstructData<int> >(wflow_con_id_);
-            data->appendData(string("dest_id"), value2,
+			data_filtered->appendData(string("dest_id"), value2,
                              DECAF_NOFLAG, DECAF_SYSTEM,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
             // send the message
-            if(redist_prod_con_ == NULL)
+			if(redist_prod_con_ == NULL){
                 fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-            redist_prod_con_->process(data, DECAF_REDIST_SOURCE);
+				MPI_Abort(MPI_COMM_WORLD, 0);
+			}
+			if(data_removed_by_period){
+				redist_prod_con_->clearBuffers(); // We clear the buffers before and after the sending
+			}
+			redist_prod_con_->process(data_filtered, DECAF_REDIST_SOURCE);
             redist_prod_con_->flush();
+			if(data_removed_by_period){
+				redist_prod_con_->clearBuffers();
+			}
         }
         else
         {
             // encode destination link id into message
             shared_ptr<SimpleConstructData<int> > value2  =
                 make_shared<SimpleConstructData<int> >(wflow_dflow_id_);
-            data->appendData(string("dest_id"), value2,
+			data_filtered->appendData(string("dest_id"), value2,
                              DECAF_NOFLAG, DECAF_SYSTEM,
                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
+			if(redist_prod_dflow_ == NULL){
+				fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
+				MPI_Abort(MPI_COMM_WORLD, 0);
+			}
+			if(data_removed_by_period){
+				redist_prod_dflow_->clearBuffers(); // We clear the buffers before and after the sending
+			}
+
+			/// send the message
             if(use_stream_)
-            {
+			{
                 stream_->processProd(data);
             }
             else
             {
-                // send the message
-                if(redist_prod_dflow_ == NULL)
-                    fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-                redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
-                redist_prod_dflow_->flush();
-            }
+				redist_prod_dflow_->process(data_filtered, DECAF_REDIST_SOURCE);
+				redist_prod_dflow_->flush();
+
+			}
+			if(data_removed_by_period){
+				redist_prod_dflow_->clearBuffers();
+			}
         }
     }
     else if (role == DECAF_LINK)
@@ -569,31 +658,48 @@ Dataflow::put(pConstructData data, TaskType role)
         // encode destination node id into message
         shared_ptr<SimpleConstructData<int> > value2  =
             make_shared<SimpleConstructData<int> >(wflow_con_id_);
-        data->appendData(string("dest_id"), value2,
+		data_filtered->appendData(string("dest_id"), value2,
                          DECAF_NOFLAG, DECAF_SYSTEM,
                          DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
 
 
         // send the message
-        if(redist_dflow_con_ == NULL)
+		if(redist_dflow_con_ == NULL){
             fprintf(stderr, "Dataflow::put() trying to access a null communicator\n");
-        redist_dflow_con_->process(data, DECAF_REDIST_SOURCE);
+			MPI_Abort(MPI_COMM_WORLD, 0);
+		}
+		if(data_removed_by_period){
+			redist_dflow_con_->clearBuffers(); // We clear the buffers before and after the sending
+		}
+		redist_dflow_con_->process(data_filtered, DECAF_REDIST_SOURCE);
         redist_dflow_con_->flush();
-    }
+		if(data_removed_by_period){
+			redist_dflow_con_->clearBuffers();
+		}
+	}
 
-    data->removeData("src_type");
-    data->removeData("link_id");
-    data->removeData("dest_id");
+	// TODO remove this? It is data_filtered, the variale lives only in this function call
+	data_filtered->removeData("src_type");
+	data_filtered->removeData("link_id");
+	data_filtered->removeData("dest_id");
+	data_filtered->removeData("decaf_iteration");
+
+	return true;
 }
 
-void
+
+// gets data from the dataflow
+// return true if ok, false if an ERROR occured
+bool
 decaf::
 Dataflow::get(pConstructData data, TaskType role)
 {
     if (role == DECAF_LINK)
     {
-        if (redist_prod_dflow_ == NULL)
+		if (redist_prod_dflow_ == NULL){
             fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+			MPI_Abort(MPI_COMM_WORLD, 0);
+		}
 
         if(use_stream_)
         {
@@ -603,21 +709,26 @@ Dataflow::get(pConstructData data, TaskType role)
         {
             redist_prod_dflow_->process(data, DECAF_REDIST_DEST);
             redist_prod_dflow_->flush();
-        }
+		}
+
     }
     else if (role == DECAF_NODE)
     {
         if(no_link_)
         {
-            if (redist_prod_con_ == NULL)
+			if (redist_prod_con_ == NULL){
                 fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+				MPI_Abort(MPI_COMM_WORLD, 0);
+			}
             redist_prod_con_->process(data, DECAF_REDIST_DEST);
             redist_prod_con_->flush();
         }
         else
         {
-            if (redist_dflow_con_ == NULL)
+			if (redist_dflow_con_ == NULL){
                 fprintf(stderr, "Dataflow::get() trying to access a null communicator\n");
+				MPI_Abort(MPI_COMM_WORLD, 0);
+			}
             redist_dflow_con_->process(data, DECAF_REDIST_DEST);
             redist_dflow_con_->flush();
 
@@ -625,8 +736,115 @@ Dataflow::get(pConstructData data, TaskType role)
             if(use_stream_)
                 stream_->processCon(data);
         }
+
+
+		if(msgtools::test_quit(data)){
+			setClose();
+			return true;
+		}
     }
+
+	// Performs the filtering and checking of data if needed
+	filterGet(data, role);
+
+	return true;
 }
+
+
+decaf::pConstructData
+decaf::
+Dataflow::filterPut(pConstructData data, TaskType role, bool& data_changed, bool& filtered_empty){
+	pConstructData data_filtered;
+	data_changed = data->isEmpty();
+	filtered_empty = false;
+
+	if(data->hasData("decaf_quit")){
+		msgtools::set_quit(data_filtered);
+		return data_filtered;
+	}
+
+	if(data->isEmpty() || check_level_ < CHECK_PY_AND_SOURCE){ // If there is no user data or if there is no need to perform the check/filtering
+		return data;
+	}
+
+	if(role == DECAF_LINK){// iteration value is wrong if filtered data leads to an empty message at producer put, need to update it with the message from the producer node
+		int i = msgtools::get_iteration(data);
+		if(i != -1){
+			iteration = i;
+		}
+	}
+
+	if(is_contract()){
+	    for(ContractKey field : keys()){
+			if( (iteration % field.period) == 0){ // This field is sent during this iteration
+				if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
+					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
+					MPI_Abort(MPI_COMM_WORLD, 0);
+				}
+				// Performing typechecking
+				string typeName = data->getTypename(field.name);
+				if(typeName.compare(field.type) != 0){ //The two types do not match
+					fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+					MPI_Abort(MPI_COMM_WORLD, 0);
+				}
+				data_filtered->appendData(data, field.name); // The field is present of correct type, send it
+			}
+			else{ // The field should not be sent in this iteration, we clear the buffers of the RedistComp
+				//TODO need a clearBuffer on a specific field name
+				data_changed = true;
+			}
+		}
+	}
+	else{
+		data_filtered = data;
+	}
+
+	// If all fields are filtered during this iteration, the message is empty and should not be sent
+	if(data_filtered->isEmpty()){
+		filtered_empty = true;
+		return data_filtered;
+	}
+
+	// In case there were system fields in the original message
+	data_filtered->copySystemFields(data);
+
+	// We attach the current iteration needed for the filtering at the get side or by a link for the put
+	if(check_level_ >= CHECK_EVERYWHERE || (role==DECAF_NODE && !no_link_) ){
+		msgtools::set_iteration(data_filtered, iteration);
+	}
+
+	return data_filtered;
+}
+
+void
+decaf::
+Dataflow::filterGet(pConstructData data, TaskType role){
+	if(data->isEmpty() || check_level_ < CHECK_EVERYWHERE){ // If there is no user data or if there is no need to perform the check/filtering
+		return;
+	}
+
+	int it = msgtools::get_iteration(data);
+
+	if(is_contract()){
+	    for(ContractKey field : keys()){
+			if( (it % field.period) == 0){ // This field should be received during this iteration
+				if(! data->hasData(field.name)){
+					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
+					MPI_Abort(MPI_COMM_WORLD, 0);
+				}
+				string typeName = data->getTypename(field.name);
+				if(typeName.compare(field.type) != 0){ //The two types do not match
+					fprintf(stderr, "ERROR: Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+					MPI_Abort(MPI_COMM_WORLD, 0);
+				}
+			}
+			else{// The field is not supposed to be received in this iteration, remove it
+				data->removeData(field.name);
+			}
+		}
+	}
+}
+
 
 // cleanup
 void

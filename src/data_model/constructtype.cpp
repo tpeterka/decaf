@@ -1,4 +1,4 @@
-#include <decaf/data_model/constructtype.h>
+﻿#include <decaf/data_model/constructtype.h>
 #include <decaf/data_model/arrayconstructdata.hpp>
 #include <decaf/data_model/morton.h>
 #include <sys/time.h>
@@ -125,7 +125,7 @@ ConstructData::appendData(string name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name.c_str() );
         return false;
     }
 
@@ -154,7 +154,7 @@ ConstructData::appendData(std::string name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name.c_str() );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name.c_str() );
         return false;
     }
 
@@ -183,7 +183,7 @@ ConstructData::appendData(const char* name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name );
         return false;
     }
 
@@ -212,12 +212,74 @@ ConstructData::appendData(const char* name,
 
     if(!ret.second)
     {
-        fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n ", name );
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name );
         return false;
     }
 
     return updateMetaData();
 }
+
+
+
+bool
+decaf::
+ConstructData::appendData(pConstructData data, const string name)
+{
+	if(!data->hasData(name)){
+		fprintf(stderr, "ERROR : appendData failed. The field \"%s\" is not present in the data model in argument.\n", name.c_str() );
+		return false;
+	}
+
+	std::pair<std::map<std::string, datafield>::iterator,bool> ret;
+	ret = container_->insert(std::pair<std::string, datafield>(name, data->container_->at(name)));
+
+	if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+	{
+		std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+		merge_order_.clear();
+		split_order_.clear();
+	}
+
+	if(!ret.second)
+	{
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name.c_str() );
+		return false;
+	}
+
+	return updateMetaData();
+}
+
+
+bool
+decaf::
+ConstructData::appendData(pConstructData data, const char* name)
+{
+	if(!data->hasData(name)){
+		fprintf(stderr, "ERROR : appendData failed. The field \"%s\" is not present in the data model in argument.\n", name );
+		return false;
+	}
+
+	std::pair<std::map<std::string, datafield>::iterator,bool> ret;
+	ret = container_->insert(std::pair<std::string, datafield>(name, data->container_->at(name)));
+
+	if(ret.second && (!merge_order_.empty() || !split_order_.empty()))
+	{
+		std::cout<<"New field added. The priority split/merge list is invalid. Clearing."<<std::endl;
+		merge_order_.clear();
+		split_order_.clear();
+	}
+
+	if(!ret.second)
+	{
+		fprintf(stderr, "ERROR : appendData failed. A field named \"%s\" already exist in the data model.\n", name );
+		return false;
+	}
+
+	return updateMetaData();
+}
+
+
+
 
 bool
 decaf::
@@ -279,6 +341,16 @@ decaf::
 ConstructData::getNbFields()
 {
     return nbFields_;
+}
+
+std::string
+decaf::
+ConstructData::getTypename(std::string name){
+	std::shared_ptr<BaseConstructData> field = this->getData(name);
+	if(!field){
+		return std::string("ERROR in getTypename. The field \"%s\" is not present in the data model", name.c_str());
+	}
+	return field->getTypename();
 }
 
 std::shared_ptr<std::map<std::string, datafield> >
@@ -1748,7 +1820,7 @@ char*
 decaf::
 ConstructData::getOutSerialBuffer(int* size)
 {
-    *size = out_serial_buffer_.size(); //+1 for the \n caractere
+	*size = out_serial_buffer_.size(); //+1 for the \n character
     return &out_serial_buffer_[0]; //Dangerous if the string gets reallocated
 }
 
@@ -1767,7 +1839,7 @@ char*
 decaf::
 ConstructData::getInSerialBuffer(int* size)
 {
-    *size = in_serial_buffer_.size(); //+1 for the \n caractere
+	*size = in_serial_buffer_.size(); //+1 for the \n character
     return &in_serial_buffer_[0]; //Dangerous if the string gets reallocated
 }
 
