@@ -10,46 +10,17 @@
 //
 //--------------------------------------------------------------------------
 
-#include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/iostreams/stream.hpp>
-
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/vectorfield.hpp>
 #include <decaf/data_model/boost_macros.h>
 
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/string.hpp>
-
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-
 #include <decaf/transport/mpi/redist_proc_mpi.h>
 
-#include <assert.h>
-#include <math.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <mpi.h>
-#include <sstream>
-#include <fstream>
+#include "tools.hpp"
 
 using namespace decaf;
 using namespace std;
 
-void printArray(const std::vector<int>& array)
-{
-    std::cout<<"[";
-    for(unsigned int i = 0; i < array.size(); i++)
-        std::cout<<array[i]<<",";
-    std::cout<<"]"<<std::endl;
-}
-
-bool isBetween(int rank, int start, int nb)
-{
-    return rank >= start && rank < start + nb;
-}
 
 void runTestParallelRedistOverlap(int startSource, int nbSource, int startReceptors, int nbReceptors)
 {

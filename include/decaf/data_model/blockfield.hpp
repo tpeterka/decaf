@@ -26,6 +26,11 @@ public:
             ptr_ = std::make_shared<BlockConstructData>(Block<3>(), map);
     }
 
+    BlockField(Block<3>& block, mapConstruct map = mapConstruct())
+    {
+        ptr_ = std::make_shared<BlockConstructData>(block, map);
+    }
+
     virtual ~BlockField(){}
 
     virtual BaseConstructData* operator -> () const

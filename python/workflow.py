@@ -579,8 +579,11 @@ def checkWithoutPorts(edge, prod, con, my_dict, filter_level):
             print "WARNING: %s will receive %s with periodicity %s instead of %s." % (con.name, key, lcm_val, con_in[key][1])
 
       if len(intersection_keys) == 0:
-          raise ValueError("ERROR: the intersection of fields between %s and %s is empty, aborting." % (prod.name, con.name))
-      return (intersection_keys, 0)
+        sk = ""
+        for key, val in con_in.items():
+          sk += key + ":" + val[0] + ", " 
+        raise ValueError("ERROR intersection of keys from %s and %s is empty, the consumer needs the following: %s" % (edge[0], edge[1], sk.rstrip(", ")))
+	  return (intersection_keys, 0)
 
 
 class Topology:
@@ -717,29 +720,6 @@ def initParserForTopology(parser):
 
 def topologyFromArgs(args):
     return Topology("global", args.nprocs, hostfilename = args.hostfile)
-
-""" Not used anymore if we are using Node and Edge objects
-def processTopology(graph):
-    # Check in all nodes and edge if a topology is present.
-    #    If yes, fill the fields start_proc and nprocs 
-    
-    for node in graph.nodes_iter(data=True):
-        if 'topology' in node[1]:
-            topo = node[1]['topology']
-            node[1]['start_proc'] = topo.offsetRank
-            node[1]['nprocs'] = topo.nProcs
-            # Clear the graph
-            del node[1]['topology'] #TODO is it really useful to remove this ? No real memory consumption
-
-
-    for edge in graph.edges_iter(data=True):
-        if 'topology' in edge[2]:
-            topo = edge[2]['topology']
-            edge[2]['start_proc'] = topo.offsetRank
-            edge[2]['nprocs'] = topo.nProcs
-            # Clear the graph
-            del edge[2]['topology'] #TODO is it really useful to remove this ? No real memory consumption
-"""
 
 
 def workflowToJson(graph, outputFile, filter_level):

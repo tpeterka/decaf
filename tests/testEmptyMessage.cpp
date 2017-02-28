@@ -4,6 +4,8 @@
 
 #include <decaf/transport/mpi/redist_count_mpi.h>
 
+#include "tools.hpp"
+
 #include <assert.h>
 #include <math.h>
 #include <stddef.h>
@@ -13,16 +15,12 @@
 
 using namespace decaf;
 
-bool isBetween(int rank, int start, int nb)
-{
-    return rank >= start && rank < start + nb;
-}
 
 void runTestCount(int startSource, int nbSources, int startDest, int nbDests)
 {
     if(nbSources >= nbDests)
     {
-        fprintf(stderr, "ERROR: the number of destination should larger than the number of sources. Abording\n");
+        fprintf(stderr, "ERROR: the number of destination should be larger than the number of sources. Abording\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
@@ -47,7 +45,7 @@ void runTestCount(int startSource, int nbSources, int startDest, int nbDests)
                                                    startDest,
                                                    nbDests,
                                                    MPI_COMM_WORLD,
-                                                   DECAF_REDIST_P2P);
+                                                   DECAF_REDIST_COLLECTIVE);
 
     if (isBetween(rank, startSource, nbSources))
     {
@@ -70,6 +68,12 @@ void runTestCount(int startSource, int nbSources, int startDest, int nbDests)
 
         component->process(result, DECAF_REDIST_DEST);
 
+        int dest_rank = rank - startDest;
+        int nb_items = nbSources;
+        if(dest_rank < nb_items)
+            fprintf(stderr, "Expecting 1 item.\n");
+        else
+            fprintf(stderr, "Expecting 0 item.\n");
         result->printKeys();
     }
 

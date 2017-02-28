@@ -100,58 +100,6 @@ namespace decaf
         // To call if the data model change from one iteration to another or to free memory space
         void clearBuffers(TaskType role);
 
-		// puts an iteration number into a container
-		static
-		void
-		set_iteration(pConstructData out_data, int iteration)
-		{
-			if(out_data->hasData("decaf_iteration")){
-				if(get_iteration(out_data) == iteration){ // The correct iteration is already set
-					return;
-				}
-				std::cout << "WARNING: iteration already set with different value: "<< get_iteration(out_data) << " " << iteration << std::endl;
-				out_data->removeData("decaf_iteration");
-			}
-			shared_ptr<SimpleConstructData<int> > data  =
-			    make_shared<SimpleConstructData<int> >(iteration);
-			out_data->appendData(string("decaf_iteration"), data,
-			                     DECAF_NOFLAG, DECAF_SYSTEM,
-			                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
-		}
-
-		static
-		int
-		get_iteration(pConstructData data)
-		{
-			shared_ptr<SimpleConstructData<int> > ptr =
-			        data->getTypedData<SimpleConstructData<int> >("decaf_iteration");
-			if(ptr){
-				return ptr->getData();
-			}
-			return -1;
-		}
-
-        // sets a quit message into a container; caller still needs to send the message
-        static
-        void
-        set_quit(pConstructData out_data)   // output message
-		{
-			shared_ptr<SimpleConstructData<int> > data  =
-			    make_shared<SimpleConstructData<int> >(1);
-			out_data->appendData(string("decaf_quit"), data,
-			                     DECAF_NOFLAG, DECAF_SYSTEM,
-			                     DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
-			out_data->setSystem(true);
-		}
-
-        // tests whether a message is a quit command
-        static
-        bool
-        test_quit(pConstructData in_data)   // input message
-        {
-            return in_data->hasData(string("decaf_quit"));
-        }
-
     private:
         CommHandle world_comm_;          // handle to original world communicator
         Comm* prod_comm_;                // producer communicator
@@ -804,7 +752,7 @@ Dataflow::get(pConstructData& data, TaskType role)
         }
 
 
-		if(test_quit(data)){
+		if(msgtools::test_quit(data)){
 			setClose();
 			return true;
 		}
@@ -826,7 +774,7 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 	filtered_empty = false;
 
 	if(data->hasData("decaf_quit")){
-		set_quit(data_filtered);
+		msgtools::set_quit(data_filtered);
 		return data_filtered;
 	}
 
@@ -835,7 +783,7 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 	}
 
 	if(role == DECAF_LINK){// iteration value is wrong if filtered data leads to an empty message at producer put, need to update it with the message from the producer node
-		int i = get_iteration(data);
+		int i = msgtools::get_iteration(data);
 		if(i != -1){
 			iteration = i;
 		}
@@ -862,6 +810,7 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 						fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
 						MPI_Abort(MPI_COMM_WORLD, 0);
 					}
+
 				}
 				else{ // The field should not be sent in this iteration, we clear the buffers of the RedistComp
 					//TODO need a clearBuffer on a specific field name
@@ -891,7 +840,6 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 				}
 			}
 		}
-
 	}
 	else{
 		data_filtered = data;
@@ -908,7 +856,7 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 
 	// We attach the current iteration needed for the filtering at the get side or by a link for the put
 	if(check_level_ >= CHECK_EVERYWHERE || (role==DECAF_NODE && !no_link_) ){
-		set_iteration(data_filtered, iteration);
+		msgtools::set_iteration(data_filtered, iteration);
 	}
 
 	return data_filtered;
@@ -921,7 +869,7 @@ Dataflow::filterGet(pConstructData& data, TaskType role){
 		return;
 	}
 
-	int it = get_iteration(data);
+	int it = msgtools::get_iteration(data);
 
 	if(has_contract() || has_contract_link()){
 		vector<ContractKey> &list_keys = (role == DECAF_NODE && has_contract_link()) ? keys_link() : keys() ;

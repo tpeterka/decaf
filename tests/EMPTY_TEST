@@ -18,10 +18,10 @@ ARCH=LINUX
 #ARCH=CRAY
 
 # number of procs
-num_procs=8
+num_procs=5
 
 # executable
-exe=./testcount
+exe=./testemptymessage
 
 #------
 #

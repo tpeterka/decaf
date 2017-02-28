@@ -1,3 +1,16 @@
+//---------------------------------------------------------------------------
+//
+// Simple example to run with valgrind to check if the memory is properly
+// cleaned with shared pointer.
+//
+// Matthieu Dreher
+// Argonne National Laboratory
+// 9700 S. Cass Ave.
+// Argonne, IL 60439
+// mdreher@anl.gov
+//
+//--------------------------------------------------------------------------
+
 #include <decaf/data_model/pconstructtype.h>
 #include <decaf/data_model/arrayfield.hpp>
 #include <memory>
