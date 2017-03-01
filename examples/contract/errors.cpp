@@ -47,6 +47,7 @@ void prod(Decaf* decaf)
 		// --- END 3 ---
 
 		/*
+		// --- SCENARIO 4 ---
 		// Comment the 3 lines above and uncomment these to run correctly
 		vector<int> vect(1);
 		vect[0] = timestep;

@@ -44,7 +44,7 @@ void node1(Decaf* decaf)
 		fprintf(stderr, "Node1 it=%d sent %d\n", timestep, timestep+10);
 
 		// send the data on all outbound dataflows, the filtering of contracts is done internaly
-		if(! decaf->put(container) ){
+		if(! decaf->put(container, "Out") ){
 			break;
 		}
 		usleep(200000);
@@ -62,26 +62,26 @@ void node2(Decaf* decaf)
 	int var;
 	int timestep = 0;
 
-	vector<pConstructData> in_data;
+	map<string, pConstructData> in_data;
 
 	SimpleFieldi recv;
 
 	bool need_to_break = false;
 	while(!need_to_break && decaf->get(in_data)){
 		var = 0;
-		for(pConstructData data : in_data){
-			recv = data->getFieldData<SimpleFieldi>("var");
-			if(recv){
-				var += recv.getData();
-				fprintf(stderr, "Node2 it=%d received var=%d, forwarding to Node3\n", timestep, recv.getData());
-			}
+
+		recv = in_data.at("In")->getFieldData<SimpleFieldi>("var");
+		if(recv){
+			var += recv.getData();
+			fprintf(stderr, "Node2 it=%d received var=%d, forwarding to Node3\n", timestep, recv.getData());
 		}
 
-		pConstructData d;
+		pConstructData out_data;
 		SimpleFieldi field(var);
-		d->appendData("var", field);
-		if(!decaf->put(d)){
-			need_to_break = true;
+		out_data->appendData("var", field);
+
+		if(!decaf->put(out_data, "Out")){
+			break;
 		}
 		timestep++;
 	}
@@ -96,19 +96,17 @@ void node3(Decaf* decaf)
 	int var;
 	int timestep = 0;
 
-	vector<pConstructData> in_data;
+	map<string, pConstructData> in_data;
 
 	while(decaf->get(in_data)){
-		for(pConstructData data : in_data){
-			if(data->hasData("var")){
-				SimpleFieldi varf =data->getFieldData<SimpleFieldi>("var");
-				if(varf){
-					var = varf.getData();
-					fprintf(stderr, "Node3 it=%d received %d\n", timestep, var);
-				}
-				else{
-					fprintf(stderr, "Node3 it=%d did not received var", timestep);
-				}
+		if(in_data.at("In")->hasData("var")){
+			SimpleFieldi varf =in_data.at("In")->getFieldData<SimpleFieldi>("var");
+			if(varf){
+				var = varf.getData();
+				fprintf(stderr, "Node3 it=%d received %d\n", timestep, var);
+			}
+			else{
+				fprintf(stderr, "Node3 it=%d did not received var", timestep);
 			}
 		}
 

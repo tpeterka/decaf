@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts
+// 4 nodes example for contracts using indexes of dataflows
 //
 // clement Mommessin
 // Argonne National Laboratory
@@ -32,6 +32,7 @@ void prod(Decaf* decaf)
 	int rank = decaf->world->rank();
 	float pi = 3.1415;
 	float array[3];
+	bool ok = true;
 	// produce data for some number of timesteps
 	for (int timestep = 0; timestep <= 6; timestep++){
 		fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
@@ -42,26 +43,28 @@ void prod(Decaf* decaf)
 		SimpleFieldi d_index(rank);
 		ArrayFieldf d_velocity(array,3, 1);
 
-		pConstructData container;
-		container->appendData("index", d_index,
+		pConstructData container0, container1;
+
+		// Do the filtering manually
+		container0->appendData("index", d_index,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
+		container0->appendData("velocity", d_velocity,
+		                       DECAF_NOFLAG, DECAF_PRIVATE,
+		                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-		container->appendData("velocity", d_velocity,
-		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+		container1->appendData("velocity", d_velocity,
+		                       DECAF_NOFLAG, DECAF_PRIVATE,
+		                       DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-
-		// sends the data to the output port, the filtering of data will be done internally
-		if(! decaf->put(container, "Out") ){
+		// sends the data to the output links
+		ok = ok && decaf->put(container0, 0);
+		ok = ok && decaf->put(container1, 1);
+		if(!ok)
 			break;
-		}
 		usleep(200000);
 	}
-
-	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	//fprintf(stderr, "prod1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
@@ -71,6 +74,7 @@ void prod2(Decaf* decaf)
 	int rank = decaf->world->rank();
 	float den = 2.71828;
 	float den_array[3];
+	bool ok = true;
 
 	for (int timestep = 0; timestep <= 6; timestep++){
 		fprintf(stderr, "prod2 rank %d timestep %d\n", rank, timestep);
@@ -82,22 +86,25 @@ void prod2(Decaf* decaf)
 		ArrayFieldf d_density(den_array, 3, 1);
 		SimpleFieldi d_id(rank);
 
-		pConstructData container;
+		pConstructData container2, container3;
 
-		container->appendData("id", d_id,
+		// Do the filtering manually
+		container3->appendData("id", d_id,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
 
-		container->appendData("density", d_density,
+		container2->appendData("density", d_density,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-		if(! decaf->put(container, "Out")){
+
+		// sends the data to the output links
+		ok = ok && decaf->put(container2, 2);
+		ok = ok && decaf->put(container3, 3);
+		if(!ok)
 			break;
-		}
 		usleep(200000);
 	}
-	//fprintf(stderr, "prod2 %d terminating\n", rank);
 	decaf->terminate();
 }
 
@@ -106,7 +113,7 @@ void prod2(Decaf* decaf)
 void con(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	map<string, pConstructData> in_data;
+	map<int, pConstructData> in_data;
 
 	while (decaf->get(in_data))
 	{
@@ -114,15 +121,15 @@ void con(Decaf* decaf)
 		ArrayFieldf a_density, a_velocity;
 
 		string s = "";
-		index = in_data.at("In1")->getFieldData<SimpleFieldi>("index");
+		index = in_data.at(0)->getFieldData<SimpleFieldi>("index");
 		if(index){
 			s+= "index ";
 		}
-		a_velocity = in_data.at("In1")->getFieldData<ArrayFieldf>("velocity");
+		a_velocity = in_data.at(0)->getFieldData<ArrayFieldf>("velocity");
 		if(a_velocity){
 			s+= "velocity ";
 		}
-		a_density = in_data.at("In2")->getFieldData<ArrayFieldf>("density");
+		a_density = in_data.at(2)->getFieldData<ArrayFieldf>("density");
 		if(a_density){
 			s+= "density ";
 		}
@@ -139,7 +146,7 @@ void con(Decaf* decaf)
 void con2(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	map<string, pConstructData> in_data;
+	map<int, pConstructData> in_data;
 
 	while (decaf->get(in_data))
 	{
@@ -147,11 +154,11 @@ void con2(Decaf* decaf)
 		ArrayFieldf a_velocity;
 
 		string s = "";
-		id = in_data.at("In2")->getFieldData<SimpleFieldi >("id");
+		id = in_data.at(3)->getFieldData<SimpleFieldi >("id");
 		if(id){
 			s+= "id ";
 		}
-		a_velocity = in_data.at("In1")->getFieldData<ArrayFieldf>("velocity");
+		a_velocity = in_data.at(1)->getFieldData<ArrayFieldf>("velocity");
 		if(a_velocity){
 			    s+= "velocity ";
 		}
@@ -185,7 +192,7 @@ int main(int argc,
          char** argv)
 {
 	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "contract_ports.json");
+	Workflow::make_wflow_from_json(workflow, "putget_index.json");
 
 	MPI_Init(NULL, NULL);
 

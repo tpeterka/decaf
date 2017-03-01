@@ -3,11 +3,8 @@
 add_executable              (contract                contract.cpp)
 add_library                 (mod_contract   MODULE   contract.cpp)
 
-add_executable              (contract_ports                contract_ports.cpp)
-add_library                 (mod_contract_ports   MODULE   contract_ports.cpp)
-
-add_executable              (contract_index                contract_index.cpp)
-add_library                 (mod_contract_index	  MODULE   contract_index.cpp)
+add_executable				      (putget_index			         putget_index.cpp)
+add_library					        (mod_putget_index		MODULE putget_index.cpp)
 
 add_executable              (period_3nodes                period_3nodes.cpp)
 add_library                 (mod_period_3nodes   MODULE   period_3nodes.cpp)
@@ -23,14 +20,9 @@ target_link_libraries       (contract
 target_link_libraries       (mod_contract
   ${libraries} bredala_transport bredala_datamodel)
 
-target_link_libraries       (contract_ports
+target_link_libraries		(putget_index
   ${libraries} bredala_transport bredala_datamodel)
-target_link_libraries       (mod_contract_ports
-  ${libraries} bredala_transport bredala_datamodel)
-
-target_link_libraries       (contract_index
-  ${libraries} bredala_transport bredala_datamodel)
-target_link_libraries       (mod_contract_index
+target_link_libraries		(mod_putget_index
   ${libraries} bredala_transport bredala_datamodel)
 
 target_link_libraries       (period_3nodes
@@ -51,23 +43,20 @@ target_link_libraries       (mod_errors
 
 # .SO file extension on Linux/Mac OS
 set_target_properties(mod_contract  PROPERTIES SUFFIX ".so")
-set_target_properties(mod_contract_ports  PROPERTIES SUFFIX ".so")
-set_target_properties(mod_contract_index  PROPERTIES SUFFIX ".so")
+set_target_properties(mod_putget_index  PROPERTIES SUFFIX ".so")
 set_target_properties(mod_period_3nodes PROPERTIES SUFFIX ".so")
 set_target_properties(mod_simple_2nodes PROPERTIES SUFFIX ".so")
 set_target_properties(mod_errors PROPERTIES SUFFIX ".so")
 
 # Don't add a 'lib' prefix to the shared library
 set_target_properties(mod_contract  PROPERTIES PREFIX "")
-set_target_properties(mod_contract_ports  PROPERTIES PREFIX "")
-set_target_properties(mod_contract_index  PROPERTIES PREFIX "")
+set_target_properties(mod_putget_index PROPERTIES PREFIX "")
 set_target_properties(mod_period_3nodes PROPERTIES PREFIX "")
 set_target_properties(mod_simple_2nodes PROPERTIES PREFIX "")
 set_target_properties(mod_errors PROPERTIES PREFIX "")
 
 install(TARGETS contract mod_contract
-  contract_ports mod_contract_ports
-  contract_index mod_contract_index
+  putget_index mod_putget_index
   period_3nodes mod_period_3nodes
   simple_2nodes mod_simple_2nodes
   errors mod_errors
@@ -76,7 +65,7 @@ install(TARGETS contract mod_contract
   GROUP_READ GROUP_WRITE GROUP_EXECUTE
   WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-install(FILES contract.py contract_ports.py contract_index.py
+install(FILES contract.py putget_index.py
   period_3nodes.py simple_2nodes.py
   errors.py
   DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/contract/

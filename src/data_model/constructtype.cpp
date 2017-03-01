@@ -382,6 +382,7 @@ ConstructData::listUserKeys(){
 			list.push_back(it->first);
 		}
 	}
+	return list;
 }
 
 bool

@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts using indexes of dataflows
+// 3 nodes example for testing contract on a link
 //
 // clement Mommessin
 // Argonne National Laboratory
@@ -12,7 +12,6 @@
 
 #include <decaf/decaf.hpp>
 #include <decaf/data_model/pconstructtype.h>
-#include <decaf/data_model/simplefield.hpp>
 #include <decaf/data_model/arrayfield.hpp>
 #include <decaf/data_model/vectorfield.hpp>
 #include <decaf/data_model/boost_macros.h>
@@ -30,75 +29,48 @@ using namespace std;
 void prod(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	float pi = 3.1415;
-	float array[3];
+	vector<int> vect(2);
 	// produce data for some number of timesteps
 	for (int timestep = 0; timestep <= 6; timestep++){
 		fprintf(stderr, "prod rank %d timestep %d\n", rank, timestep);
-		for(int i = 0; i<3; ++i){
-			array[i] = (i+1)*timestep*(rank+1)*pi;
-		}
 
-		SimpleFieldi d_index(rank);
-		ArrayFieldf d_velocity(array,3, 1);
+		vect[0] = 1;
+		vect[1] = 2;
+		VectorFieldi vf(vect, 1);
 
 		pConstructData container;
-		container->appendData("index", d_index,
-		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
-
-
-		container->appendData("velocity", d_velocity,
+		container->appendData("vector", vf,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-
-		// sends the data to the output links, the filtering of data will be done internally
-		if(!decaf->put(container, 0)){
-			break;
-		}
-		if(!decaf->put(container, 1)){
+		if(! decaf->put(container, "Out") ){
 			break;
 		}
 		usleep(200000);
 	}
-
-	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	//fprintf(stderr, "prod1 %d terminating\n", rank);
 	decaf->terminate();
 }
 
-// prod2
+// producer 2
 void prod2(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	float den = 2.71828;
-	float den_array[3];
+	int arr[2];
 
 	for (int timestep = 0; timestep <= 6; timestep++){
 		fprintf(stderr, "prod2 rank %d timestep %d\n", rank, timestep);
 
-		for(int i = 0; i<3; ++i){
-			den_array[i] = (rank+1)*2*timestep*den*(i+1);
-		}
+		arr[0] = 3;
+		arr[1] = 4;
 
-		ArrayFieldf d_density(den_array, 3, 1);
-		SimpleFieldi d_id(rank);
+		ArrayFieldi af(arr, 2, 1);
 
 		pConstructData container;
-
-		container->appendData("id", d_id,
-		                      DECAF_NOFLAG, DECAF_PRIVATE,
-		                      DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
-
-		container->appendData("density", d_density,
+		container->appendData("array", af,
 		                      DECAF_NOFLAG, DECAF_PRIVATE,
 		                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
 
-		if(! decaf->put(container, 2)){
-			break;
-		}
-		if(! decaf->put(container, 3)){
+		if(! decaf->put(container, "Out")){
 			break;
 		}
 		usleep(200000);
@@ -112,28 +84,31 @@ void prod2(Decaf* decaf)
 void con(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
-	map<int, pConstructData> in_data;
+	map<string, pConstructData> in_data;
+	vector<int> vector;
 
 	while (decaf->get(in_data))
 	{
-		SimpleFieldi index;
-		ArrayFieldf a_density, a_velocity;
+		VectorFieldi vect, conv;
+
+		vect = in_data.at("In1")->getFieldData<VectorFieldi>("vector");
+		if(!vect){
+			cout << "Consumer did not received 'vector' correctly" << endl;
+		}
+
+		conv = in_data.at("In2")->getFieldData<VectorFieldi>("converted");
+		if(!conv){
+			cout << "Consumer did not received 'converted' correctly" << endl;
+		}
+
+		vector = vect.getVector();
+		vector.insert(vector.end(), conv.getVector().begin(), conv.getVector().end());
 
 		string s = "";
-		index = in_data.at(0)->getFieldData<SimpleFieldi>("index");
-		if(index){
-			s+= "index ";
+		for(int i : vector){
+			s += to_string(i) + " ";
 		}
-		a_velocity = in_data.at(0)->getFieldData<ArrayFieldf>("velocity");
-		if(a_velocity){
-			s+= "velocity ";
-		}
-		a_density = in_data.at(2)->getFieldData<ArrayFieldf>("density");
-		if(a_density){
-			s+= "density ";
-		}
-
-		fprintf(stderr, "con of rank %d received: %s\n", rank, s.c_str());
+		cout << "Consumer received the values: " << s << endl;
 	}
 
 	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -141,40 +116,44 @@ void con(Decaf* decaf)
 	decaf->terminate();
 }
 
-// con2
-void con2(Decaf* decaf)
+
+// link callback function
+extern "C"
 {
-	int rank = decaf->world->rank();
-	map<int, pConstructData> in_data;
-
-	while (decaf->get(in_data))
+    // This dataflow converts an Array_int into a Vector_int
+    void dflow2(void* args,                          // arguments to the callback
+	           Dataflow* dataflow,                  // dataflow
+	           pConstructData in_data)   // input data
 	{
-		SimpleFieldi id;
-		ArrayFieldf a_velocity;
+		vector<int> vect;
 
-		string s = "";
-		id = in_data.at(3)->getFieldData<SimpleFieldi >("id");
-		if(id){
-			s+= "id ";
-		}
-		a_velocity = in_data.at(1)->getFieldData<ArrayFieldf>("velocity");
-		if(a_velocity){
-			    s+= "velocity ";
+		if(in_data->hasData("array")){
+			ArrayFieldi af = in_data->getFieldData<ArrayFieldi>("array");
+			int size = af.getArraySize();
+			int* arr = af.getArray();
+			for(int i = 0; i<size; i++){
+				vect.push_back(arr[i]);
+			}
+		}else{
+			std::cout << "Link received empty message" << std::endl;
 		}
 
-		fprintf(stderr, "con2 of rank %d received: %s\n", rank, s.c_str());
+		VectorFieldi vf(vect, 1);
+		pConstructData out_data;
+		out_data->appendData("converted", vf, DECAF_NOFLAG, DECAF_PRIVATE,
+		                     DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
+		dataflow->put(out_data, DECAF_LINK);
 	}
 
-	// terminate the task (mandatory) by sending a quit message to the rest of the workflow
-	//fprintf(stderr, "con1 %d terminating\n", rank);
-	decaf->terminate();
-}
+} // extern "C"
+
 
 // link callback function
 extern "C"
 {
     // dataflow just forwards everything that comes its way in this example
-    void dflow(void* args,                          // arguments to the callback
+    void dflow1(void* args,                          // arguments to the callback
 	           Dataflow* dataflow,                  // dataflow
 	           pConstructData in_data)   // input data
 	{
@@ -191,7 +170,7 @@ int main(int argc,
          char** argv)
 {
 	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "contract_index.json");
+	Workflow::make_wflow_from_json(workflow, "conversion.json");
 
 	MPI_Init(NULL, NULL);
 
@@ -210,8 +189,6 @@ int main(int argc,
 		con(decaf);
 	if (decaf->my_node("prod2"))
 		prod2(decaf);
-	if (decaf->my_node("con2"))
-		con2(decaf);
 
 	// cleanup
 	delete decaf;

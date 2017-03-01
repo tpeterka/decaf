@@ -68,4 +68,4 @@ wf.addNode(graph, con)
 wf.addEdge(graph, edge)
 
 # --- convert the nx graph into a worflow data structure and performs all the checks ---
-wf.processGraph(graph, "errors", filter_level=wf.Filter_level.EVERYWHERE)
+wf.processGraph(graph, "errors", filter_level=wf.Filter_level.PY_AND_SOURCE)

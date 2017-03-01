@@ -25,7 +25,7 @@ con.addInput("In", "toto", "int")
 
 # Creating the edge
 edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'contract_link')
-clink = wf.ContractLink(bany = True)
+clink = wf.ContractLink(bAny = True) # When bAny set to False, the field 'toto' should not be sent/received at runtime
 clink.addInput("var", "float", 1)
 clink.addOutput("var", "int", 1)
 edge.addContractLink(clink)
@@ -36,4 +36,4 @@ wf.addNode(graph, con)
 wf.addEdge(graph, edge)
 
 # --- convert the nx graph into a worflow data structure and performs all the checks ---
-wf.processGraph(graph, "contract_link", filter_level=wf.Filter_level.EVERYWHERE)
+wf.processGraph(graph, "contract_link", filter_level=wf.Filter_level.PY_AND_SOURCE)

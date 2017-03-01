@@ -1,7 +1,7 @@
 ﻿if(NOT ${bredala_only} )
 
-  #add_subdirectory            (direct)
-  #add_subdirectory            (buffer)
+  #add_subdirectory             (direct)
+  #add_subdirectory             (buffer)
   add_subdirectory			   (contract)
   add_subdirectory             (small_tests)
 

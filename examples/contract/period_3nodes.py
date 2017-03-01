@@ -1,4 +1,4 @@
-# An example with two producers and one consumer to test the ports
+# An example with 3 nodes to test the periodicity of fields
 
 # --- include the following 4 lines each time ---
 import os
@@ -16,24 +16,18 @@ topo = wf.Topology("topo", 16)
 subtopos = topo.splitTopology(["node1", "node2", "node3", "dflow1", "dflow2"],[1,1,1,0,0])
 
 node1 = wf.nodeFromTopo("node1", "node1", "period_3nodes", subtopos[0])
-contractA = wf.Contract()
-contractA.addOutputFromDict({"var":["int", 2]})
-node1.addContract(contractA)
+node1.addOutputFromDict("Out", {"var":["int", 2]})
 
 node2 = wf.nodeFromTopo("node2", "node2", "period_3nodes", subtopos[1])
-contractB = wf.Contract()
-contractB.addOutputFromDict({"var":["int"]})
-contractB.addInput("var", "int")
-node2.addContract(contractB)
+node2.addOutput("Out", "var", "int")
+node2.addInput("In", "var", "int")
 
 node3 = wf.nodeFromTopo("node3", "node3", "period_3nodes", subtopos[2])
-contractC = wf.Contract()
-contractC.addInputFromDict({"var":["int"]})
-node3.addContract(contractC)
+node3.addInput("In", "var", "int")
 
-edge12 = wf.edgeFromTopo("node1", "node2", subtopos[3], 'count', 'dlfow', mod_path, 'count', 'period_3nodes')
 
-edge23 = wf.edgeFromTopo("node2", "node3", subtopos[4], 'count', 'dlfow', mod_path, 'count', 'period_3nodes')
+edge12 = wf.edgeFromTopo("node1.Out", "node2.In", subtopos[3], 'count', 'dlfow', mod_path, 'count', 'period_3nodes')
+edge23 = wf.edgeFromTopo("node2.Out", "node3.In", subtopos[4], 'count', 'dlfow', mod_path, 'count', 'period_3nodes')
 
 
 graph = nx.DiGraph()

@@ -7,6 +7,7 @@ import networkx as nx
 
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
+
 # path to .so module for dataflow callback functions
 mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract.so'
 
@@ -18,47 +19,44 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract.so'
 #
 # entire workflow takes 8 procs (1 proc per link)
 
+
 # Creating the topology
-topo = wf.Topology("topo", 17)
+topo = wf.Topology("topo", 16)
 subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[1,1,1,1,1,1,1,1])
 
-# Creating Node objects
-P1 = wf.nodeFromTopo("prod1", "prod", "contract", subtopos[0])
-contractP1 = wf.Contract()
-contractP1.addOutputFromDict({"index":["int", 1], "velocity":["Array_float", 2]})
-P1.addContract(contractP1)
 
-P2 = wf.nodeFromTopo("prod2", "prod2", "contract", subtopos[1])
-contractP2 = wf.Contract()
-contractP2.addOutputFromDict({"vel":["Array_float"], "id":["int"], "density":["Array_float", 3]})
-P2.addContract(contractP2)
+prod1 = wf.nodeFromTopo("prod1", "prod", "contract", subtopos[0])
+prod1.addOutputFromDict("Out", {"index":["int"], "velocity":["Array_float", 2]})
 
-C1 = wf.nodeFromTopo("con1", "con", "contract", subtopos[2])
-contractC1 = wf.Contract()
-contractC1.addInputFromDict({"index":["int"], "velocity":["Array_float", 2], "density":["Array_float"]})
-C1.addContract(contractC1)
+prod2 = wf.nodeFromTopo("prod2", "prod2", "contract", subtopos[1])
+prod2.addOutputFromDict("Out", {"id":["int"], "density":["Array_float", 3]})
 
-C2 = wf.nodeFromTopo("con2", "con2", "contract", subtopos[3])
-contractC2 = wf.Contract()
-contractC2.addInputFromDict({"velocity":["Array_float", 2], "id":["int"]})
-C2.addContract(contractC2)
+con1 = wf.nodeFromTopo("con1", "con", "contract", subtopos[2])
+con1.addInputFromDict("In1", {"index":["int"], "velocity":["Array_float", 2]})
+con1.addInput("In2", "density", "Array_float")
 
-# Creating Edge objects
-edge11 = wf.edgeFromTopo("prod1", "con1", subtopos[4], 'count', 'dflow', mod_path, 'count', 'contract')
-edge12 = wf.edgeFromTopo("prod1", "con2", subtopos[5], 'count', 'dflow', mod_path, 'count', 'contract')
-edge21 = wf.edgeFromTopo("prod2", "con1", subtopos[6], 'count', 'dflow', mod_path, 'count', 'contract')
-edge22 = wf.edgeFromTopo("prod2", "con2", subtopos[7], 'count', 'dflow', mod_path, 'count', 'contract')
+con2 = wf.nodeFromTopo("con2", "con2", "contract", subtopos[3])
+con2.addInput("In1", "velocity","Array_float", 2)
+con2.addInput("In2", "id", "int")
+
+edge11 = wf.edgeFromTopo("prod1.Out", "con1.In1", subtopos[4], 'count', 'dflow', mod_path, 'count', 'contract')
+edge12 = wf.edgeFromTopo("prod1.Out", "con2.In1", subtopos[5], 'count', 'dflow', mod_path, 'count', 'contract')
+edge21 = wf.edgeFromTopo("prod2.Out", "con1.In2", subtopos[6], 'count', 'dflow', mod_path, 'count', 'contract')
+edge22 = wf.edgeFromTopo("prod2.Out", "con2.In2", subtopos[7], 'count', 'dflow', mod_path, 'count', 'contract')
 
 
-graph = nx.DiGraph()
-wf.addNode(graph, P1)
-wf.addNode(graph, P2)
-wf.addNode(graph, C1)
-wf.addNode(graph, C2)
-wf.addEdge(graph, edge11)
-wf.addEdge(graph, edge12)
-wf.addEdge(graph, edge21)
-wf.addEdge(graph, edge22)
+w = nx.DiGraph()
+
+wf.addNode(w, prod1)
+wf.addNode(w, prod2)
+wf.addNode(w, con1)
+wf.addNode(w, con2)
+
+wf.addEdge(w, edge11)
+wf.addEdge(w, edge12)
+wf.addEdge(w, edge21)
+wf.addEdge(w, edge22)
+
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(graph, "contract", filter_level = wf.Filter_level.PY_AND_SOURCE)
+wf.processGraph(w, "contract", filter_level = wf.Filter_level.PY_AND_SOURCE)

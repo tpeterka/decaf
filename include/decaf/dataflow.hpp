@@ -166,6 +166,8 @@ Dataflow::Dataflow(CommHandle world_comm,
     check_level_(wflowLink.check_level),
     srcPort_(wflowLink.srcPort),
     destPort_(wflowLink.destPort),
+    bAny_(wflowLink.bAny),
+    iteration(0),
     bClose_(false),
     no_link_(false),
     use_stream_(false),
@@ -202,7 +204,6 @@ Dataflow::Dataflow(CommHandle world_comm,
         return;
 	}
 
-	iteration = 0;
 	// Sets the boolean value to true/false whether the dataflow is related to a contract or not
 	if(wflowLink.list_keys.size() == 0){
 		bContract_ = false;
@@ -219,7 +220,6 @@ Dataflow::Dataflow(CommHandle world_comm,
 		bContractLink_ = true;
 		keys_link_ = wflowLink.keys_link;
 	}
-	bAny_ = wflowLink.bAny;
 
     // debug
     // if (world_rank == 0)
@@ -801,13 +801,17 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 			for(ContractKey field : list_keys){
 				if( (iteration % field.period) == 0){ // This field is sent during this iteration
 					if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
-						fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
+						string r = role == DECAF_NODE ? "Node " : "Link ";
+						r+= to_string(CommRank(world_comm_));
+						fprintf(stderr, "ERROR in %s: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", r.c_str(), field.name.c_str());
 						MPI_Abort(MPI_COMM_WORLD, 0);
 					}
 					// Performing typechecking
 					string typeName = data->getTypename(field.name);
 					if(typeName.compare(field.type) != 0){ //The two types do not match
-						fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+						string r = role == DECAF_NODE ? "Node " : "Link ";
+						r+= to_string(CommRank(world_comm_));
+						fprintf(stderr, "ERROR in %s: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", r.c_str(), typeName.c_str(), field.type.c_str(), field.name.c_str());
 						MPI_Abort(MPI_COMM_WORLD, 0);
 					}
 
@@ -823,13 +827,17 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 			for(ContractKey field : list_keys ){
 				if( (iteration % field.period) == 0){ // This field is sent during this iteration
 					if(!data->hasData(field.name)){// If the field is not present in the data the contract is not respected.
-						fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", field.name.c_str());
+						string r = role == DECAF_NODE ? "Node " : "Link ";
+						r+= to_string(CommRank(world_comm_));
+						fprintf(stderr, "ERROR in %s: Contract not respected, the field \"%s\" is not present in the data model to send. Aborting.\n", r.c_str(), field.name.c_str());
 						MPI_Abort(MPI_COMM_WORLD, 0);
 					}
 					// Performing typechecking
 					string typeName = data->getTypename(field.name);
 					if(typeName.compare(field.type) != 0){ //The two types do not match
-						fprintf(stderr, "ERROR: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+						string r = role == DECAF_NODE ? "Node " : "Link ";
+						r+= to_string(CommRank(world_comm_));
+						fprintf(stderr, "ERROR in %s: Contract not respected, sent type %s does not match the type %s of the field \"%s\". Aborting.\n", r.c_str(), typeName.c_str(), field.type.c_str(), field.name.c_str());
 						MPI_Abort(MPI_COMM_WORLD, 0);
 					}
 					data_filtered->appendData(data, field.name); // The field is present of correct type, send it
@@ -876,12 +884,16 @@ Dataflow::filterGet(pConstructData& data, TaskType role){
 		for(ContractKey field : list_keys ){
 			if( (it % field.period) == 0){ // This field should be received during this iteration
 				if(! data->hasData(field.name)){
-					fprintf(stderr, "ERROR: Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", field.name.c_str());
+					string r = role == DECAF_NODE ? "Node " : "Link ";
+					r+= to_string(CommRank(world_comm_));
+					fprintf(stderr, "ERROR in %s: Contract not respected, the field \"%s\" is not received in the data model. Aborting.\n", r.c_str(), field.name.c_str());
 					MPI_Abort(MPI_COMM_WORLD, 0);
 				}
 				string typeName = data->getTypename(field.name);
 				if(typeName.compare(field.type) != 0){ //The two types do not match
-					fprintf(stderr, "ERROR: Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", typeName.c_str(), field.type.c_str(), field.name.c_str());
+					string r = role == DECAF_NODE ? "Node " : "Link ";
+					r+= to_string(CommRank(world_comm_));
+					fprintf(stderr, "ERROR in %s: Contract not respected, received type %s does not match the type %s of the field \"%s\". Aborting.\n", r.c_str(), typeName.c_str(), field.type.c_str(), field.name.c_str());
 					MPI_Abort(MPI_COMM_WORLD, 0);
 				}
 			}

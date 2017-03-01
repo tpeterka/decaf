@@ -29,19 +29,14 @@ void prod(Decaf* decaf)
 {
 	int rank = decaf->world->rank();
 	float val = 0;
-	std::srand(std::time(0));
+	std::srand(rank*1000 +std::time(0));
 
 	for (int timestep = 0; timestep < 5; timestep++){
 		pConstructData container;
 
-		val = ((double) std::rand() / RAND_MAX);
-
+		val = ((double) std::rand() / RAND_MAX * 5);
 		SimpleFieldf var(val);
-
 		container->appendData("var", var);
-
-		SimpleFieldi toto(23);
-		container->appendData("toto", toto);
 
 		if(!decaf->put(container, "Out"))
 			break;
@@ -63,8 +58,9 @@ void con(Decaf* decaf)
 		if(var){
 			fprintf(stderr, "Consumer of rank %d received the value %d\n", rank, var.getData());
 		}
-
-		std::cout << "Con " << rank << " received toto? " << in_data.at("In")->hasData("toto") << std::endl;
+		else{
+			fprintf(stderr, "Consumer of rank %d did not received a proper value\n", rank);
+		}
 	}
 
 
@@ -75,25 +71,24 @@ void con(Decaf* decaf)
 // link callback function
 extern "C"
 {
-    // the link converts the received float into an int in this example
+    // the link just forwards everything that comes its way in this example
     void dflow(void* args,                          // arguments to the callback
 	           Dataflow* dataflow,                  // dataflow
 	           pConstructData in_data)   // input data
 	{
-		int new_var;
-		float var = -1;
+
+		int new_var = -1;
 		SimpleFieldf varf = in_data->getFieldData<SimpleFieldf>("var");
 		if(varf){
-			var = varf.getData();
+			float var = varf.getData();
+			new_var = std::round(var);
 		}
-		std::cout << "Toto present in link? " << in_data->hasData("toto") << std::endl;
-
-		new_var = std::round(var);
 		SimpleFieldi vari(new_var);
 		in_data->removeData("var");
-		in_data->appendData("var", vari);
+		in_data->appendData("var", vari, DECAF_NOFLAG, DECAF_PRIVATE, DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_DEFAULT);
 
 		dataflow->put(in_data, DECAF_LINK);
+		std::cout << "Link sent var=" << new_var << std::endl;
 	}
 
 } // extern "C"
@@ -103,7 +98,7 @@ int main(int argc,
          char** argv)
 {
 	Workflow workflow;
-	Workflow::make_wflow_from_json(workflow, "contract_link.json");
+	Workflow::make_wflow_from_json(workflow, "period_link.json");
 
 	MPI_Init(NULL, NULL);
 

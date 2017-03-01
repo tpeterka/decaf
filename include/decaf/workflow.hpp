@@ -229,9 +229,23 @@ struct Workflow                              // an entire workflow
 			link.path = v.second.get<string>("path");
 			link.func = v.second.get<string>("func");
 			link.dflow_con_redist = v.second.get<string>("dflow_con_redist");
+		}
 
-			// The two following are used when a contract for a link is present
-			boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys_link");
+		// Default values when no contract nor contract link are involved
+		link.bAny = false;
+		link.list_keys.clear();
+		link.keys_link.clear();
+
+		// Retrieving the name of source and target ports
+		boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
+		boost::optional<string> destP = v.second.get_optional<string>("targetPort");
+		if(srcP && destP){
+			// If there are ports, retrieve the port names and then check if there are contracts associated
+			link.srcPort = srcP.get();
+			link.destPort = destP.get();
+
+			// Retrieving the contract, if present
+			boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
 			if(pt_keys){
 				for(bpt::ptree::value_type &value: pt_keys.get()){
 					ContractKey field;
@@ -244,45 +258,34 @@ struct Workflow                              // an entire workflow
 					field.period = i->second.get<int>("");
 					//////
 
+					link.list_keys.push_back(field);
+				}
+			}
+			// Retrieving the contract on the link, if present
+			boost::optional<bpt::ptree&> pt_keys_link = v.second.get_child_optional("keys_link");
+			if(pt_keys_link){
+				for(bpt::ptree::value_type &value: pt_keys_link.get()){
+					ContractKey field;
+					field.name = value.first;
+
+					// Didn't find a nicer way of doing this...
+					auto i = value.second.begin();
+					field.type = i->second.get<string>("");
+					i++;
+					field.period = i->second.get<int>("");
+					//////
+
 					link.keys_link.push_back(field);
 				}
-
-				boost::optional<bool> pt_any = v.second.get_optional<bool>("bAny");
-				if (pt_any){
-					link.bAny = pt_any.get();
-				}
-				else{
-					link.bAny = false;
-				}
 			}
-		}
-
-		// Retrieving the name of source and target ports
-		boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
-		boost::optional<string> destP = v.second.get_optional<string>("targetPort");
-		if(srcP && destP){
-			link.srcPort = srcP.get();
-			link.destPort = destP.get();
-		}
-
-		// Retrieving the contract
-		boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
-		if(pt_keys){
-			for(bpt::ptree::value_type &value: pt_keys.get()){
-				ContractKey field;
-				field.name = value.first;
-
-				// Didn't find a nicer way of doing this...
-				auto i = value.second.begin();
-				field.type = i->second.get<string>("");
-				i++;
-				field.period = i->second.get<int>("");
-				//////
-
-				link.list_keys.push_back(field);
+			boost::optional<bool> pt_any = v.second.get_optional<bool>("bAny");
+			if (pt_any){
+				link.bAny = pt_any.get();
 			}
+
 		}
 
+		// Retrieving information on streams and buffers
 		boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
 		if(opt_stream)
 			link.stream = opt_stream.get();
