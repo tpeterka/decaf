@@ -1,6 +1,6 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 4 nodes example for contracts using indexes of dataflows
+// 4 nodes example for using indexes of dataflows
 //
 // clement Mommessin
 // Argonne National Laboratory

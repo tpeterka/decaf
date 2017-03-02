@@ -8,7 +8,7 @@ import networkx as nx
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/small_tests/mod_period_link.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_period_link.so'
 
 
 # Creating the topology
@@ -16,15 +16,15 @@ topo = wf.Topology("topo", 8)
 subtopos = topo.splitTopology(["prod", "con", "dflow"],[1,1,1])
 
 prod = wf.nodeFromTopo("prod", "prod", "period_link", subtopos[0])
-prod.addOutput("Out","var", "float", 1)
+prod.addOutput("Out","var", "float", 2)
 
 con = wf.nodeFromTopo("con", "con", "period_link", subtopos[1])
-con.addInput("In", "var", "int", 2)
+con.addInput("In", "var", "int", 1)
 
 edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'period_link')
 clink = wf.ContractLink(bAny = True)
 clink.addInput("var", "float", 1)
-clink.addOutput("var", "int", 2)
+clink.addOutput("var", "int", 1)
 edge.addContractLink(clink)
 
 

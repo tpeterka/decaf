@@ -1,5 +1,4 @@
-# A simple example with two nodes
-# to test different means of using contracts and show the errors/warnings
+# A simple example with two nodes using contracts
 # --- include the following 4 lines each time ---
 import os
 import imp

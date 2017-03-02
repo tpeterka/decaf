@@ -9,7 +9,7 @@ wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.
 
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/small_tests/mod_conversion.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_conversion.so'
 
 # define workflow graph
 # prod (1 proc) ---> con (1 proc) 

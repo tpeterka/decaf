@@ -62,7 +62,7 @@ namespace decaf
 		bool put(pConstructData& data, TaskType role);
 		bool get(pConstructData& data, TaskType role);
 
-		pConstructData filterPut(pConstructData& data, TaskType role, bool& data_changed, bool& filtered_empty);
+		pConstructData& filterPut(pConstructData& data, pConstructData& data_filtered, TaskType& role, bool& data_changed, bool& filtered_empty);
 		void filterGet(pConstructData& data, TaskType role);
 
         DecafSizes* sizes()    { return &sizes_; }
@@ -578,7 +578,7 @@ Dataflow::put(pConstructData& data, TaskType role)
 	bool data_removed_by_period; // i.e.: Has some data field been removed due to the periodicity during the call of filterAndCheck?
 	bool data_filtered_empty;
 
-	data_filtered = filterPut(data, role, data_removed_by_period, data_filtered_empty);
+	data_filtered = filterPut(data, data_filtered, role, data_removed_by_period, data_filtered_empty);
 
 	// If the filtered message does not contain user data, no need to send
 	if(data_filtered_empty){
@@ -766,10 +766,9 @@ Dataflow::get(pConstructData& data, TaskType role)
 }
 
 
-decaf::pConstructData
+decaf::pConstructData&
 decaf::
-Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, bool& filtered_empty){
-	pConstructData data_filtered;
+Dataflow::filterPut(pConstructData& data, pConstructData& data_filtered, TaskType& role, bool& data_changed, bool& filtered_empty){
 	data_changed = data->isEmpty();
 	filtered_empty = false;
 
@@ -782,14 +781,16 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 		return data;
 	}
 
-	if(role == DECAF_LINK){// iteration value is wrong if filtered data leads to an empty message at producer put, need to update it with the message from the producer node
-		int i = msgtools::get_iteration(data);
-		if(i != -1){
-			iteration = i;
-		}
-	}
+
 
 	if(has_contract() || has_contract_link()){
+		// iteration value is wrong if filtered data leads to an empty message at producer put, need to update it with the message from the producer node
+		if(role == DECAF_LINK){
+			int i = msgtools::get_iteration(data);
+			if(i != -1){
+				iteration = i;
+			}
+		}
 		vector<ContractKey> &list_keys = (role == DECAF_LINK && has_contract_link()) ? keys_link() : keys() ;
 		if(isAny()){ // No filtering of other fields, just need to check if the contract is respected
 			// TODO This is an ugly way of doing this, by adding all fields then removing the ones not needed during the current iteration
@@ -850,7 +851,7 @@ Dataflow::filterPut(pConstructData& data, TaskType role, bool& data_changed, boo
 		}
 	}
 	else{
-		data_filtered = data;
+		return data;
 	}
 
 	// If all fields are filtered during this iteration, the message is empty and should not be sent
@@ -877,9 +878,8 @@ Dataflow::filterGet(pConstructData& data, TaskType role){
 		return;
 	}
 
-	int it = msgtools::get_iteration(data);
-
 	if(has_contract() || has_contract_link()){
+		int it = msgtools::get_iteration(data);
 		vector<ContractKey> &list_keys = (role == DECAF_NODE && has_contract_link()) ? keys_link() : keys() ;
 		for(ContractKey field : list_keys ){
 			if( (it % field.period) == 0){ // This field should be received during this iteration

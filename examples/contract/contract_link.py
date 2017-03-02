@@ -1,4 +1,4 @@
-# A simple example with two nodes
+# A simple example with two nodes and a link to test contracts on nodes and links
 # to test different means of using contracts and show the errors/warnings
 # --- include the following 4 lines each time ---
 import os
@@ -8,7 +8,7 @@ import networkx as nx
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow.py')
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/small_tests/mod_contract_link.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_contract_link.so'
 
 # Creating the topology
 topo = wf.Topology("topo", 8)
