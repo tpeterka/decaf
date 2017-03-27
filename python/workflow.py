@@ -10,8 +10,6 @@ import json
 
 from collections import defaultdict
 
-import fractions  #Definition of the least common multiple of two numbers; Used for the periodicity
-def lcm(a,b): return abs(a * b) / fractions.gcd(a,b) if a and b else 0
 
 class Filter_level:
   NONE, PYTHON, PY_AND_SOURCE, EVERYWHERE = range(4)
@@ -271,10 +269,10 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
         else:
           intersection_keys = {key:[Inport[key][0]] for key in Inport.keys() if (key in Outport) and ( (filter_level == Filter_level.NONE) or (Inport[key][0] == Outport[key][0]) ) }
           for key in intersection_keys.keys():
-            lcm_val = lcm(Inport[key][1], Outport[key][1])
-            intersection_keys[key].append(lcm_val)
-            #if lcm_val != Inport[key][1]: # no need to print this warning since the field is just here to be forwarded to the consumer
-            #  print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, lcm_val, con_in[key][1])
+            new_val = Inport[key][1] * Outport[key][1]
+            intersection_keys[key].append(new_val)
+            #if new_val != Inport[key][1]: # no need to print this warning since the field is just here to be forwarded to the consumer
+            #  print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, new_val, con_in[key][1])
           if len(intersection_keys) != 0:
             print "WARNING: the link of \"%s.%s->%s\" has no inputs, only fields needed by the Input port will be received" % (edge.src, OutportName, s)
             keys = intersection_keys
@@ -300,10 +298,10 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
             sk += key + ", "
           else:
             if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]):
-              lcm_val = lcm(val[1], Outport[key][1])
-              list_fields[key] = [val[0], lcm_val]
-              if lcm_val != val[1]:
-                print "WARNING: the link of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, lcm_val, val[1])
+              new_val = val[1] * Outport[key][1]
+              list_fields[key] = [val[0], new_val]
+              if new_val != val[1]:
+                print "WARNING: the link of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, new_val, val[1])
             else:
               raise ValueError("ERROR: the types of \"%s\" does not match for the Output port and the link of \"%s.%s->%s\", aborting." % (key, edge.src, OutportName, s))
         if sk != "":
@@ -329,10 +327,10 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
               sk+= key + ", "
             else:
               if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
-                lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
-                list_fields[key] = [val[0], lcm_val]
-                if lcm_val != val[1]:
-                  print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, lcm_val, val[1])
+                new_val = val[1] * Outport[key][1]
+                list_fields[key] = [val[0], new_val]
+                if new_val != val[1]:
+                  print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, new_val, val[1])
               else:
                 raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
 
@@ -363,10 +361,10 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
             tmp[key] = val
           else:
             if (filter_level == Filter_level.NONE) or (val[0] == edge.outputs[key][0]):
-              lcm_val = lcm(val[1], edge.outputs[key][1])
-              list_fields[key] = [val[0], lcm_val]
-              if lcm_val != val[1]:
-                print "WARNING: the Input port of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, lcm_val, val[1])
+              new_val = val[1] * edge.outputs[key][1]
+              list_fields[key] = [val[0], new_val]
+              if new_val != val[1]:
+                print "WARNING: the Input port of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, new_val, val[1])
             else:
               raise ValueError("ERROR: the types of \"%s\" does not match for the link and the Input port of \"%s.%s->%s\", aborting." % (key, edge.src, OutportName, s))
         if edge.bAny == False:
@@ -390,10 +388,10 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
                 sk += key + ", "
               else:
                 if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]):
-                  lcm_val = lcm(val[1], Outport[key][1])
-                  list_fields[key] = [val[0], lcm_val]
-                  if lcm_val != val[1]:
-                    print "WARNING: the Input port of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, lcm_val, val[1])
+                  new_val = val[1] * Outport[key][1]
+                  list_fields[key] = [val[0], new_val]
+                  if new_val != val[1]:
+                    print "WARNING: the Input port of \"%s.%s->%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, s, key, new_val, val[1])
                 else:
                   raise ValueError("ERROR: the types of \"%s\" does not match for the Output port and the Input port of \"%s.%s->%s\", aborting." % (key, edge.src, OutportName, s))
             if sk != "":
@@ -422,10 +420,10 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
           sk+= key + ", "
         else:
           if (filter_level == Filter_level.NONE) or (val[0] == Outport[key][0]) : # The types match, add the field to the list and update the periodicity
-            lcm_val = lcm(val[1], Outport[key][1]) # Periodicity for this field is the Least Common Multiple b/w the periodicity of the input and output contracts
-            list_fields[key] = [val[0], lcm_val]
-            if lcm_val != val[1]:
-              print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, lcm_val, val[1])
+            new_val = val[1] * Outport[key][1]
+            list_fields[key] = [val[0], new_val]
+            if new_val != val[1]:
+              print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, new_val, val[1])
           else:
             raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
 
