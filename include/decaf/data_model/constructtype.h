@@ -51,195 +51,197 @@ class pConstructData;
 class ConstructData  : public BaseData {
 
 public:
-    ConstructData();
+	ConstructData();
 
-    virtual ~ConstructData(){}
+	virtual ~ConstructData(){}
 
-    bool appendData(std::string name,
-                    std::shared_ptr<BaseConstructData>  data,
-                    ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
-                    ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
-                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+	bool appendData(std::string name,
+	                std::shared_ptr<BaseConstructData>  data,
+	                ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
+	                ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
+	                ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
+	                ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
 
-    bool appendData(std::string name,
-                    BaseField&  data,
-                    ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
-                    ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
-                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
-    bool appendData(const char* name,
-                    std::shared_ptr<BaseConstructData>  data,
-                    ConstructTypeFlag flags = DECAF_NOFLAG,
-                    ConstructTypeScope scope =  DECAF_PRIVATE,
-                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
+	bool appendData(std::string name,
+	                BaseField&  data,
+	                ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
+	                ConstructTypeScope scope =  DECAF_PRIVATE,  // DECAF_SHARED, DECAF_SYSTEM
+	                ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,   // DECAF_SPLIT_KEEP_VALUE, ...
+	                ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);  // DECAF_MERGE_FIRST_VALUE, DECAF_MERGE_ADD_VALUE, ...
+	bool appendData(const char* name,
+	                std::shared_ptr<BaseConstructData>  data,
+	                ConstructTypeFlag flags = DECAF_NOFLAG,
+	                ConstructTypeScope scope =  DECAF_PRIVATE,
+	                ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
+	                ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
 
-    bool appendData(const char* name,
-                    BaseField& data,
-                    ConstructTypeFlag flags = DECAF_NOFLAG,
-                    ConstructTypeScope scope =  DECAF_PRIVATE,
-                    ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
-                    ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
-    
+	bool appendData(const char* name,
+	                BaseField& data,
+	                ConstructTypeFlag flags = DECAF_NOFLAG,
+	                ConstructTypeScope scope =  DECAF_PRIVATE,
+	                ConstructTypeSplitPolicy splitFlag = DECAF_SPLIT_DEFAULT,
+	                ConstructTypeMergePolicy mergeFlag = DECAF_MERGE_DEFAULT);
+
 	// Append the field of given name taken from the container data
 	bool appendData(pConstructData data, const std::string name);
 	bool appendData(pConstructData data, const char* name);
 
 
-    bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
+	bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
-    //void preallocMultiple(int nbCopies , int nbItems, std::vector<pConstructData >& result);
+	//void preallocMultiple(int nbCopies , int nbItems, std::vector<pConstructData >& result);
 
-    bool removeData(std::string name);
+	bool removeData(std::string name);
 
-    bool updateData(std::string name,
-                    std::shared_ptr<BaseConstructData>  data);
+	bool updateData(std::string name,
+	                std::shared_ptr<BaseConstructData>  data);
 
-    int getNbFields();
+	int getNbFields();
 
-	std::string getTypename(std::string name);
+	// Returns false if name is not present in the container
+	// Returns true if name is present and type is the typename of the field
+	bool getTypename(std::string &name, std::string &type);
 
-    bool isCoherent();
+	bool isCoherent();
 
-    std::shared_ptr<std::map<std::string, datafield> > getMap();
+	std::shared_ptr<std::map<std::string, datafield> > getMap();
 
-    void printKeys();
+	void printKeys();
 
 	std::vector<std::string> listUserKeys();
 
-    virtual bool hasZCurveKey();
+	virtual bool hasZCurveKey();
 
-    virtual const float* getZCurveKey(int *nbItems);
+	virtual const float* getZCurveKey(int *nbItems);
 
-    virtual bool hasZCurveIndex();
+	virtual bool hasZCurveIndex();
 
-    virtual const unsigned int* getZCurveIndex(int *nbItems);
+	virtual const unsigned int* getZCurveIndex(int *nbItems);
 
-    virtual bool isSplitable();
+	virtual bool isSplitable();
 
-    virtual bool isSystem();
+	virtual bool isSystem();
 
-    virtual void setSystem(bool bSystem);
+	virtual void setSystem(bool bSystem);
 
-    virtual bool hasSystem();
+	virtual bool hasSystem();
 
-    virtual bool isEmpty();
+	virtual bool isEmpty();
 
-    bool isCountable();
+	bool isCountable();
 
-    bool isPartiallyCountable();
+	bool isPartiallyCountable();
 
-    // Inherited from baseconstruct
-    virtual std::vector< std::shared_ptr<BaseData> > split(
-            const std::vector<int>& range);
+	// Inherited from baseconstruct
+	virtual std::vector< std::shared_ptr<BaseData> > split(
+	        const std::vector<int>& range);
 
-    // Version to call for buffering
-    virtual void split(
-            const std::vector<int>& range,
-            std::vector<pConstructData > buffers);
+	// Version to call for buffering
+	virtual void split(
+	        const std::vector<int>& range,
+	        std::vector<pConstructData > buffers);
 
-    virtual std::vector< std::shared_ptr<BaseData> > split(
-            const std::vector<std::vector<int> >& range);
+	virtual std::vector< std::shared_ptr<BaseData> > split(
+	        const std::vector<std::vector<int> >& range);
 
-    virtual void split(
-            const std::vector<std::vector<int> >& range,
-            std::vector<pConstructData > buffers);
+	virtual void split(
+	        const std::vector<std::vector<int> >& range,
+	        std::vector<pConstructData > buffers);
 
-    virtual std::vector< std::shared_ptr<BaseData> > split(
-            const std::vector<Block<3> >& range);
+	virtual std::vector< std::shared_ptr<BaseData> > split(
+	        const std::vector<Block<3> >& range);
 
-    virtual void split(
-            const std::vector<Block<3> >& range,
-            std::vector<pConstructData >& buffers);
+	virtual void split(
+	        const std::vector<Block<3> >& range,
+	        std::vector<pConstructData >& buffers);
 
-    //virtual bool merge(std::shared_ptr<BaseData> other);
-    virtual bool merge(std::shared_ptr<ConstructData> otherConstruct);
+	//virtual bool merge(std::shared_ptr<BaseData> other);
+	virtual bool merge(std::shared_ptr<ConstructData> otherConstruct);
 
-    virtual bool merge(char* buffer, int size);
+	virtual bool merge(char* buffer, int size);
 
-    virtual bool merge();
+	virtual bool merge();
 
-    virtual bool mergeStoredData();
-    
-    virtual void unserializeAndStore(char* buffer, int bufferSize);
+	virtual bool mergeStoredData();
 
-    virtual bool serialize();
+	virtual void unserializeAndStore(char* buffer, int bufferSize);
 
-    virtual bool unserialize();
+	virtual bool serialize();
 
-    //Prepare enough space in the serial buffer
-    virtual void allocate_serial_buffer(int size);
+	virtual bool unserialize();
 
-    virtual char* getOutSerialBuffer(int* size);
+	//Prepare enough space in the serial buffer
+	virtual void allocate_serial_buffer(int size);
 
-    virtual char* getOutSerialBuffer();
+	virtual char* getOutSerialBuffer(int* size);
 
-    virtual int getOutSerialBufferSize();
+	virtual char* getOutSerialBuffer();
 
-    virtual char* getInSerialBuffer(int* size);
+	virtual int getOutSerialBufferSize();
 
-    virtual char* getInSerialBuffer();
+	virtual char* getInSerialBuffer(int* size);
 
-    virtual int getInSerialBufferSize();
+	virtual char* getInSerialBuffer();
 
-    virtual void purgeData();
+	virtual int getInSerialBufferSize();
 
-    virtual bool setData(std::shared_ptr<void> data);
+	virtual void purgeData();
 
-    void softClean();
+	virtual bool setData(std::shared_ptr<void> data);
 
-    std::shared_ptr<BaseConstructData> getData(std::string key);
+	void softClean();
 
-    bool hasData(std::string key);
+	std::shared_ptr<BaseConstructData> getData(std::string key);
 
-    bool setMergeOrder(std::vector<std::string>& merge_order);
-    const std::vector<std::string>& getMergeOrder();
+	bool hasData(std::string key);
 
-    bool setSplitOrder(std::vector<std::string>& split_order);
-    const std::vector<std::string>& getSplitOrder();
+	bool setMergeOrder(std::vector<std::string>& merge_order);
+	const std::vector<std::string>& getMergeOrder();
 
-    template<typename T>
-    std::shared_ptr<T> getTypedData(const char* key);
+	bool setSplitOrder(std::vector<std::string>& split_order);
+	const std::vector<std::string>& getSplitOrder();
 
-    template<typename T>
-    T getFieldData(const char* key);
+	template<typename T>
+	std::shared_ptr<T> getTypedData(const char* key);
 
-    void updateNbItems();
+	template<typename T>
+	T getFieldData(const char* key);
 
-    void copySystemFields(pConstructData& source);
+	void updateNbItems();
+
+	void copySystemFields(pConstructData& source);
 
 protected:
-    mapConstruct container_;
-    int nbFields_;
-    bool bZCurveKey_;
-    bool bZCurveIndex_;
-    std::shared_ptr<BaseConstructData> zCurveKey_;
-    std::shared_ptr<BaseConstructData> zCurveIndex_;
+	mapConstruct container_;
+	int nbFields_;
+	bool bZCurveKey_;
+	bool bZCurveIndex_;
+	std::shared_ptr<BaseConstructData> zCurveKey_;
+	std::shared_ptr<BaseConstructData> zCurveIndex_;
 
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        ar & BOOST_SERIALIZATION_NVP(container_);
-        ar & BOOST_SERIALIZATION_NVP(nbItems_);
-    }
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version)
+	{
+		ar & BOOST_SERIALIZATION_NVP(container_);
+		ar & BOOST_SERIALIZATION_NVP(nbItems_);
+	}
 
-    bool updateMetaData();
+	bool updateMetaData();
 
-    std::string out_serial_buffer_;
-    std::string in_serial_buffer_;
+	std::string out_serial_buffer_;
+	std::string in_serial_buffer_;
 
-    std::vector<std::string> merge_order_;
-    std::vector<std::string> split_order_;
+	std::vector<std::string> merge_order_;
+	std::vector<std::string> split_order_;
 
-    std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
-    std::vector<std::vector<int> > rangeItems_;
-    bool bSystem_;
-    int nbSystemFields_;
-    bool bEmpty_;
-    bool bCountable_;
-    bool bPartialCountable_;
+	std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
+	std::vector<std::vector<int> > rangeItems_;
+	bool bSystem_;
+	int nbSystemFields_;
+	bool bEmpty_;
+	bool bCountable_;
+	bool bPartialCountable_;
 };
 
 //Have to define it here because of the template
@@ -248,18 +250,18 @@ std::shared_ptr<T>
 decaf::
 ConstructData::getTypedData(const char* key)
 {
-    std::shared_ptr<BaseConstructData> field = this->getData(key);
-    if(!field)
-    {
-        return std::shared_ptr<T>();
-    }
+	std::shared_ptr<BaseConstructData> field = this->getData(key);
+	if(!field)
+	{
+		return std::shared_ptr<T>();
+	}
 
-    std::shared_ptr<T> result = std::dynamic_pointer_cast<T>(field);
+	std::shared_ptr<T> result = std::dynamic_pointer_cast<T>(field);
 
-    //Checking if the pointer is valid
-    assert(result);
+	//Checking if the pointer is valid
+	assert(result);
 
-    return result;
+	return result;
 }
 
 template<typename T>
@@ -267,14 +269,14 @@ T
 decaf::
 ConstructData::getFieldData(const char* key)
 {
-    std::shared_ptr<BaseConstructData> field = this->getData(key);
-    if(!field)
-    {
-        //std::cerr<<"Fail cast in getFieldData when requesting the field \""<<key<<"\""<<std::endl;
-        return T();
-    }
+	std::shared_ptr<BaseConstructData> field = this->getData(key);
+	if(!field)
+	{
+		//std::cerr<<"Fail cast in getFieldData when requesting the field \""<<key<<"\""<<std::endl;
+		return T();
+	}
 
-    return T(field);
+	return T(field);
 }
 
 
