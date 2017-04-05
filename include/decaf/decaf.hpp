@@ -58,37 +58,37 @@ namespace decaf
         void print_workflow();               // debug: print the workflow
 
         // put a message on all outbound links
-		// returns true = ok, false = function terminate() has been called
-		bool put(pConstructData container);
+        // returns true = ok, false = function terminate() has been called
+        bool put(pConstructData container);
 
-		// put a message on a particular outbound link
-		// returns true = ok, false = function terminate() has been called
-		bool put(pConstructData container, int i);
+        // put a message on a particular outbound link
+        // returns true = ok, false = function terminate() has been called
+        bool put(pConstructData container, int i);
 
-		// put a message on outbound link(s) associated to the output port
-		// returns true = ok, false = function terminate() has been called
-		bool put(pConstructData container, string port);
+        // put a message on outbound link(s) associated to the output port
+        // returns true = ok, false = function terminate() has been called
+        bool put(pConstructData container, string port);
 
-		// get a message from an inbound link associated to the input port
-		// returns true = process message, false = error occured or quit message
-		bool get(pConstructData container, string port);
+        // get a message from an inbound link associated to the input port
+        // returns true = process message, false = error occured or quit message
+        bool get(pConstructData container, string port);
 
-		// get message from all input ports of a node
-		// returns true = process messages, false = error occured or all quit messages
-		// if an input port is closed, the container in the returned map is empty
-		bool get(map<string, pConstructData> &containers);
+        // get message from all input ports of a node
+        // returns true = process messages, false = error occured or all quit messages
+        // if an input port is closed, the container in the returned map is empty
+        bool get(map<string, pConstructData> &containers);
 
-		// get message from all input links of a node
-		// returns true = process messages, false = error occured or all quit messages
-		// if an input link is closed, the container in the returned map is empty
-		bool get(map<int, pConstructData> &containers);
+        // get message from all input links of a node
+        // returns true = process messages, false = error occured or all quit messages
+        // if an input link is closed, the container in the returned map is empty
+        bool get(map<int, pConstructData> &containers);
 
         // get messages from all inbound links
         // returns true = process messages, false = break (quit received)
         bool get(vector< pConstructData >& containers);
 
-		// Checks if there are still alive input Dataflows for this node
-		bool allQuit();
+        // Checks if there are still alive input Dataflows for this node
+        bool allQuit();
 
         // terminate a node task by sending a quit message to the rest of the workflow
         void terminate();
@@ -112,13 +112,14 @@ namespace decaf
 
         int local_comm_size();              // Return the size of the communicator of the local task
         CommHandle local_comm_handle();     // Return the communicator of the local task
+        int local_comm_rank();              // Return the rank of the process within the local rank
         int prod_comm_size(int i);          // Return the size of the communicator of the producer of the in dataflow i
         int con_comm_size(int i);           // Return the size of the communicator of the consumer of the out dataflow i
 
 
         // return a pointer to this node's producer or consumer communicator
         Comm* prod_comm() { return out_dataflows[0]->prod_comm();    }
-		Comm* con_comm()  { return node_in_dataflows[0].first->con_comm(); }
+        Comm* con_comm()  { return node_in_dataflows[0].first->con_comm(); }
 
         Comm* world;
 
@@ -187,13 +188,13 @@ namespace decaf
         int err_;                                  // last error
         vector<RoutingNode> my_nodes_;             // indices of my workflow nodes
         vector<RoutingLink> my_links_;             // indices of my workflow links
-		vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
+        vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
         vector<Dataflow*>   out_dataflows;         // all my outbound dataflows
-		vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
-		vector<pair<Dataflow*, int>> node_in_dataflows; // all my inbound dataflows in case I am a node, and the corresponding index in the vector dataflows
+        vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
+        vector<pair<Dataflow*, int>> node_in_dataflows; // all my inbound dataflows in case I am a node, and the corresponding index in the vector dataflows
 
-		map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
-		map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
+        map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
+        map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
 
     };
 
@@ -566,6 +567,7 @@ void
 decaf::
 Decaf::terminate()
 {
+    if(out_dataflows.empty()) return;
     pConstructData quit_container;
     msgtools::set_quit(quit_container);
     put(quit_container);
@@ -1124,6 +1126,15 @@ Decaf::local_comm_handle()
         // The task is alone in the graph, returning world comm
         return world_comm_;
     }
+}
+
+int
+decaf::
+Decaf::local_comm_rank()
+{
+    int rank;
+    MPI_Comm_rank(this->local_comm_handle(), &rank);
+    return rank;
 }
 
 int

@@ -83,18 +83,18 @@ namespace decaf
         Comm* con_comm()              { return con_comm_;  }
         void forward();
 
-		vector<ContractKey>& keys(){ return keys_; }
-		bool has_contract(){		return bContract_;}
+        vector<ContractKey>& keys(){ return keys_; }
+        bool has_contract(){		return bContract_;}
 
-		vector<ContractKey>& keys_link(){ return keys_link_; }
-		bool has_contract_link(){ return bContractLink_;}
-		bool isAny() { return bAny_; }
+        vector<ContractKey>& keys_link(){ return keys_link_; }
+        bool has_contract_link(){ return bContractLink_;}
+        bool isAny() { return bAny_; }
 
-		string srcPort(){ return srcPort_; }
-		string destPort(){ return destPort_; }
+        string srcPort(){ return srcPort_; }
+        string destPort(){ return destPort_; }
 
-		bool isClose(){ return bClose_; }
-		void setClose(){ bClose_ = true; }
+        bool isClose(){ return bClose_; }
+        void setClose(){ bClose_ = true; }
 
         // Clear the buffer of the redistribution components.
         // To call if the data model change from one iteration to another or to free memory space
@@ -117,28 +117,28 @@ namespace decaf
         int wflow_prod_id_;              // index of corresponding producer in the workflow
         int wflow_con_id_;               // index of corresponding consumer in the workflow
         int wflow_dflow_id_;             // index of corresponding link in the workflow
-		bool no_link_;                   // True if the Dataflow doesn't have a Link
-		bool use_stream_;                // True if the Dataflow manages a buffer.
+        bool no_link_;                   // True if the Dataflow doesn't have a Link
+        bool use_stream_;                // True if the Dataflow manages a buffer.
 
-		string srcPort_;				// Portname of the source
-		string destPort_;				// Portname of the destination
-		bool bClose_;					// Determines if a quit message has been received when calling a get
+        string srcPort_;		 // Portname of the source
+        string destPort_;		 // Portname of the destination
+        bool bClose_;			 // Determines if a quit message has been received when calling a get
 
-		// Buffer infos
-		StreamPolicy stream_policy_;         // Type of stream to use
-		Datastream* stream_;
+        // Buffer infos
+        StreamPolicy stream_policy_;     // Type of stream to use
+        Datastream* stream_;
 
-		// Used for filtering/checking of contracts
-		int iteration;					// Iterations counter
-		bool prod_link_overlap;			// Whether there is overlaping between producer and link
+        // Used for filtering/checking of contracts
+        int iteration;			// Iterations counter
+        bool prod_link_overlap;         // Whether there is overlaping between producer and link
 
-		bool bContract_;				// boolean to say if the dataflow has a contract or not
-		bool bContractLink_;			// boolean to say if there is a contract on the link of the dataflow
-		bool bAny_;						// Whether the filtering will check the contracts but keep any other field or not
-		Check_level check_level_;   	// level of typechecking used; Relevant if bContract_ is set to true
-		vector<ContractKey> keys_; // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
-		                                //									b/w the producer and link if bContractLink_ is set to true
-		vector<ContractKey> keys_link_;	// keys of the data to be exchanged b/w the link and consumer, is bContractLink_ is set to true
+        bool bContract_;                // boolean to say if the dataflow has a contract or not
+        bool bContractLink_;            // boolean to say if there is a contract on the link of the dataflow
+        bool bAny_;			// Whether the filtering will check the contracts but keep any other field or not
+        Check_level check_level_;   	// level of typechecking used; Relevant if bContract_ is set to true
+        vector<ContractKey> keys_;      // keys of the data to be exchanged b/w the producer and consumer; Relevant if bContract_ is set to true
+                                        //									b/w the producer and link if bContractLink_ is set to true
+        vector<ContractKey> keys_link_;	// keys of the data to be exchanged b/w the link and consumer, is bContractLink_ is set to true
 	};// End of class Dataflow
 
 } // namespace

@@ -110,6 +110,9 @@ StorageCollectionInterface::getData(unsigned int id)
         if(storage->hasData(id))
             return storage->getData(id);
     }
+
+    fprintf(stderr,"ERROR: Data not found in the storage.\n");
+    return pConstructData();
 }
 
 #endif

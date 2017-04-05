@@ -97,4 +97,8 @@ RedistComp::IGet(pConstructData& data)
 
     // TODO: replace with asynchronous version
     redistribute(data, DECAF_REDIST_DEST);
+
+    // TODO: change to potentially false when asynchronous
+    // redistribution is working
+    return true;
 }
