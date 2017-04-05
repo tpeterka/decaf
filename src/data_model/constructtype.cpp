@@ -338,8 +338,7 @@ ConstructData::getNbFields()
 bool
 decaf::
 ConstructData::getTypename(std::string &name, std::string &type){
-	// This is only safe if the field is present in the data model
-	std::shared_ptr<BaseConstructData> field = getBaseData(this->container_->at(name));
+	std::shared_ptr<BaseConstructData> field = this->getData(name);
 	if(!field){
 		return false;
 	}
