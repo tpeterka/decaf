@@ -38,13 +38,13 @@ w = nx.DiGraph()
 w.add_node("prod",                           topology=subtopos[0], func='prod',
            cmdline='points '+str(tot_particles))
 w.add_node("tessellate",                     topology=subtopos[2], func='tessellate',
-           cmdline='xterm -hold -e tess '+str(tot_blocks))
+           cmdline='tess '+str(tot_blocks))
 w.add_node("density_estimate",               topology=subtopos[3], func='density_estimate',
-           cmdline='xterm -hold -e dense '+str(tot_blocks))
+           cmdline='dense '+str(tot_blocks))
 w.add_edge("prod", "tessellate",             topology=subtopos[1], func='dflow1',
            path=mod_path, prod_dflow_redist='proc', dflow_con_redist='proc', cmdline='pts_dflow')
 w.add_edge("tessellate", "density_estimate", start_proc=0,  nprocs=0, func='dflow2',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='pts_dflow')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph(w, "tess_dense", mod_path)
+wf.processGraph(w, "tess_dense")

@@ -55,10 +55,7 @@ void prod(dca_decaf decaf)
     dca_terminate(decaf);
 }
 
-// test driver for debugging purposes
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
+int main()
 {
 
     // Preparing Decaf before the initialization of Gromacs structures

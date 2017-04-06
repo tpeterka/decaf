@@ -1,8 +1,4 @@
-﻿#if                          (python_examples)
-#  add_subdirectory          (python)
-#endif                       (python_examples)
-
-message("Building direct mpmd example")
+﻿message("Building direct mpmd example")
 
 add_executable              (prod               prod.cpp)
 add_executable              (con                con.cpp)

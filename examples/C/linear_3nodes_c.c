@@ -151,11 +151,7 @@ void node2(dca_decaf decaf)
     dca_terminate(decaf);
 }
 
-// test driver for debugging purposes
-// this is hard-coding the no overlap case
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
+int main()
 {
     char * prefix = getenv("DECAF_PREFIX");
     if(prefix == NULL)

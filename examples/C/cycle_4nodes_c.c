@@ -128,10 +128,12 @@ void node_b(dca_decaf decaf)
 
         // replicate the sums in an array so that they can be sent to a destination with
         // more ranks
-        // TODO Matthieu : should not be necessary, to correct in the data model
+        // TODO Matthieu: should not be necessary, to correct in the data model
+	// TODO Matthieu: check with the new redistribution components if still necessary
+	// TODO Matthieu: Check if possible to move the decaf_sizes to unsigned instead of int
         int con_size = dca_get_dataflow_con_size(decaf, 3);
         int* sums = (int*)(malloc( con_size * sizeof(int)));
-        for (i = 0; i < con_size; i++)
+        for (i = 0; (int)i < con_size; i++)
             sums[i] = sum;
 
 
@@ -270,10 +272,7 @@ void node_d(dca_decaf decaf)
     dca_terminate(decaf);
 }
 
-// test driver for debugging purposes
-// normal entry point is run(), called by python
-int main(int argc,
-         char** argv)
+int main()
 {
     char * prefix = getenv("DECAF_PREFIX");
     if(prefix == NULL)

@@ -45,16 +45,6 @@ if                          (transport_mpi)
   add_definitions           (-DTRANSPORT_MPI)
 endif                       (transport_mpi)
 
-# Python
-find_package                (PythonLibs)
-if                          (PYTHONLIBS_FOUND)
-  message                   (STATUS "Building Python examples.")
-  set                       (python_examples             ON)
-else                        ()
-  message                   (STATUS "PythonLibs not found. Not building Python examples.")
-  set                       (python_examples             OFF)
-endif                       ()
-
 # Boost
 find_package                (Boost COMPONENTS serialization REQUIRED)
 message                     (STATUS "Boost libraries: " ${Boost_LIBRARIES})
@@ -79,9 +69,7 @@ set (CMAKE_LINKER_FLAGS ${CMAKE_LINKER_FLAGS} "-Wl,--export-dynamic -dynamic")
 add_subdirectory            (src)
 add_subdirectory            (examples)
 message                     (STATUS "Examples configured")
-if                          (PYTHONLIBS_FOUND)
-  add_subdirectory          (python)
-endif                       ()
+add_subdirectory            (python)
 
 if                          (build_tests)
   add_subdirectory          (tests)
