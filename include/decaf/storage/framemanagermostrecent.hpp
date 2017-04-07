@@ -22,9 +22,11 @@ namespace decaf
     class FrameManagerRecent : public FrameManager
     {
     public:
-        FrameManagerRecent(CommHandle comm);
+        FrameManagerRecent(CommHandle comm, TaskType role, unsigned int prod_freq_output);
         virtual ~FrameManagerRecent();
 
+
+        virtual bool sendFrame(unsigned int id);
         virtual void putFrame(unsigned int id);
         virtual FrameCommand getNextFrame(unsigned int* frame_id);
         virtual bool hasNextFrameId();
@@ -37,12 +39,15 @@ namespace decaf
         bool received_frame_;
         int frame_to_send_;
         int previous_frame_;
+        unsigned prod_freq_output_;
     };
 }
 
 decaf::
-FrameManagerRecent::FrameManagerRecent(CommHandle comm): FrameManager(comm),
-    received_frame_(false), received_frame_id_(false), previous_frame_(-1)
+FrameManagerRecent::FrameManagerRecent(CommHandle comm, TaskType role, unsigned int prod_freq_output):
+    FrameManager(comm, role),
+    received_frame_(false), received_frame_id_(false),
+    previous_frame_(-1), prod_freq_output_(prod_freq_output)
 {
     channel_->updateSelfValue(-1);
 }
@@ -51,6 +56,14 @@ decaf::
 FrameManagerRecent::~FrameManagerRecent()
 {
 
+}
+
+
+bool
+decaf::
+FrameManagerRecent::sendFrame(unsigned int id)
+{
+    return id % prod_freq_output_ == 0;
 }
 
 void

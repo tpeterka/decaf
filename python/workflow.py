@@ -623,6 +623,8 @@ def workflowToJson(graph, outputFile, filter_level):
             data["workflow"]["edges"][i]["frame_policy"] = graphEdge[2]['frame_policy']
             data["workflow"]["edges"][i]["storage_types"] = graphEdge[2]['storage_types']
             data["workflow"]["edges"][i]["max_storage_sizes"] = graphEdge[2]['max_storage_sizes']
+            if 'prod_output_freq' in graphEdge[2]:
+              data["workflow"]["edges"][i]["prod_output_freq"] = graphEdge[2]['prod_output_freq']
         
         # If there are ports for this edge
         if edge.srcPort != '' and edge.destPort != '':
@@ -638,19 +640,20 @@ def workflowToJson(graph, outputFile, filter_level):
 # End workflowToJson
 
 # Add streaming information to a link
-def updateLinkStream(graph, prod, con, stream, frame_policy, storage_types, max_storage_sizes):
+def updateLinkStream(graph, prod, con, stream, frame_policy, storage_types, max_storage_sizes, prod_output_freq):
     graph.edge[prod][con]['stream'] = stream
     graph.edge[prod][con]['frame_policy'] = frame_policy
     graph.edge[prod][con]['storage_types'] = storage_types
     graph.edge[prod][con]['max_storage_sizes'] = max_storage_sizes
+    graph.edge[prod][con]['prod_output_freq'] = prod_output_freq
 
 # Shortcut function to define a sequential streaming dataflow
-def addSeqStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
-    updateLinkStream(graph, prod, con, 'double', 'seq', buffers, max_buffer_sizes)
+def addSeqStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10], prod_output_freq = 1):
+    updateLinkStream(graph, prod, con, 'double', 'seq', buffers, max_buffer_sizes, prod_output_freq)
 
 # Shortcut function to define a stream sending the most recent frame to the consumer
-def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10]):
-    updateLinkStream(graph, prod, con, 'single', 'recent', buffers, max_buffer_sizes)
+def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10], prod_output_freq = 1):
+    updateLinkStream(graph, prod, con, 'single', 'recent', buffers, max_buffer_sizes, prod_output_freq)
 
 
 # Looking for a node/edge starting at a particular rank

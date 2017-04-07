@@ -40,6 +40,7 @@ namespace decaf
                RedistComp* prod_dflow,
                RedistComp* dflow_con,
                FramePolicyManagment policy,
+               unsigned int prod_freq_output,
                vector<StorageType>& storage_types,
                vector<unsigned int>& max_storage_sizes);
         virtual ~Datastream();
@@ -93,6 +94,7 @@ Datastream::Datastream(CommHandle world_comm,
               RedistComp* redist_prod_dflow,
               RedistComp* redist_dflow_con,
               FramePolicyManagment policy,
+              unsigned int prod_freq_output,
               vector<StorageType>& storage_types,
               vector<unsigned int>& max_storage_sizes) :
     initialized_(false), world_comm_(world_comm),
@@ -119,6 +121,26 @@ Datastream::Datastream(CommHandle world_comm,
         MPI_Comm_create_group(world_comm, newgroup, 0, &prod_comm_handle_);
         MPI_Group_free(&group);
         MPI_Group_free(&newgroup);
+
+        switch(policy)
+        {
+            case DECAF_FRAME_POLICY_RECENT:
+            {
+                framemanager_ = new FrameManagerRecent(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                break;
+            }
+            case DECAF_FRAME_POLICY_SEQ:
+            {
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                break;
+            }
+            default:
+            {
+                fprintf(stderr,"WARNING: unrecognized frame policy. Using sequential.\n");
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                break;
+            }
+        };
     }
 
     if(is_dflow())
@@ -139,18 +161,18 @@ Datastream::Datastream(CommHandle world_comm,
         {
             case DECAF_FRAME_POLICY_RECENT:
             {
-                framemanager_ = new FrameManagerRecent(dflow_comm_handle_);
+                framemanager_ = new FrameManagerRecent(dflow_comm_handle_, DECAF_LINK, prod_freq_output);
                 break;
             }
             case DECAF_FRAME_POLICY_SEQ:
             {
-                framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
+                framemanager_ = new FrameManagerSeq(dflow_comm_handle_, DECAF_LINK, prod_freq_output);
                 break;
             }
             default:
             {
                 fprintf(stderr,"WARNING: unrecognized frame policy. Using sequential.\n");
-                framemanager_ = new FrameManagerSeq(dflow_comm_handle_);
+                framemanager_ = new FrameManagerSeq(dflow_comm_handle_, DECAF_LINK, prod_freq_output);
                 break;
             }
         };

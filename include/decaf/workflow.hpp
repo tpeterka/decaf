@@ -87,16 +87,17 @@ struct WorkflowLink                          // a dataflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
     string stream;              // Type of stream policy to use (none, single, double)
     string frame_policy;        // Policy to use to manage the incoming frames
+    unsigned int prod_freq_output;              // Output frequency of the producer
     vector<StorageType> storages;               // Different level of storage availables
     vector<unsigned int> storage_max_buffer;    // Maximum number of frame
 
-  	string srcPort;				// Portname of the source
-	string destPort;			// Portname of the dest
+    string srcPort;		// Portname of the source
+    string destPort;		// Portname of the dest
 
-	vector<ContractKey> keys_link;   // List of keys to be exchanged b/w the link and the consumer
-	vector<ContractKey> list_keys;   // list of key to be exchanged b/w the producer and consumer or producer and link
-	Check_level check_level;		 // level of checking for the types of data to be exchanged
-	bool bAny;						 // Whether the filtering will check the contracts but keep any other field or not
+    vector<ContractKey> keys_link;   // List of keys to be exchanged b/w the link and the consumer
+    vector<ContractKey> list_keys;   // list of key to be exchanged b/w the producer and consumer or producer and link
+    Check_level check_level;		 // level of checking for the types of data to be exchanged
+    bool bAny;						 // Whether the filtering will check the contracts but keep any other field or not
 
 
 };
@@ -213,100 +214,106 @@ struct Workflow                              // an entire workflow
       for( auto &&v : root.get_child( "workflow.edges" ) ) {
 		WorkflowLink link;
 
-		/* link the nodes correctly(?) */
-		link.prod = v.second.get<int>("source");
-		link.con = v.second.get<int>("target");
+            /* link the nodes correctly(?) */
+            link.prod = v.second.get<int>("source");
+            link.con = v.second.get<int>("target");
 
-        workflow.nodes.at( link.prod ).out_links.push_back( workflow.links.size() );
-        workflow.nodes.at( link.con ).in_links.push_back( workflow.links.size() );
-	 
-		link.start_proc = v.second.get<int>("start_proc");
-		link.nprocs = v.second.get<int>("nprocs");
-		link.prod_dflow_redist = v.second.get<string>("prod_dflow_redist");
-		link.check_level = check_level;
+            workflow.nodes.at( link.prod ).out_links.push_back( workflow.links.size() );
+            workflow.nodes.at( link.con ).in_links.push_back( workflow.links.size() );
 
-		if(link.nprocs != 0){ // Only used if there are procs on this link
-			link.path = v.second.get<string>("path");
-			link.func = v.second.get<string>("func");
-			link.dflow_con_redist = v.second.get<string>("dflow_con_redist");
-		}
+            link.start_proc = v.second.get<int>("start_proc");
+            link.nprocs = v.second.get<int>("nprocs");
+            link.prod_dflow_redist = v.second.get<string>("prod_dflow_redist");
+            link.check_level = check_level;
 
-		// Default values when no contract nor contract link are involved
-		link.bAny = false;
-		link.list_keys.clear();
-		link.keys_link.clear();
-
-		// Retrieving the name of source and target ports
-		boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
-		boost::optional<string> destP = v.second.get_optional<string>("targetPort");
-		if(srcP && destP){
-			// If there are ports, retrieve the port names and then check if there are contracts associated
-			link.srcPort = srcP.get();
-			link.destPort = destP.get();
-
-			// Retrieving the contract, if present
-			boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
-			if(pt_keys){
-				for(bpt::ptree::value_type &value: pt_keys.get()){
-					ContractKey field;
-					field.name = value.first;
-
-					// Didn't find a nicer way of doing this...
-					auto i = value.second.begin();
-					field.type = i->second.get<string>("");
-					i++;
-					field.period = i->second.get<int>("");
-					//////
-
-					link.list_keys.push_back(field);
-				}
-			}
-			// Retrieving the contract on the link, if present
-			boost::optional<bpt::ptree&> pt_keys_link = v.second.get_child_optional("keys_link");
-			if(pt_keys_link){
-				for(bpt::ptree::value_type &value: pt_keys_link.get()){
-					ContractKey field;
-					field.name = value.first;
-
-					// Didn't find a nicer way of doing this...
-					auto i = value.second.begin();
-					field.type = i->second.get<string>("");
-					i++;
-					field.period = i->second.get<int>("");
-					//////
-
-					link.keys_link.push_back(field);
-				}
-			}
-			boost::optional<bool> pt_any = v.second.get_optional<bool>("bAny");
-			if (pt_any){
-				link.bAny = pt_any.get();
-			}
-
-		}
-
-		// Retrieving information on streams and buffers
-		boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
-		if(opt_stream)
-			link.stream = opt_stream.get();
-		else
-			link.stream = "none";
-		boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
-		if(opt_frame_policy)
-			link.frame_policy = opt_frame_policy.get();
-		else
-			link.frame_policy = "none";
-
-		// TODO CHECK if this is possible even when there are no "strorage_types" in the tree
-		// TODO is it better to use get_optional? What does v.second.count do?
-		if(v.second.count("storage_types") > 0)
-        {
-            for (auto &types : v.second.get_child("storage_types"))
-            {
-                StorageType type = stringToStoragePolicy(types.second.data());
-                link.storages.push_back(type);
+            if(link.nprocs != 0){ // Only used if there are procs on this link
+                    link.path = v.second.get<string>("path");
+                    link.func = v.second.get<string>("func");
+                    link.dflow_con_redist = v.second.get<string>("dflow_con_redist");
             }
-		}
+
+            // Default values when no contract nor contract link are involved
+            link.bAny = false;
+            link.list_keys.clear();
+            link.keys_link.clear();
+
+            // Retrieving the name of source and target ports
+            boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
+            boost::optional<string> destP = v.second.get_optional<string>("targetPort");
+            if(srcP && destP){
+                    // If there are ports, retrieve the port names and then check if there are contracts associated
+                    link.srcPort = srcP.get();
+                    link.destPort = destP.get();
+
+                    // Retrieving the contract, if present
+                    boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
+                    if(pt_keys){
+                            for(bpt::ptree::value_type &value: pt_keys.get()){
+                                    ContractKey field;
+                                    field.name = value.first;
+
+                                    // Didn't find a nicer way of doing this...
+                                    auto i = value.second.begin();
+                                    field.type = i->second.get<string>("");
+                                    i++;
+                                    field.period = i->second.get<int>("");
+                                    //////
+
+                                    link.list_keys.push_back(field);
+                            }
+                    }
+                    // Retrieving the contract on the link, if present
+                    boost::optional<bpt::ptree&> pt_keys_link = v.second.get_child_optional("keys_link");
+                    if(pt_keys_link){
+                            for(bpt::ptree::value_type &value: pt_keys_link.get()){
+                                    ContractKey field;
+                                    field.name = value.first;
+
+                                    // Didn't find a nicer way of doing this...
+                                    auto i = value.second.begin();
+                                    field.type = i->second.get<string>("");
+                                    i++;
+                                    field.period = i->second.get<int>("");
+                                    //////
+
+                                    link.keys_link.push_back(field);
+                            }
+                    }
+                    boost::optional<bool> pt_any = v.second.get_optional<bool>("bAny");
+                    if (pt_any){
+                            link.bAny = pt_any.get();
+                    }
+
+            }
+
+            // Retrieving information on streams and buffers
+            boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
+            if(opt_stream)
+                    link.stream = opt_stream.get();
+            else
+                    link.stream = "none";
+            boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
+            if(opt_frame_policy)
+                    link.frame_policy = opt_frame_policy.get();
+            else
+                    link.frame_policy = "none";
+            boost::optional<unsigned int> opt_prod_output = v.second.get_optional<unsigned int>("prod_output_freq");
+            if(opt_prod_output)
+                link.prod_freq_output = opt_prod_output.get();
+            else
+                link.prod_freq_output = 1;
+
+
+            // TODO CHECK if this is possible even when there are no "strorage_types" in the tree
+            // TODO is it better to use get_optional? What does v.second.count do?
+            if(v.second.count("storage_types") > 0)
+            {
+                for (auto &types : v.second.get_child("storage_types"))
+                {
+                    StorageType type = stringToStoragePolicy(types.second.data());
+                    link.storages.push_back(type);
+                }
+            }
 
         if(v.second.count("max_storage_sizes") > 0)
         {

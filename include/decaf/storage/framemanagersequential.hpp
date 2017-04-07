@@ -22,9 +22,10 @@ namespace decaf
     class FrameManagerSeq : public FrameManager
     {
     public:
-        FrameManagerSeq(CommHandle comm);
+        FrameManagerSeq(CommHandle comm, TaskType role, unsigned int prod_freq_output);
         virtual ~FrameManagerSeq();
 
+        virtual bool sendFrame(unsigned int id);
         virtual void putFrame(unsigned int id);
         virtual FrameCommand getNextFrame(unsigned int* frame_id);
         virtual bool hasNextFrameId();
@@ -33,11 +34,13 @@ namespace decaf
 
     protected:
         std::queue<unsigned int> buffer_;
+        unsigned int prod_freq_output_;     // Output frequency at the producer
     };
 }
 
 decaf::
-FrameManagerSeq::FrameManagerSeq(CommHandle comm): FrameManager(comm)
+FrameManagerSeq::FrameManagerSeq(CommHandle comm, TaskType role, unsigned int prod_freq_output):
+    FrameManager(comm, role), prod_freq_output_(prod_freq_output)
 {
 
 }
@@ -46,6 +49,14 @@ decaf::
 FrameManagerSeq::~FrameManagerSeq()
 {
 
+}
+
+
+bool
+decaf::
+FrameManagerSeq::sendFrame(unsigned int id)
+{
+    return id % prod_freq_output_ == 0;
 }
 
 void

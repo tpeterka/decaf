@@ -46,43 +46,44 @@ namespace decaf
 {
     // world is partitioned into {producer, dataflow, consumer, other} in increasing rank
     class Dataflow
-	{
-	public:
-		Dataflow(CommHandle world_comm,          // world communicator
-		         DecafSizes& decaf_sizes,        // sizes of producer, dataflow, consumer
-		         int prod,                       // id in workflow structure of producer node
-		         int dflow,                      // id in workflow structure of dataflow link
-		         int con,					   	 // id in workflow structure of consumer node
-		         WorkflowLink wflowLink,
-		         Decomposition prod_dflow_redist, // decompositon between producer and dataflow
-		         Decomposition dflow_cons_redist, // decomposition between dataflow and consumer
-		         StreamPolicy streamPolicy,
-		         FramePolicyManagment framePolicy);
+    {
+    public:
+        Dataflow(CommHandle world_comm,             // world communicator
+                 DecafSizes& decaf_sizes,           // sizes of producer, dataflow, consumer
+                 int prod,                          // id in workflow structure of producer node
+                 int dflow,                         // id in workflow structure of dataflow link
+                 int con,                           // id in workflow structure of consumer node
+                 WorkflowLink wflowLink,
+                 Decomposition prod_dflow_redist,   // decompositon between producer and dataflow
+                 Decomposition dflow_cons_redist,   // decomposition between dataflow and consumer
+                 StreamPolicy streamPolicy,
+                 FramePolicyManagment framePolicy,
+                 unsigned int prod_freq_output = 1);
 
-		~Dataflow();
-		bool put(pConstructData& data, TaskType role);
-		bool get(pConstructData& data, TaskType role);
+        ~Dataflow();
+        bool put(pConstructData& data, TaskType role);
+        bool get(pConstructData& data, TaskType role);
 
-		pConstructData& filterPut(pConstructData& data, pConstructData& data_filtered, TaskType& role, bool& data_changed, bool& filtered_empty);
-		void filterGet(pConstructData& data, TaskType role);
+        pConstructData& filterPut(pConstructData& data, pConstructData& data_filtered, TaskType& role, bool& data_changed, bool& filtered_empty);
+        void filterGet(pConstructData& data, TaskType role);
 
-		DecafSizes* sizes()    { return &sizes_; }
-		void shutdown();
-		void err()             { ::all_err(err_); }
-		// whether this rank is producer, dataflow, or consumer (may have multiple roles)
-		bool is_prod()          { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
-		bool is_dflow()         { return((type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM); }
-		bool is_con()           { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
-		bool is_prod_root()     { return world_rank_ == sizes_.prod_start; }
-		bool is_dflow_root()     { return world_rank_ == sizes_.dflow_start; }
-		bool is_con_root()     { return world_rank_ == sizes_.con_start; }
-		CommHandle prod_comm_handle() { return prod_comm_->handle(); }
-		CommHandle con_comm_handle()  { return con_comm_->handle();  }
-		CommHandle dflow_comm_handle(){ return dflow_comm_->handle();}
-		Comm* prod_comm()             { return prod_comm_; }
-		Comm* dflow_comm()            { return dflow_comm_; }
-		Comm* con_comm()              { return con_comm_;  }
-		void forward();
+        DecafSizes* sizes()    { return &sizes_; }
+        void shutdown();
+        void err()             { ::all_err(err_); }
+        // whether this rank is producer, dataflow, or consumer (may have multiple roles)
+        bool is_prod()          { return((type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM); }
+        bool is_dflow()         { return((type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM); }
+        bool is_con()           { return((type_ & DECAF_CONSUMER_COMM) == DECAF_CONSUMER_COMM); }
+        bool is_prod_root()     { return world_rank_ == sizes_.prod_start; }
+        bool is_dflow_root()     { return world_rank_ == sizes_.dflow_start; }
+        bool is_con_root()     { return world_rank_ == sizes_.con_start; }
+        CommHandle prod_comm_handle() { return prod_comm_->handle(); }
+        CommHandle con_comm_handle()  { return con_comm_->handle();  }
+        CommHandle dflow_comm_handle(){ return dflow_comm_->handle();}
+        Comm* prod_comm()             { return prod_comm_; }
+        Comm* dflow_comm()            { return dflow_comm_; }
+        Comm* con_comm()              { return con_comm_;  }
+        void forward();
 
         vector<ContractKey>& keys(){ return keys_; }
         bool has_contract(){		return bContract_;}
@@ -154,7 +155,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist,
                    StreamPolicy stream_policy,
-                   FramePolicyManagment framePolicy) :
+                   FramePolicyManagment framePolicy,
+                   unsigned int prod_freq_output) :
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -509,6 +511,7 @@ Dataflow::Dataflow(CommHandle world_comm,
 				                                   redist_prod_dflow_,
 				                                   redist_dflow_con_,
 				                                   framePolicy,
+                                                                   prod_freq_output,
 				                                   wflowLink.storages,
 				                                   wflowLink.storage_max_buffer);
 				break;
@@ -525,6 +528,7 @@ Dataflow::Dataflow(CommHandle world_comm,
 				                                   redist_prod_dflow_,
 				                                   redist_dflow_con_,
 				                                   framePolicy,
+                                                                   prod_freq_output,
 				                                   wflowLink.storages,
 				                                   wflowLink.storage_max_buffer);
 				break;
@@ -656,7 +660,7 @@ Dataflow::put(pConstructData& data, TaskType role)
 			/// send the message
 			if(use_stream_)
 			{
-				stream_->processProd(data);
+                                stream_->processProd(data_filtered);
 			}
 			else
 			{

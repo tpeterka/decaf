@@ -603,7 +603,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
 
     // links are driven by receiving messages
     while (1)
-	{
+    {
         // get incoming data
         for (size_t i = 0; i < link_in_dataflows.size(); i++)
         {
@@ -633,7 +633,6 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                     if (ready_types[i] & DECAF_LINK)
                     {
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
-                        // fprintf(stderr, "Forwarding a quit message by a link\n");
                     }
                 }
             }
@@ -744,21 +743,23 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
         Decomposition dflow_con_redist =
             stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
 
-		StreamPolicy stream_mode =
-		    stringToStreamPolicy(workflow_.links[dflow].stream);
-		FramePolicyManagment frame_policy =
-		    stringToFramePolicyManagment(workflow_.links[dflow].frame_policy);
-
-		dataflows.push_back(new Dataflow(world_comm_,
-		                             decaf_sizes,
-		                             prod,
-		                             dflow,
-		                             con,
-		                             workflow_.links[i],
-		                             prod_dflow_redist,
-		                             dflow_con_redist,
-		                             stream_mode,
-		                             frame_policy));
+        StreamPolicy stream_mode =
+            stringToStreamPolicy(workflow_.links[dflow].stream);
+        FramePolicyManagment frame_policy =
+            stringToFramePolicyManagment(workflow_.links[dflow].frame_policy);
+        unsigned int prod_freq_output = workflow_.links[dflow].prod_freq_output;
+        // TODO: emplace constructor
+        dataflows.push_back(new Dataflow(world_comm_,
+                                     decaf_sizes,
+                                     prod,
+                                     dflow,
+                                     con,
+                                     workflow_.links[i],
+                                     prod_dflow_redist,
+                                     dflow_con_redist,
+                                     stream_mode,
+                                     frame_policy,
+                                     prod_freq_output));
 
         dataflows[i]->err();
     }
@@ -866,8 +867,10 @@ Decaf::router(list< pConstructData >& in_data, // input messages
 
         if (src_type(*it) & DECAF_NODE)
             dest_link = dest_id(*it);
-        if (src_type(*it) & DECAF_LINK)
+        else if (src_type(*it) & DECAF_LINK)
             dest_node = dest_id(*it);
+        else if (src_type(*it) == DECAF_NONE)
+            fprintf(stderr, "ERROR: reception of a none source msg.\n");
 
         if (dest_node >= 0)               // destination is a node
         {
@@ -922,7 +925,8 @@ Decaf::router(list< pConstructData >& in_data, // input messages
                         my_links_[j].nin++;
                 }
             }                             // not done
-        }                                 // link
+        }
+        // link
     }                                     // in_data iterator
 
     // check for ready nodes and links having all their inputs
