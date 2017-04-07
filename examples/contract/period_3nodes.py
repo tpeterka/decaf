@@ -15,19 +15,19 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_period_3nodes.so
 topo = wf.Topology("topo", 16)
 subtopos = topo.splitTopology(["node1", "node2", "node3", "dflow1", "dflow2"],[1,1,1,0,0])
 
-node1 = wf.nodeFromTopo("node1", "node1", "period_3nodes", subtopos[0])
+node1 = wf.nodeFromTopo("node1", "node1", "./period_3nodes", subtopos[0])
 node1.addOutputFromDict("Out", {"var":["int", 2]})
 
-node2 = wf.nodeFromTopo("node2", "node2", "period_3nodes", subtopos[1])
+node2 = wf.nodeFromTopo("node2", "node2", "./period_3nodes", subtopos[1])
 node2.addOutput("Out", "var", "int")
 node2.addInput("In", "var", "int")
 
-node3 = wf.nodeFromTopo("node3", "node3", "period_3nodes", subtopos[2])
+node3 = wf.nodeFromTopo("node3", "node3", "./period_3nodes", subtopos[2])
 node3.addInput("In", "var", "int")
 
 
-edge12 = wf.edgeFromTopo("node1.Out", "node2.In", subtopos[3], 'count', 'dlfow', mod_path, 'count', 'period_3nodes')
-edge23 = wf.edgeFromTopo("node2.Out", "node3.In", subtopos[4], 'count', 'dlfow', mod_path, 'count', 'period_3nodes')
+edge12 = wf.edgeFromTopo("node1.Out", "node2.In", subtopos[3], 'count', 'dlfow', mod_path, 'count', './period_3nodes')
+edge23 = wf.edgeFromTopo("node2.Out", "node3.In", subtopos[4], 'count', 'dlfow', mod_path, 'count', './period_3nodes')
 
 
 graph = nx.DiGraph()

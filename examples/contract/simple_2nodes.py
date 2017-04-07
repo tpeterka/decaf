@@ -14,14 +14,14 @@ topo = wf.Topology("topo", 8)
 subtopos = topo.splitTopology(["prod", "con", "dflow"], [1,1,1])
 
 # Creating the nodes
-prod = wf.nodeFromTopo("prod", "prod", "simple_2nodes", subtopos[0])
+prod = wf.nodeFromTopo("prod", "prod", "./simple_2nodes", subtopos[0])
 prod.addOutputPort("Out")
 
-con = wf.nodeFromTopo("con", "con", "simple_2nodes", subtopos[1])
+con = wf.nodeFromTopo("con", "con", "./simple_2nodes", subtopos[1])
 con.addInput("In", "var", "int")
 
 # Creating the edge
-edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'simple_2nodes')
+edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', './simple_2nodes')
 
 graph = nx.DiGraph()
 wf.addNode(graph, prod)

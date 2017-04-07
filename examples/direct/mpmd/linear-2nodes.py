@@ -21,10 +21,10 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mpmd/mod_dflow.so'
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
 
 w = nx.DiGraph()
-w.add_node("prod", start_proc=0, nprocs=4, func='prod', cmdline='prod')
-w.add_node("con",  start_proc=6, nprocs=2, func='con', cmdline='con')
+w.add_node("prod", start_proc=0, nprocs=4, func='prod', cmdline='./prod')
+w.add_node("con",  start_proc=6, nprocs=2, func='con', cmdline='./con')
 w.add_edge("prod", "con", start_proc=4, nprocs=2, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count', cmdline='dflow')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='./dflow')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
 

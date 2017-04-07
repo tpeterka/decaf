@@ -35,10 +35,10 @@ topoCon = topo.subTopology("con", 2, 6)
 
 # Creating the graph
 w = nx.DiGraph()
-w.add_node("prod", topology=topoProd, func='prod', cmdline='linear_2nodes')
-w.add_node("con", topology=topoCon, func='con', cmdline='linear_2nodes')
+w.add_node("prod", topology=topoProd, func='prod', cmdline='./linear_2nodes')
+w.add_node("con", topology=topoCon, func='con', cmdline='./linear_2nodes')
 w.add_edge("prod", "con", topology=topoDflow, func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count', cmdline='linear_2nodes')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='./linear_2nodes')
 
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---

@@ -51,15 +51,13 @@ void node_a(dca_decaf decaf)
             unsigned int i;
             for (i = 0; i < nb_data; i++)
             {
-                bca_field field = bca_get_arrayfield(in_data[i], "vars", bca_INT);
+                bca_field field = bca_get_simplefield(in_data[i], "vars", bca_INT);
                 if(field)
                 {
-                    size_t size;
-                    int* array = bca_get_array(field, bca_INT, &size);
-                    sum += array[0];
+                    int value;
+                    bca_get_data(field, bca_INT, &value);
+                    sum += value;
                 }
-                else
-                    fprintf(stderr, "Error: null pointer in node_a\n");
 
                 bca_free_field(field);
                 bca_free_constructdata(in_data[i]);
@@ -126,19 +124,8 @@ void node_b(dca_decaf decaf)
 
         fprintf(stderr, "node_b: sum = %d\n", sum);
 
-        // replicate the sums in an array so that they can be sent to a destination with
-        // more ranks
-        // TODO Matthieu: should not be necessary, to correct in the data model
-	// TODO Matthieu: check with the new redistribution components if still necessary
-	// TODO Matthieu: Check if possible to move the decaf_sizes to unsigned instead of int
-        int con_size = dca_get_dataflow_con_size(decaf, 3);
-        int* sums = (int*)(malloc( con_size * sizeof(int)));
-        for (i = 0; (int)i < con_size; i++)
-            sums[i] = sum;
-
-
         // append the array to a container
-        bca_field field = bca_create_arrayfield(sums, bca_INT, 4, 1, 4, false);
+        bca_field field = bca_create_simplefield(&sum, bca_INT);
         bca_constructdata container = bca_create_constructdata();
         bca_append_field(container, "vars", field,
                          bca_NOFLAG, bca_PRIVATE,
@@ -150,8 +137,6 @@ void node_b(dca_decaf decaf)
 
         bca_free_field(field);
         bca_free_constructdata(container);
-
-        free(sums);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

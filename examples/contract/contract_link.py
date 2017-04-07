@@ -15,16 +15,16 @@ topo = wf.Topology("topo", 8)
 subtopos = topo.splitTopology(["prod", "con", "dflow"], [1,1,1])
 
 # Creating the nodes
-prod = wf.nodeFromTopo("prod", "prod", "contract_link", subtopos[0])
+prod = wf.nodeFromTopo("prod", "prod", "./contract_link", subtopos[0])
 prod.addOutput("Out", "var", "float")
 prod.addOutput("Out", "toto", "int")
 
-con = wf.nodeFromTopo("con", "con", "contract_link", subtopos[1])
+con = wf.nodeFromTopo("con", "con", "./contract_link", subtopos[1])
 con.addInput("In", "var", "int")
 con.addInput("In", "toto", "int")
 
 # Creating the edge
-edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'contract_link')
+edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', './contract_link')
 clink = wf.ContractLink(bAny = True) # When bAny set to False, the field 'toto' should not be sent/received at runtime
 clink.addInput("var", "float", 1)
 clink.addOutput("var", "int", 1)

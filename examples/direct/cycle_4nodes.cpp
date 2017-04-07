@@ -57,12 +57,6 @@ void node_a(Decaf* decaf)
             // get the values and add them
             for (size_t i = 0; i < in_data.size(); i++)
             {
-//                ArrayFieldi field = in_data[i]->getFieldData<ArrayFieldi >("vars");
-//                if(field)
-//                    sum += field.getArray()[0];
-//                else
-//                    fprintf(stderr, "Error: null pointer in node_a\n");
-
                 // Only the first rank will receive a data
                 if(in_data[i]->hasData("vars"))
                 {
@@ -114,14 +108,7 @@ void node_b(Decaf* decaf)
 
         fprintf(stderr, "node_b: sum = %d\n", sum);
 
-        // replicate the sums in an array so that they can be sent to a destination with
-        // more ranks
-        //int* sums = new int[decaf->dataflow(1)->sizes()->con_size];
-        //for (size_t i = 0; i < decaf->dataflow(1)->sizes()->con_size; i++)
-        //    sums[i] = sum;
-
         // append the array to a container
-        //ArrayFieldi data(sums, 4, 1, false);
         SimpleFieldi data(sum);
         pConstructData container;
         container->appendData("vars", data,
@@ -131,9 +118,6 @@ void node_b(Decaf* decaf)
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
         decaf->put(container);
-
-        //delete[] sums;
-
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

@@ -21,28 +21,28 @@ subtopos = topo.splitTopology(["prod", "con", "dflow"], [1,1,1])
 # --- SCENARIO 1 ---
 # The name of the data in the contracts of prod.Out and con.In are different. ERROR during python script execution: field "value" is not in the contract of prod.Out
 # Creating the nodes
-prod = wf.nodeFromTopo("prod", "prod", "errors", subtopos[0])
+prod = wf.nodeFromTopo("prod", "prod", "./errors", subtopos[0])
 prod.addOutput("Out", "var", "Vector_int")
 
-con = wf.nodeFromTopo("con", "con", "errors", subtopos[1])
+con = wf.nodeFromTopo("con", "con", "./errors", subtopos[1])
 con.addInput("In", "value", "Vector_int")
 
 # Creating the edge
-edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'errors')
+edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', './errors')
 # --- END 1 ---
 
 """
 # --- SCENARIO 2 ---
 # The name of the data in the contracts of prod.Out and con.In are equal, but the types are different. ERROR during python script execution
 # Creating the nodes
-prod = wf.nodeFromTopo("prod", "prod", "errors", subtopos[0])
+prod = wf.nodeFromTopo("prod", "prod", "./errors", subtopos[0])
 prod.addOutput("Out", "var", "Array_int")
 
-con = wf.nodeFromTopo("con", "con", "errors", subtopos[1])
+con = wf.nodeFromTopo("con", "con", "./errors", subtopos[1])
 con.addInput("In", "var", "Vector_int")
 
 # Creating the edge
-edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'errors')
+edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', './errors')
 # --- END 2 ---
 """
 """
@@ -50,14 +50,14 @@ edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_
 # The name and type of the data in the contracts of prod.Out and con.In are equal. Python script is ok.
 # The ERROR occurs during the runtime, when the producer does not send "var" with the correct type
 # Creating the nodes
-prod = wf.nodeFromTopo("prod", "prod", "errors", subtopos[0])
+prod = wf.nodeFromTopo("prod", "prod", "./errors", subtopos[0])
 prod.addOutput("Out", "var", "Vector_int")
 
-con = wf.nodeFromTopo("con", "con", "errors", subtopos[1])
+con = wf.nodeFromTopo("con", "con", "./errors", subtopos[1])
 con.addInput("In", "var", "Vector_int")
 
 # Creating the edge
-edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'errors')
+edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', './errors')
 # --- END 3 ---
 """
 

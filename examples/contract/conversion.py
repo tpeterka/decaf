@@ -26,19 +26,19 @@ subtopos = topo.splitTopology(["prod1", "prod2", "con", "dflow1", "dflow2"],[1,1
 # TODO play with the link with 0 nprocs, for dflow1 should be ok but not dflow2 since the contract b/w producer2 and consumer1 would not match
 
 
-prod1 = wf.nodeFromTopo("prod1", "prod", "conversion", subtopos[0])
+prod1 = wf.nodeFromTopo("prod1", "prod", "./conversion", subtopos[0])
 prod1.addOutputFromDict("Out", {"vector":["Vector_int", 1]})
 
-prod2 = wf.nodeFromTopo("prod2", "prod2", "conversion", subtopos[1])
+prod2 = wf.nodeFromTopo("prod2", "prod2", "./conversion", subtopos[1])
 prod2.addOutput("Out", "array", "Array_int")
 
-con1 = wf.nodeFromTopo("con1", "con", "conversion", subtopos[2])
+con1 = wf.nodeFromTopo("con1", "con", "./conversion", subtopos[2])
 con1.addInput("In1", "vector", "Vector_int")
 con1.addInput("In2", "converted", "Vector_int")
 
 
-edge1 = wf.edgeFromTopo("prod1.Out", "con1.In1", subtopos[3], 'count', 'dflow1', mod_path, 'count', 'conversion')
-edge2 = wf.edgeFromTopo("prod2.Out", "con1.In2", subtopos[4], 'count', 'dflow2', mod_path, 'count', 'conversion')
+edge1 = wf.edgeFromTopo("prod1.Out", "con1.In1", subtopos[3], 'count', 'dflow1', mod_path, 'count', './conversion')
+edge2 = wf.edgeFromTopo("prod2.Out", "con1.In2", subtopos[4], 'count', 'dflow2', mod_path, 'count', './conversion')
 cLink = wf.ContractLink(bAny = False)
 cLink.addInput("array", "Array_int")
 cLink.addOutput("converted", "Vector_int")

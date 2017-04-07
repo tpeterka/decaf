@@ -23,19 +23,19 @@ topo = wf.Topology("topo", 16)
 subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[1,1,1,1,1,1,1,1])
 
 # Creating Node objects
-P1 = wf.nodeFromTopo("prod1", "prod", "putget_index", subtopos[0])
+P1 = wf.nodeFromTopo("prod1", "prod", "./putget_index", subtopos[0])
 
-P2 = wf.nodeFromTopo("prod2", "prod2", "putget_index", subtopos[1])
+P2 = wf.nodeFromTopo("prod2", "prod2", "./putget_index", subtopos[1])
 
-C1 = wf.nodeFromTopo("con1", "con", "putget_index", subtopos[2])
+C1 = wf.nodeFromTopo("con1", "con", "./putget_index", subtopos[2])
 
-C2 = wf.nodeFromTopo("con2", "con2", "putget_index", subtopos[3])
+C2 = wf.nodeFromTopo("con2", "con2", "./putget_index", subtopos[3])
 
 # Creating Edge objects
-edge11 = wf.edgeFromTopo("prod1", "con1", subtopos[4], 'count', 'dflow', mod_path, 'count', 'putget_index')
-edge12 = wf.edgeFromTopo("prod1", "con2", subtopos[5], 'count', 'dflow', mod_path, 'count', 'putget_index')
-edge21 = wf.edgeFromTopo("prod2", "con1", subtopos[6], 'count', 'dflow', mod_path, 'count', 'putget_index')
-edge22 = wf.edgeFromTopo("prod2", "con2", subtopos[7], 'count', 'dflow', mod_path, 'count', 'putget_index')
+edge11 = wf.edgeFromTopo("prod1", "con1", subtopos[4], 'count', 'dflow', mod_path, 'count', './putget_index')
+edge12 = wf.edgeFromTopo("prod1", "con2", subtopos[5], 'count', 'dflow', mod_path, 'count', './putget_index')
+edge21 = wf.edgeFromTopo("prod2", "con1", subtopos[6], 'count', 'dflow', mod_path, 'count', './putget_index')
+edge22 = wf.edgeFromTopo("prod2", "con2", subtopos[7], 'count', 'dflow', mod_path, 'count', './putget_index')
 
 
 graph = nx.DiGraph()

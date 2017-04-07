@@ -33,10 +33,10 @@ subtopos = topo.splitTopologyByDict([{'name':'prod', 'nprocs':1},{'name':'dflow'
 
 # Creating the graph
 w = nx.DiGraph()
-w.add_node("prod", topology=subtopos[0], func='prod', cmdline='prod_buffer')
-w.add_node("con", topology=subtopos[2], func='con', cmdline='con_buffer')
+w.add_node("prod", topology=subtopos[0], func='prod', cmdline='./prod_buffer')
+w.add_node("con", topology=subtopos[2], func='con', cmdline='./con_buffer')
 w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path,
-           prod_dflow_redist='count', dflow_con_redist='count', cmdline='dflow_buffer')
+           prod_dflow_redist='count', dflow_con_redist='count', cmdline='./dflow_buffer')
 #wf.addSeqStream(w, "prod", "con")
 #wf.addMostRecentStream(w, "prod", "con")
 

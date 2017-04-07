@@ -25,17 +25,17 @@ topo = wf.Topology("topo", 16)
 subtopos = topo.splitTopology(["prod1", "prod2", "con1", "con2", "dflow11", "dflow12", "dflow21", "dflow22"],[1,1,1,1,1,1,1,1])
 
 
-prod1 = wf.nodeFromTopo("prod1", "prod", "contract", subtopos[0])
+prod1 = wf.nodeFromTopo("prod1", "prod", "./contract", subtopos[0])
 prod1.addOutputFromDict("Out", {"index":["int"], "velocity":["Array_float", 2]})
 
-prod2 = wf.nodeFromTopo("prod2", "prod2", "contract", subtopos[1])
+prod2 = wf.nodeFromTopo("prod2", "prod2", "./contract", subtopos[1])
 prod2.addOutputFromDict("Out", {"id":["int"], "density":["Array_float", 3]})
 
-con1 = wf.nodeFromTopo("con1", "con", "contract", subtopos[2])
+con1 = wf.nodeFromTopo("con1", "con", "./contract", subtopos[2])
 con1.addInputFromDict("In1", {"index":["int"], "velocity":["Array_float", 2]})
 con1.addInput("In2", "density", "Array_float")
 
-con2 = wf.nodeFromTopo("con2", "con2", "contract", subtopos[3])
+con2 = wf.nodeFromTopo("con2", "con2", "./contract", subtopos[3])
 con2.addInput("In1", "velocity","Array_float", 2)
 con2.addInput("In2", "id", "int")
 

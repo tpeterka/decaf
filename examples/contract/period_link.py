@@ -15,13 +15,13 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/contract/mod_period_link.so'
 topo = wf.Topology("topo", 8)
 subtopos = topo.splitTopology(["prod", "con", "dflow"],[1,1,1])
 
-prod = wf.nodeFromTopo("prod", "prod", "period_link", subtopos[0])
+prod = wf.nodeFromTopo("prod", "prod", "./period_link", subtopos[0])
 prod.addOutput("Out","var", "float", 2)
 
-con = wf.nodeFromTopo("con", "con", "period_link", subtopos[1])
+con = wf.nodeFromTopo("con", "con", "./period_link", subtopos[1])
 con.addInput("In", "var", "int", 1)
 
-edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', 'period_link')
+edge = wf.edgeFromTopo("prod.Out", "con.In", subtopos[2], 'count', 'dflow', mod_path, 'count', './period_link')
 clink = wf.ContractLink(bAny = True)
 clink.addInput("var", "float", 1)
 clink.addOutput("var", "int", 1)
