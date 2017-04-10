@@ -21,6 +21,7 @@
 
 #include <decaf/storage/storagecollectiongreedy.hpp>
 #include <decaf/storage/storagemainmemory.hpp>
+#include <decaf/storage/storagefile.hpp>
 
 namespace decaf
 {
@@ -190,7 +191,7 @@ Datastream::Datastream(CommHandle world_comm,
                 }
                 case DECAF_STORAGE_FILE:
                 {
-                    fprintf(stderr,"DECAF_STORAGE_FILE not implemented yet.\n");
+                    storage_collection_->addBuffer(new StorageFile(max_storage_sizes[i], world_rank_));
                     break;
                 }
                 case DECAF_STORAGE_DATASPACE:
