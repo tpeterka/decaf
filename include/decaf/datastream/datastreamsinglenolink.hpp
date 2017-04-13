@@ -12,8 +12,8 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef DECAF_DATASTREAM_SINGLE_FEEDBACK
-#define DECAF_DATASTREAM_SINGLE_FEEDBACK
+#ifndef DECAF_DATASTREAM_SINGLE_NO_LINK
+#define DECAF_DATASTREAM_SINGLE_NO_LINK
 
 #include <decaf/datastream/datastreaminterface.hpp>
 #include <decaf/transport/mpi/channel.hpp>
@@ -25,11 +25,11 @@
 namespace decaf
 {
 
-    class DatastreamSingleFeedback : public Datastream
+    class DatastreamSingleFeedbackNoLink : public Datastream
     {
     public:
-        DatastreamSingleFeedback() : Datastream(){}
-        DatastreamSingleFeedback(CommHandle world_comm,
+        DatastreamSingleFeedbackNoLink() : Datastream(){}
+        DatastreamSingleFeedbackNoLink(CommHandle world_comm,
                int start_prod,
                int nb_prod,
                int start_dflow,
@@ -42,7 +42,7 @@ namespace decaf
                unsigned int prod_freq_output,
                vector<StorageType>& storage_types,
                vector<unsigned int>& max_storage_sizes);
-        DatastreamSingleFeedback(CommHandle world_comm,
+        DatastreamSingleFeedbackNoLink(CommHandle world_comm,
                    int start_prod,
                    int nb_prod,
                    int start_con,
@@ -53,7 +53,7 @@ namespace decaf
                    vector<StorageType>& storage_types,
                    vector<unsigned int>& max_storage_sizes);
 
-        virtual ~DatastreamSingleFeedback();
+        virtual ~DatastreamSingleFeedbackNoLink();
 
         virtual void processProd(pConstructData data);
 
@@ -63,8 +63,8 @@ namespace decaf
 
     protected:
         unsigned int iteration_;
-        OneWayChannel* channel_dflow_;
-        OneWayChannel* channel_dflow_con_;
+        OneWayChannel* channel_prod_;
+        OneWayChannel* channel_prod_con_;
         OneWayChannel* channel_con_;
         bool first_iteration_;
         bool doGet_;
@@ -72,15 +72,15 @@ namespace decaf
     };
 
 decaf::
-DatastreamSingleFeedback::~DatastreamSingleFeedback()
+DatastreamSingleFeedbackNoLink::~DatastreamSingleFeedbackNoLink()
 {
-    if(channel_dflow_) delete channel_dflow_;
-    if(channel_dflow_con_) delete channel_dflow_con_;
+    if(channel_prod_) delete channel_prod_;
+    if(channel_prod_con_) delete channel_prod_con_;
     if(channel_con_) delete channel_con_;
 }
 
 decaf::
-DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
+DatastreamSingleFeedbackNoLink::DatastreamSingleFeedbackNoLink(CommHandle world_comm,
        int start_prod,
        int nb_prod,
        int start_dflow,
@@ -94,27 +94,47 @@ DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
        vector<StorageType>& storage_types,
        vector<unsigned int>& max_storage_sizes):
     Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, policy, prod_freq_output, storage_types, max_storage_sizes),
-    channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
+    channel_prod_(NULL), channel_prod_con_(NULL),channel_con_(NULL),
+    first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
+{
+    fprintf(stderr,"ERROR: Stream with single feedback no link in not available with a link. Abording.\n");
+    MPI_Abort(MPI_COMM_WORLD, -1);
+}
+
+decaf::
+DatastreamSingleFeedbackNoLink::DatastreamSingleFeedbackNoLink(CommHandle world_comm,
+           int start_prod,
+           int nb_prod,
+           int start_con,
+           int nb_con,
+           RedistComp* redist_prod_con,
+           FramePolicyManagment policy,
+           unsigned int prod_freq_output,
+           vector<StorageType>& storage_types,
+           vector<unsigned int>& max_storage_sizes):
+    Datastream(world_comm, start_prod, nb_prod, start_con, nb_con,
+               redist_prod_con, policy, prod_freq_output, storage_types, max_storage_sizes),
+    channel_prod_(NULL), channel_prod_con_(NULL),channel_con_(NULL),
     first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
 {
     initialized_ = true;
 
-    if(is_dflow())
+    if(is_prod())
     {
-        channel_dflow_ = new OneWayChannel(  world_comm_,
-                                        start_dflow,
-                                        start_dflow,
-                                        nb_dflow,
+        channel_prod_ = new OneWayChannel(  world_comm_,
+                                        start_prod,
+                                        start_prod,
+                                        nb_prod,
                                         (int)DECAF_CHANNEL_WAIT);
 
         MPI_Group group, newgroup;
         int range[3];
-        range[0] = start_dflow;
-        range[1] = start_dflow + nb_dflow - 1;
+        range[0] = start_prod;
+        range[1] = start_prod + nb_prod - 1;
         range[2] = 1;
         MPI_Comm_group(world_comm, &group);
         MPI_Group_range_incl(group, 1, &range, &newgroup);
-        MPI_Comm_create_group(world_comm, newgroup, 0, &dflow_comm_handle_);
+        MPI_Comm_create_group(world_comm, newgroup, 0, &prod_comm_handle_);
         MPI_Group_free(&group);
         MPI_Group_free(&newgroup);
     }
@@ -140,34 +160,18 @@ DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
 
     if(is_con_root() || is_dflow_root())
     {
-        channel_dflow_con_ = new OneWayChannel(world_comm_,
+        channel_prod_con_ = new OneWayChannel(world_comm_,
                                            start_con,
-                                           start_dflow,
+                                           start_prod,
                                            1,
                                            (int)DECAF_CHANNEL_WAIT);
     }
 }
 
-decaf::
-DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
-           int start_prod,
-           int nb_prod,
-           int start_con,
-           int nb_con,
-           RedistComp* redist_prod_con,
-           FramePolicyManagment policy,
-           unsigned int prod_freq_output,
-           vector<StorageType>& storage_types,
-           vector<unsigned int>& max_storage_sizes)
-{
-    fprintf(stderr,"ERROR: Stream with single feedback in not available without a link. Abording.\n");
-    MPI_Abort(MPI_COMM_WORLD, -1);
-}
-
 
 void
 decaf::
-DatastreamSingleFeedback::processProd(pConstructData data)
+DatastreamSingleFeedbackNoLink::processProd(pConstructData data)
 {
     // First checking if we have to send the frame
     if(!msgtools::test_quit(data) && !framemanager_->sendFrame(iteration_))
@@ -178,20 +182,13 @@ DatastreamSingleFeedback::processProd(pConstructData data)
     else
         iteration_++;
 
-    // send the message
-    redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
-    redist_prod_dflow_->flush();
-}
+    bool receivedProdSignal = false;
 
-void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
-{
-    bool receivedDflowSignal = false;
-
-    // First phase: Waiting for the signal from con and checking incoming msgs
-    while(!receivedDflowSignal)
+    // First phase: Waiting for the signal from con
+    while(!receivedProdSignal)
     {
         // Checking the root communication
-        if(is_dflow_root())
+        if(is_prod_root())
         {
             bool receivedRootSignal;
             if(first_iteration_)
@@ -200,12 +197,13 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
                 receivedRootSignal =  true;
             }
             else
-                receivedRootSignal =  channel_dflow_con_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
+                receivedRootSignal =  channel_prod_con_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
 
+            // We received the signal from the consumer
+            // Broadcasting the information
             if(receivedRootSignal)
             {
-                channel_dflow_->sendCommand(DECAF_CHANNEL_OK);
-                framemanager_->computeNextFrame();
+                channel_prod_->sendCommand(DECAF_CHANNEL_OK);
             }
 
         }
@@ -213,60 +211,35 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
         // NOTE: Barrier could be removed if we used only async point-to-point communication
         // For now collective are creating deadlocks without barrier
         // Ex: 1 dflow do put while the other do a get
-        MPI_Barrier(dflow_comm_handle_);
+        //MPI_Barrier(dflow_comm_handle_);
 
-        receivedDflowSignal = channel_dflow_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
-        //receivedDflowSignal = framemanager_->hasNextFrameId();
+        receivedProdSignal = channel_prod_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT);
 
-        if(doGet_)
-        {
-            pConstructData container;
-            bool received = redist_prod_dflow_->IGet(container);
-            if(received)
-            {
-                if(msgtools::test_quit(container))
-                    doGet_ = false;
-                redist_prod_dflow_->flush();
-                framemanager_->putFrame(iteration_);
-                storage_collection_->insert(iteration_, container);
-
-                iteration_++;
-            }
-        }
+        if(!receivedProdSignal)
+            usleep(100);
     }
 
-    // Check if we receive the iteration to send and if we received the corresonding frame
-    while(!framemanager_->hasNextFrame())
-    {
-        if(doGet_)
-        {
-            pConstructData container;
-            redist_prod_dflow_->process(container, DECAF_REDIST_DEST);
-            redist_prod_dflow_->flush();
-            framemanager_->putFrame(iteration_);
-            storage_collection_->insert(iteration_, container);
-            iteration_++;
-
-            if(msgtools::test_quit(container))
-                doGet_ = false;
-        }
-        usleep(100);
-    }
-
-    unsigned int frame_id;
-    FrameCommand command = framemanager_->getNextFrame(&frame_id);
-    data->merge(storage_collection_->getData(frame_id).getPtr());
-    storage_collection_->processCommand(command, frame_id);
+    // send the message
+    redist_prod_con_->process(data, DECAF_REDIST_SOURCE);
+    redist_prod_con_->flush();
 }
 
 void
 decaf::
-DatastreamSingleFeedback::processCon(pConstructData data)
+DatastreamSingleFeedbackNoLink::processDflow(pConstructData data)
+{
+    fprintf(stderr, "ERROR: calling processDflow on a single feedback stream without link. Abording.\n");
+    MPI_Abort(MPI_COMM_WORLD, -1);
+}
+
+void
+decaf::
+DatastreamSingleFeedbackNoLink::processCon(pConstructData data)
 {
     if(!is_con_root())
         return;
 
-    channel_dflow_con_->sendCommand(DECAF_CHANNEL_OK);
+    channel_prod_con_->sendCommand(DECAF_CHANNEL_OK);
 }
 
 } // namespace

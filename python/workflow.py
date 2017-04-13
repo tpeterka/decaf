@@ -655,6 +655,8 @@ def addSeqStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10
 def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10], prod_output_freq = 1):
     updateLinkStream(graph, prod, con, 'single', 'recent', buffers, max_buffer_sizes, prod_output_freq)
 
+def addDirectSyncStream(graph, prod, con, prod_output_freq = 1):
+    updateLinkStream(graph, prod, con, 'single', 'seq', [], [], prod_output_freq)
 
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):

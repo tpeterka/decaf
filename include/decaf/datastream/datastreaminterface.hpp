@@ -44,6 +44,16 @@ namespace decaf
                unsigned int prod_freq_output,
                vector<StorageType>& storage_types,
                vector<unsigned int>& max_storage_sizes);
+        Datastream(CommHandle world_comm,
+                   int start_prod,
+                   int nb_prod,
+                   int start_con,
+                   int nb_con,
+                   RedistComp* redist_prod_con,
+                   FramePolicyManagment policy,
+                   unsigned int prod_freq_output,
+                   vector<StorageType>& storage_types,
+                   vector<unsigned int>& max_storage_sizes);
         virtual ~Datastream();
 
         bool is_prod()          { return world_rank_ >= start_prod_ && world_rank_ < start_prod_ + nb_prod_; }
@@ -77,8 +87,9 @@ namespace decaf
         CommHandle dflow_comm_handle_;
         CommHandle con_comm_handle_;
 
-        RedistComp* redist_prod_dflow_;
-        RedistComp* redist_dflow_con_;
+        RedistComp* redist_prod_dflow_; // Only used in the case with link
+        RedistComp* redist_dflow_con_;  // Only used in the case with link
+        RedistComp* redist_prod_con_;   // Only used in the case without link
 
         FrameManager* framemanager_;
 
@@ -213,6 +224,77 @@ Datastream::Datastream(CommHandle world_comm,
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
+    }
+
+    if(is_con())
+    {
+        MPI_Group group, newgroup;
+        int range[3];
+        range[0] = start_con;
+        range[1] = start_con + nb_con - 1;
+        range[2] = 1;
+        MPI_Comm_group(world_comm, &group);
+        MPI_Group_range_incl(group, 1, &range, &newgroup);
+        MPI_Comm_create_group(world_comm, newgroup, 0, &con_comm_handle_);
+        MPI_Group_free(&group);
+        MPI_Group_free(&newgroup);
+    }
+}
+
+decaf::
+Datastream::Datastream(CommHandle world_comm,
+           int start_prod,
+           int nb_prod,
+           int start_con,
+           int nb_con,
+           RedistComp* redist_prod_con,
+           FramePolicyManagment policy,
+           unsigned int prod_freq_output,
+           vector<StorageType>& storage_types,
+           vector<unsigned int>& max_storage_sizes) :
+    initialized_(false), world_comm_(world_comm),
+    start_prod_(start_prod), nb_prod_(nb_prod),
+    start_con_(start_con), nb_con_(nb_con),
+    redist_prod_con_(redist_prod_con),
+    framemanager_(NULL),storage_collection_(NULL)
+{
+    MPI_Comm_rank(world_comm_, &world_rank_);
+    MPI_Comm_size(world_comm_, &world_size_);
+
+    // Creation of the channels
+    if(is_prod())
+    {
+
+        MPI_Group group, newgroup;
+        int range[3];
+        range[0] = start_prod;
+        range[1] = start_prod + nb_prod - 1;
+        range[2] = 1;
+        MPI_Comm_group(world_comm, &group);
+        MPI_Group_range_incl(group, 1, &range, &newgroup);
+        MPI_Comm_create_group(world_comm, newgroup, 0, &prod_comm_handle_);
+        MPI_Group_free(&group);
+        MPI_Group_free(&newgroup);
+
+        switch(policy)
+        {
+            case DECAF_FRAME_POLICY_RECENT:
+            {
+                framemanager_ = new FrameManagerRecent(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                break;
+            }
+            case DECAF_FRAME_POLICY_SEQ:
+            {
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                break;
+            }
+            default:
+            {
+                fprintf(stderr,"WARNING: unrecognized frame policy. Using sequential.\n");
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                break;
+            }
+        };
     }
 
     if(is_con())

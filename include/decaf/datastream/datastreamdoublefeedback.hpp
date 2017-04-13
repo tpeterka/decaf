@@ -40,6 +40,16 @@ namespace decaf
                unsigned int prod_freq_output,
                vector<StorageType>& storage_types,
                vector<unsigned int>& max_storage_sizes);
+        DatastreamDoubleFeedback(CommHandle world_comm,
+                   int start_prod,
+                   int nb_prod,
+                   int start_con,
+                   int nb_con,
+                   RedistComp* redist_prod_con,
+                   FramePolicyManagment policy,
+                   unsigned int prod_freq_output,
+                   vector<StorageType>& storage_types,
+                   vector<unsigned int>& max_storage_sizes);
 
         virtual ~DatastreamDoubleFeedback();
 
@@ -167,6 +177,21 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
                                                 1,
                                                 (int)DECAF_CHANNEL_OK);
     }
+}
+decaf::
+DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
+           int start_prod,
+           int nb_prod,
+           int start_con,
+           int nb_con,
+           RedistComp* redist_prod_con,
+           FramePolicyManagment policy,
+           unsigned int prod_freq_output,
+           vector<StorageType>& storage_types,
+           vector<unsigned int>& max_storage_sizes)
+{
+    fprintf(stderr,"ERROR: Stream with double feedback in not available without a link. Abording.\n");
+    MPI_Abort(MPI_COMM_WORLD, -1);
 }
 
 

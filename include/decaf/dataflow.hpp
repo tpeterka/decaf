@@ -34,6 +34,7 @@
 #include <decaf/transport/mpi/channel.hpp>
 #include <decaf/datastream/datastreamdoublefeedback.hpp>
 #include <decaf/datastream/datastreamsinglefeedback.hpp>
+#include <decaf/datastream/datastreamsinglenolink.hpp>
 #include <memory>
 #include <queue>
 #endif
@@ -488,7 +489,8 @@ Dataflow::Dataflow(CommHandle world_comm,
 	else
 		redist_prod_con_ = NULL;
 
-	if(stream_policy_ != DECAF_STREAM_NONE && !no_link_ && wflowLink.storages.size() > 0)
+        if( stream_policy_ != DECAF_STREAM_NONE &&
+            (!no_link_ && wflowLink.storages.size() > 0 || (no_link_ && stream_policy == DECAF_STREAM_SINGLE)))
 	{
 		fprintf(stderr, "Stream mode activated.\n");
 		use_stream_ = true;
@@ -501,36 +503,51 @@ Dataflow::Dataflow(CommHandle world_comm,
 		{
 		    case DECAF_STREAM_SINGLE:
 		    {
-			    stream_ = new DatastreamSingleFeedback(world_comm_,
-				                                   sizes_.prod_start,
-				                                   sizes_.prod_size,
-				                                   sizes_.dflow_start,
-				                                   sizes_.dflow_size,
-				                                   sizes_.con_start,
-				                                   sizes_.con_size,
-				                                   redist_prod_dflow_,
-				                                   redist_dflow_con_,
-				                                   framePolicy,
-                                                                   prod_freq_output,
-				                                   wflowLink.storages,
-				                                   wflowLink.storage_max_buffer);
+                            if(no_link_)
+                                stream_ = new DatastreamSingleFeedbackNoLink(
+                                           world_comm_,
+                                           sizes_.prod_start,
+                                           sizes_.prod_size,
+                                           sizes_.con_start,
+                                           sizes_.con_size,
+                                           redist_prod_con_,
+                                           framePolicy,
+                                           prod_freq_output,
+                                           wflowLink.storages,
+                                           wflowLink.storage_max_buffer);
+                            else
+                                stream_ = new DatastreamSingleFeedback(
+                                           world_comm_,
+                                           sizes_.prod_start,
+                                           sizes_.prod_size,
+                                           sizes_.dflow_start,
+                                           sizes_.dflow_size,
+                                           sizes_.con_start,
+                                           sizes_.con_size,
+                                           redist_prod_dflow_,
+                                           redist_dflow_con_,
+                                           framePolicy,
+                                           prod_freq_output,
+                                           wflowLink.storages,
+                                           wflowLink.storage_max_buffer);
 				break;
 		    }
 		    case DECAF_STREAM_DOUBLE:
 		    {
-			    stream_ = new DatastreamDoubleFeedback(world_comm_,
-				                                   sizes_.prod_start,
-				                                   sizes_.prod_size,
-				                                   sizes_.dflow_start,
-				                                   sizes_.dflow_size,
-				                                   sizes_.con_start,
-				                                   sizes_.con_size,
-				                                   redist_prod_dflow_,
-				                                   redist_dflow_con_,
-				                                   framePolicy,
-                                                                   prod_freq_output,
-				                                   wflowLink.storages,
-				                                   wflowLink.storage_max_buffer);
+                            stream_ = new DatastreamDoubleFeedback(
+                                       world_comm_,
+                                       sizes_.prod_start,
+                                       sizes_.prod_size,
+                                       sizes_.dflow_start,
+                                       sizes_.dflow_size,
+                                       sizes_.con_start,
+                                       sizes_.con_size,
+                                       redist_prod_dflow_,
+                                       redist_dflow_con_,
+                                       framePolicy,
+                                       prod_freq_output,
+                                       wflowLink.storages,
+                                       wflowLink.storage_max_buffer);
 				break;
 		    }
 		    default:
@@ -634,8 +651,16 @@ Dataflow::put(pConstructData& data, TaskType role)
 			if(data_removed_by_period){
 				redist_prod_con_->clearBuffers(); // We clear the buffers before and after the sending
 			}
-			redist_prod_con_->process(data_filtered, DECAF_REDIST_SOURCE);
-			redist_prod_con_->flush();
+                        /// send the message
+                        if(use_stream_)
+                        {
+                                stream_->processProd(data_filtered);
+                        }
+                        else
+                        {
+                            redist_prod_con_->process(data_filtered, DECAF_REDIST_SOURCE);
+                            redist_prod_con_->flush();
+                        }
 			if(data_removed_by_period){
 				redist_prod_con_->clearBuffers();
 			}
@@ -741,6 +766,10 @@ Dataflow::get(pConstructData& data, TaskType role)
 			}
 			redist_prod_con_->process(data, DECAF_REDIST_DEST);
 			redist_prod_con_->flush();
+
+                        // Comnsumer side
+                        if(use_stream_)
+                                stream_->processCon(data);
 		}
 		else
 		{
