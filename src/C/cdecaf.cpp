@@ -300,4 +300,11 @@ extern "C"
         DecafHolder* handler = unbox(decaf);
         return handler->getDecaf()->prod_comm_handle();
     }
+
+    MPI_Comm
+    dca_get_local_com(dca_decaf decaf)
+    {
+        DecafHolder* handler = unbox(decaf);
+        return handler->getDecaf()->local_comm_handle();
+    }
 }

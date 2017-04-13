@@ -82,6 +82,9 @@ extern "C" {
     MPI_Comm
     dca_get_com(dca_decaf decaf);
 
+    MPI_Comm
+    dca_get_local_com(dca_decaf decaf);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
