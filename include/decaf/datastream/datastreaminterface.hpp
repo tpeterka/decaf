@@ -20,6 +20,7 @@
 #endif
 
 #include <decaf/storage/storagecollectiongreedy.hpp>
+#include <decaf/storage/storagecollectionLRU.hpp>
 #include <decaf/storage/storagemainmemory.hpp>
 #include <decaf/storage/storagefile.hpp>
 
@@ -42,6 +43,7 @@ namespace decaf
                RedistComp* dflow_con,
                FramePolicyManagment policy,
                unsigned int prod_freq_output,
+               StorageCollectionPolicy storage_policy,
                vector<StorageType>& storage_types,
                vector<unsigned int>& max_storage_sizes);
         Datastream(CommHandle world_comm,
@@ -52,6 +54,7 @@ namespace decaf
                    RedistComp* redist_prod_con,
                    FramePolicyManagment policy,
                    unsigned int prod_freq_output,
+                   StorageCollectionPolicy storage_policy,
                    vector<StorageType>& storage_types,
                    vector<unsigned int>& max_storage_sizes);
         virtual ~Datastream();
@@ -107,6 +110,7 @@ Datastream::Datastream(CommHandle world_comm,
               RedistComp* redist_dflow_con,
               FramePolicyManagment policy,
               unsigned int prod_freq_output,
+              StorageCollectionPolicy storage_policy,
               vector<StorageType>& storage_types,
               vector<unsigned int>& max_storage_sizes) :
     initialized_(false), world_comm_(world_comm),
@@ -189,7 +193,23 @@ Datastream::Datastream(CommHandle world_comm,
             }
         };
 
-        storage_collection_ = new StorageCollectionGreedy();
+        switch(storage_policy)
+        {
+            case DECAF_STORAGE_COLLECTION_LRU:
+            {
+                storage_collection_ = new StorageCollectionLRU();
+                break;
+            }
+            case DECAF_STORAGE_COLLECTION_GREEDY:
+            {
+                storage_collection_ = new StorageCollectionGreedy();
+                break;
+            }
+            default:
+                storage_collection_ = new StorageCollectionGreedy();
+        }
+
+
 
         for(unsigned int i = 0; i < storage_types.size(); i++)
         {
@@ -250,6 +270,7 @@ Datastream::Datastream(CommHandle world_comm,
            RedistComp* redist_prod_con,
            FramePolicyManagment policy,
            unsigned int prod_freq_output,
+           StorageCollectionPolicy storage_policy,
            vector<StorageType>& storage_types,
            vector<unsigned int>& max_storage_sizes) :
     initialized_(false), world_comm_(world_comm),

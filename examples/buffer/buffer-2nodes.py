@@ -29,19 +29,17 @@ args = parser.parse_args()
 
 # Creating the topology
 topo = wf.topologyFromArgs(args)
-subtopos = topo.splitTopologyByDict([{'name':'prod', 'nprocs':1},{'name':'dflow', 'nprocs':0},{'name':'con', 'nprocs':1}])
+subtopos = topo.splitTopologyByDict([{'name':'prod', 'nprocs':2},{'name':'dflow', 'nprocs':2},{'name':'con', 'nprocs':1}])
 
 # Creating the graph
 w = nx.DiGraph()
 w.add_node("prod", topology=subtopos[0], func='prod', cmdline='./prod_buffer')
 w.add_node("con", topology=subtopos[2], func='con', cmdline='./con_buffer')
-#w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path,
-#           prod_dflow_redist='count', dflow_con_redist='count', cmdline='./dflow_buffer')
 w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count', cmdline='./dflow_buffer')
 #wf.addSeqStream(w, "prod", "con", buffers = ["mainmem","file"], max_buffer_sizes = [1,10])
-#wf.addMostRecentStream(w, "prod", "con")
+wf.addMostRecentStream(w, "prod", "con", buffers = ["mainmem"], max_buffer_sizes = [3])
 #wf.addSeqStream(w, "prod", "con", prod_output_freq = 2)
-wf.addDirectSyncStream(w, "prod", "con")
+
 # --- convert the nx graph into a workflow data structure and run the workflow ---
 wf.processGraph(w, "buffer")

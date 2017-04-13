@@ -11,8 +11,8 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef DECAF_STORAGE_COLLECTION_GREEDY
-#define DECAF_STORAGE_COLLECTION_GREEDY
+#ifndef DECAF_STORAGE_COLLECTION_GREEDY_HPP
+#define DECAF_STORAGE_COLLECTION_GREEDY_HPP
 
 #include <decaf/storage/storagecollectioninterface.hpp>
 

@@ -88,6 +88,7 @@ struct WorkflowLink                          // a dataflow
     string stream;              // Type of stream policy to use (none, single, double)
     string frame_policy;        // Policy to use to manage the incoming frames
     unsigned int prod_freq_output;              // Output frequency of the producer
+    string storage_policy;                      // Type of storage collection to use
     vector<StorageType> storages;               // Different level of storage availables
     vector<unsigned int> storage_max_buffer;    // Maximum number of frame
 
@@ -302,6 +303,11 @@ struct Workflow                              // an entire workflow
                 link.prod_freq_output = opt_prod_output.get();
             else
                 link.prod_freq_output = 1;
+            boost::optional<string> opt_storage_policy = v.second.get_optional<std::string>("storage_collection_policy");
+            if(opt_storage_policy)
+                    link.storage_policy = opt_storage_policy.get();
+            else
+                    link.storage_policy = "greedy";
 
 
             // TODO CHECK if this is possible even when there are no "strorage_types" in the tree

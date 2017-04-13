@@ -496,6 +496,8 @@ Dataflow::Dataflow(CommHandle world_comm,
 		use_stream_ = true;
 	}
 
+        StorageCollectionPolicy storage_policy = stringToStorageCollectionPolicy(wflowLink.storage_policy);
+
 	// Buffering setup
 	if(use_stream_)
 	{
@@ -513,6 +515,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                            redist_prod_con_,
                                            framePolicy,
                                            prod_freq_output,
+                                           storage_policy,
                                            wflowLink.storages,
                                            wflowLink.storage_max_buffer);
                             else
@@ -528,6 +531,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                            redist_dflow_con_,
                                            framePolicy,
                                            prod_freq_output,
+                                           storage_policy,
                                            wflowLink.storages,
                                            wflowLink.storage_max_buffer);
 				break;
@@ -546,6 +550,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                        redist_dflow_con_,
                                        framePolicy,
                                        prod_freq_output,
+                                       storage_policy,
                                        wflowLink.storages,
                                        wflowLink.storage_max_buffer);
 				break;

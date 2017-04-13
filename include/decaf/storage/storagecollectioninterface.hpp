@@ -12,8 +12,8 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef DECAF_STORAGE_COLLECTION_INTERFACE
-#define DECAF_STORAGE_COLLECTION_INTERFACE
+#ifndef DECAF_STORAGE_COLLECTION_INTERFACE_HPP
+#define DECAF_STORAGE_COLLECTION_INTERFACE_HPP
 
 #include <decaf/storage/storageinterface.hpp>
 #include <decaf/types.hpp>
@@ -29,7 +29,7 @@ namespace decaf
 
         virtual ~StorageCollectionInterface();
 
-        bool isFull();
+        virtual bool isFull();
         unsigned int getBufferSize(unsigned int index);
         unsigned int getNbStorageObjects();
         virtual bool insert(unsigned int id, pConstructData data) = 0;

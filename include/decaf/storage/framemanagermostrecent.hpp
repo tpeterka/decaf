@@ -49,7 +49,9 @@ FrameManagerRecent::FrameManagerRecent(CommHandle comm, TaskType role, unsigned 
     received_frame_(false), received_frame_id_(false),
     previous_frame_(-1), prod_freq_output_(prod_freq_output)
 {
-    channel_->updateSelfValue(-1);
+    // We don't have a communicator for the producer side.
+    if(role == DECAF_LINK)
+        channel_->updateSelfValue(-1);
 }
 
 decaf::

@@ -55,6 +55,12 @@ enum FrameCommand
     DECAF_FRAME_COMMAND_REMOVE_UNTIL_EXCLUDED,
 };
 
+enum StorageCollectionPolicy
+{
+    DECAF_STORAGE_COLLECTION_GREEDY,
+    DECAF_STORAGE_COLLECTION_LRU
+};
+
 enum FramePolicyManagment
 {
     DECAF_FRAME_POLICY_NONE,
@@ -190,6 +196,20 @@ StorageType stringToStoragePolicy(std::string name)
         std::cerr<<"WARNING: unknown storage type: "<<name<<"."<<std::endl;
         return DECAF_STORAGE_NONE;
     }
+}
+
+StorageCollectionPolicy stringToStorageCollectionPolicy(std::string name)
+{
+    if(name.compare(std::string("greedy")) == 0)
+        return DECAF_STORAGE_COLLECTION_GREEDY;
+    else if(name.compare(std::string("lru")) == 0)
+        return DECAF_STORAGE_COLLECTION_LRU;
+    else
+    {
+        std::cerr<<"WARNING: unknown storage collection policy: "<<name<<"."<<std::endl;
+        return DECAF_STORAGE_COLLECTION_GREEDY;
+    }
+
 }
 
 FramePolicyManagment stringToFramePolicyManagment(std::string name)
