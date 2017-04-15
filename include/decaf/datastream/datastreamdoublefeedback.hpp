@@ -305,7 +305,11 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
             if(received)
             {
                 if(msgtools::test_quit(container))
+                {
                     doGet_ = false;
+                    fprintf(stderr, "Reception of the terminate message. Saving data on file.\n");
+                    storage_collection_->save(world_rank_);
+                }
                 redist_prod_dflow_->flush();
                 framemanager_->putFrame(iteration_);
                 storage_collection_->insert(iteration_, container);

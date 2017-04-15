@@ -31,6 +31,8 @@ namespace decaf
         virtual bool hasData(unsigned int id) = 0;
         virtual pConstructData getData(unsigned int id) = 0;
         virtual void processCommand(FrameCommand command, unsigned int frame_id) = 0;
+        virtual unsigned int getID(unsigned int index) = 0;
+        virtual unsigned int getNbDataStored() = 0;
     };
 } // namespace decaf
 

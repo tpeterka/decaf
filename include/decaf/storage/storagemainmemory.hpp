@@ -35,6 +35,9 @@ namespace decaf
         virtual bool hasData(unsigned int id);
         virtual pConstructData getData(unsigned int id);
         virtual void processCommand(FrameCommand command, unsigned int frame_id);
+        virtual unsigned int getID(unsigned int index);
+        virtual unsigned int getNbDataStored();
+
 
     protected:
         unsigned int buffer_max_size_;
@@ -124,6 +127,23 @@ StorageMainMemory::processCommand(FrameCommand command, unsigned int frame_id)
             break;
         }
     }
+}
+
+unsigned int
+decaf::
+StorageMainMemory::getID(unsigned int index)
+{
+    auto it = buffer_.begin();
+    for(unsigned int i = 0; i < index; i++)
+        it++;
+    return (*it).first;
+}
+
+unsigned int
+decaf::
+StorageMainMemory::getNbDataStored()
+{
+    return buffer_.size();
 }
 
 

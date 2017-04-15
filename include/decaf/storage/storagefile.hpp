@@ -36,6 +36,13 @@ namespace decaf
         virtual bool hasData(unsigned int id);
         virtual pConstructData getData(unsigned int id);
         virtual void processCommand(FrameCommand command, unsigned int frame_id);
+        virtual unsigned int getID(unsigned int index);
+        virtual unsigned int getNbDataStored();
+
+        string getFilename(unsigned int id);
+        void fillFilelist(vector<pair<unsigned int, string> >& filelist);
+        void initFromFilelist(vector<pair<unsigned int, string> >& filelist);
+
 
     protected:
         unsigned int rank_;
@@ -198,6 +205,57 @@ StorageFile::processCommand(FrameCommand command, unsigned int frame_id)
         }
     }
 }
+
+unsigned int
+decaf::
+StorageFile::getID(unsigned int index)
+{
+    auto it = buffer_.begin();
+    for(unsigned int i = 0; i < index; i++)
+        it++;
+    return (*it).first;
+}
+
+unsigned int
+decaf::
+StorageFile::getNbDataStored()
+{
+    return buffer_.size();
+}
+
+string
+decaf::StorageFile::getFilename(unsigned int id)
+{
+    auto it = buffer_.find(id);
+    if(it == buffer_.end())
+        return string("");
+    else
+        return (*it).second;
+}
+
+void
+decaf::
+StorageFile::fillFilelist(vector<pair<unsigned int, string> >& filelist)
+{
+    for(auto it : buffer_)
+    {
+        filelist.emplace_back(it.first, it.second);
+    }
+}
+
+void
+decaf::
+StorageFile::initFromFilelist(vector<pair<unsigned int, string> >& filelist)
+{
+    for(auto it : filelist)
+    {
+        auto result = buffer_.insert(it);
+        if(!result.second)
+            fprintf(stderr, "ERROR: Unable to load the file id %i in the StorageFile.\n", it.first);
+
+    }
+}
+
 
 
 

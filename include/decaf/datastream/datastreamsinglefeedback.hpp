@@ -252,7 +252,11 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
             iteration_++;
 
             if(msgtools::test_quit(container))
+            {
                 doGet_ = false;
+                fprintf(stderr, "Reception of the terminate message. Saving data on file.\n");
+                storage_collection_->save(world_rank_);
+            }
         }
         usleep(100);
     }

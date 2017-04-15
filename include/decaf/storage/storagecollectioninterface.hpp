@@ -16,6 +16,7 @@
 #define DECAF_STORAGE_COLLECTION_INTERFACE_HPP
 
 #include <decaf/storage/storageinterface.hpp>
+#include <decaf/storage/storagefile.hpp>
 #include <decaf/types.hpp>
 #include <vector>
 using namespace decaf;
@@ -38,6 +39,7 @@ namespace decaf
         virtual pConstructData getData(unsigned int id);
         virtual void processCommand(FrameCommand command, unsigned int frame_id) = 0;
         void addBuffer(Storage* storage);
+        void save(unsigned int rank);
 
     protected:
         std::vector<Storage*> storages;
@@ -113,6 +115,70 @@ StorageCollectionInterface::getData(unsigned int id)
 
     fprintf(stderr,"ERROR: Data not found in the storage.\n");
     return pConstructData();
+}
+
+void
+decaf::
+StorageCollectionInterface::save(unsigned int rank)
+{
+    vector<pair<unsigned int, string> > filelist;
+
+    StorageFile storagefile(1000000, rank);
+
+    // First we store all the data
+    for(Storage* storage : storages)
+    {
+        // Checking if the current storage is already a FileStorage
+        StorageFile* file = dynamic_cast<StorageFile*>(storage);
+        if(file)
+        {
+            fprintf(stderr,"The current storage use files.\n");
+            file->fillFilelist(filelist);
+        }
+        else
+            fprintf(stderr, "The current storage is not using file. Retrieving data to store them.\n");
+
+        unsigned int nb_data = storage->getNbDataStored();
+        for(unsigned int index = 0; index < nb_data; index++)
+        {
+            // Retrieving the data informations
+            unsigned int id = storage->getID(index);
+            pConstructData data = storage->getData(id);
+
+            //Saving into the file storage
+            if(!storagefile.insert(id, data))
+                fprintf(stderr, "ERROR: unable to storage the data id %u on rank %i\n", id, rank);
+        }
+    }
+
+    // All the data are now on file. Retrieving the informations
+    storagefile.fillFilelist(filelist);
+
+    // Building the metadata file
+    const char* folder_prefix = getenv("DECAF_STORAGE_FOLDER");
+    string folder_name;
+    if(folder_prefix != nullptr)
+        folder_name = string(folder_prefix);
+    else
+        folder_name = string("/tmp");
+    stringstream filename;
+    filename<<folder_name<<"/filelist_"<<rank<<".txt";
+
+    struct stat stats;
+    if(stat(filename.str().c_str(), &stats) == 0)
+    {
+        fprintf(stderr,"ERROR: File already exist, unable to write the metadata.\n");
+        return;
+    }
+
+    std::ofstream file(filename.str());
+
+    // Writing the list of files
+    for(auto v : filelist)
+    {
+        file << v.first<<" "<<v.second<<endl;
+    }
+    file.close();
 }
 
 #endif
