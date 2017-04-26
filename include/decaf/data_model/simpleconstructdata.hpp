@@ -183,6 +183,7 @@ public:
             std::vector< mapConstruct >& partial_map,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
+        fprintf(stderr,"Split by block not implemented with SimpleField\n.");
         std::vector<std::shared_ptr<BaseConstructData> > result;
         return result;
     }
@@ -193,6 +194,48 @@ public:
             std::vector<std::shared_ptr<BaseConstructData> >& fields,
             ConstructTypeSplitPolicy policy = DECAF_SPLIT_DEFAULT)
     {
+        switch(policy)
+        {
+            case DECAF_SPLIT_DEFAULT :
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<SimpleConstructData<T> > basefield_it =
+                            std::dynamic_pointer_cast<SimpleConstructData<T> >(fields[i]);
+                    if(!basefield_it) fprintf(stderr, "Fail to cast in SimpleConstructData during split\n");
+                    basefield_it->value_ = this->value_;
+                }
+                break;
+            }
+            case DECAF_SPLIT_KEEP_VALUE:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<SimpleConstructData<T> > basefield_it =
+                            std::dynamic_pointer_cast<SimpleConstructData<T> >(fields[i]);
+                    if(!basefield_it) fprintf(stderr, "Fail to cast in SimpleConstructData during split\n");
+                    basefield_it->value_ = this->value_;
+                }
+                break;
+            }
+            case DECAF_SPLIT_MINUS_NBITEM:
+            {
+                for(unsigned int i = 0; i < range.size(); i++)
+                {
+                    std::shared_ptr<SimpleConstructData<T> > basefield_it =
+                            std::dynamic_pointer_cast<SimpleConstructData<T> >(fields[i]);
+                    if(!basefield_it) fprintf(stderr, "Fail to cast in SimpleConstructData during split\n");
+                    basefield_it->value_ = range.at(i).size();
+                }
+                break;
+                break;
+            }
+            default:
+            {
+                std::cout<<"Policy "<<policy<<" not supported for SimpleConstructData"<<std::endl;
+                break;
+            }
+        }
 	return;
     }
 

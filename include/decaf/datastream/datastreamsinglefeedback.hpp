@@ -271,6 +271,11 @@ void
 decaf::
 DatastreamSingleFeedback::processCon(pConstructData data)
 {
+    if(first_iteration_)
+    {
+       first_iteration_ = false;
+       return;
+    }
     if(!is_con_root())
         return;
 

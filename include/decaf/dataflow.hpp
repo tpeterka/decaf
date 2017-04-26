@@ -65,6 +65,8 @@ namespace decaf
         bool put(pConstructData& data, TaskType role);
         bool get(pConstructData& data, TaskType role);
 
+        void signalReady();
+
         pConstructData& filterPut(pConstructData& data, pConstructData& data_filtered, TaskType& role, bool& data_changed, bool& filtered_empty);
         void filterGet(pConstructData& data, TaskType role);
 
@@ -763,6 +765,10 @@ Dataflow::get(pConstructData& data, TaskType role)
 	}
 	else if (role == DECAF_NODE)
 	{
+            // Comnsumer side
+            if(use_stream_)
+                stream_->processCon(data);
+
 		if(no_link_)
 		{
 			if (redist_prod_con_ == NULL){
@@ -786,8 +792,8 @@ Dataflow::get(pConstructData& data, TaskType role)
 			redist_dflow_con_->flush();
 
 			// Comnsumer side
-			if(use_stream_)
-				stream_->processCon(data);
+                        //if(use_stream_)
+                        //	stream_->processCon(data);
 		}
 
 
@@ -803,6 +809,7 @@ Dataflow::get(pConstructData& data, TaskType role)
 
 	return true;
 }
+
 
 
 decaf::pConstructData&

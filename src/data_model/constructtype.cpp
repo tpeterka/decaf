@@ -1307,7 +1307,7 @@ ConstructData::split(
 	    it != container_->end(); it++)
 	{
 		//Building a temp vector with all the fields
-		std::vector<std::shared_ptr<BaseConstructData> > fields;
+        std::vector<std::shared_ptr<BaseConstructData> > fields;
 		for(unsigned int i = 0; i < buffers.size(); i++)
 		{
 			std::shared_ptr<BaseConstructData> field = buffers[i]->getData(it->first);
@@ -1315,7 +1315,7 @@ ConstructData::split(
 				fields.push_back(field);
 			else
 			{
-				std::cout<<"ERROR : the field "<<it->first<<" is not present in the preallocated container."<<std::endl;
+                std::cout<<"ERROR : the field "<<it->first<<" is not present in the preallocated container."<<std::endl;
 				//result.clear();
 				//return result;
 				return;
@@ -1367,7 +1367,6 @@ ConstructData::split(
 
 			//splitFields = getBaseData(it->second)->split(rangeItems, result_maps, getSplitPolicy(it->second));
 			getBaseData(it->second)->split(rangeItems_, result_maps, fields, getSplitPolicy(it->second));
-
 		}
 
 		// Inserting the splitted field into the splitted results
