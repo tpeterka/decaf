@@ -258,30 +258,41 @@ Decaf::Decaf(CommHandle world_comm,
 	}
 
     // outbound dataflows
-    set <Dataflow*> unique_out_dataflows;               // set prevents adding duplicates
+    /*set <Dataflow*> unique_out_dataflows;               // set prevents adding duplicates
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
         if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
             unique_out_dataflows.insert(dataflows[i]);
-		if (workflow_.my_out_link(world->rank(), i))    // I am a node and this dataflow is an output
+        if (workflow_.my_out_link(world->rank(), i))    // I am a node and this dataflow is an output
             unique_out_dataflows.insert(dataflows[i]);
     }
     out_dataflows.resize(unique_out_dataflows.size()); // copy set to vector
     copy(unique_out_dataflows.begin(), unique_out_dataflows.end(), out_dataflows.begin());
+    */
 
-	// TODO once we are sure the unique_out_dataflows set is used for the overlapping thing,
-	// move this creation of the outPortMap ~5lines above in the "if i am a node"
-	for(Dataflow* df : out_dataflows){
-		if(df->srcPort() != ""){
-			if(outPortMap.count(df->srcPort()) == 1){
-				outPortMap[df->srcPort()].push_back(df);
-			}
-			else{
-				vector<Dataflow*> vect(1, df);
-				outPortMap.emplace(df->srcPort(), vect);
-			}
-		}
-	}
+    // Remove the set
+    for (size_t i = 0; i < workflow_.links.size(); i++)
+    {
+        if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
+            out_dataflows.push_back(dataflows[i]);
+        else if (workflow_.my_out_link(world->rank(), i))    // I am a node and this dataflow is an output
+            out_dataflows.push_back(dataflows[i]);
+    }
+
+
+    // TODO once we are sure the unique_out_dataflows set is used for the overlapping thing,
+    // move this creation of the outPortMap ~5lines above in the "if i am a node"
+    for(Dataflow* df : out_dataflows){
+            if(df->srcPort() != ""){
+                    if(outPortMap.count(df->srcPort()) == 1){
+                            outPortMap[df->srcPort()].push_back(df);
+                    }
+                    else{
+                            vector<Dataflow*> vect(1, df);
+                            outPortMap.emplace(df->srcPort(), vect);
+                    }
+            }
+    }
 
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
@@ -317,18 +328,18 @@ decaf::
 Decaf::put(pConstructData container)
 {
 	//bool ret_ok;
-	for(Dataflow* df : out_dataflows){
-	//for (size_t i = 0; i < out_dataflows.size(); i++){
-		df->put(container, DECAF_NODE);
+        for(Dataflow* df : out_dataflows){
+        //for (size_t i = 0; i < out_dataflows.size(); i++){
+            df->put(container, DECAF_NODE);
 	}
 
-    // link ranks that do overlap this node need to be run in one-time mode
+        // link ranks that do overlap this node need to be run in one-time mode
 	for (size_t i = 0; i < workflow_.links.size(); i++){
-        if (workflow_.my_link(world->rank(), i))
-        {
-            run_links(true);
-            break;
-        }
+            if (workflow_.my_link(world->rank(), i))
+            {
+                run_links(true);
+                break;
+            }
 	}
 	return true;
 }
