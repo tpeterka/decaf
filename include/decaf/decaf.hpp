@@ -273,9 +273,10 @@ Decaf::Decaf(CommHandle world_comm,
     // Remove the set
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
-            out_dataflows.push_back(dataflows[i]);
-        else if (workflow_.my_out_link(world->rank(), i))    // I am a node and this dataflow is an output
+        // I am a link and this dataflow is me
+        // OR
+        // I am a node and this dataflow is an output
+        if ((workflow_.my_link(world->rank(), i)) || (workflow_.my_out_link(world->rank(), i)))
             out_dataflows.push_back(dataflows[i]);
     }
 
