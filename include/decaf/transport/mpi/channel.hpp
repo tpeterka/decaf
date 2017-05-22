@@ -22,7 +22,8 @@
 enum DecafChannelCommand
 {
     DECAF_CHANNEL_OK = 0x0,
-    DECAF_CHANNEL_WAIT = 0x1
+    DECAF_CHANNEL_WAIT = 0x1,
+    DECAF_CHANNEL_GET = 0x2
 };
 
 namespace decaf

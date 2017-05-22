@@ -65,6 +65,7 @@ namespace decaf
         unsigned int iteration_;
         OneWayChannel* channel_prod_;
         OneWayChannel* channel_prod_dflow_;
+        OneWayChannel* channel_dflow_prod_;
         OneWayChannel* channel_dflow_;
         OneWayChannel* channel_dflow_con_;
         OneWayChannel* channel_con_;
@@ -78,6 +79,7 @@ DatastreamDoubleFeedback::~DatastreamDoubleFeedback()
 {
     if(channel_prod_) delete channel_prod_;
     if(channel_prod_dflow_) delete channel_prod_dflow_;
+    if(channel_dflow_prod_) delete channel_dflow_prod_;
     if(channel_dflow_) delete channel_dflow_;
     if(channel_dflow_con_) delete channel_dflow_con_;
     if(channel_con_) delete channel_con_;
@@ -174,11 +176,16 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
 
     if(is_prod_root() || is_dflow_root())
     {
-        channel_prod_dflow_ = new OneWayChannel(world_comm_,
+        channel_dflow_prod_ = new OneWayChannel(world_comm_,
                                                 start_dflow,
                                                 start_prod,
                                                 1,
                                                 (int)DECAF_CHANNEL_OK);
+        channel_prod_dflow_ = new OneWayChannel(world_comm_,
+                                                start_prod,
+                                                start_dflow,
+                                                1,
+                                                (int)DECAF_CHANNEL_WAIT);
     }
 }
 decaf::
@@ -212,51 +219,25 @@ DatastreamDoubleFeedback::processProd(pConstructData data)
     else
         iteration_++;
 
-    bool blocking = false;
     if(is_prod_root())
     {
-        DecafChannelCommand command_received;
-        if(first_iteration_)
-        {
-            command_received = DECAF_CHANNEL_OK;
-            first_iteration_ = false;
-        }
-        else
-            command_received = channel_prod_dflow_->checkSelfCommand();
-        if(command_received == DECAF_CHANNEL_WAIT)
-        {
-            channel_prod_->sendCommand(DECAF_CHANNEL_WAIT);
-            blocking = true;
-        }
+        //Sending the request to the link
+        channel_prod_dflow_->sendCommand(DECAF_CHANNEL_WAIT);
+
+        // Waiting for the ack from the link
+        while(!channel_dflow_prod_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT))
+            usleep(100);
+
+        // Broadcasting the ack to all the producers
+        channel_prod_->sendCommand(DECAF_CHANNEL_OK);
     }
 
     // TODO: check without barrier
     MPI_Barrier(prod_comm_handle_);
 
-    // TODO: remove busy wait
-    DecafChannelCommand signal_prod;
-    do
-    {
-        signal_prod = channel_prod_->checkSelfCommand();
-
-        if(is_prod_root() && blocking == true)
-        {
-            DecafChannelCommand command_received = channel_prod_dflow_->checkSelfCommand();
-
-            if(command_received == DECAF_CHANNEL_OK)
-            {
-                //fprintf(stderr,"Unblocking command received.\n");
-                //fprintf(stderr,"Broadcasting on prod root the value 0\n");
-
-                channel_prod_->sendCommand(DECAF_CHANNEL_OK);
-                break;
-            }
-        }
-
-        usleep(1000); //1ms
-
-
-     } while(signal_prod != DECAF_CHANNEL_OK);
+    // Waiting for the ack from the root producer
+    while(!channel_prod_->checkAndReplaceSelfCommand(DECAF_CHANNEL_OK, DECAF_CHANNEL_WAIT))
+        upsleep(100);
 
     // send the message
     redist_prod_dflow_->process(data, DECAF_REDIST_SOURCE);
@@ -271,7 +252,7 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
     while(!receivedDflowSignal)
     {
         // Checking the root communication
-        if(is_dflow_root())
+        /*if(is_dflow_root())
         {
             bool receivedRootSignal;
             if(first_iteration_)
@@ -322,6 +303,47 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
 
                     if(is_dflow_root())
                         channel_prod_dflow_->sendCommand(DECAF_CHANNEL_WAIT);
+                }
+            }
+        }*/
+
+        // First we check if we need to forward to the
+
+        // Checking if the producer wants to send something
+        if(doGet_)
+        {
+            if(is_dflow_root() &&
+               channel_prod_dflow_->checkAndReplaceSelfCommand(DECAF_CHANNEL_WAIT, DECAF_CHANNEL_OK))
+            {
+                // Broadcasting the get command to the rest of the Dflows
+                channel_dflow_->sendCommand(DECAF_CHANNEL_GET);
+            }
+            MPI_Barrier(dflow_comm_handle_);
+            if(channel_dflow_->checkAndReplaceSelfCommand(DECAF_CHANNEL_GET, DECAF_CHANNEL_WAIT))
+            {
+                pConstructData container;
+                bool received = redist_prod_dflow_->IGet(container);
+                if(received)
+                {
+                    if(msgtools::test_quit(container))
+                    {
+                        doGet_ = false;
+                        fprintf(stderr, "Reception of the terminate message. Saving data on file.\n");
+                        storage_collection_->save(world_rank_);
+                    }
+                    redist_prod_dflow_->flush();
+                    framemanager_->putFrame(iteration_);
+                    storage_collection_->insert(iteration_, container);
+                    iteration_++;
+
+                    // Block the producer if reaching the maximum buffer size
+                    if(!is_blocking_ && storage_collection_->isFull())
+                    {
+                        is_blocking_ = true;
+
+                        if(is_dflow_root())
+                            channel_prod_dflow_->sendCommand(DECAF_CHANNEL_WAIT);
+                    }
                 }
             }
         }
