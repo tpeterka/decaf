@@ -40,6 +40,7 @@ namespace decaf
         virtual void processCommand(FrameCommand command, unsigned int frame_id) = 0;
         void addBuffer(Storage* storage);
         void save(unsigned int rank);
+        unsigned int getNbDataStored();
 
     protected:
         std::vector<Storage*> storages;
@@ -179,6 +180,16 @@ StorageCollectionInterface::save(unsigned int rank)
         file << v.first<<" "<<v.second<<endl;
     }
     file.close();
+}
+
+unsigned int
+decaf::
+StorageCollectionInterface::getNbDataStored()
+{
+    unsigned int result = 0;
+    for(Storage* storage : storages)
+        result += storage->getNbDataStored();
+    return result;
 }
 
 #endif
