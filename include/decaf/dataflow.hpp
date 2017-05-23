@@ -492,7 +492,7 @@ Dataflow::Dataflow(CommHandle world_comm,
 		redist_prod_con_ = NULL;
 
         if( stream_policy_ != DECAF_STREAM_NONE &&
-            (!no_link_ && wflowLink.storages.size() > 0 || (no_link_ && stream_policy == DECAF_STREAM_SINGLE)))
+            ((!no_link_ && wflowLink.storages.size() > 0) || (no_link_ && stream_policy == DECAF_STREAM_SINGLE)))
 	{
 		fprintf(stderr, "Stream mode activated.\n");
 		use_stream_ = true;
