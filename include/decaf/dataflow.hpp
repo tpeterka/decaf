@@ -493,8 +493,6 @@ Dataflow::Dataflow(CommHandle world_comm,
 		use_stream_ = true;
 	}
 
-        StorageCollectionPolicy storage_policy = stringToStorageCollectionPolicy(wflowLink.manala_info.storage_policy);
-
 	// Buffering setup
 	if(use_stream_)
 	{

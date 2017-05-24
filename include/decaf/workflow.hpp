@@ -304,6 +304,7 @@ struct Workflow                              // an entire workflow
             boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
             if(opt_stream)
             {
+                    fprintf(stderr, "The option stream is present: %s\n", opt_stream.get().c_str());
                     link.manala_info.stream = opt_stream.get();
                     if(link.manala_info.stream != "none")
                     {
