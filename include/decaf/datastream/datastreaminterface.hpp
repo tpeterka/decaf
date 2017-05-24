@@ -17,12 +17,15 @@
 #include <decaf/transport/mpi/comm.hpp>
 #include <decaf/storage/framemanagersequential.hpp>
 #include <decaf/storage/framemanagermostrecent.hpp>
+#include <decaf/storage/framemanagerlowhigh.hpp>
 #endif
 
 #include <decaf/storage/storagecollectiongreedy.hpp>
 #include <decaf/storage/storagecollectionLRU.hpp>
 #include <decaf/storage/storagemainmemory.hpp>
 #include <decaf/storage/storagefile.hpp>
+#include <decaf/workflow.hpp>
+#include <decaf/types.hpp>
 
 namespace decaf
 {
@@ -41,22 +44,16 @@ namespace decaf
                int nb_con,
                RedistComp* prod_dflow,
                RedistComp* dflow_con,
-               FramePolicyManagment policy,
-               unsigned int prod_freq_output,
-               StorageCollectionPolicy storage_policy,
-               vector<StorageType>& storage_types,
-               vector<unsigned int>& max_storage_sizes);
+               ManalaInfo& manala_info);
+
         Datastream(CommHandle world_comm,
                    int start_prod,
                    int nb_prod,
                    int start_con,
                    int nb_con,
                    RedistComp* redist_prod_con,
-                   FramePolicyManagment policy,
-                   unsigned int prod_freq_output,
-                   StorageCollectionPolicy storage_policy,
-                   vector<StorageType>& storage_types,
-                   vector<unsigned int>& max_storage_sizes);
+                   ManalaInfo& manala_info);
+
         virtual ~Datastream();
 
         bool is_prod()          { return world_rank_ >= start_prod_ && world_rank_ < start_prod_ + nb_prod_; }
@@ -108,11 +105,7 @@ Datastream::Datastream(CommHandle world_comm,
               int start_con, int nb_con,
               RedistComp* redist_prod_dflow,
               RedistComp* redist_dflow_con,
-              FramePolicyManagment policy,
-              unsigned int prod_freq_output,
-              StorageCollectionPolicy storage_policy,
-              vector<StorageType>& storage_types,
-              vector<unsigned int>& max_storage_sizes) :
+              ManalaInfo& manala_info) :
     initialized_(false), world_comm_(world_comm),
     start_prod_(start_prod), nb_prod_(nb_prod),
     start_dflow_(start_dflow), nb_dflow_(nb_dflow),
@@ -122,6 +115,8 @@ Datastream::Datastream(CommHandle world_comm,
 {
     MPI_Comm_rank(world_comm_, &world_rank_);
     MPI_Comm_size(world_comm_, &world_size_);
+
+    FramePolicyManagment policy = stringToFramePolicyManagment( manala_info.frame_policy );
 
     // Creation of the channels
     if(is_prod())
@@ -142,18 +137,23 @@ Datastream::Datastream(CommHandle world_comm,
         {
             case DECAF_FRAME_POLICY_RECENT:
             {
-                framemanager_ = new FrameManagerRecent(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                framemanager_ = new FrameManagerRecent(MPI_COMM_NULL, DECAF_NODE, manala_info.prod_freq_output);
                 break;
             }
             case DECAF_FRAME_POLICY_SEQ:
             {
-                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, manala_info.prod_freq_output);
+                break;
+            }
+            case DECAF_FRAME_POLICY_LOWHIGH:
+            {
+                framemanager_ = new FrameManagerLowHigh(MPI_COMM_NULL, DECAF_NODE, manala_info.low_frequency, manala_info.high_frequency);
                 break;
             }
             default:
             {
                 fprintf(stderr,"WARNING: unrecognized frame policy. Using sequential.\n");
-                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, manala_info.prod_freq_output);
                 break;
             }
         };
@@ -177,21 +177,28 @@ Datastream::Datastream(CommHandle world_comm,
         {
             case DECAF_FRAME_POLICY_RECENT:
             {
-                framemanager_ = new FrameManagerRecent(dflow_comm_handle_, DECAF_LINK, prod_freq_output);
+                framemanager_ = new FrameManagerRecent(dflow_comm_handle_, DECAF_LINK, manala_info.prod_freq_output);
                 break;
             }
             case DECAF_FRAME_POLICY_SEQ:
             {
-                framemanager_ = new FrameManagerSeq(dflow_comm_handle_, DECAF_LINK, prod_freq_output);
+                framemanager_ = new FrameManagerSeq(dflow_comm_handle_, DECAF_LINK, manala_info.prod_freq_output);
+                break;
+            }
+            case DECAF_FRAME_POLICY_LOWHIGH:
+            {
+                framemanager_ = new FrameManagerLowHigh(dflow_comm_handle_, DECAF_LINK, manala_info.low_frequency, manala_info.high_frequency);
                 break;
             }
             default:
             {
                 fprintf(stderr,"WARNING: unrecognized frame policy. Using sequential.\n");
-                framemanager_ = new FrameManagerSeq(dflow_comm_handle_, DECAF_LINK, prod_freq_output);
+                framemanager_ = new FrameManagerSeq(dflow_comm_handle_, DECAF_LINK, manala_info.prod_freq_output);
                 break;
             }
         };
+
+        StorageCollectionPolicy storage_policy = stringToStorageCollectionPolicy(manala_info.storage_policy);
 
         switch(storage_policy)
         {
@@ -211,18 +218,18 @@ Datastream::Datastream(CommHandle world_comm,
 
 
 
-        for(unsigned int i = 0; i < storage_types.size(); i++)
+        for(unsigned int i = 0; i < manala_info.storages.size(); i++)
         {
-            switch(storage_types[i])
+            switch(manala_info.storages[i])
             {
                 case DECAF_STORAGE_MAINMEM:
                 {
-                    storage_collection_->addBuffer(new StorageMainMemory(max_storage_sizes[i]));
+                    storage_collection_->addBuffer(new StorageMainMemory(manala_info.storage_max_buffer[i]));
                     break;
                 }
                 case DECAF_STORAGE_FILE:
                 {
-                    storage_collection_->addBuffer(new StorageFile(max_storage_sizes[i], world_rank_));
+                    storage_collection_->addBuffer(new StorageFile(manala_info.storage_max_buffer[i], world_rank_));
                     break;
                 }
                 case DECAF_STORAGE_DATASPACE:
@@ -268,11 +275,7 @@ Datastream::Datastream(CommHandle world_comm,
            int start_con,
            int nb_con,
            RedistComp* redist_prod_con,
-           FramePolicyManagment policy,
-           unsigned int prod_freq_output,
-           StorageCollectionPolicy storage_policy,
-           vector<StorageType>& storage_types,
-           vector<unsigned int>& max_storage_sizes) :
+           ManalaInfo& manala_info) :
     initialized_(false), world_comm_(world_comm),
     start_prod_(start_prod), nb_prod_(nb_prod),
     start_con_(start_con), nb_con_(nb_con),
@@ -281,6 +284,8 @@ Datastream::Datastream(CommHandle world_comm,
 {
     MPI_Comm_rank(world_comm_, &world_rank_);
     MPI_Comm_size(world_comm_, &world_size_);
+
+    FramePolicyManagment policy = stringToFramePolicyManagment( manala_info.frame_policy );
 
     // Creation of the channels
     if(is_prod())
@@ -301,18 +306,18 @@ Datastream::Datastream(CommHandle world_comm,
         {
             case DECAF_FRAME_POLICY_RECENT:
             {
-                framemanager_ = new FrameManagerRecent(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                framemanager_ = new FrameManagerRecent(MPI_COMM_NULL, DECAF_NODE, manala_info.prod_freq_output);
                 break;
             }
             case DECAF_FRAME_POLICY_SEQ:
             {
-                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, manala_info.prod_freq_output);
                 break;
             }
             default:
             {
                 fprintf(stderr,"WARNING: unrecognized frame policy. Using sequential.\n");
-                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, prod_freq_output);
+                framemanager_ = new FrameManagerSeq(MPI_COMM_NULL, DECAF_NODE, manala_info.prod_freq_output);
                 break;
             }
         };

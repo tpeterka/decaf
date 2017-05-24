@@ -38,22 +38,15 @@ namespace decaf
                int nb_con,
                RedistComp* prod_dflow,
                RedistComp* dflow_con,
-               FramePolicyManagment policy,
-               unsigned int prod_freq_output,
-               StorageCollectionPolicy storage_policy,
-               vector<StorageType>& storage_types,
-               vector<unsigned int>& max_storage_sizes);
+               ManalaInfo& manala_info);
+
         DatastreamSingleFeedbackNoLink(CommHandle world_comm,
                    int start_prod,
                    int nb_prod,
                    int start_con,
                    int nb_con,
                    RedistComp* redist_prod_con,
-                   FramePolicyManagment policy,
-                   unsigned int prod_freq_output,
-                   StorageCollectionPolicy storage_policy,
-                   vector<StorageType>& storage_types,
-                   vector<unsigned int>& max_storage_sizes);
+                   ManalaInfo& manala_info);
 
         virtual ~DatastreamSingleFeedbackNoLink();
 
@@ -91,12 +84,8 @@ DatastreamSingleFeedbackNoLink::DatastreamSingleFeedbackNoLink(CommHandle world_
        int nb_con,
        RedistComp* prod_dflow,
        RedistComp* dflow_con,
-       FramePolicyManagment policy,
-       unsigned int prod_freq_output,
-       StorageCollectionPolicy storage_policy,
-       vector<StorageType>& storage_types,
-       vector<unsigned int>& max_storage_sizes):
-    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, policy, prod_freq_output, storage_policy, storage_types, max_storage_sizes),
+       ManalaInfo& manala_info):
+    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, manala_info),
     channel_prod_(NULL), channel_prod_con_(NULL),channel_con_(NULL),
     first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
 {
@@ -111,14 +100,9 @@ DatastreamSingleFeedbackNoLink::DatastreamSingleFeedbackNoLink(CommHandle world_
            int start_con,
            int nb_con,
            RedistComp* redist_prod_con,
-           FramePolicyManagment policy,
-           unsigned int prod_freq_output,
-           StorageCollectionPolicy storage_policy,
-           vector<StorageType>& storage_types,
-           vector<unsigned int>& max_storage_sizes):
+           ManalaInfo& manala_info):
     Datastream(world_comm, start_prod, nb_prod, start_con, nb_con,
-               redist_prod_con, policy, prod_freq_output,
-               storage_policy, storage_types, max_storage_sizes),
+               redist_prod_con, manala_info),
     channel_prod_(NULL), channel_prod_con_(NULL),channel_con_(NULL),
     first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
 {

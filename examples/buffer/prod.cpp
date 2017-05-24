@@ -51,7 +51,7 @@ void prod(Decaf* decaf)
         decaf->put(container);
 
         // Sleeping 1 sec to slow down the producer
-        sleep(1);
+        sleep(2);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

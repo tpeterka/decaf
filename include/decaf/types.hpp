@@ -66,6 +66,7 @@ enum FramePolicyManagment
     DECAF_FRAME_POLICY_NONE,
     DECAF_FRAME_POLICY_SEQ,
     DECAF_FRAME_POLICY_RECENT,
+    DECAF_FRAME_POLICY_LOWHIGH
 };
 
 // workflow entity types
@@ -220,6 +221,8 @@ FramePolicyManagment stringToFramePolicyManagment(std::string name)
         return DECAF_FRAME_POLICY_SEQ;
     else if(name.compare(std::string("recent")) == 0)
         return DECAF_FRAME_POLICY_RECENT;
+    else if(name.compare(std::string("lowhigh")) == 0)
+            return DECAF_FRAME_POLICY_LOWHIGH;
     else
     {
         std::cerr<<"WARNING: unknown frame policy type: "<<name<<"."<<std::endl;

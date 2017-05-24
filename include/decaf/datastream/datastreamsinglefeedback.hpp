@@ -38,22 +38,15 @@ namespace decaf
                int nb_con,
                RedistComp* prod_dflow,
                RedistComp* dflow_con,
-               FramePolicyManagment policy,
-               unsigned int prod_freq_output,
-               StorageCollectionPolicy storage_policy,
-               vector<StorageType>& storage_types,
-               vector<unsigned int>& max_storage_sizes);
+               ManalaInfo& manala_info);
+
         DatastreamSingleFeedback(CommHandle world_comm,
                    int start_prod,
                    int nb_prod,
                    int start_con,
                    int nb_con,
                    RedistComp* redist_prod_con,
-                   FramePolicyManagment policy,
-                   unsigned int prod_freq_output,
-                   StorageCollectionPolicy storage_policy,
-                   vector<StorageType>& storage_types,
-                   vector<unsigned int>& max_storage_sizes);
+                   ManalaInfo& manala_info);
 
         virtual ~DatastreamSingleFeedback();
 
@@ -91,12 +84,8 @@ DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
        int nb_con,
        RedistComp* prod_dflow,
        RedistComp* dflow_con,
-       FramePolicyManagment policy,
-       unsigned int prod_freq_output,
-       StorageCollectionPolicy storage_policy,
-       vector<StorageType>& storage_types,
-       vector<unsigned int>& max_storage_sizes):
-    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, policy, prod_freq_output, storage_policy, storage_types, max_storage_sizes),
+       ManalaInfo& manala_info):
+    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, manala_info),
     channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
     first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
 {
@@ -158,11 +147,7 @@ DatastreamSingleFeedback::DatastreamSingleFeedback(CommHandle world_comm,
            int start_con,
            int nb_con,
            RedistComp* redist_prod_con,
-           FramePolicyManagment policy,
-           unsigned int prod_freq_output,
-           StorageCollectionPolicy storage_policy,
-           vector<StorageType>& storage_types,
-           vector<unsigned int>& max_storage_sizes)
+           ManalaInfo& manala_info)
 {
     fprintf(stderr,"ERROR: Stream with single feedback in not available without a link. Abording.\n");
     MPI_Abort(MPI_COMM_WORLD, -1);
@@ -254,8 +239,8 @@ void decaf::DatastreamSingleFeedback::processDflow(pConstructData data)
             if(msgtools::test_quit(container))
             {
                 doGet_ = false;
-                fprintf(stderr, "Reception of the terminate message. Saving data on file.\n");
-                storage_collection_->save(world_rank_);
+                //fprintf(stderr, "Reception of the terminate message. Saving data on file.\n");
+                //storage_collection_->save(world_rank_);
             }
         }
         usleep(100);

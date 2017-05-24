@@ -56,10 +56,7 @@ namespace decaf
                  int con,                           // id in workflow structure of consumer node
                  WorkflowLink wflowLink,
                  Decomposition prod_dflow_redist,   // decompositon between producer and dataflow
-                 Decomposition dflow_cons_redist,   // decomposition between dataflow and consumer
-                 StreamPolicy streamPolicy,
-                 FramePolicyManagment framePolicy,
-                 unsigned int prod_freq_output = 1);
+                 Decomposition dflow_cons_redist);   // decomposition between dataflow and consumer
 
         ~Dataflow();
         bool put(pConstructData& data, TaskType role);
@@ -156,10 +153,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                    int con,
                    WorkflowLink wflowLink,
                    Decomposition prod_dflow_redist,
-                   Decomposition dflow_cons_redist,
-                   StreamPolicy stream_policy,
-                   FramePolicyManagment framePolicy,
-                   unsigned int prod_freq_output) :
+                   Decomposition dflow_cons_redist):
     world_comm_(world_comm),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
@@ -176,8 +170,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     iteration(0),
     bClose_(false),
     no_link_(false),
-    use_stream_(false),
-    stream_policy_(stream_policy)
+    use_stream_(false)
 {
 	// DEPRECATED
 	// sizes is a POD struct, initialization was not allowed in C++03; used assignment workaround
@@ -491,14 +484,16 @@ Dataflow::Dataflow(CommHandle world_comm,
 	else
 		redist_prod_con_ = NULL;
 
+        stream_policy_ = stringToStreamPolicy(wflowLink.manala_info.stream);
+
         if( stream_policy_ != DECAF_STREAM_NONE &&
-            ((!no_link_ && wflowLink.storages.size() > 0) || (no_link_ && stream_policy == DECAF_STREAM_SINGLE)))
+            ((!no_link_ && wflowLink.manala_info.storages.size() > 0) || (no_link_ && stream_policy_ == DECAF_STREAM_SINGLE)))
 	{
-		fprintf(stderr, "Stream mode activated.\n");
+                fprintf(stderr, "Manala activated.\n");
 		use_stream_ = true;
 	}
 
-        StorageCollectionPolicy storage_policy = stringToStorageCollectionPolicy(wflowLink.storage_policy);
+        StorageCollectionPolicy storage_policy = stringToStorageCollectionPolicy(wflowLink.manala_info.storage_policy);
 
 	// Buffering setup
 	if(use_stream_)
@@ -515,11 +510,7 @@ Dataflow::Dataflow(CommHandle world_comm,
                                            sizes_.con_start,
                                            sizes_.con_size,
                                            redist_prod_con_,
-                                           framePolicy,
-                                           prod_freq_output,
-                                           storage_policy,
-                                           wflowLink.storages,
-                                           wflowLink.storage_max_buffer);
+                                           wflowLink.manala_info);
                             else
                                 stream_ = new DatastreamSingleFeedback(
                                            world_comm_,
@@ -531,11 +522,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                                            sizes_.con_size,
                                            redist_prod_dflow_,
                                            redist_dflow_con_,
-                                           framePolicy,
-                                           prod_freq_output,
-                                           storage_policy,
-                                           wflowLink.storages,
-                                           wflowLink.storage_max_buffer);
+                                           wflowLink.manala_info);
+
 				break;
 		    }
 		    case DECAF_STREAM_DOUBLE:
@@ -550,11 +538,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                                        sizes_.con_size,
                                        redist_prod_dflow_,
                                        redist_dflow_con_,
-                                       framePolicy,
-                                       prod_freq_output,
-                                       storage_policy,
-                                       wflowLink.storages,
-                                       wflowLink.storage_max_buffer);
+                                       wflowLink.manala_info);
+
 				break;
 		    }
 		    default:
