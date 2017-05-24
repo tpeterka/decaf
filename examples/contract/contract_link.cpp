@@ -80,19 +80,20 @@ extern "C"
 	           Dataflow* dataflow,                  // dataflow
 	           pConstructData in_data)   // input data
 	{
-		int new_var;
-		float var = -1;
-		SimpleFieldf varf = in_data->getFieldData<SimpleFieldf>("var");
-		if(varf){
-			var = varf.getData();
+		if(!in_data->isEmpty()){
+			int new_var;
+			float var = -1;
+			SimpleFieldf varf = in_data->getFieldData<SimpleFieldf>("var");
+			if(varf){
+				var = varf.getData();
+			}
+			std::cout << "Toto present in link? " << in_data->hasData("toto") << std::endl;
+
+			new_var = std::round(var);
+			SimpleFieldi vari(new_var);
+			in_data->removeData("var");
+			in_data->appendData("var", vari);
 		}
-		std::cout << "Toto present in link? " << in_data->hasData("toto") << std::endl;
-
-		new_var = std::round(var);
-		SimpleFieldi vari(new_var);
-		in_data->removeData("var");
-		in_data->appendData("var", vari);
-
 		dataflow->put(in_data, DECAF_LINK);
 	}
 
