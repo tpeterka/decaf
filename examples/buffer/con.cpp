@@ -64,7 +64,7 @@ void con(Decaf* decaf)
 
         // Producer is putting every second
         // Generate an overflow between the dflow and the consumer
-        sleep(5);
+        sleep(3);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow

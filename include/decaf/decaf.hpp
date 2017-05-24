@@ -743,11 +743,6 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
         Decomposition dflow_con_redist =
             stringToDecomposition(workflow_.links[dflow].dflow_con_redist);
 
-        StreamPolicy stream_mode =
-            stringToStreamPolicy(workflow_.links[dflow].stream);
-        FramePolicyManagment frame_policy =
-            stringToFramePolicyManagment(workflow_.links[dflow].frame_policy);
-        unsigned int prod_freq_output = workflow_.links[dflow].prod_freq_output;
         // TODO: emplace constructor
         dataflows.push_back(new Dataflow(world_comm_,
                                      decaf_sizes,
@@ -756,10 +751,8 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
                                      con,
                                      workflow_.links[i],
                                      prod_dflow_redist,
-                                     dflow_con_redist,
-                                     stream_mode,
-                                     frame_policy,
-                                     prod_freq_output));
+                                     dflow_con_redist));
+
 
         dataflows[i]->err();
     }

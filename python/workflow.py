@@ -626,7 +626,11 @@ def workflowToJson(graph, outputFile, filter_level):
             data["workflow"]["edges"][i]["max_storage_sizes"] = graphEdge[2]['max_storage_sizes']
             if 'prod_output_freq' in graphEdge[2]:
               data["workflow"]["edges"][i]["prod_output_freq"] = graphEdge[2]['prod_output_freq']
-        
+            if 'low_output_freq' in graphEdge[2]:
+              data["workflow"]["edges"][i]["low_output_freq"] = graphEdge[2]['low_output_freq']
+            if 'high_output_freq' in graphEdge[2]:
+              data["workflow"]["edges"][i]["high_output_freq"] = graphEdge[2]['high_output_freq']
+
         # If there are ports for this edge
         if edge.srcPort != '' and edge.destPort != '':
           data["workflow"]["edges"][i].update({"sourcePort":edge.srcPort,
@@ -656,6 +660,11 @@ def addSeqStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10
 # Shortcut function to define a stream sending the most recent frame to the consumer
 def addMostRecentStream(graph, prod, con, buffers = ["mainmem"], max_buffer_sizes = [10], prod_output_freq = 1):
     updateLinkStream(graph, prod, con, 'single', 'recent', 'lru', buffers, max_buffer_sizes, prod_output_freq)
+
+def addLowHighStream(graph, prod, con, low_freq, high_freq, buffers = ["mainmem"], max_buffer_sizes = [10]):
+    updateLinkStream(graph, prod, con, 'single', 'lowhigh', 'greedy', buffers, max_buffer_sizes, 1)
+    graph.edge[prod][con]['low_output_freq'] = low_freq
+    graph.edge[prod][con]['high_output_freq'] = high_freq
 
 def addDirectSyncStream(graph, prod, con, prod_output_freq = 1):
     updateLinkStream(graph, prod, con, 'single', 'seq', 'greedy', [], [], prod_output_freq)

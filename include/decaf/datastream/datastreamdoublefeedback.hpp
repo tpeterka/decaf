@@ -36,22 +36,15 @@ namespace decaf
                int nb_con,
                RedistComp* prod_dflow,
                RedistComp* dflow_con,
-               FramePolicyManagment policy,
-               unsigned int prod_freq_output,
-               StorageCollectionPolicy storage_policy,
-               vector<StorageType>& storage_types,
-               vector<unsigned int>& max_storage_sizes);
+               ManalaInfo& manala_info);
+
         DatastreamDoubleFeedback(CommHandle world_comm,
                    int start_prod,
                    int nb_prod,
                    int start_con,
                    int nb_con,
                    RedistComp* redist_prod_con,
-                   FramePolicyManagment policy,
-                   unsigned int prod_freq_output,
-                   StorageCollectionPolicy storage_policy,
-                   vector<StorageType>& storage_types,
-                   vector<unsigned int>& max_storage_sizes);
+                   ManalaInfo& manala_info);
 
         virtual ~DatastreamDoubleFeedback();
 
@@ -95,12 +88,8 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
        int nb_con,
        RedistComp* prod_dflow,
        RedistComp* dflow_con,
-       FramePolicyManagment policy,
-       unsigned int prod_freq_output,
-       StorageCollectionPolicy storage_policy,
-       vector<StorageType>& storage_types,
-       vector<unsigned int>& max_storage_sizes):
-    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, policy, prod_freq_output, storage_policy, storage_types, max_storage_sizes),
+       ManalaInfo& manala_info):
+    Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, manala_info),
     channel_prod_(NULL), channel_prod_dflow_(NULL), channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
     first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
 {
@@ -195,11 +184,7 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
            int start_con,
            int nb_con,
            RedistComp* redist_prod_con,
-           FramePolicyManagment policy,
-           unsigned int prod_freq_output,
-           StorageCollectionPolicy storage_policy,
-           vector<StorageType>& storage_types,
-           vector<unsigned int>& max_storage_sizes)
+           ManalaInfo& manala_info)
 {
     fprintf(stderr,"ERROR: Stream with double feedback in not available without a link. Abording.\n");
     MPI_Abort(MPI_COMM_WORLD, -1);

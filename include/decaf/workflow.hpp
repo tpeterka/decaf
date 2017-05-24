@@ -30,6 +30,18 @@ namespace bpt = boost::property_tree;
 
 using namespace std;
 
+struct ManalaInfo
+{
+    string stream;              // Type of stream policy to use (none, single, double)
+    string frame_policy;        // Policy to use to manage the incoming frames
+    unsigned int prod_freq_output;              // Output frequency of the producer
+    string storage_policy;                      // Type of storage collection to use
+    vector<StorageType> storages;               // Different level of storage availables
+    vector<unsigned int> storage_max_buffer;    // Maximum number of frame
+    unsigned int low_frequency;                 // Garantee forward frequency. Used for lowhigh framemanager
+    unsigned int high_frequency;                // High forward frequency. May not be achieved. Used for lowhigh framemanager
+};
+
 struct WorkflowNode                          // a producer or consumer
 {
     WorkflowNode()                                {}
@@ -85,12 +97,13 @@ struct WorkflowLink                          // a dataflow
     string path;                // path to callback function module
     string prod_dflow_redist;   // redistribution component between producer and dflow
     string dflow_con_redist;    // redistribution component between dflow and consumer
-    string stream;              // Type of stream policy to use (none, single, double)
+    /*string stream;              // Type of stream policy to use (none, single, double)
     string frame_policy;        // Policy to use to manage the incoming frames
     unsigned int prod_freq_output;              // Output frequency of the producer
     string storage_policy;                      // Type of storage collection to use
     vector<StorageType> storages;               // Different level of storage availables
-    vector<unsigned int> storage_max_buffer;    // Maximum number of frame
+    vector<unsigned int> storage_max_buffer;    // Maximum number of frame*/
+    ManalaInfo manala_info;
 
     string srcPort;		// Portname of the source
     string destPort;		// Portname of the dest
@@ -290,48 +303,75 @@ struct Workflow                              // an entire workflow
             // Retrieving information on streams and buffers
             boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
             if(opt_stream)
-                    link.stream = opt_stream.get();
-            else
-                    link.stream = "none";
-            boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
-            if(opt_frame_policy)
-                    link.frame_policy = opt_frame_policy.get();
-            else
-                    link.frame_policy = "none";
-            boost::optional<unsigned int> opt_prod_output = v.second.get_optional<unsigned int>("prod_output_freq");
-            if(opt_prod_output)
-                link.prod_freq_output = opt_prod_output.get();
-            else
-                link.prod_freq_output = 1;
-            boost::optional<string> opt_storage_policy = v.second.get_optional<std::string>("storage_collection_policy");
-            if(opt_storage_policy)
-                    link.storage_policy = opt_storage_policy.get();
-            else
-                    link.storage_policy = "greedy";
-
-
-            // TODO CHECK if this is possible even when there are no "strorage_types" in the tree
-            // TODO is it better to use get_optional? What does v.second.count do?
-            if(v.second.count("storage_types") > 0)
             {
-                for (auto &types : v.second.get_child("storage_types"))
-                {
-                    StorageType type = stringToStoragePolicy(types.second.data());
-                    link.storages.push_back(type);
-                }
+                    link.manala_info.stream = opt_stream.get();
+                    if(link.manala_info.stream != "none")
+                    {
+                        boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
+                        if(opt_frame_policy)
+                                link.manala_info.frame_policy = opt_frame_policy.get();
+                        else
+                                link.manala_info.frame_policy = "none";
+                        boost::optional<unsigned int> opt_prod_output = v.second.get_optional<unsigned int>("prod_output_freq");
+                        if(opt_prod_output)
+                            link.manala_info.prod_freq_output = opt_prod_output.get();
+                        else
+                            link.manala_info.prod_freq_output = 1;
+                        boost::optional<unsigned int> opt_low_output = v.second.get_optional<unsigned int>("low_output_freq");
+                        if(opt_low_output)
+                            link.manala_info.low_frequency = opt_low_output.get();
+                        else
+                            link.manala_info.low_frequency = 0;
+                        boost::optional<unsigned int> opt_high_output = v.second.get_optional<unsigned int>("high_output_freq");
+                        if(opt_high_output)
+                            link.manala_info.high_frequency = opt_high_output.get();
+                        else
+                            link.manala_info.high_frequency = 0;
+                        boost::optional<string> opt_storage_policy = v.second.get_optional<std::string>("storage_collection_policy");
+                        if(opt_storage_policy)
+                                link.manala_info.storage_policy = opt_storage_policy.get();
+                        else
+                                link.manala_info.storage_policy = "greedy";
+
+
+                        // TODO CHECK if this is possible even when there are no "strorage_types" in the tree
+                        // TODO is it better to use get_optional? What does v.second.count do?
+                        if(v.second.count("storage_types") > 0)
+                        {
+                            for (auto &types : v.second.get_child("storage_types"))
+                            {
+                                StorageType type = stringToStoragePolicy(types.second.data());
+                                link.manala_info.storages.push_back(type);
+                            }
+                        }
+
+                        if(v.second.count("max_storage_sizes") > 0)
+                        {
+                            for (auto &max_size : v.second.get_child("max_storage_sizes"))
+                            {
+                                link.manala_info.storage_max_buffer.push_back(max_size.second.get_value<unsigned int>());
+                            }
+                        }
+
+                        // Checking that the storage is properly setup
+                        if(link.manala_info.storages.size() != link.manala_info.storage_max_buffer.size())
+                        {
+                            fprintf(stderr, "ERROR: the number of storage layer does not match the number of storage max sizes.\n");
+                            exit(1);
+                        }
+                        if(link.manala_info.storages.empty())
+                        {
+                            fprintf(stderr, "ERROR: using a stream with buffering capabilities but no storage layers given. Declare at least one storage layer.\n");
+                            exit(1);
+                        }
+                    }
+
             }
+            else
+                    link.manala_info.stream = "none";
 
-        if(v.second.count("max_storage_sizes") > 0)
-        {
-            for (auto &max_size : v.second.get_child("max_storage_sizes"))
-            {
-                link.storage_max_buffer.push_back(max_size.second.get_value<unsigned int>());
-            }
-        }
-
-
-        workflow.links.push_back( link );
-	  } // End for workflow.links
+            workflow.links.push_back( link );
+        } // End for workflow.links
     }
     catch( const bpt::json_parser_error& jpe ) {
       cerr << "JSON parser exception: " << jpe.what() << endl;

@@ -37,9 +37,10 @@ w.add_node("prod", topology=subtopos[0], func='prod', cmdline='./prod_buffer')
 w.add_node("con", topology=subtopos[2], func='con', cmdline='./con_buffer')
 w.add_edge("prod", "con", topology=subtopos[1], func='dflow', path=mod_path,
            prod_dflow_redist='count', dflow_con_redist='count', cmdline='./dflow_buffer')
-wf.addSeqStream(w, "prod", "con", buffers = ["mainmem"], max_buffer_sizes = [3])
+#wf.addSeqStream(w, "prod", "con", buffers = ["mainmem"], max_buffer_sizes = [3])
 #wf.addMostRecentStream(w, "prod", "con", buffers = ["mainmem"], max_buffer_sizes = [3])
 #wf.addSeqStream(w, "prod", "con", prod_output_freq = 2)
+wf.addLowHighStream(w, "prod", "con", 3, 1, buffers = ["mainmem"], max_buffer_sizes = [10])
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
 wf.processGraph(w, "buffer")
