@@ -4,7 +4,9 @@ add_library             (bredala_transport SHARED     ../redist_comp.cpp
                                                     redist_round_mpi.cpp
                                                     redist_zcurve_mpi.cpp
                                                     redist_block_mpi.cpp
-                                                    redist_proc_mpi.cpp)
+                                                    redist_proc_mpi.cpp
+                                                    comm.cpp
+                                                    channel.cpp)
 
 target_link_libraries   (bredala_transport
                         ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${Boost_LIBRARIES})

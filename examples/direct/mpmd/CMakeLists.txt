@@ -6,13 +6,13 @@ add_executable              (dflow              dflow.cpp)
 add_library                 (mod_dflow          MODULE dflow.cpp)
 
 target_link_libraries       (prod
-  ${libraries} bredala_transport bredala_datamodel)
+  ${libraries} bredala_transport bredala_datamodel manala)
 target_link_libraries       (con
-  ${libraries} bredala_transport bredala_datamodel)
+    ${libraries} bredala_transport bredala_datamodel manala)
 target_link_libraries       (dflow
-  ${libraries} bredala_transport bredala_datamodel)
+  ${libraries} bredala_transport bredala_datamodel manala)
 target_link_libraries       (mod_dflow
-  ${libraries} bredala_transport bredala_datamodel)
+  ${libraries} bredala_transport bredala_datamodel manala)
 
 # .SO file extension on Linux/Mac OS
 set_target_properties(mod_dflow PROPERTIES SUFFIX ".so")

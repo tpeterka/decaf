@@ -2,7 +2,7 @@ INCLUDE_DIRECTORIES(.)
 
 include_directories(${Boost_INCLUDE_DIRS})
 ADD_LIBRARY(bca SHARED bredala.cpp)
-TARGET_LINK_LIBRARIES(bca ${Boost_LIBRARIES} bredala_transport bredala_datamodel)
+TARGET_LINK_LIBRARIES(bca ${Boost_LIBRARIES} bredala_transport bredala_datamodel manala)
 SET_TARGET_PROPERTIES(bca PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 # DEPRECATED, cmake doesn't like the LIBRARY keyword
 # INSTALL(TARGETS bca LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)  
@@ -10,7 +10,7 @@ INSTALL(TARGETS bca DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 if(NOT ${bredala_only})
   ADD_LIBRARY(dca SHARED cdecaf.cpp)
-  TARGET_LINK_LIBRARIES(dca ${Boost_LIBRARIES} bredala_transport bredala_datamodel bca)
+  TARGET_LINK_LIBRARIES(dca ${Boost_LIBRARIES} bredala_transport bredala_datamodel manala bca)
   SET_TARGET_PROPERTIES(dca PROPERTIES CLEAN_DIRECT_OUTPUT 1)
   # DEPRECATED, cmake doesn't like the LIBRARY keyword
   # INSTALL(TARGETS dca LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

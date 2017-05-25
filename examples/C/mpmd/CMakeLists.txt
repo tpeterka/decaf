@@ -8,11 +8,11 @@ add_library                 (mod_dflow_c          MODULE dflow.cpp)
 target_link_libraries       (prod_c
   ${libraries} ${Boost_LIBRARIES} bca dca)
 target_link_libraries       (con_c
-  ${libraries} bredala_transport bredala_datamodel)
+  ${libraries} bredala_transport bredala_datamodel manala)
 target_link_libraries       (dflow_c
-  ${libraries} bredala_transport bredala_datamodel)
+  ${libraries} bredala_transport bredala_datamodel manala)
 target_link_libraries       (mod_dflow_c
-  ${libraries} bredala_transport bredala_datamodel)
+  ${libraries} bredala_transport bredala_datamodel manala)
 
 # .SO file extension on Linux/Mac OS
 set_target_properties(mod_dflow_c PROPERTIES SUFFIX ".so")

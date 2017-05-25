@@ -24,7 +24,7 @@
 // transport layer specific types
 #ifdef TRANSPORT_MPI
 #include <decaf/transport/mpi/types.h>
-#include <decaf/transport/mpi/comm.hpp>
+#include <decaf/transport/mpi/comm.h>
 #include <decaf/transport/mpi/redist_count_mpi.h>
 #include <decaf/transport/mpi/redist_round_mpi.h>
 #include <decaf/transport/mpi/redist_zcurve_mpi.h>
@@ -32,15 +32,15 @@
 #include <decaf/transport/mpi/redist_proc_mpi.h>
 #include <decaf/transport/mpi/tools.hpp>
 #include <decaf/transport/mpi/channel.hpp>
-#include <decaf/datastream/datastreamdoublefeedback.hpp>
-#include <decaf/datastream/datastreamsinglefeedback.hpp>
-#include <decaf/datastream/datastreamsinglenolink.hpp>
+#include <manala/datastream/datastreamdoublefeedback.hpp>
+#include <manala/datastream/datastreamsinglefeedback.hpp>
+#include <manala/datastream/datastreamsinglenolink.hpp>
 #include <memory>
 #include <queue>
 #endif
 
-#include "types.hpp"
-#include "workflow.hpp"
+#include <decaf/types.hpp>
+#include <decaf/workflow.hpp>
 
 
 namespace decaf

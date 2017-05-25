@@ -19,16 +19,16 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "dataflow.hpp"
+#include <decaf/dataflow.hpp>
 
 // transport layer specific types
 #ifdef TRANSPORT_MPI
-#include "transport/mpi/types.h"
-#include "transport/mpi/comm.hpp"
+#include <decaf/transport/mpi/types.h>
+#include <decaf/transport/mpi/comm.h>
 #endif
 
-#include "types.hpp"
-#include "workflow.hpp"
+#include <decaf/types.hpp>
+#include <decaf/workflow.hpp>
 
 namespace decaf
 {
