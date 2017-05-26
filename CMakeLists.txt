@@ -3,9 +3,19 @@ cmake_minimum_required      (VERSION 2.8)
 
 option                      (transport_mpi      "Build Decaf with MPI transport layer"          ON)
 option                      (tess_dense         "Build tessellation density estimator example"  OFF)
-option                      (bredala_only       "Build only Bredala libraries and examples"     OFF)
+option                      (build_bredala      "Build Bredala libraries and examples"          ON)
+option                      (build_manala       "Build Manala libraries and examples"           ON)
+option                      (build_decaf        "Build the Decaf workflow system"               ON)
 option                      (build_tests        "Build the tests examples"                      OFF)
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+
+if(build_manala)
+    set                     (build_bredala  true)
+endif(build_manala)
+if(build_decaf)
+    set                     (build_bredala  true)
+    set                     (build_manala   true)
+endif(build_decaf)
 
 # OSX flags
 if                          (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -68,7 +78,6 @@ set (CMAKE_LINKER_FLAGS ${CMAKE_LINKER_FLAGS} "-Wl,--export-dynamic -dynamic")
 # subdirectories
 add_subdirectory            (src)
 add_subdirectory            (examples)
-message                     (STATUS "Examples configured")
 add_subdirectory            (python)
 
 if                          (build_tests)
