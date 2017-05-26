@@ -15,23 +15,23 @@
 #include <map>
 #include <string>
 
-#include <decaf/data_model/pconstructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
-#include <decaf/data_model/msgtool.hpp>
+#include <bredala/data_model/pconstructtype.h>
+#include <bredala/data_model/simpleconstructdata.hpp>
+#include <bredala/data_model/msgtool.hpp>
 
 #include <boost/type_index.hpp>
 
 // transport layer specific types
 #ifdef TRANSPORT_MPI
-#include <decaf/transport/mpi/types.h>
-#include <decaf/transport/mpi/comm.h>
-#include <decaf/transport/mpi/redist_count_mpi.h>
-#include <decaf/transport/mpi/redist_round_mpi.h>
-#include <decaf/transport/mpi/redist_zcurve_mpi.h>
-#include <decaf/transport/mpi/redist_block_mpi.h>
-#include <decaf/transport/mpi/redist_proc_mpi.h>
-#include <decaf/transport/mpi/tools.hpp>
-#include <decaf/transport/mpi/channel.hpp>
+#include <bredala/transport/mpi/types.h>
+#include <bredala/transport/mpi/comm.h>
+#include <bredala/transport/mpi/redist_count_mpi.h>
+#include <bredala/transport/mpi/redist_round_mpi.h>
+#include <bredala/transport/mpi/redist_zcurve_mpi.h>
+#include <bredala/transport/mpi/redist_block_mpi.h>
+#include <bredala/transport/mpi/redist_proc_mpi.h>
+#include <bredala/transport/mpi/tools.hpp>
+#include <bredala/transport/mpi/channel.hpp>
 #include <manala/datastream/datastreamdoublefeedback.hpp>
 #include <manala/datastream/datastreamsinglefeedback.hpp>
 #include <manala/datastream/datastreamsinglenolink.hpp>

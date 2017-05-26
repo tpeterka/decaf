@@ -1,5 +1,5 @@
 #include <mpi.h>
-#include <decaf/C/bredala.h>
+#include <bredala/C/bredala.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

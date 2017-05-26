@@ -16,9 +16,9 @@
 #define DECAF_DATASTREAM_SINGLE_FEEDBACK
 
 #include <manala/datastream/datastreaminterface.hpp>
-#include <decaf/transport/mpi/channel.hpp>
-#include <decaf/transport/redist_comp.h>
-#include <decaf/data_model/msgtool.hpp>
+#include <bredala/transport/mpi/channel.hpp>
+#include <bredala/transport/redist_comp.h>
+#include <bredala/data_model/msgtool.hpp>
 #include <manala/storage/storagemainmemory.hpp>
 #include <queue>
 

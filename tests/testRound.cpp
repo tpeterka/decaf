@@ -13,10 +13,10 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include <decaf/data_model/constructtype.h>
-#include <decaf/data_model/simpleconstructdata.hpp>
-#include <decaf/data_model/vectorconstructdata.hpp>
-#include <decaf/data_model/boost_macros.h>
+#include <bredala/data_model/constructtype.h>
+#include <bredala/data_model/simpleconstructdata.hpp>
+#include <bredala/data_model/vectorconstructdata.hpp>
+#include <bredala/data_model/boost_macros.h>
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
@@ -26,7 +26,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <decaf/transport/mpi/redist_round_mpi.h>
+#include <bredala/transport/mpi/redist_round_mpi.h>
 
 #include <assert.h>
 #include <math.h>

@@ -11,8 +11,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/transport/mpi/redist_count_mpi.h>
-#include <decaf/transport/mpi/types.h>
+#include <bredala/transport/mpi/redist_count_mpi.h>
+#include <bredala/transport/mpi/types.h>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -20,7 +20,7 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include <decaf/data_model/constructtype.h>
+#include <bredala/data_model/constructtype.h>
 
 #include <assert.h>
 #include <math.h>

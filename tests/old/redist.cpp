@@ -11,8 +11,8 @@
 //--------------------------------------------------------------------------
 
 #include <decaf/decaf.hpp>
-#include <decaf/transport/mpi/redist_count_mpi.h>
-#include <decaf/transport/mpi/types.h>
+#include <bredala/transport/mpi/redist_count_mpi.h>
+#include <bredala/transport/mpi/types.h>
 #include "ffs.h"
 #include "fm.h"
 

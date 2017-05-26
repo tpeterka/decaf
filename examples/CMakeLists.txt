@@ -1,10 +1,10 @@
-﻿if(NOT ${bredala_only} )
+﻿if(${build_decaf})
 
   add_subdirectory              (direct)
   add_subdirectory              (manala)
   add_subdirectory              (contract)
 
-  add_subdirectory            (flowvr)
+#  add_subdirectory            (flowvr)
 
   if                            (LAMMPS_INCLUDE_DIR AND
                                 LAMMPS_LIBRARY     AND
@@ -23,7 +23,7 @@
   #add_subdirectory          (block_data_model)
 
   #add_subdirectory            (cfd)
-endif(NOT ${bredala_only})
+endif(${build_decaf})
 
 add_subdirectory                (C)
 

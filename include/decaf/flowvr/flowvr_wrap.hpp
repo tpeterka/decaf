@@ -1,7 +1,7 @@
 #ifndef FLOWVR_WRAP_HPP
 #define FLOWVR_WRAP_HPP
 
-#include <decaf/data_model/constructtype.h>
+#include <bredala/data_model/constructtype.h>
 #include <flowvr/module.h>
 
 using namespace decaf;

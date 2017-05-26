@@ -1,4 +1,4 @@
-message("Building C examples")
+message("Building direct C example")
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra")
 
@@ -19,7 +19,7 @@ INSTALL(FILES REDIST_TEST
   GROUP_READ GROUP_WRITE GROUP_EXECUTE
   WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
-if( NOT ${bredala_only} )
+if( ${build_decaf} )
   add_executable(linear_2nodes_c linear_2nodes_c.c)
   add_executable(linear_3nodes_c linear_3nodes_c.c)
   add_executable(cycle_4nodes_c cycle_4nodes_c.c)
@@ -43,5 +43,5 @@ if( NOT ${bredala_only} )
     WORLD_READ WORLD_WRITE WORLD_EXECUTE)
 
   add_subdirectory(mpmd)
-endif(NOT  ${bredala_only})
+endif(${build_decaf})
 

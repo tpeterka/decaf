@@ -13,9 +13,9 @@
 #define DECAF_DATASTREAM
 
 #ifdef TRANSPORT_MPI
-#include <decaf/transport/mpi/types.h>
-#include <decaf/transport/mpi/comm.h>
-#include <decaf/transport/redist_comp.h>
+#include <bredala/transport/mpi/types.h>
+#include <bredala/transport/mpi/comm.h>
+#include <bredala/transport/redist_comp.h>
 #include <manala/selector/framemanagersequential.hpp>
 #include <manala/selector/framemanagermostrecent.hpp>
 #include <manala/selector/framemanagerlowhigh.hpp>
