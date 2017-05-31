@@ -13,15 +13,15 @@ DatastreamDoubleFeedback::~DatastreamDoubleFeedback()
 
 decaf::
 DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
-       int start_prod,
-       int nb_prod,
-       int start_dflow,
-       int nb_dflow,
-       int start_con,
-       int nb_con,
-       RedistComp* prod_dflow,
-       RedistComp* dflow_con,
-       ManalaInfo& manala_info):
+                                                   int start_prod,
+                                                   int nb_prod,
+                                                   int start_dflow,
+                                                   int nb_dflow,
+                                                   int start_con,
+                                                   int nb_con,
+                                                   RedistComp* prod_dflow,
+                                                   RedistComp* dflow_con,
+                                                   ManalaInfo& manala_info):
     Datastream(world_comm, start_prod, nb_prod, start_dflow, nb_dflow, start_con, nb_con, prod_dflow, dflow_con, manala_info),
     channel_prod_(NULL), channel_prod_dflow_(NULL), channel_dflow_(NULL), channel_dflow_con_(NULL),channel_con_(NULL),
     first_iteration_(true), doGet_(true), is_blocking_(false), iteration_(0)
@@ -31,10 +31,10 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
     if(is_prod())
     {
         channel_prod_ = new OneWayChannel(  world_comm_,
-                                        start_prod,
-                                        start_prod,
-                                        nb_prod,
-                                        (int)DECAF_CHANNEL_OK);
+                                            start_prod,
+                                            start_prod,
+                                            nb_prod,
+                                            (int)DECAF_CHANNEL_OK);
 
         MPI_Group group, newgroup;
         int range[3];
@@ -51,10 +51,10 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
     if(is_dflow())
     {
         channel_dflow_ = new OneWayChannel(  world_comm_,
-                                        start_dflow,
-                                        start_dflow,
-                                        nb_dflow,
-                                        (int)DECAF_CHANNEL_WAIT);
+                                             start_dflow,
+                                             start_dflow,
+                                             nb_dflow,
+                                             (int)DECAF_CHANNEL_WAIT);
 
         MPI_Group group, newgroup;
         int range[3];
@@ -71,10 +71,10 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
     if(is_con())
     {
         channel_con_ = new OneWayChannel(  world_comm_,
-                                        start_con,
-                                        start_con,
-                                        nb_con,
-                                        (int)DECAF_CHANNEL_OK);
+                                           start_con,
+                                           start_con,
+                                           nb_con,
+                                           (int)DECAF_CHANNEL_OK);
         MPI_Group group, newgroup;
         int range[3];
         range[0] = start_con;
@@ -90,10 +90,10 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
     if(is_con_root() || is_dflow_root())
     {
         channel_dflow_con_ = new OneWayChannel(world_comm_,
-                                           start_con,
-                                           start_dflow,
-                                           1,
-                                           (int)DECAF_CHANNEL_WAIT);
+                                               start_con,
+                                               start_dflow,
+                                               1,
+                                               (int)DECAF_CHANNEL_WAIT);
     }
 
     if(is_prod_root() || is_dflow_root())
@@ -112,12 +112,12 @@ DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
 }
 decaf::
 DatastreamDoubleFeedback::DatastreamDoubleFeedback(CommHandle world_comm,
-           int start_prod,
-           int nb_prod,
-           int start_con,
-           int nb_con,
-           RedistComp* redist_prod_con,
-           ManalaInfo& manala_info)
+                                                   int start_prod,
+                                                   int nb_prod,
+                                                   int start_con,
+                                                   int nb_con,
+                                                   RedistComp* redist_prod_con,
+                                                   ManalaInfo& manala_info)
 {
     fprintf(stderr,"ERROR: Stream with double feedback in not available without a link. Abording.\n");
     MPI_Abort(MPI_COMM_WORLD, -1);
@@ -210,47 +210,47 @@ void decaf::DatastreamDoubleFeedback::processDflow(pConstructData data)
         DecafChannelCommand cmd =  channel_dflow_->checkSelfCommand();
 
         switch (cmd) {
-            case DECAF_CHANNEL_GET:
+        case DECAF_CHANNEL_GET:
+        {
+            //fprintf(stderr, "Processing a get command.\n");
+            if(doGet_)
             {
-                //fprintf(stderr, "Processing a get command.\n");
-                if(doGet_)
+                pConstructData container;
+                bool received = redist_prod_dflow_->IGet(container);
+                if(received)
                 {
-                    pConstructData container;
-                    bool received = redist_prod_dflow_->IGet(container);
-                    if(received)
+                    if(msgtools::test_quit(container))
                     {
-                        if(msgtools::test_quit(container))
-                        {
-                            doGet_ = false;
-                            fprintf(stderr, "Reception of the terminate message. Saving data on file.\n");
-                            storage_collection_->save(world_rank_);
-                        }
-                        redist_prod_dflow_->flush();
-                        framemanager_->putFrame(iteration_);
-                        storage_collection_->insert(iteration_, container);
-                        iteration_++;
+                        doGet_ = false;
+                        fprintf(stderr, "Reception of the terminate message. Saving data on file.\n");
+                        storage_collection_->save(world_rank_);
                     }
-                    //fprintf(stderr, "Reception of a message from the producer completed.\n");
+                    redist_prod_dflow_->flush();
+                    framemanager_->putFrame(iteration_);
+                    storage_collection_->insert(iteration_, container);
+                    iteration_++;
                 }
-                break;
+                //fprintf(stderr, "Reception of a message from the producer completed.\n");
             }
-            case DECAF_CHANNEL_PUT:
+            break;
+        }
+        case DECAF_CHANNEL_PUT:
+        {
+            //fprintf(stderr, "Processing a put command.\n");
+            if(!framemanager_->hasNextFrame())
             {
-                //fprintf(stderr, "Processing a put command.\n");
-                if(!framemanager_->hasNextFrame())
-                {
-                    fprintf(stderr, "ERROR: the frame requested has not arrived yet.\n");
-                    MPI_Abort(MPI_COMM_WORLD, -1);
-                }
-
-                unsigned int frame_id;
-                FrameCommand command = framemanager_->getNextFrame(&frame_id);
-                data->merge(storage_collection_->getData(frame_id).getPtr());
-                storage_collection_->processCommand(command, frame_id);
-                receivedDflowSignal = true;
+                fprintf(stderr, "ERROR: the frame requested has not arrived yet.\n");
+                MPI_Abort(MPI_COMM_WORLD, -1);
             }
-            default:
-                break;
+
+            unsigned int frame_id;
+            FrameCommand command = framemanager_->getNextFrame(&frame_id);
+            data->merge(storage_collection_->getData(frame_id).getPtr());
+            storage_collection_->processCommand(command, frame_id);
+            receivedDflowSignal = true;
+        }
+        default:
+            break;
         }
         channel_dflow_->updateSelfValue((int)DECAF_CHANNEL_WAIT);
     }

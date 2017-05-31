@@ -258,19 +258,6 @@ Decaf::Decaf(CommHandle world_comm,
     }
 
     // outbound dataflows
-    /*set <Dataflow*> unique_out_dataflows;               // set prevents adding duplicates
-    for (size_t i = 0; i < workflow_.links.size(); i++)
-    {
-        if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
-            unique_out_dataflows.insert(dataflows[i]);
-        if (workflow_.my_out_link(world->rank(), i))    // I am a node and this dataflow is an output
-            unique_out_dataflows.insert(dataflows[i]);
-    }
-    out_dataflows.resize(unique_out_dataflows.size()); // copy set to vector
-    copy(unique_out_dataflows.begin(), unique_out_dataflows.end(), out_dataflows.begin());
-    */
-
-    // Remove the set
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
         // I am a link and this dataflow is me
