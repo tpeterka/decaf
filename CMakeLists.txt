@@ -1,5 +1,5 @@
 project                     (Decaf)
-cmake_minimum_required      (VERSION 2.8)
+cmake_minimum_required      (VERSION 3.0)
 
 option                      (transport_mpi      "Build Decaf with MPI transport layer"          ON)
 option                      (tess_dense         "Build tessellation density estimator example"  OFF)

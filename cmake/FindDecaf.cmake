@@ -58,7 +58,7 @@ FIND_LIBRARY(MANALA_LIBRARY NAMES manala HINTS
     ${DECAF_PREFIX}/lib
     /usr/lib
     /usr/local/lib
-    opt/local/lib
+    /opt/local/lib
     /sw/lib
 )
 
