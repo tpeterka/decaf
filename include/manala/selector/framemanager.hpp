@@ -12,6 +12,7 @@
 #ifndef DECAF_FRAMEMANAGER
 #define DECAF_FRAMEMANAGER
 
+#include <decaf/types.hpp>
 #include <bredala/transport/mpi/types.h>
 #include <bredala/transport/mpi/channel.hpp>
 #include <manala/types.h>

@@ -3,7 +3,7 @@ INCLUDE_DIRECTORIES(.)
 include_directories(${Boost_INCLUDE_DIRS})
 
 ADD_LIBRARY(dca SHARED cdecaf.cpp)
-TARGET_LINK_LIBRARIES(dca ${Boost_LIBRARIES} bredala_transport bredala_datamodel manala bca)
+TARGET_LINK_LIBRARIES(dca ${Boost_LIBRARIES} bredala_transport bredala_datamodel manala bca decaf)
 SET_TARGET_PROPERTIES(dca PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 # DEPRECATED, cmake doesn't like the LIBRARY keyword
 # INSTALL(TARGETS dca LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

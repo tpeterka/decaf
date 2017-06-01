@@ -36,13 +36,6 @@ Comm::world_rank()
     return(rank_ + min_rank);
 }// my world rank
 
-CommTypeDecaf
-decaf::
-Comm::type()
-{
-    return type_;
-}
-
 // returns the number of inputs (sources) expected for a get
 int
 decaf::
@@ -119,13 +112,11 @@ Comm::Comm(CommHandle world_comm,
            int max_rank,
            int num_srcs,
            int num_dests,
-           int start_dest,
-           CommTypeDecaf comm_type):
+           int start_dest)://,
     min_rank(min_rank),
     num_srcs(num_srcs),
     num_dests(num_dests),
-    start_dest(start_dest),
-    type_(comm_type)
+    start_dest(start_dest)
 {
     MPI_Group group, newgroup;
     int range[3];
@@ -152,7 +143,6 @@ Comm::Comm(CommHandle world_comm):
     num_srcs         = 0;
     num_dests        = 0;
     start_dest       = 0;
-    type_            = 0;
     new_comm_handle_ = false;
 
     MPI_Comm_rank(handle_, &rank_);
@@ -164,4 +154,39 @@ Comm::~Comm()
 {
     if (new_comm_handle_)
         MPI_Comm_free(&handle_);
+}
+
+
+// Previously in decaf/include/bredala/transport/mpi/tools.hpp
+int
+decaf::CommRank(CommHandle comm)
+{
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+    return rank;
+}
+
+int
+decaf::CommSize(CommHandle comm)
+{
+    int size;
+    MPI_Comm_size(comm, &size);
+    return size;
+}
+
+size_t
+decaf::DatatypeSize(CommDatatype dtype)
+{
+    MPI_Aint extent;
+    MPI_Aint lb;
+    MPI_Type_get_extent(dtype, &lb, &extent);
+    return extent;
+}
+
+Address
+decaf::addressof(const void *addr)
+{
+    MPI_Aint p;
+    MPI_Get_address(addr, &p);
+    return p;
 }

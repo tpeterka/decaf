@@ -26,44 +26,44 @@ add_library                 (mod_period_link   MODULE   period_link.cpp)
 
 
 target_link_libraries       (contract
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_contract
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 target_link_libraries       (contract_link
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_contract_link
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 target_link_libraries       (period_3nodes
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_period_3nodes
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 target_link_libraries		(putget_index
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries		(mod_putget_index
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 target_link_libraries       (errors
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_errors
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 target_link_libraries       (simple_2nodes
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_simple_2nodes
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 target_link_libraries       (conversion
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_conversion
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 target_link_libraries       (period_link
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_period_link
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 
 # .SO file extension on Linux/Mac OS

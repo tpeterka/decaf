@@ -29,7 +29,7 @@ if( ${build_decaf} )
   target_link_libraries(linear_3nodes_c bca dca)
   target_link_libraries(cycle_4nodes_c bca dca)
   target_link_libraries(mod_dflow_direct
-    ${libraries} bredala_transport bredala_datamodel  manala)
+    ${libraries} bredala_transport bredala_datamodel  manala decaf)
 
   INSTALL(TARGETS linear_2nodes_c
     linear_3nodes_c mod_dflow_direct

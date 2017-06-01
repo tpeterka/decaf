@@ -12,7 +12,6 @@
 #ifndef DECAF_COMM_H
 #define DECAF_COMM_H
 
-#include <decaf/types.hpp>
 #include <bredala/transport/mpi/types.h>
 #include <vector>
 #include <math.h>
@@ -30,8 +29,8 @@ namespace decaf
              int max_rank,
              int num_srcs = 0,
              int num_dests = 0,
-             int start_dest = 0,
-             CommTypeDecaf comm_type = 0);
+             int start_dest = 0);//,
+             //CommTypeDecaf comm_type = 0);
         Comm(CommHandle world_comm);
         ~Comm();
         CommHandle handle();
@@ -39,7 +38,6 @@ namespace decaf
         int rank();
         int world_rank(int rank);// world rank of any rank in this comm
         int world_rank();// my world rank
-        CommTypeDecaf type();
         int num_inputs();
         int start_input();
         int num_outputs();
@@ -57,9 +55,14 @@ namespace decaf
         int num_srcs;             // number of sources (producers) within the communicator
         int num_dests;            // numbers of destinations (consumers) within the communicator
         int start_dest;           // first destination rank within the communicator (0 to size_ - 1)
-        CommTypeDecaf type_;      // communicator type (prod, dflow, con, prod_dflow, or dflow_con)
         bool new_comm_handle_;    // a new low level communictor (handle) was created
     };
+
+    // Previously in decaf/include/bredala/transport/mpi/tools.hpp
+    int CommRank(CommHandle comm);
+    int CommSize(CommHandle comm);
+    size_t DatatypeSize(CommDatatype dtype);
+    Address addressof(const void *addr);
 
 } // namespace
 

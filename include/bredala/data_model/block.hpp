@@ -250,6 +250,8 @@ public:
                 if(ownExtends_[i-Dim]+ownExtends_[i] < other.ownExtends_[i-Dim] + other.ownExtends_[i])
                     return false;
         }
+
+        return true;
     }
 
     void makeUnion(const Block<Dim> & other)

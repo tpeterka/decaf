@@ -9,17 +9,17 @@ add_library                 (mod_dflow_buffer   MODULE  dflow.cpp)
 add_executable              (simple_onesided            simple_onesided.cpp)
 
 target_link_libraries       (prod_buffer 
-${libraries} bredala_transport bredala_datamodel manala)
+${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (filereader
-${libraries} bredala_transport bredala_datamodel manala)
+${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (dflow_buffer
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (con_buffer
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (mod_dflow_buffer
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 target_link_libraries       (simple_onesided
-  ${libraries} bredala_transport bredala_datamodel manala)
+  ${libraries} bredala_transport bredala_datamodel manala decaf)
 
 # .SO file extension on Linux/Mac OS
 set_target_properties(mod_dflow_buffer  PROPERTIES SUFFIX ".so")
