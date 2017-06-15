@@ -15,7 +15,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "bredala/transport/mpi/redist_mpi.h"
+#include <bredala/transport/mpi/redist_mpi.h>
 
 // create communicators for contiguous process assignment
 // ranks within source and destination must be contiguous, but
