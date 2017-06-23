@@ -78,6 +78,9 @@ RedistRoundMPI::splitData(pConstructData& data, RedistRole role)
             split_ranges[(global_item_rank_ + i) % nbDests_].push_back(1);
         }
 
+        // Add the total of items for 1 destination.
+        // Each interval has 1 item so the form is always [[offset1,1][offset2,1]...]
+        // The total number of items for 1 destination is then size() / 2
         for(unsigned int i = 0; i < split_ranges.size(); i++)
             split_ranges[i].push_back(split_ranges[i].size() / 2);
 
@@ -85,7 +88,7 @@ RedistRoundMPI::splitData(pConstructData& data, RedistRole role)
 
         for(unsigned int i = 0; i < split_ranges.size(); i++)
         {
-            if(split_ranges.at(i).size() > 0)
+            if(split_ranges[i].size() > 0)
             {
                 destList_.push_back(i + local_dest_rank_);
 

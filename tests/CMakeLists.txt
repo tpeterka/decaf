@@ -24,6 +24,9 @@
 
 message("Building boost based redistribution example")
 
+find_package(CCI REQUIRED)
+include_directories(${CCI_INCLUDE_DIR})
+
 add_executable              (testboost testBoost.cpp)
 target_link_libraries       (testboost ${libraries} bredala_transport bredala_datamodel)
 
@@ -58,7 +61,10 @@ target_link_libraries       (testmem ${libraries} bredala_transport bredala_data
 add_executable              (testserialization testSerialization.cpp)
 target_link_libraries       (testserialization ${libraries} bredala_transport bredala_datamodel)
 
-install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage
+add_executable		    (testcci testCCI.cpp)
+target_link_libraries	    (testcci ${libraries} bredala_transport_cci bredala_datamodel)
+
+install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testcci
   DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   )
