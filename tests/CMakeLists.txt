@@ -62,7 +62,7 @@ add_executable              (testserialization testSerialization.cpp)
 target_link_libraries       (testserialization ${libraries} bredala_transport bredala_datamodel)
 
 add_executable		    (testcci testCCI.cpp)
-target_link_libraries	    (testcci ${libraries} bredala_transport_cci bredala_datamodel)
+target_link_libraries	    (testcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
 
 install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testcci
   DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/

@@ -37,11 +37,11 @@ void read_uris(string filename, vector<string>& server_uris)
     {
         string uri;
         file>>uri;
-        fprintf(stderr, "Reading URI: %s\n", uri.c_str());
+        //fprintf(stderr, "Reading URI: %s\n", uri.c_str());
         server_uris.push_back(uri);
     }
 
-    fprintf(stderr, "The client read %lu uris.\n", server_uris.size());
+    //fprintf(stderr, "The client read %lu uris.\n", server_uris.size());
 }
 
 void write_uri(CommHandle task_com, string filename, char* uri)
@@ -70,7 +70,7 @@ void write_uri(CommHandle task_com, string filename, char* uri)
             received_uri.resize(nbytes);
             MPI_Recv(&received_uri[0], nbytes, MPI_BYTE, status.MPI_SOURCE, status.MPI_TAG, task_com, &status);
 
-            fprintf(stderr, "URI received: %s\n", received_uri.c_str());
+            //fprintf(stderr, "URI received: %s\n", received_uri.c_str());
             uris.push_back(received_uri);
         }
 
@@ -169,7 +169,7 @@ RedistCCI::init_connection_client(vector<string>&  server_uris)
         }
     }
 
-    fprintf(stderr, "Connections initialized.\n");
+    //fprintf(stderr, "Connections initialized.\n");
 }
 
 
@@ -180,7 +180,7 @@ RedistCCI::init_connection_server(int nb_connections)
     int ret;
 
     int connection_left = nb_connections;
-    fprintf(stderr, "Waiting for %d connection.\n", nb_connections);
+    //fprintf(stderr, "Waiting for %d connection.\n", nb_connections);
     while (connection_left > 0)
     {
         cci_event_t* event;
@@ -199,7 +199,7 @@ RedistCCI::init_connection_server(int nb_connections)
         {
         case CCI_EVENT_CONNECT_REQUEST:
         {
-            fprintf(stderr, "Reception of a connection request...\n");
+            //fprintf(stderr, "Reception of a connection request...\n");
             ret = cci_accept(event, NULL);
             if (ret != CCI_SUCCESS)
             {
@@ -213,7 +213,7 @@ RedistCCI::init_connection_server(int nb_connections)
         }
         case CCI_EVENT_ACCEPT:
         {
-            fprintf(stderr, "Server accepting a connection. Building the channel structure.\n");
+            //fprintf(stderr, "Server accepting a connection. Building the channel structure.\n");
             CCIchannel channel;
             channel.connection = event->accept.connection;
 
@@ -563,15 +563,17 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
     //Processing the data exchange
     if(role == DECAF_REDIST_SOURCE)
     {
-        fprintf(stderr, "Number of connections: %lu, number of chunks: %lu\n",
-                channels_prod_.size(), splitChunks_.size());
+        //fprintf(stderr, "Number of connections: %lu, number of chunks: %lu\n",
+        //        channels_prod_.size(), splitChunks_.size());
+
         // First we send the request for the memory handler
         // and register the local memory
         for (unsigned int i = 0; i < channels_prod_.size(); i++)
         {
-            fprintf(stderr, "Sending the memory request %u\n", i);
+            //fprintf(stderr, "Sending the memory request %u\n", i);
             if(splitChunks_[i].getPtr()) // Full message to send
             {
+                fprintf(stderr, "Case of a chunk with data.\n");
                 // Sending the memory request
                 msg_cci req_mem;
                 req_mem.type = MSG_MEM_REQ;
@@ -579,7 +581,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
 
                 cci_send(channels_prod_[i].connection, &req_mem, sizeof(req_mem), (void*)1, 0);
 
-                fprintf(stderr, "Sent the memory request %u. Registering local memory...\n", i);
+                //fprintf(stderr, "Sent the memory request %u. Registering local memory...\n", i);
                 // Deregistering the previous memory if any
                 if(channels_prod_[i].buffer_size > 0)
                     cci_rma_deregister(endpoint_prod_, channels_prod_[i].local_rma_handle);
@@ -590,16 +592,18 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                                        splitChunks_[i]->getOutSerialBufferSize(), flags,
                                        &channels_prod_[i].local_rma_handle);
                 channels_prod_[i].buffer_size = splitChunks_[i]->getOutSerialBufferSize();
+                fprintf(stderr, "Destination %u, nb items: %u\n", i, splitChunks_[i]->getNbItems());
             }
             else // Empty message still sent to unlock the server
             {
+                fprintf(stderr, "Case of the empty message...\n");
                 msg_cci req_mem;
                 req_mem.type = MSG_MEM_REQ;
                 req_mem.value = 1;
 
                 cci_send(channels_prod_[i].connection, &req_mem, sizeof(req_mem), (void*)1, 0);
 
-                fprintf(stderr, "Sent the memory request %u. Registering local memory...\n", i);
+                //fprintf(stderr, "Sent the memory request %u. Registering local memory...\n", i);
                 // Deregistering the previous memory if any
                 if(channels_prod_[i].buffer_size > 0)
                     cci_rma_deregister(endpoint_prod_, channels_prod_[i].local_rma_handle);
@@ -612,15 +616,16 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                                        1, flags,
                                        &channels_prod_[i].local_rma_handle);
                 channels_prod_[i].buffer_size = 1;
+                fprintf(stderr, "Destination %u, nb items: 0\n", i);
             }
             //check_return(endpoint, "cci_rma_register", ret, 1);
-            fprintf(stderr, "Memory request %u sent.\n", i);
+            //fprintf(stderr, "Memory request %u sent.\n", i);
         }
 
         fprintf(stderr, "Requests for distant memory sent.\n");
 
         int nb_send = channels_prod_.size();
-        fprintf(stderr, "Will perform %i send.\n", nb_send);
+        //fprintf(stderr, "Will perform %i send.\n", nb_send);
 
         // Looping over the events
         // Protocol:
@@ -645,17 +650,17 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
             {
             case CCI_EVENT_RECV:
             {
-                fprintf(stderr, "Received a message. Processing...\n");
+                //fprintf(stderr, "Received a message. Processing...\n");
                 msg_cci *msg = (msg_cci *)event->recv.ptr;
                 if (msg->type == MSG_OK)
                 {
                     // The server is done processing the data
-                    fprintf(stderr, "Data have been process on the server.\n");
+                    //fprintf(stderr, "Data have been process on the server.\n");
                     nb_send--;
                 }
                 else if (msg->type == MSG_MEM_HANDLE)
                 {
-                    fprintf(stderr, "Reception of the remote memory handler. Sending the message...\n");
+                    //fprintf(stderr, "Reception of the remote memory handler. Sending the message...\n");
                     // Getting the server handle
                     unsigned int index_connection = indexes_prod_.at(event->recv.connection);
                     channels_prod_[index_connection].distant_rma_handle = (cci_rma_handle_t *)malloc(sizeof(cci_rma_handle_t));
@@ -670,7 +675,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     msg_cci ack_msg;
                     ack_msg.type = MSG_RMA_SENT;
 
-                    fprintf(stderr, "Sending the ack type: %u\n", ack_msg.type);
+                    //fprintf(stderr, "Sending the ack type: %u\n", ack_msg.type);
 
                     ret = cci_rma(channels_prod_[index_connection].connection,
                                   &ack_msg, sizeof(msg_cci),
@@ -682,7 +687,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     if (ret)
                         fprintf(stderr, "cci_rma returned %s\n",
                             cci_strerror(endpoint_prod_, (cci_status)ret));
-                    fprintf(stderr, "Message sent through RMA.\n");
+                    //fprintf(stderr, "Message sent through RMA.\n");
                 }
                 else
                 {
@@ -784,7 +789,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                 if (msg->type == MSG_MEM_REQ)
                 {
                     // The client wants to send data. Allocating memory
-                    fprintf(stderr, "Reception of a memory request...\n");
+                    //fprintf(stderr, "Reception of a memory request...\n");
 
                     // Deregistering the previous memory if required
                     if(channel.buffer_size > 0)
@@ -804,19 +809,19 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     ret = cci_rma_register(endpoint_con_, &channel.buffer[0], msg->value, flags,
                                            &channel.local_rma_handle);
                     //check_return(endpoint_con_, "cci_rma_register", ret, 1);
-                    fprintf(stderr, "local_rma_handle is %p\n", (void*)channel.local_rma_handle);
+                    //fprintf(stderr, "local_rma_handle is %p\n", (void*)channel.local_rma_handle);
 
                     // Sending the local handler to the distant
                     msg_cci msg_handle;
                     msg_handle.type = MSG_MEM_HANDLE;
                     memcpy(msg_handle.rma_handle, channel.local_rma_handle, sizeof(msg_handle.rma_handle));
-                    fprintf(stderr, "Handler sent: %llu %llu %llu %llu\n",
-                            msg_handle.rma_handle[0],
-                            msg_handle.rma_handle[1],
-                            msg_handle.rma_handle[2],
-                            msg_handle.rma_handle[3]);
+                    //fprintf(stderr, "Handler sent: %llu %llu %llu %llu\n",
+                    //        msg_handle.rma_handle[0],
+                    //        msg_handle.rma_handle[1],
+                    //        msg_handle.rma_handle[2],
+                    //        msg_handle.rma_handle[3]);
                     ret = cci_send(channel.connection, &msg_handle, sizeof(msg_cci), (void*)1, CCI_FLAG_SILENT);
-                    fprintf(stderr, "Memory handler sent.\n");
+                    //fprintf(stderr, "Memory handler sent.\n");
                 }
                 else if(msg->type == MSG_RMA_SENT)
                 {
@@ -826,13 +831,14 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     msg_cci msg_ack;
                     msg_ack.type = MSG_OK;
                     cci_send(event->recv.connection, &msg_ack, sizeof(msg_cci), (void*)1, 0);
+                    fprintf(stderr, "Reception of a RMA sent which worked.\n");
                 }
                 else
                 {
                     // BUG: that correspond to the message sent from the client
                     // at the end of the RDMA operation but the content of the
                     // msg is corrupted.
-                    fprintf(stderr, "Unexpected type of msg received: %u.\n", msg->type);
+                    //fprintf(stderr, "Unexpected type of msg received: %u.\n", msg->type);
                     //fprintf(stderr, "Memory state from unexpected type of msg: %s\n", channels.at(event->recv.connection).buffer);
 
                     msg_cci msg_ack;
@@ -842,8 +848,9 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     // Empty message case
                     if(channel.buffer_size == 1)
                     {
-                        fprintf(stderr,"Reception of an empty message. Not doing anything.\n");
+                        //fprintf(stderr,"Reception of an empty message. Not doing anything.\n");
                         nbRecep--;
+                        cci_return_event(event);
                         continue;
                     }
 

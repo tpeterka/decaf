@@ -3,17 +3,22 @@
 #include <mpi.h>
 #include <string>
 #include <bredala/transport/cci/redist_count_cci.h>
+#include <bredala/transport/mpi/redist_count_mpi.h>
 #include <bredala/data_model/pconstructtype.h>
 #include <bredala/data_model/arrayfield.hpp>
 #include <bredala/data_model/boost_macros.h>
+#include <sys/time.h>
 
 using namespace decaf;
 using namespace std;
 
-void print_array(unsigned int* array, unsigned int size)
+unsigned int nsteps = 5;
+unsigned int max_array_size = 10;
+
+void print_array(unsigned int* array, unsigned int size, unsigned int it)
 {
     stringstream ss;
-    ss<<"[";
+    ss<<"It "<<it<<"[";
     for(unsigned int i = 0; i < size; i++)
         ss<<array[i]<<",";
     ss<<"]";
@@ -29,28 +34,37 @@ void run_client(int global_id)
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
+    //RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_COLLECTIVE);
     fprintf(stderr, "Redistribution component created by the client.\n");
 
-    pConstructData container;
+    // TODO: test the case with 0
+    srand(1 + global_id);
 
-    unsigned int array_size = 10;
+    for(unsigned int j = 0; j < nsteps; j++)
+    {
+        fprintf(stderr, "ITERATION %u\n", j);
+        pConstructData container;
 
-    unsigned int* my_array = new unsigned int[array_size];
-    ArrayFieldu my_array_field(my_array, 10, 1, false);
+        unsigned int array_size = rand() % max_array_size;
 
-    for (unsigned int i = 0; i < array_size; i++)
-        my_array[i] = global_id * array_size + i;
+        unsigned int* my_array = new unsigned int[array_size];
+        ArrayFieldu my_array_field(my_array, array_size, 1, false);
 
-    container->appendData("my_array", my_array_field,
-                          DECAF_NOFLAG,DECAF_PRIVATE,
-                          DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+        for (unsigned int i = 0; i < array_size; i++)
+            my_array[i] = global_id * max_array_size + i + j * 100;
 
-    fprintf(stderr,"Processing data on the client side...\n");
-    redist->process(container, DECAF_REDIST_SOURCE);
-    fprintf(stderr, "Data processed on the client side.\n");
-    print_array(my_array, array_size);
+        container->appendData("my_array", my_array_field,
+                              DECAF_NOFLAG,DECAF_PRIVATE,
+                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
-    delete [] my_array;
+        redist->process(container, DECAF_REDIST_SOURCE);
+
+        print_array(my_array, array_size, j);
+
+        delete [] my_array;
+
+        //redist->clearBuffers();
+    }
     delete redist;
 }
 
@@ -63,20 +77,28 @@ void run_server(int global_id)
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
+    //RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_COLLECTIVE);
     fprintf(stderr, "Redistribution component created by the server.\n");
 
-    pConstructData result;
-    fprintf(stderr,"Processing data on the server side...\n");
-    redist->process(result, DECAF_REDIST_DEST);
-    fprintf(stderr, "Data processed on the server side.\n");
+    for (unsigned int i = 0; i < nsteps; i++)
+    {
+        pConstructData result;
+        redist->process(result, DECAF_REDIST_DEST);
 
-    ArrayFieldu my_array_field = result->getFieldData<ArrayFieldu>("my_array");
-    if(!my_array_field)
-        fprintf(stderr, "ERROR: field my_array not found.\n");
+        ArrayFieldu my_array_field = result->getFieldData<ArrayFieldu>("my_array");
+        if(!my_array_field)
+            print_array(nullptr, 0, i);
+        else
+        {
+            unsigned int* array = my_array_field.getArray();
+            unsigned int size = my_array_field.getArraySize();
+            print_array(array, size, i);
+        }
 
-    unsigned int* array = my_array_field.getArray();
-    unsigned int size = my_array_field.getArraySize();
-    print_array(array, size);
+        //redist->clearBuffers();
+
+        sleep(1);
+    }
 
     delete redist;
 }
