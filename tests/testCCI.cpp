@@ -12,7 +12,6 @@
 using namespace decaf;
 using namespace std;
 
-unsigned int nsteps = 5;
 unsigned int max_array_size = 10;
 
 void print_array(unsigned int* array, unsigned int size, unsigned int it)
@@ -25,25 +24,30 @@ void print_array(unsigned int* array, unsigned int size, unsigned int it)
     fprintf(stderr, "%s\n", ss.str().c_str());
 }
 
-void run_client(int global_id)
+void run_client(int nb_client, int nb_server, int nb_it, bool use_mpi)
 {
+    int size;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    int global_id = rank;
     fprintf(stderr, "Running client with the global id %d\n", global_id);
 
-    fprintf(stderr, "Creating the client redistribution component...\n");
-    /*RedistCountCCI* redist = new RedistCountCCI(0, 2, 2, 2,
+    RedistComp* redist;
+    if(use_mpi)
+        redist = new RedistCountMPI(0, nb_client, nb_client, nb_server, MPI_COMM_WORLD, DECAF_REDIST_P2P);
+    else
+        redist = new RedistCountCCI(0, nb_client, nb_client, nb_server,
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
-    */
-    RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_P2P);
-    fprintf(stderr, "Redistribution component created by the client.\n");
 
     // TODO: test the case with 0
     srand(1 + global_id);
 
-    for(unsigned int j = 0; j < nsteps; j++)
+    for(unsigned int j = 0; j < nb_it; j++)
     {
-        fprintf(stderr, "ITERATION %u\n", j);
         pConstructData container;
 
         unsigned int array_size = rand() % max_array_size;
@@ -69,20 +73,28 @@ void run_client(int global_id)
     delete redist;
 }
 
-void run_server(int global_id)
+void run_server(int nb_client, int nb_server, int nb_it, bool use_mpi)
 {
+    int size;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    int global_id = nb_client + rank;
+
     fprintf(stderr, "Running server with the global id %d\n", global_id);
 
-    fprintf(stderr, "Creating the client redistribution component...\n");
-    /*RedistCountCCI* redist = new RedistCountCCI(0, 2, 2, 2,
+    RedistComp* redist;
+    if(use_mpi)
+        redist = new RedistCountMPI(0, nb_client, nb_client, nb_server, MPI_COMM_WORLD, DECAF_REDIST_P2P);
+    else
+        redist = new RedistCountCCI(0, nb_client, nb_client, nb_server,
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
-*/
-    RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_P2P);
-    fprintf(stderr, "Redistribution component created by the server.\n");
 
-    for (unsigned int i = 0; i < nsteps; i++)
+
+    for (unsigned int i = 0; i < nb_it; i++)
     {
         pConstructData result;
         redist->process(result, DECAF_REDIST_DEST);
@@ -107,22 +119,20 @@ void run_server(int global_id)
 
 static void print_usage(char *proc)
 {
-    fprintf(stderr, "usage: %s [-i <id> -s|-c]\n", proc);
+    fprintf(stderr, "usage: %s [-n <nb_client> -m <nb_server> -s|-c][-i <nsteps>][-p]\n", proc);
     fprintf(stderr, "where:\n");
     fprintf(stderr, "\t-s\tRuns as server\n");
     fprintf(stderr, "\t-c\tRuns as client\n");
-    fprintf(stderr, "\t-i\tIndicate the ID of the task\n");
+    fprintf(stderr, "\t-n\tIndicate the number of clients\n");
+    fprintf(stderr, "\t-m\tIndicate the number of servers\n");
+    fprintf(stderr, "\t-i\tIndicate the number of iterations to redistribute\n");
+    fprintf(stderr, "\t-p\tUse MPI redistribution instead of CCI.\n");
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char* argv[])
 {
     MPI_Init(NULL,NULL);
-
-    int size;
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     uint32_t caps	= 0;
     int ret = cci_init(CCI_ABI_VERSION, 0, &caps);
@@ -134,9 +144,12 @@ int main(int argc, char* argv[])
 
     char c;
     bool is_server = false, is_client = false;
-    int id = -1;
+    int nb_client = -1;
+    int nb_server = -1;
+    int nb_it = 5;
+    bool use_mpi = false;
 
-    while ((c = getopt(argc, argv, "i:cs")) != -1) {
+    while ((c = getopt(argc, argv, "n:m:csi:p")) != -1) {
         switch (c) {
         case 'c':
             is_client = true;
@@ -144,21 +157,35 @@ int main(int argc, char* argv[])
         case 's':
             is_server = true;
             break;
+        case 'n':
+            nb_client = atoi(strdup(optarg));
+            break;
+        case 'm':
+            nb_server = atoi(strdup(optarg));
+            break;
         case 'i':
-            id = atoi(strdup(optarg));
+            nb_it = atoi(strdup(optarg));
+            break;
+        case 'p':
+            use_mpi = true;
             break;
         default:
             print_usage(argv[0]);
         }
     }
 
-    if(id == -1 || (!is_client && !is_server))
+    if(nb_client == -1 || nb_server == -1 || nb_it < 1 || (!is_client && !is_server))
         print_usage(argv[0]);
 
+    if(use_mpi)
+        fprintf(stderr, "Using the MPI redistribution component.\n");
+    else
+        fprintf(stderr, "Using the CCI redistribution component.\n");
+
     if(is_client)
-        run_client(id + rank);
+        run_client(nb_client, nb_server, nb_it, use_mpi);
     if(is_server)
-        run_server(id + rank);
+        run_server(nb_client, nb_server, nb_it, use_mpi);
 
     cci_finalize();
 

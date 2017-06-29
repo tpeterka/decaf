@@ -303,6 +303,11 @@ RedistCCI::RedistCCI(int rankSource,
         // Create a connection to each URI
         // Each producer create a connection with all the consumers
         init_connection_client(uris);
+
+        // Create the array which represents where the current source will emit toward
+        // the destinations rank. 0 is no send to that rank, 1 is send
+        // Used only with commMethod = DECAF_REDIST_COLLECTIVE
+        summerizeDest_ = new int[ nbDests_];
     }
 
     // group with all the destinations
@@ -557,8 +562,6 @@ void
 decaf::
 RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
 {
-    fprintf(stderr,"Using the point to point redistribution method.\n");
-
     int ret;
 
     //Processing the data exchange
@@ -574,7 +577,6 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
             //fprintf(stderr, "Sending the memory request %u\n", i);
             if(splitChunks_[i].getPtr()) // Full message to send
             {
-                fprintf(stderr, "Case of a chunk with data.\n");
                 // Sending the memory request
                 msg_cci req_mem;
                 req_mem.type = MSG_MEM_REQ;
@@ -593,11 +595,9 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                                        splitChunks_[i]->getOutSerialBufferSize(), flags,
                                        &channels_prod_[i].local_rma_handle);
                 channels_prod_[i].buffer_size = splitChunks_[i]->getOutSerialBufferSize();
-                fprintf(stderr, "Destination %u, nb items: %u\n", i, splitChunks_[i]->getNbItems());
             }
             else // Empty message still sent to unlock the server
             {
-                fprintf(stderr, "Case of the empty message...\n");
                 msg_cci req_mem;
                 req_mem.type = MSG_MEM_REQ;
                 req_mem.value = 1;
@@ -617,13 +617,10 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                                        1, flags,
                                        &channels_prod_[i].local_rma_handle);
                 channels_prod_[i].buffer_size = 1;
-                fprintf(stderr, "Destination %u, nb items: 0\n", i);
             }
             //check_return(endpoint, "cci_rma_register", ret, 1);
             //fprintf(stderr, "Memory request %u sent.\n", i);
         }
-
-        fprintf(stderr, "Requests for distant memory sent.\n");
 
         int nb_send = channels_prod_.size();
         //fprintf(stderr, "Will perform %i send.\n", nb_send);
@@ -651,12 +648,10 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
             {
             case CCI_EVENT_RECV:
             {
-                //fprintf(stderr, "Received a message. Processing...\n");
                 msg_cci *msg = (msg_cci *)event->recv.ptr;
                 if (msg->type == MSG_OK)
                 {
                     // The server is done processing the data
-                    //fprintf(stderr, "Data have been process on the server.\n");
                     nb_send--;
                 }
                 else if (msg->type == MSG_MEM_HANDLE)

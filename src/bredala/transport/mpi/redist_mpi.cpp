@@ -107,6 +107,14 @@ RedistMPI::RedistMPI(int rankSource,
         MPI_Group_free(&groupSource);
         int source_rank;
         MPI_Comm_rank(commSources_, &source_rank);
+
+
+        // Create the array which represents where the current source will emit toward
+        // the destinations rank. 0 is no send to that rank, 1 is send
+        // Used only with commMethod = DECAF_REDIST_COLLECTIVE
+        summerizeDest_ = new int[ nbDests_];
+
+
     }
 
     // group with all the destinations
@@ -362,7 +370,7 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
                 reqs.push_back(req);
                 MPI_Isend( splitChunks_[i]->getOutSerialBuffer(),
                            splitChunks_[i]->getOutSerialBufferSize(),
-                           MPI_BYTE, destList_[i], MPI_DATA_TAG, communicator_, &reqs.back());
+                           MPI_BYTE, destList_[i], send_data_tag, communicator_, &reqs.back());
             }
             else
             {
@@ -371,10 +379,12 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
 
                 MPI_Isend( NULL,
                            0,
-                           MPI_BYTE, i + local_dest_rank_, MPI_DATA_TAG, communicator_, &reqs.back());
+                           MPI_BYTE, i + local_dest_rank_, send_data_tag, communicator_, &reqs.back());
 
             }
         }
+
+        send_data_tag = (send_data_tag == INT_MAX ? MPI_DATA_TAG : send_data_tag + 1);
     }
 
     if(role == DECAF_REDIST_DEST)
@@ -388,8 +398,8 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
         for(int i = 0; i < nbRecep; i++)
         {
             MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
-            if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
+            MPI_Probe(MPI_ANY_SOURCE, recv_data_tag, communicator_, &status);
+            if (status.MPI_TAG == recv_data_tag)  // normal, non-null get
             {
                 int nitems; // number of items (of type dtype) in the message
                 MPI_Get_count(&status, MPI_BYTE, &nitems);
@@ -438,6 +448,8 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
 
         if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
             data->mergeStoredData();
+
+        recv_data_tag = (recv_data_tag == INT_MAX ? MPI_DATA_TAG : recv_data_tag + 1);
     }
 }
 

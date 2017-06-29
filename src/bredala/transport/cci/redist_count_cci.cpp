@@ -54,8 +54,6 @@ RedistCountCCI::computeGlobal(pConstructData& data, RedistRole role)
                           MPI_SUM, task_communicator_);
 
         }
-
-        fprintf(stderr, "Total number of items: %d\n", global_nb_items_);
     }
 
 }
@@ -64,16 +62,6 @@ void
 decaf::
 RedistCountCCI::splitData(pConstructData& data, RedistRole role)
 {
-    if(role == DECAF_REDIST_SOURCE)
-    {
-        // Create the array which represents where the current source will emit toward
-        // the destinations rank. 0 is no send to that rank, 1 is send
-        // Used only with commMethod = DECAF_REDIST_COLLECTIVE
-        if( !summerizeDest_)
-            summerizeDest_ = new int[ nbDests_];
-
-    }
-
     split_by_count(data, role,
                    global_nb_items_, global_item_rank_,
                    splitChunks_, splitBuffer_,

@@ -39,7 +39,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 {
                     while(destList.size() < nbDests)
                     {
-                        fprintf(stderr,"Adding an empty message without system before split.\n");
                         destList.push_back(-1);
                         splitChunks.push_back(pConstructData(false));
                     }
@@ -50,7 +49,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 int dest_rank = 0;
                 while(destList.size() < nbDests)
                 {
-                    fprintf(stderr,"Adding an empty message with system before split.\n");
                     destList.push_back(local_dest_rank + dest_rank);
                     splitChunks.push_back(pConstructData());
                     splitChunks.back()->copySystemFields(data);
@@ -105,7 +103,7 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 first_rank = global_item_rank;
             }
 
-            fprintf(stderr, "Global_item_rank: %i, first_rank: %i\n", global_item_rank, first_rank);
+            //fprintf(stderr, "Global_item_rank: %i, first_rank: %i\n", global_item_rank, first_rank);
 
 
             // For P2P, destList must have the same size as the number of destination.
@@ -116,7 +114,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 {
                     while(destList.size() < first_rank)
                     {
-                        fprintf(stderr,"Adding an empty message without system before split.\n");
                         destList.push_back(-1);
                         splitChunks.push_back(pConstructData(false));
                     }
@@ -127,7 +124,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 int dest_rank = 0;
                 while(destList.size() < first_rank)
                 {
-                    fprintf(stderr,"Adding an empty message with system before split.\n");
                     destList.push_back(local_dest_rank + dest_rank);
                     splitChunks.push_back(pConstructData());
                     splitChunks.back()->copySystemFields(data);
@@ -139,8 +135,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                     dest_rank++;
                 }
             }
-
-            fprintf(stderr, "Size of chunks before append of buffers: %lu\n", splitChunks.size());
 
             //Compute the split vector and the destination ranks
             std::vector<int> split_ranges;
@@ -214,21 +208,21 @@ decaf::split_by_count(pConstructData& data,                             // Data 
 
             }
 
-            std::stringstream ss;
-            ss<<"Range :[";
-            for (unsigned int i = 0; i < split_ranges.size(); i++)
-                ss<<split_ranges[i]<<",";
-            ss<<"]";
-            fprintf(stderr, "%s\n", ss.str().c_str());
+            //std::stringstream ss;
+            //ss<<"Range :[";
+            //for (unsigned int i = 0; i < split_ranges.size(); i++)
+            //    ss<<split_ranges[i]<<",";
+            //ss<<"]";
+            //fprintf(stderr, "%s\n", ss.str().c_str());
 
             data->split(split_ranges, splitBuffer);
 
-            std::stringstream ss1;
-            ss1<<"Generated :[";
-            for (unsigned int i = 0; i < split_ranges.size(); i++)
-                ss1<<splitBuffer[i]->getNbItems()<<",";
-            ss1<<"]";
-            fprintf(stderr, "%s\n", ss1.str().c_str());
+            //std::stringstream ss1;
+            //ss1<<"Generated :[";
+            //for (unsigned int i = 0; i < split_ranges.size(); i++)
+            //    ss1<<splitBuffer[i]->getNbItems()<<",";
+            //ss1<<"]";
+            //fprintf(stderr, "%s\n", ss1.str().c_str());
 
             for(unsigned int i = 0; i < splitBuffer.size(); i++)
                 splitChunks.push_back(splitBuffer[i]);
@@ -241,7 +235,7 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                     std::cout<<"ERROR : unable to serialize one object"<<std::endl;
             }
 
-            fprintf(stderr, "Size of chunks after append of buffers: %lu\n", splitChunks.size());
+            //fprintf(stderr, "Size of chunks after append of buffers: %lu\n", splitChunks.size());
 
             // For P2P, destList must have the same size as the number of destination.
             // We fill the destinations with no messages with -1 (= send empty message)
@@ -251,7 +245,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 {
                     while(destList.size() < nbDests)
                     {
-                        fprintf(stderr,"Adding an empty message without system before split.\n");
                         destList.push_back(-1);
                         splitChunks.push_back(pConstructData(false));
                     }
@@ -262,7 +255,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 int dest_rank = current_rank;
                 while(destList.size() < nbDests)
                 {
-                    fprintf(stderr,"Adding an empty message with system before split.\n");
                     destList.push_back(local_dest_rank + dest_rank);
                     splitChunks.push_back(pConstructData());
                     splitChunks.back()->copySystemFields(data);
@@ -281,19 +273,17 @@ decaf::split_by_count(pConstructData& data,                             // Data 
 
             // data->purgeData();
 
-            fprintf(stderr, "Size of chunks at the end: %lu\n", splitChunks.size());
-
-            std::stringstream ss2;
-            ss2<<"Chunks :[";
-            for (unsigned int i = 0; i < splitChunks.size(); i++)
-            {
-                if(splitChunks[i].getPtr())
-                    ss2<<splitChunks[i]->getNbItems()<<",";
-                else
-                    ss2<<"0,";
-            }
-            ss2<<"]";
-            fprintf(stderr, "%s\n", ss2.str().c_str());
+            //std::stringstream ss2;
+            //ss2<<"Chunks :[";
+            //for (unsigned int i = 0; i < splitChunks.size(); i++)
+            //{
+            //    if(splitChunks[i].getPtr())
+            //        ss2<<splitChunks[i]->getNbItems()<<",";
+            //    else
+            //        ss2<<"0,";
+            //}
+            //ss2<<"]";
+            //fprintf(stderr, "%s\n", ss2.str().c_str());
 
         }
     }
