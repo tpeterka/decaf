@@ -340,8 +340,9 @@ RedistCCI::RedistCCI(int rankSource,
         init_connection_server(nbSources);
     }
 
-    destBuffer_ = new int[nbDests_];
-    sum_ = new int[nbDests_];
+    // TODO: maybe push that into redist_comp?
+    destBuffer_ = new int[nbDests_];    // root consumer side: array sent be the root producer. The array is then scattered by the root consumer
+    sum_ = new int[nbDests_];           // root producer side: result array after the reduce of summerizeDest. Member because of the overlapping case: The array need to be accessed by 2 consecutive function calls
 
     transit = pConstructData(false);
 

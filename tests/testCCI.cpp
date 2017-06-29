@@ -30,11 +30,12 @@ void run_client(int global_id)
     fprintf(stderr, "Running client with the global id %d\n", global_id);
 
     fprintf(stderr, "Creating the client redistribution component...\n");
-    RedistCountCCI* redist = new RedistCountCCI(0, 2, 2, 2,
+    /*RedistCountCCI* redist = new RedistCountCCI(0, 2, 2, 2,
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
-    //RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_COLLECTIVE);
+    */
+    RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_P2P);
     fprintf(stderr, "Redistribution component created by the client.\n");
 
     // TODO: test the case with 0
@@ -73,11 +74,12 @@ void run_server(int global_id)
     fprintf(stderr, "Running server with the global id %d\n", global_id);
 
     fprintf(stderr, "Creating the client redistribution component...\n");
-    RedistCountCCI* redist = new RedistCountCCI(0, 2, 2, 2,
+    /*RedistCountCCI* redist = new RedistCountCCI(0, 2, 2, 2,
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
-    //RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_COLLECTIVE);
+*/
+    RedistCountMPI* redist = new RedistCountMPI(0, 2, 2, 2, MPI_COMM_WORLD, DECAF_REDIST_P2P);
     fprintf(stderr, "Redistribution component created by the server.\n");
 
     for (unsigned int i = 0; i < nsteps; i++)

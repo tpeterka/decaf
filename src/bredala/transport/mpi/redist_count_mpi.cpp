@@ -14,7 +14,8 @@
 #include <assert.h>
 #include <string.h>
 
-#include "bredala/transport/mpi/redist_count_mpi.h"
+#include <bredala/transport/mpi/redist_count_mpi.h>
+#include <bredala/transport/split.h>
 
 #include <bredala/data_model/simpleconstructdata.hpp>
 
@@ -60,7 +61,7 @@ void
 decaf::
 RedistCountMPI::splitData(pConstructData& data, RedistRole role)
 {
-    if(role == DECAF_REDIST_SOURCE)
+/*    if(role == DECAF_REDIST_SOURCE)
     {
         // We have the items global_item_rank to global_item_rank_ + data->getNbItems()
         // We have to split global_nb_items_ into nbDest in total
@@ -259,5 +260,21 @@ RedistCountMPI::splitData(pConstructData& data, RedistRole role)
 
         // data->purgeData();
 
+    }*/
+
+    if(role == DECAF_REDIST_SOURCE)
+    {
+        // Create the array which represents where the current source will emit toward
+        // the destinations rank. 0 is no send to that rank, 1 is send
+        // Used only with commMethod = DECAF_REDIST_COLLECTIVE
+        if( !summerizeDest_)
+            summerizeDest_ = new int[ nbDests_];
+
     }
+
+    split_by_count(data, role,
+                   global_nb_items_, global_item_rank_,
+                   splitChunks_, splitBuffer_,
+                   nbDests_, local_dest_rank_, rank_, summerizeDest_,
+                   destList_, commMethod_);
 }

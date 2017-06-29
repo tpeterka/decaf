@@ -137,7 +137,7 @@ namespace decaf
 
         std::vector<pConstructData > splitChunks_;
         //std::vector<std::shared_ptr<char> > receivedChunks_;
-        int* summerizeDest_;
+        int* summerizeDest_;            // Array of destination per rank
         std::vector<int> destList_;
 
         RedistCommMethod commMethod_;        //Strategy to use during redistribute()

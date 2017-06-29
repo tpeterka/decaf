@@ -1,4 +1,5 @@
 add_library             (bredala_transport SHARED     ../redist_comp.cpp
+                                                    ../split.cpp
                                                     redist_mpi.cpp
                                                     redist_count_mpi.cpp
                                                     redist_round_mpi.cpp

@@ -3,6 +3,7 @@ find_package                (CCI REQUIRED)
 include_directories(${CCI_INCLUDE_DIR})
 
 add_library             (bredala_transport_cci SHARED	../redist_comp.cpp
+                                                        ../split.cpp
                                                         redist_count_cci.cpp
                                                     	redist_cci.cpp
                                                     	)
