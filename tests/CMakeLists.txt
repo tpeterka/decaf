@@ -61,10 +61,13 @@ target_link_libraries       (testmem ${libraries} bredala_transport bredala_data
 add_executable              (testserialization testSerialization.cpp)
 target_link_libraries       (testserialization ${libraries} bredala_transport bredala_datamodel)
 
-add_executable		    (testcci testCCI.cpp)
-target_link_libraries	    (testcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
+add_executable		    (testcountcci testCountCCI.cpp)
+target_link_libraries	    (testcountcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
 
-install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testcci
+add_executable              (testroundcci testRoundCCI.cpp)
+target_link_libraries       (testroundcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
+
+install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testroundcci testcountcci
   DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   )

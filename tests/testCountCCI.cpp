@@ -136,7 +136,8 @@ int main(int argc, char* argv[])
 
     uint32_t caps	= 0;
     int ret = cci_init(CCI_ABI_VERSION, 0, &caps);
-    if (ret) {
+    if (ret)
+    {
         fprintf(stderr, "cci_init() failed with %s\n",
             cci_strerror(NULL, (cci_status)ret));
         exit(EXIT_FAILURE);
@@ -149,7 +150,8 @@ int main(int argc, char* argv[])
     int nb_it = 5;
     bool use_mpi = false;
 
-    while ((c = getopt(argc, argv, "n:m:csi:p")) != -1) {
+    while ((c = getopt(argc, argv, "n:m:csi:p")) != -1)
+    {
         switch (c) {
         case 'c':
             is_client = true;

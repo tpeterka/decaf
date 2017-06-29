@@ -12,17 +12,17 @@
 
 #include <iostream>
 #include <assert.h>
-#include <strings.h>
-#include <stdio.h>
 #include <string.h>
+#include <sstream>
 
-#include <bredala/transport/mpi/redist_round_mpi.h>
+#include <bredala/transport/cci/redist_round_cci.h>
+#include <bredala/transport/split.h>
 
-
+#include <bredala/data_model/simpleconstructdata.hpp>
 
 void
 decaf::
-RedistRoundMPI::computeGlobal(pConstructData& data, RedistRole role)
+RedistRoundCCI::computeGlobal(pConstructData& data, RedistRole role)
 {
     if(role == DECAF_REDIST_SOURCE)
     {
@@ -43,19 +43,18 @@ RedistRoundMPI::computeGlobal(pConstructData& data, RedistRole role)
         {
             //Computing the index of the local first item in the global array of data
             MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_INT,
-                     MPI_SUM, commSources_);
+                     MPI_SUM, task_communicator_);
             global_item_rank_ -= nbItems;   // Process rank 0 has the item 0,
                                             // rank 1 has the item nbItems(rank 0)
                                             // and so on
         }
 
     }
-    return;
 }
 
 void
 decaf::
-RedistRoundMPI::splitData(pConstructData& data, RedistRole role)
+RedistRoundCCI::splitData(pConstructData& data, RedistRole role)
 {
     split_by_round(data, role,
                    global_item_rank_,
