@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <bredala/transport/mpi/redist_round_mpi.h>
+#include <bredala/transport/split.h>
 
 
 

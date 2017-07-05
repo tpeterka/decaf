@@ -67,7 +67,10 @@ target_link_libraries	    (testcountcci ${libraries} bredala_transport bredala_t
 add_executable              (testroundcci testRoundCCI.cpp)
 target_link_libraries       (testroundcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
 
-install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testroundcci testcountcci
+add_executable		    (testproccci testProcCCI.cpp)
+target_link_libraries	    (testproccci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
+
+install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testroundcci testcountcci testproccci
   DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   )

@@ -904,6 +904,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
     }
 
     // Make sure that we process all the requests of 1 iteration before receiving events from the next one
+    // TODO: use the queue event to manage stored events belonging to other iterations
     MPI_Barrier(task_communicator_);
 }
 
