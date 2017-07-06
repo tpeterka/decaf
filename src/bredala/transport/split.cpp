@@ -1,6 +1,8 @@
 #include <bredala/transport/split.h>
 #include <sstream>
 
+using namespace std;
+
 bool
 decaf::split_by_count(pConstructData& data,                             // Data model to split
                             RedistRole role,                            // Role in the redistribution
@@ -20,8 +22,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
         // Used only with commMethod = DECAF_REDIST_COLLECTIVE
-        //if( summerizeDest_) delete [] summerizeDest_;
-        //summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest,  nbDests * sizeof(int)); // First we don't send anything
 
         // Clearing the send buffer from previous iteration
@@ -102,9 +102,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 // only global_nb_items destinations will receive 1 item
                 first_rank = global_item_rank;
             }
-
-            //fprintf(stderr, "Global_item_rank: %i, first_rank: %i\n", global_item_rank, first_rank);
-
 
             // For P2P, destList must have the same size as the number of destination.
             // We fill the destinations with no messages with -1 (= send empty message)
@@ -208,21 +205,7 @@ decaf::split_by_count(pConstructData& data,                             // Data 
 
             }
 
-            //std::stringstream ss;
-            //ss<<"Range :[";
-            //for (unsigned int i = 0; i < split_ranges.size(); i++)
-            //    ss<<split_ranges[i]<<",";
-            //ss<<"]";
-            //fprintf(stderr, "%s\n", ss.str().c_str());
-
             data->split(split_ranges, splitBuffer);
-
-            //std::stringstream ss1;
-            //ss1<<"Generated :[";
-            //for (unsigned int i = 0; i < split_ranges.size(); i++)
-            //    ss1<<splitBuffer[i]->getNbItems()<<",";
-            //ss1<<"]";
-            //fprintf(stderr, "%s\n", ss1.str().c_str());
 
             for(unsigned int i = 0; i < splitBuffer.size(); i++)
                 splitChunks.push_back(splitBuffer[i]);
@@ -234,8 +217,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                 if(!splitChunks[i].empty() && !splitChunks[i]->serialize())
                     std::cout<<"ERROR : unable to serialize one object"<<std::endl;
             }
-
-            //fprintf(stderr, "Size of chunks after append of buffers: %lu\n", splitChunks.size());
 
             // For P2P, destList must have the same size as the number of destination.
             // We fill the destinations with no messages with -1 (= send empty message)
@@ -266,25 +247,6 @@ decaf::split_by_count(pConstructData& data,                             // Data 
                     dest_rank++;
                 }
             }
-
-            // DEPRECATED
-            // Everything is done, now we can clean the data.
-            // Data might be rewriten if producers and consummers are overlapping
-
-            // data->purgeData();
-
-            //std::stringstream ss2;
-            //ss2<<"Chunks :[";
-            //for (unsigned int i = 0; i < splitChunks.size(); i++)
-            //{
-            //    if(splitChunks[i].getPtr())
-            //        ss2<<splitChunks[i]->getNbItems()<<",";
-            //    else
-            //        ss2<<"0,";
-            //}
-            //ss2<<"]";
-            //fprintf(stderr, "%s\n", ss2.str().c_str());
-
         }
     }
 
@@ -429,6 +391,73 @@ decaf::split_by_round(pConstructData& data,                             // Data 
             // data->purgeData();
         }
 
+    }
+
+    return true;
+}
+
+bool
+decaf::split_by_domain(pConstructData& data,                            // Data model to split
+                           RedistRole role,                             // Role in the redistribution
+                           std::vector<pConstructData>& splitChunks,    // Data models produced by the split. Should match the number of destinations
+                           std::vector<pConstructData>& splitBuffer,    // Data models pre allocated.
+                           std::vector<Block<3> >& subDomains,          // Subdomains of the domain_block field
+                           int nbDests,                                 // Number of destinations = number of sub data models to produce
+                           int local_dest_rank,                         // Rank Id of the first destination rank in the global communicator
+                           int rank,                                    // Rank Id of the current process
+                           int* summerizeDest,                          // Size of nb_Dest. 1 if a message should be send, 0 if the message is empty
+                           std::vector<int>& destList,                  // Size of nb_Dest. an ID rank if a message should be sent, -1 if the message is empty
+                           RedistCommMethod commMethod)                 // Redistribution method (collective, p2p)
+{
+    if(role == DECAF_REDIST_SOURCE){
+
+        if(splitBuffer.empty())
+            data.preallocMultiple(nbDests, 0, splitBuffer);
+        else
+        {
+            for(unsigned int i = 0; i < splitBuffer.size(); i++)
+                splitBuffer[i]->softClean();
+        }
+
+        // Create the array which represents where the current source will emit toward
+        // the destinations rank. 0 is no send to that rank, 1 is send
+        bzero( summerizeDest,  nbDests * sizeof(int)); // First we don't send anything
+
+
+        // Always generates as many split data model as subblocks
+        // Subdata model might be empty (no items)
+        data->split( subDomains, splitBuffer );
+
+        //Pushing the subdomain block into each split chunk.
+        //The field domain_block is updated
+        for(unsigned int i = 0; i < subDomains.size(); i++)
+        {
+            shared_ptr<BlockConstructData> newBlock = make_shared<BlockConstructData>(subDomains[i]);
+            splitBuffer[i]->updateData("domain_block", newBlock);
+        }
+
+        for(unsigned int i = 0; i < splitBuffer.size(); i++)
+            splitChunks.push_back(splitBuffer[i]);
+
+        //Updating the informations about messages to send
+        //All the destination will receive a message containing
+        //at least their respective subdomain information
+        for(unsigned int i = 0; i < subDomains.size(); i++)
+        {
+            destList.push_back(i + local_dest_rank);
+
+            //We won't send a message if we send to self
+            if(i + local_dest_rank != rank)
+                summerizeDest[i] = 1;
+        }
+
+        for(unsigned int i = 0; i < splitChunks.size(); i++)
+        {
+            // TODO : Check the rank for the destination.
+            // Not necessary to serialize if overlapping
+            if(!splitChunks[i]->serialize())
+                std::cout<<"ERROR : unable to serialize one object"<<std::endl;
+        }
     }
 
     return true;

@@ -16,31 +16,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <bredala/transport/mpi/redist_block_mpi.h>
+#include <bredala/transport/cci/redist_block_cci.h>
 #include <bredala/data_model/pconstructtype.h>
 #include <bredala/data_model/blockconstructdata.hpp>
 #include <bredala/transport/split.h>
 
 #include <sys/time.h>
-
-double timeGlobalRecep = 0;
-double timeGlobalScatter = 0;
-double timeGlobalReduce = 0;
-
-
-void printExtends(std::vector<unsigned int>& extend)
-{
-    std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
-             <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]
-             <<","<<extend[2]+extend[5]<<"]"<<std::endl;
-}
-
-void printBox(std::vector<float>& extend)
-{
-    std::cout<<"["<<extend[0]<<","<<extend[1]<<","<<extend[2]<<"]"
-             <<"["<<extend[0]+extend[3]<<","<<extend[1]+extend[4]
-             <<","<<extend[2]+extend[5]<<"]"<<std::endl;
-}
 
 // TODO : remove the recursion on this
 void splitExtends(std::vector<unsigned int>& extends, int nbSubblock, std::vector< std::vector<unsigned int> >& subblocks)
@@ -88,7 +69,7 @@ void splitExtends(std::vector<unsigned int>& extends, int nbSubblock, std::vecto
 
 void
 decaf::
-RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
+RedistBlockCCI::splitBlock(Block<3> & base, int nbSubblock)
 {
 
     // BVH spliting method : we cut on the highest dimension
@@ -155,7 +136,7 @@ RedistBlockMPI::splitBlock(Block<3> & base, int nbSubblock)
 
 void
 decaf::
-RedistBlockMPI::updateBlockDomainFields()
+RedistBlockCCI::updateBlockDomainFields()
 {
     assert(subblocks_.size() == splitBuffer_.size());
 
@@ -168,7 +149,7 @@ RedistBlockMPI::updateBlockDomainFields()
 
 void
 decaf::
-RedistBlockMPI::computeGlobal(pConstructData& data, RedistRole role)
+RedistBlockCCI::computeGlobal(pConstructData& data, RedistRole role)
 {
 
     // The user has to provide the global block structure.
@@ -193,12 +174,14 @@ RedistBlockMPI::computeGlobal(pConstructData& data, RedistRole role)
 
 void
 decaf::
-RedistBlockMPI::splitData(pConstructData& data, RedistRole role)
+RedistBlockCCI::splitData(pConstructData& data, RedistRole role)
 {
-
     split_by_domain(data, role,
                    splitChunks_, splitBuffer_, subblocks_,
                    nbDests_, local_dest_rank_, rank_, summerizeDest_,
                    destList_, commMethod_);
 }
+
+
+
 

@@ -63,6 +63,7 @@ void run_client(int nb_client, int nb_server, int nb_it, bool use_mpi)
                               DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
 
         redist->process(container, DECAF_REDIST_SOURCE);
+        redist->flush();
 
         print_array(my_array, array_size, j);
 
@@ -98,6 +99,7 @@ void run_server(int nb_client, int nb_server, int nb_it, bool use_mpi)
     {
         pConstructData result;
         redist->process(result, DECAF_REDIST_DEST);
+        redist->flush();
 
         ArrayFieldu my_array_field = result->getFieldData<ArrayFieldu>("my_array");
         if(!my_array_field)

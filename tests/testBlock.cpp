@@ -113,6 +113,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
 
         delete [] pos;
     }
+
     if(isBetween(rank, startReceptors, nbReceptors))
     {
         pConstructData result;
@@ -133,6 +134,7 @@ void runTestParallelRedistOverlap(int startSource, int nbSource,
         ArrayFieldf pos = result->getFieldData<ArrayFieldf>("pos");
         posToFile(pos.getArray(), pos.getNbItems(), filename.str(),r,g,b);
     }
+
     component->flush();
 
     delete component;

@@ -7,6 +7,7 @@ add_library             (bredala_transport_cci SHARED	../redist_comp.cpp
                                                         redist_count_cci.cpp
                                                         redist_round_cci.cpp
                                                         redist_proc_cci.cpp
+                                                        redist_block_cci.cpp
                                                     	redist_cci.cpp
                                                     	)
 

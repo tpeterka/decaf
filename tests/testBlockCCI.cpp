@@ -2,17 +2,21 @@
 #include <unistd.h>
 #include <mpi.h>
 #include <string>
-#include <bredala/transport/cci/redist_round_cci.h>
-#include <bredala/transport/mpi/redist_round_mpi.h>
+#include <bredala/transport/cci/redist_block_cci.h>
+#include <bredala/transport/mpi/redist_block_mpi.h>
 #include <bredala/data_model/pconstructtype.h>
 #include <bredala/data_model/arrayfield.hpp>
+#include <bredala/data_model/blockfield.hpp>
+#include <bredala/data_model/simplefield.hpp>
 #include <bredala/data_model/boost_macros.h>
+
+#include "tools.hpp"
 #include <sys/time.h>
 
 using namespace decaf;
 using namespace std;
 
-unsigned int max_array_size = 10;
+string basename = "block_cci";
 
 void print_array(unsigned int* array, unsigned int size, unsigned int it)
 {
@@ -36,40 +40,70 @@ void run_client(int nb_client, int nb_server, int nb_it, bool use_mpi)
 
     RedistComp* redist;
     if(use_mpi)
-        redist = new RedistRoundMPI(0, nb_client, nb_client, nb_server, MPI_COMM_WORLD, DECAF_REDIST_P2P);
+        redist = new RedistBlockMPI(0, nb_client, nb_client, nb_server, MPI_COMM_WORLD, DECAF_REDIST_P2P);
     else
-        redist = new RedistRoundCCI(0, nb_client, nb_client, nb_server,
+        redist = new RedistBlockCCI(0, nb_client, nb_client, nb_server,
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
 
+    vector<float> bbox = {0.0,0.0,0.0,10.0,10.0,10.0};
+
     // TODO: test the case with 0
     srand(1 + global_id);
+    unsigned int r,g,b;
+    r = rand() % 255;
+    g = rand() % 255;
+    b = rand() % 255;
 
     for(unsigned int j = 0; j < nb_it; j++)
     {
+        int nbParticle = 1000;
+        float* pos = new float[nbParticle * 3];
+
+        initPosition(pos, nbParticle, bbox);
+
         pConstructData container;
 
-        unsigned int array_size = rand() % max_array_size;
+        // Could use the Block constructor  BlockField(Block<3>& block, mapConstruct map = mapConstruct())
+        // But would cost a copy
+        BlockField domainData(true);    // Initialized the memory
+        Block<3>* domainBlock = domainData.getBlock();
+        vector<unsigned int> extendsBlock = {0,0,0,10,10,10};
+        vector<float> bboxBlock = {0.0,0.0,0.0,10.0,10.0,10.0};
+        domainBlock->setGridspace(1.0);
+        domainBlock->setGlobalExtends(extendsBlock);
+        domainBlock->setLocalExtends(extendsBlock);
+        domainBlock->setOwnExtends(extendsBlock);
+        domainBlock->setGlobalBBox(bboxBlock);
+        domainBlock->setLocalBBox(bboxBlock);
+        domainBlock->setOwnBBox(bboxBlock);
+        domainBlock->ghostSize_ = 0;
 
-        unsigned int* my_array = new unsigned int[array_size];
-        ArrayFieldu my_array_field(my_array, array_size, 1, false);
+        ArrayFieldf array(pos, 3*nbParticle, 3, false);
+        SimpleFieldi data(nbParticle);
 
-        for (unsigned int i = 0; i < array_size; i++)
-            my_array[i] = global_id * max_array_size + i + j * 100;
+        container->appendData(string("nbParticules"), data,
+                             DECAF_NOFLAG, DECAF_SHARED,
+                             DECAF_SPLIT_MINUS_NBITEM, DECAF_MERGE_ADD_VALUE);
+        container->appendData(string("pos"), array,
+                             DECAF_POS, DECAF_PRIVATE,
+                             DECAF_SPLIT_DEFAULT, DECAF_MERGE_APPEND_VALUES);
+        container->appendData("domain_block", domainData,
+                             DECAF_NOFLAG, DECAF_SHARED,
+                             DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_FIRST_VALUE);
+        cout<<"End of construction of the data model."<<endl;
+        cout<<"Number of particles in the data model : "<<container->getNbItems()<<endl;
 
-        container->appendData("my_array", my_array_field,
-                              DECAF_NOFLAG,DECAF_PRIVATE,
-                              DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+
+        stringstream filename;
+        filename<<j<<"_"<<basename<<rank<<"_before.ply";
+        posToFile(array.getArray(), array.getNbItems(), filename.str(),r,g,b);
 
         redist->process(container, DECAF_REDIST_SOURCE);
         redist->flush();
 
-        print_array(my_array, array_size, j);
-
-        delete [] my_array;
-
-        //redist->clearBuffers();
+        delete [] pos;
     }
     delete redist;
 }
@@ -87,32 +121,38 @@ void run_server(int nb_client, int nb_server, int nb_it, bool use_mpi)
 
     RedistComp* redist;
     if(use_mpi)
-        redist = new RedistRoundMPI(0, nb_client, nb_client, nb_server, MPI_COMM_WORLD, DECAF_REDIST_P2P);
+        redist = new RedistBlockMPI(0, nb_client, nb_client, nb_server, MPI_COMM_WORLD, DECAF_REDIST_P2P);
     else
-        redist = new RedistRoundCCI(0, nb_client, nb_client, nb_server,
+        redist = new RedistBlockCCI(0, nb_client, nb_client, nb_server,
                                                 global_id, MPI_COMM_WORLD,
                                                 string("testcci.txt"),
                                                 DECAF_REDIST_P2P);
+
+    // TODO: test the case with 0
+    srand(1 + global_id);
+    unsigned int r,g,b;
+    r = rand() % 255;
+    g = rand() % 255;
+    b = rand() % 255;
 
 
     for (unsigned int i = 0; i < nb_it; i++)
     {
         pConstructData result;
-        redist->process(result, DECAF_REDIST_DEST);
+        redist->process(result, decaf::DECAF_REDIST_DEST);
         redist->flush();
 
-        ArrayFieldu my_array_field = result->getFieldData<ArrayFieldu>("my_array");
-        if(!my_array_field)
-            print_array(nullptr, 0, i);
-        else
-        {
-            unsigned int* array = my_array_field.getArray();
-            unsigned int size = my_array_field.getArraySize();
-            print_array(array, size, i);
-        }
+        cout<<"==========================="<<endl;
+        cout<<"Final Merged map has "<<result->getNbItems()<<" items."<<endl;
+        cout<<"Final Merged map has "<<result->getMap()->size()<<" fields."<<endl;
+        result->printKeys();
+        //printMap(*result);
+        cout<<"==========================="<<endl;
 
-        //redist->clearBuffers();
-
+        stringstream filename;
+        filename<<i<<"_"<<basename<<rank<<".ply";
+        ArrayFieldf pos = result->getFieldData<ArrayFieldf>("pos");
+        posToFile(pos.getArray(), pos.getNbItems(), filename.str(),r,g,b);
         sleep(1);
     }
 
