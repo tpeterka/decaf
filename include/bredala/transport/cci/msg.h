@@ -39,6 +39,7 @@ enum msg_type
 struct msg_cci
 {
     msg_type type;
+    int64_t it;
     union
     {
         size_t value;

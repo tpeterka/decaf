@@ -233,6 +233,171 @@ RedistCCI::init_connection_server(int nb_connections)
     }
 }
 
+void
+decaf::
+RedistCCI::poll_event(RedistRole role, int64_t it, cci_event_t **event)
+{
+    if(role == DECAF_REDIST_SOURCE)
+    {
+        if(!event_queue_prod_.empty())
+        {
+            // Checking the event from the queue if one is available with the correct it
+            auto item = event_queue_prod_.begin();
+            while (item != event_queue_prod_.end())
+            {
+                if ((*item)->type != CCI_EVENT_RECV)
+                {
+                    fprintf(stderr, "ERROR: Event other that RECV stored in the queue. Removing the event.\n");
+                    auto next_item = event_queue_prod_.erase(item);
+                    item = next_item;
+                    continue;
+                }
+
+                msg_cci *msg = (msg_cci *)((*item)->recv.ptr);
+                if ((msg->it != it))
+                    item++;
+                else
+                {
+                    *event = *item;
+                    event_queue_prod_.erase(item);
+                    return;
+                }
+            }
+        }
+
+        cci_event_t *new_event;
+        while(1)
+        {
+            int ret = cci_get_event(endpoint_prod_, &new_event);
+            if (ret != CCI_SUCCESS)
+            {
+                if (ret != CCI_EAGAIN)
+                {
+                    fprintf(stderr, "cci_get_event() returned %s",
+                        cci_strerror(endpoint_prod_,  (cci_status)ret));
+                }
+                continue;
+            }
+            else
+            {
+                switch (new_event->type)
+                {
+                case CCI_EVENT_RECV:
+                {
+                    msg_cci *msg = (msg_cci *)new_event->recv.ptr;
+                    if ((msg->it != it))
+                    {
+                        event_queue_prod_.push_back(new_event);
+                    }
+                    else
+                    {
+                        *event = new_event;
+                        return;
+                    }
+                    break;
+                }
+                case CCI_EVENT_SEND:
+                {
+                    *event = new_event;
+                    return;
+                }
+                default:
+                {
+                    fprintf(stderr, "ERROR: unexpected event received in poll_event. Dropping the event.\n");
+                    cci_return_event(new_event);
+                    break;
+                }
+                }
+            }
+        }
+
+    }
+    else if (role == DECAF_REDIST_DEST)
+    {
+        if(!event_queue_con_.empty())
+        {
+            // Checking the event from the queue if one is available with the correct it
+            auto item = event_queue_con_.begin();
+            while (item != event_queue_con_.end())
+            {
+                if ((*item)->type != CCI_EVENT_RECV)
+                {
+                    fprintf(stderr, "ERROR: Event other that RECV stored in the queue. Removing the event.\n");
+                    auto next_item = event_queue_con_.erase(item);
+                    item = next_item;
+                    continue;
+                }
+
+                msg_cci *msg = (msg_cci *)((*item)->recv.ptr);
+                if ((msg->it != it))
+                    item++;
+                else
+                {
+                    *event = *item;
+                    event_queue_con_.erase(item);
+                    return;
+                }
+            }
+        }
+
+        // If we reach this point, that means that the queue is empty
+        // or that none of the events in the queue has the correct it
+        cci_event_t *new_event;
+        while(1)
+        {
+            int ret = cci_get_event(endpoint_con_, &new_event);
+            if (ret != CCI_SUCCESS)
+            {
+                if (ret != CCI_EAGAIN)
+                {
+                    fprintf(stderr, "cci_get_event() returned %s",
+                        cci_strerror(endpoint_con_,  (cci_status)ret));
+                }
+                continue;
+            }
+            else
+            {
+                switch (new_event->type)
+                {
+                case CCI_EVENT_RECV:
+                {
+                    msg_cci *msg = (msg_cci *)new_event->recv.ptr;
+                    // The case MSG_RMA_SENT cannot be handle for now because of the memory corruption
+                    // Not problematic because the communication are ordered on the connection,
+                    // Therefor if we receive the correct iteration for the mem_req, the next message
+                    // on the connection will be for sure a RMA_SENT with the correct iteration and the
+                    // client cannot perform a RMA operation without the server sending the memory handler first
+                    if (msg->type == MSG_MEM_REQ && (msg->it != it))
+                    {
+                        event_queue_con_.push_back(new_event);
+                    }
+                    else
+                    {
+                        *event = new_event;
+                        return;
+                    }
+                    break;
+                }
+                case CCI_EVENT_SEND:
+                {
+                    *event = new_event;
+                    return;
+                }
+                default:
+                {
+                    fprintf(stderr, "ERROR: unexpected event received in poll_event. Dropping the event.\n");
+                    cci_return_event(new_event);
+                    break;
+                }
+                }
+            }
+        }
+
+    }
+    else
+        fprintf(stderr, "ERROR: unknown RedistRole.\n");
+}
+
 // create communicators for contiguous process assignment
 // ranks within source and destination must be contiguous, but
 // destination ranks need not be higher numbered than source ranks
@@ -252,7 +417,9 @@ RedistCCI::RedistCCI(int rankSource,
     destBuffer_(NULL),
     name_(name),
     endpoint_con_(nullptr),
-    endpoint_prod_(nullptr)
+    endpoint_prod_(nullptr),
+    send_it(0),
+    get_it(0)
 {
 
     // For CCI components, we only have the communicator of the local task
@@ -377,8 +544,8 @@ RedistCCI::splitSystemData(pConstructData& data, RedistRole role)
     {
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
-        if( summerizeDest_) delete [] summerizeDest_;
-        summerizeDest_ = new int[ nbDests_];
+        //if( summerizeDest_) delete [] summerizeDest_;
+        //summerizeDest_ = new int[ nbDests_];
         bzero( summerizeDest_,  nbDests_ * sizeof(int)); // First we don't send anything
 
         // For this case we simply duplicate the message for each destination
@@ -580,6 +747,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                 // Sending the memory request
                 msg_cci req_mem;
                 req_mem.type = MSG_MEM_REQ;
+                req_mem.it = send_it;
                 req_mem.value = splitChunks_[i]->getOutSerialBufferSize();
 
                 cci_send(channels_prod_[i].connection, &req_mem, sizeof(req_mem), (void*)1, 0);
@@ -600,6 +768,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
             {
                 msg_cci req_mem;
                 req_mem.type = MSG_MEM_REQ;
+                req_mem.it = send_it;
                 req_mem.value = 1;
 
                 cci_send(channels_prod_[i].connection, &req_mem, sizeof(req_mem), (void*)1, 0);
@@ -633,16 +802,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
         {
             cci_event_t *event;
 
-            ret = cci_get_event(endpoint_prod_, &event);
-            if (ret != CCI_SUCCESS)
-            {
-                if (ret != CCI_EAGAIN)
-                {
-                    fprintf(stderr, "cci_get_event() returned %s",
-                        cci_strerror(endpoint_prod_,  (cci_status)ret));
-                }
-                continue;
-            }
+            poll_event(role, send_it, &event);
 
             switch (event->type)
             {
@@ -670,6 +830,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     // Starting the RMA operation
                     msg_cci ack_msg;
                     ack_msg.type = MSG_RMA_SENT;
+                    ack_msg.it = send_it;
 
                     //fprintf(stderr, "Sending the ack type: %u\n", ack_msg.type);
 
@@ -703,6 +864,8 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
 
             cci_return_event(event);
         }
+
+        send_it++;
     }
 
     if(role == DECAF_REDIST_DEST)
@@ -715,65 +878,11 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
         // Number of send done with the server
         // Used to count the number of event EVENT_SENT we need to wait
 
-        /*for(int i = 0; i < nbRecep; i++)
-        {
-            MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, MPI_DATA_TAG, communicator_, &status);
-            if (status.MPI_TAG == MPI_DATA_TAG)  // normal, non-null get
-            {
-                int nitems; // number of items (of type dtype) in the message
-                MPI_Get_count(&status, MPI_BYTE, &nitems);
-
-                if(nitems > 0)
-                {
-                    //Allocating the space necessary
-                    data->allocate_serial_buffer(nitems);
-                    MPI_Recv(data->getInSerialBuffer(), nitems, MPI_BYTE, status.MPI_SOURCE,
-                             status.MPI_TAG, communicator_, &status);
-
-                    // The dynamic type of merge is given by the user
-                    // NOTE : examin if it's not more efficient to receive everything
-                    // and then merge. Memory footprint more important but allows to
-                    // aggregate the allocations etc
-                    if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
-                        data->merge();
-                    else if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
-                        //data->unserializeAndStore();
-                        data->unserializeAndStore(data->getInSerialBuffer(), nitems);
-                    else
-                    {
-                        std::cout<<"ERROR : merge method not specified. Abording."<<std::endl;
-                        MPI_Abort(MPI_COMM_WORLD, 0);
-                    }
-
-                }
-                else
-                {
-                    MPI_Recv(NULL, 0, MPI_BYTE,status.MPI_SOURCE,
-                             status.MPI_TAG, communicator_, &status);
-                }
-            }
-        }*/
-
-        if(!event_queue_con_.empty())
-            fprintf(stderr,"ERROR: content of the event queue before reception: %lu\n", event_queue_con_.size());
-
         while (nbRecep > 0)
         {
             cci_event_t *event;
+            poll_event(role, get_it, &event);
 
-            // TODO: read the content of the stack
-
-            ret = cci_get_event(endpoint_con_, &event);
-            if (ret != CCI_SUCCESS)
-            {
-                if (ret != CCI_EAGAIN)
-                {
-                    fprintf(stderr, "cci_get_event() returned %s",
-                        cci_strerror(endpoint_con_,  (cci_status)ret));
-                }
-                continue;
-            }
             switch (event->type)
             {
 
@@ -810,6 +919,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     // Sending the local handler to the distant
                     msg_cci msg_handle;
                     msg_handle.type = MSG_MEM_HANDLE;
+                    msg_handle.it = get_it;
                     memcpy(msg_handle.rma_handle, channel.local_rma_handle, sizeof(msg_handle.rma_handle));
                     //fprintf(stderr, "Handler sent: %llu %llu %llu %llu\n",
                     //        msg_handle.rma_handle[0],
@@ -826,8 +936,9 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
 
                     msg_cci msg_ack;
                     msg_ack.type = MSG_OK;
+                    msg_ack.it = get_it;
                     cci_send(event->recv.connection, &msg_ack, sizeof(msg_cci), (void*)1, 0);
-                    fprintf(stderr, "Reception of a RMA sent which worked.\n");
+                    fprintf(stderr, "WARINING: Reception of a RMA sent which worked. Should NOT have worked.\n");
                 }
                 else
                 {
@@ -839,6 +950,7 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
 
                     msg_cci msg_ack;
                     msg_ack.type = MSG_OK;
+                    msg_ack.it = get_it;
                     cci_send(event->recv.connection, &msg_ack, sizeof(msg_cci), (void*)1, CCI_FLAG_BLOCKING);
 
                     // Empty message case
@@ -901,11 +1013,14 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
 
         if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
             data->mergeStoredData();
+
+        get_it++;
     }
 
     // Make sure that we process all the requests of 1 iteration before receiving events from the next one
     // TODO: use the queue event to manage stored events belonging to other iterations
-    MPI_Barrier(task_communicator_);
+    // Matthieu: Implemented poll_event. Have to check on a cluster to see if it holds.
+    //MPI_Barrier(task_communicator_);
 }
 
 void

@@ -18,6 +18,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <list>
 
 #include <bredala/transport/redist_comp.h>
 #include <bredala/transport/mpi/types.h>
@@ -76,6 +77,8 @@ protected:
     void init_connection_client(std::vector<std::string>&  server_uris);
     void init_connection_server(int nb_connections);
 
+    void poll_event(RedistRole role, int64_t it, cci_event_t **event);
+
     CommHandle task_communicator_;      // communicator for all the processes involved in redist
     int task_rank_;                     // Rank of the process within the local task
     int task_size_;                     // Number of processes within the local task
@@ -83,14 +86,23 @@ protected:
     pConstructData transit;             // used when a source and destination are overlapping
     int *sum_;                          // used by the producer
     int *destBuffer_;
-    std::string name_;                                  // Used to identify the file to exchange the URIs of the consumer
-    cci_endpoint_t* endpoint_con_;                      // Endpoint of a consumer
-    cci_endpoint_t* endpoint_prod_;                     // Endpoint of a producer
-    std::map<cci_connection_t *, CCIchannel> channels_con_;     // Connections of the consumer side
-    std::vector<CCIchannel> channels_prod_;
-    std::map<cci_connection_t *, unsigned int> indexes_prod_;
-    std::vector<cci_event_t *> event_queue_con_;                // Stack of events to process.
-    std::vector<cci_event_t *> event_queue_prod_;
+    std::string name_;                  // Used to identify the file to exchange the URIs of the consumer
+
+    // Producer fields
+    cci_endpoint_t* endpoint_prod_;                             // Endpoint of a producer
+    std::vector<CCIchannel> channels_prod_;                     // Ordered list of connection on the producer side. 1 connection with each consumer rank
+                                                                // The first connection is with the first consumer rank, etc
+    std::map<cci_connection_t *, unsigned int> indexes_prod_;   // Map between a connection and its index on the producer side
+    std::list<cci_event_t *> event_queue_prod_;                 // Stack of events to process.
+    int64_t send_it;                                            // Iteration number of the send
+
+    // Consumer fields
+    cci_endpoint_t* endpoint_con_;                              // Endpoint of a consumer
+    std::map<cci_connection_t *, CCIchannel> channels_con_;     // Connections of the consumer side. 1 connection with each producer.
+    std::list<cci_event_t *> event_queue_con_;                  // Stack of events to process.
+                                                                // The consumer does not use a vector because we do not need to preserver the order or the connections
+    int64_t get_it;                                             // Iteration of the get
+
 
     std::vector< pConstructData > splitBuffer_;	// Buffer of container to avoid reallocation// used by the consumer
 };
