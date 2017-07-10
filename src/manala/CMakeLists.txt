@@ -14,8 +14,16 @@ add_library             (manala SHARED      datastreaminterface.cpp
                                             tools.cpp
                                             )
 
+set(bredala_transports "")
+if(${transport_mpi})
+    list(APPEND bredala_transports bredala_transport_mpi)
+endif(${transport_mpi})
+if(${transport_cci})
+    list(APPEND bredala_transports bredala_transport_cci)
+endif(${transport_cci})
+
 target_link_libraries   (manala
-                        ${libraries} ${EXTRA_FLAGS} bredala_datamodel bredala_transport ${Boost_LIBRARIES})
+                        ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${bredala_transports} ${Boost_LIBRARIES})
 
 install                 (TARGETS manala
                         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/

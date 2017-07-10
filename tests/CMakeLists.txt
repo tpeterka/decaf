@@ -8,7 +8,7 @@
 #    target_link_libraries       (testffs    ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY})
 
 #    add_executable              (redistffs redist.cpp)
-#    target_link_libraries       (redistffs     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY} bredala_transport bredala_datamodel)
+#    target_link_libraries       (redistffs     ${libraries} ${FFS_LIBRARY} ${FM_LIBRARY} ${bredala_transports} bredala_datamodel)
 #    install(TARGETS testffs redistffs
 #            DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/redist/
 #            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
@@ -24,54 +24,59 @@
 
 message("Building boost based redistribution example")
 
-find_package(CCI REQUIRED)
-include_directories(${CCI_INCLUDE_DIR})
+set(bredala_transports "")
+if(${transport_mpi})
+    list(APPEND bredala_transports bredala_transport_mpi)
+endif(${transport_mpi})
+if(${transport_cci})
+    list(APPEND bredala_transports bredala_transport_cci)
+endif(${transport_cci})
 
 add_executable              (testboost testBoost.cpp)
-target_link_libraries       (testboost ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testboost ${libraries} ${bredala_transports} bredala_datamodel)
 
 #    add_executable              (redistboost redist_boost.cpp)
-#    target_link_libraries       (redistboost     ${libraries} bredala_transport bredala_datamodel)
+#    target_link_libraries       (redistboost     ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testzcurve testZCurve.cpp)
-target_link_libraries       (testzcurve ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testzcurve ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testround testRound.cpp)
-target_link_libraries       (testround ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testround ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testcount testCount.cpp)
-target_link_libraries       (testcount ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testcount ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testemptymessage testEmptyMessage.cpp)
-target_link_libraries       (testemptymessage ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testemptymessage ${libraries} ${bredala_transports} bredala_datamodel)
 
 
 #    add_executable              (testarrayndim testArrayNDim.cpp)
-#    target_link_libraries       (testarrayndim     ${libraries} bredala_transport bredala_datamodel)
+#    target_link_libraries       (testarrayndim     ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testblock testBlock.cpp)
-target_link_libraries       (testblock ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testblock ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testproc testProc.cpp)
-target_link_libraries       (testproc ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testproc ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testmem testmem.cpp)
-target_link_libraries       (testmem ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testmem ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testserialization testSerialization.cpp)
-target_link_libraries       (testserialization ${libraries} bredala_transport bredala_datamodel)
+target_link_libraries       (testserialization ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable		    (testcountcci testCountCCI.cpp)
-target_link_libraries	    (testcountcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
+target_link_libraries	    (testcountcci ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable              (testroundcci testRoundCCI.cpp)
-target_link_libraries       (testroundcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
+target_link_libraries       (testroundcci ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable		    (testproccci testProcCCI.cpp)
-target_link_libraries	    (testproccci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
+target_link_libraries	    (testproccci ${libraries} ${bredala_transports} bredala_datamodel)
 
 add_executable		    (testblockcci testBlockCCI.cpp)
-target_link_libraries	    (testblockcci ${libraries} bredala_transport bredala_transport_cci bredala_datamodel)
+target_link_libraries	    (testblockcci ${libraries} ${bredala_transports} bredala_datamodel)
 
 install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testroundcci testcountcci testproccci testblockcci
   DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/

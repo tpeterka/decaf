@@ -1,7 +1,3 @@
-find_package                (CCI REQUIRED)
-
-include_directories(${CCI_INCLUDE_DIR})
-
 add_library             (bredala_transport_cci SHARED	../redist_comp.cpp
                                                         ../split.cpp
                                                         redist_count_cci.cpp
@@ -12,7 +8,7 @@ add_library             (bredala_transport_cci SHARED	../redist_comp.cpp
                                                     	)
 
 target_link_libraries   (bredala_transport_cci
-                        ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${Boost_LIBRARIES} ${CCI_LIBRARY})
+                        ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${Boost_LIBRARIES})
 
 install                 (TARGETS bredala_transport_cci
                         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/

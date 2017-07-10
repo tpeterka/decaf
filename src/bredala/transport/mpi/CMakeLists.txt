@@ -1,4 +1,4 @@
-add_library             (bredala_transport SHARED     ../redist_comp.cpp
+add_library             (bredala_transport_mpi SHARED     ../redist_comp.cpp
                                                     ../split.cpp
                                                     redist_mpi.cpp
                                                     redist_count_mpi.cpp
@@ -9,10 +9,10 @@ add_library             (bredala_transport SHARED     ../redist_comp.cpp
                                                     comm.cpp
                                                     channel.cpp)
 
-target_link_libraries   (bredala_transport
+target_link_libraries   (bredala_transport_mpi
                         ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${Boost_LIBRARIES})
 
-install                 (TARGETS bredala_transport
+install                 (TARGETS bredala_transport_mpi
                         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/
                         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                         GROUP_READ GROUP_WRITE GROUP_EXECUTE

@@ -11,17 +11,17 @@ add_library                 (mod_cycle_4nodes          MODULE cycle_4nodes.cpp)
 
 
 target_link_libraries       (linear_2nodes
-                            ${libraries} bredala_transport bredala_datamodel manala decaf)
+                            ${libraries} ${bredala_transports} bredala_datamodel manala decaf)
 target_link_libraries       (linear_3nodes
-                            ${libraries} bredala_transport bredala_datamodel manala decaf)
+                            ${libraries} ${bredala_transports} bredala_datamodel manala decaf)
 target_link_libraries       (cycle_4nodes
-                            ${libraries} bredala_transport bredala_datamodel manala decaf)
+                            ${libraries} ${bredala_transports} bredala_datamodel manala decaf)
 target_link_libraries       (mod_linear_2nodes
-                            ${libraries} bredala_transport bredala_datamodel manala decaf)
+                            ${libraries} ${bredala_transports} bredala_datamodel manala decaf)
 target_link_libraries       (mod_linear_3nodes
-                            ${libraries} bredala_transport bredala_datamodel manala decaf)
+                            ${libraries} ${bredala_transports} bredala_datamodel manala decaf)
 target_link_libraries       (mod_cycle_4nodes
-                            ${libraries} bredala_transport bredala_datamodel manala decaf)
+                            ${libraries} ${bredala_transports} bredala_datamodel manala decaf)
 
 # .SO file extension on Linux/Mac OS
 set_target_properties       (mod_linear_2nodes          PROPERTIES SUFFIX ".so")

@@ -5,8 +5,16 @@ add_library             (decaf SHARED       dataflow.cpp
                                             tools.cpp
                                             workflow.cpp)
 
+set(bredala_transports "")
+if(${transport_mpi})
+    list(APPEND bredala_transports bredala_transport_mpi)
+endif(${transport_mpi})
+if(${transport_cci})
+    list(APPEND bredala_transports bredala_transport_cci)
+endif(${transport_cci})
+
 target_link_libraries   (decaf
-                        ${libraries} ${EXTRA_FLAGS} bredala_datamodel bredala_transport ${Boost_LIBRARIES} manala)
+                        ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${bredala_transports} ${Boost_LIBRARIES} manala)
 
 install                 (TARGETS decaf
                         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/
