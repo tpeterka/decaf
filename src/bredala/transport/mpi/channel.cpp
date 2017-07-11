@@ -1,4 +1,5 @@
 #include <bredala/transport/mpi/channel.hpp>
+#include <cstdio>
 
 decaf::
 OneWayChannel::OneWayChannel() : initialized_(false){}

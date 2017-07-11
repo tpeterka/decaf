@@ -1,5 +1,5 @@
 #include <bredala/transport/mpi/comm.h>
-
+#include <cstdio>
 
 CommHandle
 decaf::

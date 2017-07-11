@@ -110,7 +110,7 @@ public:
             {
                 globalExtends_[i] = 0;
                 //Ceil because we count the number of cells
-                globalExtends_[Dim+i] = (unsigned int)(ceil(globalBBox_[Dim+i] / gridspace_));
+                globalExtends_[Dim+i] = (unsigned int)(this->ceil(globalBBox_[Dim+i] / gridspace_));
             }
             hasGlobalExtends_ = true;
 
@@ -124,7 +124,7 @@ public:
                 // TODO : here should be another value because of ghost region
                 localExtends_[i] = 0;
                 //Ceil because we count the number of cells
-                localExtends_[Dim+i] = (unsigned int)(ceil(localBBox_[Dim+i] / gridspace_));
+                localExtends_[Dim+i] = (unsigned int)(this->ceil(localBBox_[Dim+i] / gridspace_));
             }
             hasLocalExtends_ = true;
         }
@@ -137,7 +137,7 @@ public:
                 // TODO : here should be another value because of ghost region
                 ownExtends_[i] = 0;
                 //Ceil because we count the number of cells
-                ownExtends_[Dim+i] = (unsigned int)(ceil(ownBBox_[Dim+i] / gridspace_));
+                ownExtends_[Dim+i] = (unsigned int)(this->ceil(ownBBox_[Dim+i] / gridspace_));
             }
             hasOwnExtends_ = true;
         }
@@ -416,7 +416,7 @@ public:
         for(unsigned int i = 0; i <  Dim; i++)
         {
             float offsetPos = pos[i] - ownBBox_[i];
-            index[i] = (unsigned int)(floor(offsetPos / gridspace_));
+            index[i] = (unsigned int)(this->floor(offsetPos / gridspace_));
         }
 
         return true;
@@ -445,7 +445,7 @@ public:
         for(unsigned int i = 0; i <  Dim; i++)
         {
             float offsetPos = pos[i] - localBBox_[i];
-            index[i] = (unsigned int)(floor(offsetPos / gridspace_));
+            index[i] = (unsigned int)(this->floor(offsetPos / gridspace_));
         }
 
         return true;
@@ -474,7 +474,7 @@ public:
         for(unsigned int i = 0; i <  Dim; i++)
         {
             float offsetPos = pos[i] - globalBBox_[i];
-            index[i] = (unsigned int)(floor(offsetPos / gridspace_));
+            index[i] = (unsigned int)(this->floor(offsetPos / gridspace_));
         }
 
         return true;
