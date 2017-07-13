@@ -61,17 +61,17 @@ RedistProcCCI::splitData(pConstructData& data, RedistRole role)
     data->serialize();
 }
 
+// point to point redistribution protocol
 void
 decaf::
-RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
+RedistProcCCI::redistribute(pConstructData& data, RedistRole role)
 {
     int ret;
-
-    assert(data.getPtr());
 
     //Processing the data exchange
     if(role == DECAF_REDIST_SOURCE)
     {
+
         // First we send the request for the memory handler
         // and register the local memory
         for (unsigned int i = 0; i < nbSends_; i++)
@@ -80,12 +80,14 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
             {
                 transit = data;
             }
-            else
+            else if(data.getPtr()) // Full message to send
             {
                 // Sending the memory request
                 msg_cci req_mem;
                 req_mem.type = MSG_MEM_REQ;
+                req_mem.it = send_it;
                 req_mem.value = data->getOutSerialBufferSize();
+
                 int connection_index = destination_ + i;
                 cci_send(channels_prod_[connection_index].connection, &req_mem, sizeof(req_mem), (void*)1, 0);
 
@@ -100,6 +102,29 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
                                        &channels_prod_[connection_index].local_rma_handle);
                 channels_prod_[connection_index].buffer_size = data->getOutSerialBufferSize();
             }
+            else // Empty message still sent to unlock the server
+            {
+                msg_cci req_mem;
+                req_mem.type = MSG_MEM_REQ;
+                req_mem.it = send_it;
+                req_mem.value = 1;
+
+                int connection_index = destination_ + i;
+                cci_send(channels_prod_[connection_index].connection, &req_mem, sizeof(req_mem), (void*)1, 0);
+
+                // Deregistering the previous memory if any
+                if(channels_prod_[connection_index].buffer_size > 0)
+                    cci_rma_deregister(endpoint_prod_, channels_prod_[connection_index].local_rma_handle);
+
+                int flags = 0;
+                // We don't use the serial buffer from the pConstructData because the pointer is not initialized
+                // Instead we use the buffer from the channel
+                channels_prod_[connection_index].buffer.resize(1);
+                ret = cci_rma_register(endpoint_prod_, &channels_prod_[connection_index].buffer[0],
+                                       1, flags,
+                                       &channels_prod_[connection_index].local_rma_handle);
+                channels_prod_[connection_index].buffer_size = 1;
+            }
         }
 
         int nb_send = nbSends_;
@@ -112,16 +137,7 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
         {
             cci_event_t *event;
 
-            ret = cci_get_event(endpoint_prod_, &event);
-            if (ret != CCI_SUCCESS)
-            {
-                if (ret != CCI_EAGAIN)
-                {
-                    fprintf(stderr, "cci_get_event() returned %s",
-                        cci_strerror(endpoint_prod_,  (cci_status)ret));
-                }
-                continue;
-            }
+            poll_event(role, send_it, &event);
 
             switch (event->type)
             {
@@ -135,14 +151,23 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
                 }
                 else if (msg->type == MSG_MEM_HANDLE)
                 {
+                    //fprintf(stderr, "Reception of the remote memory handler. Sending the message...\n");
                     // Getting the server handle
                     unsigned int index_connection = indexes_prod_.at(event->recv.connection);
                     channels_prod_[index_connection].distant_rma_handle = (cci_rma_handle_t *)malloc(sizeof(cci_rma_handle_t));
                     memcpy((void*)channels_prod_[index_connection].distant_rma_handle, msg->rma_handle, sizeof(cci_rma_handle_t));
+                    //fprintf(stderr, "Handler received: %llu %llu %llu %llu\n",
+                    //        channels[index_connection].distant_rma_handle->stuff[0],
+                    //        channels[index_connection].distant_rma_handle->stuff[1],
+                    //        channels[index_connection].distant_rma_handle->stuff[2],
+                    //        channels[index_connection].distant_rma_handle->stuff[3]);
 
                     // Starting the RMA operation
                     msg_cci ack_msg;
                     ack_msg.type = MSG_RMA_SENT;
+                    ack_msg.it = send_it;
+
+                    //fprintf(stderr, "Sending the ack type: %u\n", ack_msg.type);
 
                     ret = cci_rma(channels_prod_[index_connection].connection,
                                   &ack_msg, sizeof(msg_cci),
@@ -173,6 +198,8 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
 
             cci_return_event(event);
         }
+
+        send_it++;
     }
 
     // check if we have something in transit to/from self
@@ -193,29 +220,14 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
     if(role == DECAF_REDIST_DEST)
     {
         int nbRecep = nbReceptions_;
-
         // Number of send done with the server
         // Used to count the number of event EVENT_SENT we need to wait
-
-        if(!event_queue_con_.empty())
-            fprintf(stderr,"ERROR: content of the event queue before reception: %lu\n", event_queue_con_.size());
 
         while (nbRecep > 0)
         {
             cci_event_t *event;
+            poll_event(role, get_it, &event);
 
-            // TODO: read the content of the stack
-
-            ret = cci_get_event(endpoint_con_, &event);
-            if (ret != CCI_SUCCESS)
-            {
-                if (ret != CCI_EAGAIN)
-                {
-                    fprintf(stderr, "cci_get_event() returned %s",
-                        cci_strerror(endpoint_con_,  (cci_status)ret));
-                }
-                continue;
-            }
             switch (event->type)
             {
 
@@ -227,6 +239,7 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
                 if (msg->type == MSG_MEM_REQ)
                 {
                     // The client wants to send data. Allocating memory
+                    //fprintf(stderr, "Reception of a memory request...\n");
 
                     // Deregistering the previous memory if required
                     if(channel.buffer_size > 0)
@@ -234,6 +247,8 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
 
 
                     // Creating the memory buffer and handler
+                    //ret = posix_memalign((void **)&(channel.buffer), 4096, msg->value);
+                    //check_return(endpoint, "memalign buffer", ret, 1);
                     channel.buffer.resize(msg->value);
                     channel.buffer_size = msg->value;
 
@@ -243,30 +258,37 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
                     int flags = CCI_FLAG_WRITE;
                     ret = cci_rma_register(endpoint_con_, &channel.buffer[0], msg->value, flags,
                                            &channel.local_rma_handle);
+                    //check_return(endpoint_con_, "cci_rma_register", ret, 1);
 
                     // Sending the local handler to the distant
                     msg_cci msg_handle;
                     msg_handle.type = MSG_MEM_HANDLE;
+                    msg_handle.it = get_it;
                     memcpy(msg_handle.rma_handle, channel.local_rma_handle, sizeof(msg_handle.rma_handle));
-                     ret = cci_send(channel.connection, &msg_handle, sizeof(msg_cci), (void*)1, CCI_FLAG_SILENT);
+
+                    ret = cci_send(channel.connection, &msg_handle, sizeof(msg_cci), (void*)1, CCI_FLAG_SILENT);
+
                 }
                 else if(msg->type == MSG_RMA_SENT)
                 {
                     // The client has sent data in RDMA and the operation is complete.
+                    //fprintf(stderr, "Memory state: %s\n", channel.buffer);
 
                     msg_cci msg_ack;
                     msg_ack.type = MSG_OK;
+                    msg_ack.it = get_it;
                     cci_send(event->recv.connection, &msg_ack, sizeof(msg_cci), (void*)1, 0);
-                    fprintf(stderr, "Reception of a RMA sent which worked. Should NOT have worked.\n");
+                    fprintf(stderr, "WARINING: Reception of a RMA sent which worked. Should NOT have worked.\n");
                 }
                 else
                 {
-                    // BUG: that correspond to the message sent from the client
-                    // at the end of the RDMA operation but the content of the
+                    // BUG: that corresponds to the message sent from the client
+                    // at the end of the RDMA operation (MSG_RMA_SENT) but the content of the
                     // msg is corrupted.
 
                     msg_cci msg_ack;
                     msg_ack.type = MSG_OK;
+                    msg_ack.it = get_it;
                     cci_send(event->recv.connection, &msg_ack, sizeof(msg_cci), (void*)1, CCI_FLAG_BLOCKING);
 
                     // Empty message case
@@ -316,9 +338,12 @@ RedistProcCCI::redistribute(pConstructData &data, RedistRole role)
 
         if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
             data->mergeStoredData();
+
+        get_it++;
     }
 
     // Make sure that we process all the requests of 1 iteration before receiving events from the next one
     // TODO: use the queue event to manage stored events belonging to other iterations
-    MPI_Barrier(task_communicator_);
+    // NOTE Matthieu: Implemented poll_event. Have to check on a cluster to see if it holds.
+    //MPI_Barrier(task_communicator_);
 }
