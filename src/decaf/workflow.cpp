@@ -134,6 +134,8 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
             link.nprocs = v.second.get<int>("nprocs");
             link.prod_dflow_redist = v.second.get<string>("prod_dflow_redist");
             link.check_level = check_level;
+            link.name = v.second.get<string>("name");
+            link.transport_method = v.second.get<string>("transport");
 
             if(link.nprocs != 0){ // Only used if there are procs on this link
                 link.path = v.second.get<string>("path");
@@ -149,14 +151,15 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
             // Retrieving the name of source and target ports
             boost::optional<string> srcP = v.second.get_optional<string>("sourcePort");
             boost::optional<string> destP = v.second.get_optional<string>("targetPort");
-            if(srcP && destP){
+            if (srcP && destP)
+            {
                 // If there are ports, retrieve the port names and then check if there are contracts associated
                 link.srcPort = srcP.get();
                 link.destPort = destP.get();
 
                 // Retrieving the contract, if present
                 boost::optional<bpt::ptree&> pt_keys = v.second.get_child_optional("keys");
-                if(pt_keys){
+                if (pt_keys){
                     for(bpt::ptree::value_type &value: pt_keys.get()){
                         ContractKey field;
                         field.name = value.first;
@@ -173,7 +176,7 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
                 }
                 // Retrieving the contract on the link, if present
                 boost::optional<bpt::ptree&> pt_keys_link = v.second.get_child_optional("keys_link");
-                if(pt_keys_link){
+                if (pt_keys_link){
                     for(bpt::ptree::value_type &value: pt_keys_link.get()){
                         ContractKey field;
                         field.name = value.first;
@@ -197,33 +200,33 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
 
             // Retrieving information on streams and buffers
             boost::optional<string> opt_stream = v.second.get_optional<string>("stream");
-            if(opt_stream)
+            if (opt_stream)
             {
                 link.manala_info.stream = opt_stream.get();
                 if(link.manala_info.stream != "none")
                 {
                     boost::optional<string> opt_frame_policy = v.second.get_optional<std::string>("frame_policy");
-                    if(opt_frame_policy)
+                    if (opt_frame_policy)
                         link.manala_info.frame_policy = opt_frame_policy.get();
                     else
                         link.manala_info.frame_policy = "none";
                     boost::optional<unsigned int> opt_prod_output = v.second.get_optional<unsigned int>("prod_output_freq");
-                    if(opt_prod_output)
+                    if (opt_prod_output)
                         link.manala_info.prod_freq_output = opt_prod_output.get();
                     else
                         link.manala_info.prod_freq_output = 1;
                     boost::optional<unsigned int> opt_low_output = v.second.get_optional<unsigned int>("low_output_freq");
-                    if(opt_low_output)
+                    if (opt_low_output)
                         link.manala_info.low_frequency = opt_low_output.get();
                     else
                         link.manala_info.low_frequency = 0;
                     boost::optional<unsigned int> opt_high_output = v.second.get_optional<unsigned int>("high_output_freq");
-                    if(opt_high_output)
+                    if (opt_high_output)
                         link.manala_info.high_frequency = opt_high_output.get();
                     else
                         link.manala_info.high_frequency = 0;
                     boost::optional<string> opt_storage_policy = v.second.get_optional<std::string>("storage_collection_policy");
-                    if(opt_storage_policy)
+                    if (opt_storage_policy)
                         link.manala_info.storage_policy = opt_storage_policy.get();
                     else
                         link.manala_info.storage_policy = "greedy";
@@ -231,7 +234,7 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
 
                     // TODO CHECK if this is possible even when there are no "strorage_types" in the tree
                     // TODO is it better to use get_optional? What does v.second.count do?
-                    if(v.second.count("storage_types") > 0)
+                    if (v.second.count("storage_types") > 0)
                     {
                         for (auto &types : v.second.get_child("storage_types"))
                         {
@@ -240,7 +243,7 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
                         }
                     }
 
-                    if(v.second.count("max_storage_sizes") > 0)
+                    if (v.second.count("max_storage_sizes") > 0)
                     {
                         for (auto &max_size : v.second.get_child("max_storage_sizes"))
                         {
@@ -249,12 +252,12 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
                     }
 
                     // Checking that the storage is properly setup
-                    if(link.manala_info.storages.size() != link.manala_info.storage_max_buffer.size())
+                    if (link.manala_info.storages.size() != link.manala_info.storage_max_buffer.size())
                     {
                         fprintf(stderr, "ERROR: the number of storage layer does not match the number of storage max sizes.\n");
                         exit(1);
                     }
-                    if(link.manala_info.storages.empty())
+                    if (link.manala_info.storages.empty())
                     {
                         fprintf(stderr, "ERROR: using a stream with buffering capabilities but no storage layers given. Declare at least one storage layer.\n");
                         exit(1);
@@ -268,11 +271,13 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
             workflow.links.push_back( link );
         } // End for workflow.links
     }
-    catch( const bpt::json_parser_error& jpe ) {
+    catch( const bpt::json_parser_error& jpe )
+    {
         cerr << "JSON parser exception: " << jpe.what() << endl;
         exit(1);
     }
-    catch ( const bpt::ptree_error& pte ) {
+    catch ( const bpt::ptree_error& pte )
+    {
         cerr << "property_tree exception: " << pte.what() << endl;
         exit(1);
     }

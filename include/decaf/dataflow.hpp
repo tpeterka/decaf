@@ -35,12 +35,19 @@
 #include <manala/datastream/datastreamdoublefeedback.hpp>
 #include <manala/datastream/datastreamsinglefeedback.hpp>
 #include <manala/datastream/datastreamsinglenolink.hpp>
-#include <memory>
-#include <queue>
+#endif
+
+#ifdef TRANSPORT_CCI
+#include <bredala/transport/cci/redist_block_cci.h>
+#include <bredala/transport/cci/redist_count_cci.h>
+#include <bredala/transport/cci/redist_proc_cci.h>
+#include <bredala/transport/cci/redist_round_cci.h>
 #endif
 
 #include <decaf/types.hpp>
 #include <decaf/workflow.hpp>
+#include <memory>
+#include <queue>
 
 
 namespace decaf
@@ -50,6 +57,8 @@ class Dataflow
 {
 public:
     Dataflow(CommHandle world_comm,             // world communicator
+             int workflow_size,                 // Size of the workflow
+             int workflow_rank,                 // Rank in the workflow
              DecafSizes& decaf_sizes,           // sizes of producer, dataflow, consumer
              int prod,                          // id in workflow structure of producer node
              int dflow,                         // id in workflow structure of dataflow link

@@ -37,6 +37,22 @@ stringToDecomposition(std::string name)
                 return DECAF_CONTIG_DECOMP;
         }
 }
+TransportMethod
+decaf::
+stringToTransportMethod(std::string method)
+{
+    if (method.compare(std::string("mpi")) == 0)
+        return DECAF_TRANSPORT_MPI;
+    else if (method.compare(std::string("cci")) == 0)
+        return DECAF_TRANSPORT_CCI;
+    else if (method.compare(std::string("file")) == 0)
+        return DECAF_TRANSPORT_FILE;
+    else
+    {
+        std::cerr<<"WARNING: unknown Transport method "<<method<<". Using CCI instead."<<std::endl;
+        return DECAF_TRANSPORT_CCI;
+    }
+}
 
 
 Check_level

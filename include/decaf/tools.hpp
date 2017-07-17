@@ -15,6 +15,7 @@ namespace decaf
 
 void all_err(int err_code);
 Decomposition stringToDecomposition(std::string name);
+TransportMethod stringToTransportMethod(std::string method);
 Check_level stringToCheckLevel(string check);
 
 } //decaf

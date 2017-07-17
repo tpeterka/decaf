@@ -601,7 +601,13 @@ def workflowToJson(graph, outputFile, filter_level):
                                           "nprocs" : edge.nprocs,
                                           "source" : prod_id,
                                           "target" : con_id,
-                                          "prod_dflow_redist" : edge.prod_dflow_redist})
+                                          "prod_dflow_redist" : edge.prod_dflow_redist,
+                                          "name" : graphEdge[0] + "_" + graphEdge[1]})
+
+        if "transport" in graphEdge[2]:
+            data["workflow"]["edges"][i]["transport"] = graphEdge[2]['transport']
+        else:
+            data["workflow"]["edges"][i]["transport"] = "mpi"
 
         if edge.nprocs != 0:
           data["workflow"]["edges"][i].update({"func" : edge.func,

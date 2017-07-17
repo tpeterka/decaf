@@ -183,14 +183,16 @@ private:
     int my_link(int workflow_id);
 
     // data members
-    CommHandle world_comm_;                    // handle to original world communicator
-    Workflow workflow_;                        // workflow
-    int err_;                                  // last error
-    vector<RoutingNode> my_nodes_;             // indices of my workflow nodes
-    vector<RoutingLink> my_links_;             // indices of my workflow links
-    vector<Dataflow*>   dataflows;             // all dataflows for the entire workflow
-    vector<Dataflow*>   out_dataflows;         // all my outbound dataflows
-    vector<Dataflow*>   link_in_dataflows;     // all my inbound dataflows in case I am a link
+    CommHandle world_comm_;                     // handle to original world communicator
+    int workflow_size_;                         // Size of the workflow
+    int workflow_rank_;                         // Rank within the workflow
+    Workflow workflow_;                         // workflow
+    int err_;                                   // last error
+    vector<RoutingNode> my_nodes_;              // indices of my workflow nodes
+    vector<RoutingLink> my_links_;              // indices of my workflow links
+    vector<Dataflow*>   dataflows;              // all dataflows for the entire workflow
+    vector<Dataflow*>   out_dataflows;          // all my outbound dataflows
+    vector<Dataflow*>   link_in_dataflows;      // all my inbound dataflows in case I am a link
     vector<pair<Dataflow*, int>> node_in_dataflows; // all my inbound dataflows in case I am a node, and the corresponding index in the vector dataflows
 
     map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow

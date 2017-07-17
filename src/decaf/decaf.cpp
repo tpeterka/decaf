@@ -9,13 +9,34 @@ Decaf::Decaf(CommHandle world_comm,
 {
     world = new Comm(world_comm);
 
+    // Env variables are used for the case where not all the tasks
+    // share a single MPI_COMM_WORLD. DECAF_WORKFLOW_RANK gives
+    // the offset of the local MPI_COMM_WORLD in the global workflow ranking
+
+    // Fetching the global size of the workflow
+    const char* env_decaf_size = std::getenv("DECAF_WORKFLOW_SIZE");
+    if (env_decaf_size != NULL)
+        workflow_size_ = atoi(env_decaf_size);
+    else
+        workflow_size_ = CommSize(world_comm);
+
+    // Fethcing the global rank of the current process
+    // The first rank is the global rank in the workflow
+    // The world_rank is then the rank of the process in the local communicator
+    // plus the rank of the first rank
+    const char* env_first_rank = std::getenv("DECAF_WORKFLOW_RANK");
+    int global_first_rank = 0;
+    if (env_first_rank != NULL)
+        global_first_rank = atoi(env_first_rank);
+    workflow_rank_ = CommRank(world_comm) + global_first_rank; // my place in the world
+
     // build routing table
     // routing table is simply vectors of workflow nodes and links that belong to my process
 
     // add my nodes
     for (size_t i = 0; i < workflow_.nodes.size(); i++)
     {
-        if (workflow_.my_node(world->rank(), i))
+        if (workflow_.my_node(workflow_rank_, i))
         {
             RoutingNode nl;
             nl.idx  = i;
@@ -29,7 +50,7 @@ Decaf::Decaf(CommHandle world_comm,
     // add my links
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i))
         {
             RoutingLink nl;
             nl.idx  = i;
@@ -45,9 +66,9 @@ Decaf::Decaf(CommHandle world_comm,
     // inbound dataflows
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i))        // I am a link and this dataflow is me
+        if (workflow_.my_link(workflow_rank_, i))        // I am a link and this dataflow is me
             link_in_dataflows.push_back(dataflows[i]);
-        if (workflow_.my_in_link(world->rank(), i)){     // I am a node and this dataflow is an input
+        if (workflow_.my_in_link(workflow_rank_, i)){     // I am a node and this dataflow is an input
             node_in_dataflows.push_back(pair<Dataflow*, int>(dataflows[i], i));
             if(dataflows[i]->destPort() != "")
                 inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
@@ -60,7 +81,7 @@ Decaf::Decaf(CommHandle world_comm,
         // I am a link and this dataflow is me
         // OR
         // I am a node and this dataflow is an output
-        if ((workflow_.my_link(world->rank(), i)) || (workflow_.my_out_link(world->rank(), i)))
+        if ((workflow_.my_link(workflow_rank_, i)) || (workflow_.my_out_link(workflow_rank_, i)))
             out_dataflows.push_back(dataflows[i]);
     }
 
@@ -85,7 +106,7 @@ Decaf::Decaf(CommHandle world_comm,
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
     /*for (size_t i = 0; i < workflow_.nodes.size(); i++)
-        if (workflow_.my_node(world->rank(), i)){
+        if (workflow_.my_node(workflow_rank_, i)){
             return;
     TODO verify that the following does the same, without a loop */
     if(my_nodes_.size() > 0){
@@ -133,7 +154,7 @@ Decaf::put(pConstructData container)
     // link ranks that do overlap this node need to be run in one-time mode
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i))
         {
             run_links(true);
             break;
@@ -154,7 +175,7 @@ Decaf::put(pConstructData container, int i)
     // link ranks that do overlap this node need to be run in one-time mode
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i))
         {
             run_links(true);
             break;
@@ -186,7 +207,7 @@ Decaf::put(pConstructData container, string port)
     // link ranks that do overlap this node need to be run in one-time mode
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i))
         {
             run_links(true);
             break;
@@ -221,7 +242,7 @@ Decaf::get(pConstructData container, string port)
     // the link was already run by the producer node during Decaf::put()
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i) && !workflow_.my_out_link(workflow_rank_, i))
         {
             run_links(true);
             break;
@@ -257,7 +278,7 @@ Decaf::get(map<string, pConstructData> &containers)
     // the link was already run by the producer node during Decaf::put()
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i) && !workflow_.my_out_link(workflow_rank_, i))
         {
             run_links(true);
             break;
@@ -295,7 +316,7 @@ Decaf::get(map<int, pConstructData> &containers){
     // the same rank also was a producer node for this link, in which case
     // the link was already run by the producer node during Decaf::put()
     for (size_t i = 0; i < workflow_.links.size(); i++){
-        if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i) && !workflow_.my_out_link(workflow_rank_, i))
         {
             run_links(true);
             break;
@@ -334,7 +355,7 @@ Decaf::get(vector< pConstructData >& containers)
     // the link was already run by the producer node during Decaf::put()
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(world->rank(), i) && !workflow_.my_out_link(world->rank(), i))
+        if (workflow_.my_link(workflow_rank_, i) && !workflow_.my_out_link(workflow_rank_, i))
         {
             run_links(true);
             break;
@@ -407,7 +428,7 @@ Decaf::my_node(const char* name)
 {
     for (size_t i = 0; i < workflow_.nodes.size(); i++)
     {
-        if (workflow_.my_node(world->rank(), i) &&
+        if (workflow_.my_node(workflow_rank_, i) &&
                 !strcmp(name, workflow_.nodes[i].func.c_str()))
             return true;
     }
@@ -468,7 +489,10 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
         {
             pConstructData container;
             link_in_dataflows[i]->get(container, DECAF_LINK);
-            containers.push_back(container);
+            if(container->getMap()->size() > 0)
+                containers.push_back(container);
+            else
+                fprintf(stderr, "ERROR: reception of an empty message\n");
         }
 
         // route the message: decide what links should accept it
@@ -491,6 +515,7 @@ Decaf::run_links(bool run_once)              // spin continuously or run once on
                 {
                     if (ready_types[i] & DECAF_LINK)
                     {
+                        fprintf(stderr, "Sending a quit message.\n");
                         dataflows[ready_ids[i]]->put(quit_container, DECAF_LINK);
                     }
                 }
@@ -553,7 +578,7 @@ void
 decaf::
 Decaf::print_workflow()
 {
-    if (world->rank())           // only print from world rank 0
+    if (workflow_rank_)           // only print from world rank 0
         return;
 
     fprintf(stderr, "%ld nodes:\n", workflow_.nodes.size());
@@ -604,6 +629,8 @@ Decaf::build_dataflows(vector<Dataflow*>& dataflows)
 
         // TODO: emplace constructor
         dataflows.push_back(new Dataflow(world_comm_,
+                                         workflow_size_,
+                                         workflow_rank_,
                                          decaf_sizes,
                                          prod,
                                          dflow,

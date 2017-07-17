@@ -80,30 +80,26 @@ struct WorkflowLink                          // a dataflow
                 list_keys(list_keys_),
                 check_level(check_level_),
         stream(stream_){} */
-    int prod;                   // index in vector of all workflow nodes of producer
-    int con;                    // index in vector of all workflow nodes of consumer
-    int start_proc;             // starting process rank in world communicator for the dataflow
-    int nprocs;                 // number of processes in the dataflow
-    string func;                // name of dataflow callback
-    void* args;                 // callback arguments
-    string path;                // path to callback function module
-    string prod_dflow_redist;   // redistribution component between producer and dflow
-    string dflow_con_redist;    // redistribution component between dflow and consumer
-    /*string stream;              // Type of stream policy to use (none, single, double)
-    string frame_policy;        // Policy to use to manage the incoming frames
-    unsigned int prod_freq_output;              // Output frequency of the producer
-    string storage_policy;                      // Type of storage collection to use
-    vector<StorageType> storages;               // Different level of storage availables
-    vector<unsigned int> storage_max_buffer;    // Maximum number of frame*/
-    ManalaInfo manala_info;
+    int prod;                       // index in vector of all workflow nodes of producer
+    int con;                        // index in vector of all workflow nodes of consumer
+    int start_proc;                 // starting process rank in world communicator for the dataflow
+    int nprocs;                     // number of processes in the dataflow
+    string func;                    // name of dataflow callback
+    string name;                    // Name of the link. Should be uniq in the workflow
+    void* args;                     // callback arguments
+    string path;                    // path to callback function module
+    string prod_dflow_redist;       // redistribution component between producer and dflow
+    string dflow_con_redist;        // redistribution component between dflow and consumer
+    string transport_method;        // Type of communications (mpi,cci, file)
+    ManalaInfo manala_info;         // Informations relative to the flow control management
 
-    string srcPort;		// Portname of the source
-    string destPort;		// Portname of the dest
+    string srcPort;                 // Portname of the source
+    string destPort;                // Portname of the dest
 
-    vector<ContractKey> keys_link;   // List of keys to be exchanged b/w the link and the consumer
-    vector<ContractKey> list_keys;   // list of key to be exchanged b/w the producer and consumer or producer and link
-    Check_level check_level;		 // level of checking for the types of data to be exchanged
-    bool bAny;						 // Whether the filtering will check the contracts but keep any other field or not
+    vector<ContractKey> keys_link;  // List of keys to be exchanged b/w the link and the consumer
+    vector<ContractKey> list_keys;  // list of key to be exchanged b/w the producer and consumer or producer and link
+    Check_level check_level;        // level of checking for the types of data to be exchanged
+    bool bAny;                      // Whether the filtering will check the contracts but keep any other field or not
 
 
 };

@@ -33,6 +33,13 @@ enum Decomposition
 	DECAF_NUM_DECOMPS,
 };
 
+enum TransportMethod
+{
+    DECAF_TRANSPORT_MPI,
+    DECAF_TRANSPORT_CCI,
+    DECAF_TRANSPORT_FILE
+};
+
 // workflow entity types
 typedef unsigned char TaskType;
 #define DECAF_NONE      0x00
@@ -52,6 +59,7 @@ enum DecafError
 {
 	DECAF_OK,
 	DECAF_COMM_SIZES_ERR,
+    DECAF_TRANSPORT_METHOD,
 	DECAF_NUM_ERRS,
 };
 

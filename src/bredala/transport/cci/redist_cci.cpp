@@ -428,6 +428,8 @@ RedistCCI::RedistCCI(int rankSource,
     local_dest_rank_ = rankDest;
     local_source_rank_ = rankSource;
 
+    fprintf(stderr, "Global rank: %d\n", rank_);
+
     MPI_Comm_rank(task_communicator_, &task_rank_);
     MPI_Comm_size(task_communicator_, &task_size_);
     int ret;
@@ -442,6 +444,13 @@ RedistCCI::RedistCCI(int rankSource,
     // group with all the sources
     if(isSource())
     {
+        // Sanity check
+        if(task_size_ != nbSources)
+        {
+            fprintf(stderr, "ERROR: size of the task communicator (%d) does not match nbSources (%d).\n", task_size_, nbSources);
+            MPI_Abort(MPI_COMM_WORLD, -1);
+        }
+
         // Client side: Read all the URIs from the server side
 
         // Creating the local endpoint
@@ -453,6 +462,7 @@ RedistCCI::RedistCCI(int rankSource,
                 cci_strerror(NULL,  (cci_status)ret), ret);
             exit(EXIT_FAILURE);
         }
+
 
         char *uri = NULL;
         ret = cci_get_opt(endpoint_prod_,
@@ -466,6 +476,7 @@ RedistCCI::RedistCCI(int rankSource,
         // Read the URIs of the servers
         vector<string> uris;
         read_uris(name, uris);
+        fprintf(stderr, "The component has read %lu uris.\n", uris.size());
 
         // Create a connection to each URI
         // Each producer create a connection with all the consumers
@@ -480,6 +491,14 @@ RedistCCI::RedistCCI(int rankSource,
     // group with all the destinations
     if(isDest())
     {
+
+        // Sanity check
+        if(task_size_ != nbDests)
+        {
+            fprintf(stderr, "ERROR: size of the task communicator (%d) does not match nbDests (%d).\n", task_size_, nbDests);
+            MPI_Abort(MPI_COMM_WORLD, -1);
+        }
+
         // Server side: the generate all the URIs and write a file
         // for the clients
 
@@ -602,6 +621,7 @@ void
 decaf::
 RedistCCI::redistributeCollective(pConstructData& data, RedistRole role)
 {
+    fprintf(stderr, "ERROR: calling COLLECTIVE CCI\n");
     // TODO: to reimplement with CCI
 /*    // debug
     int rank;

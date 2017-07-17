@@ -54,6 +54,7 @@ if                          (transport_mpi)
     set                     (transport_libraries    ${transport_libraries} ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
   endif                     ()
   add_definitions           (-DTRANSPORT_MPI)
+  set                       (TRANSPORT_MPI ON)
 endif                       (transport_mpi)
 
 #CCI
@@ -63,6 +64,7 @@ if                          (transport_cci)
   set                       (transport_libraries    ${transport_libraries} ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${CCI_LIBRARY})
   include_directories       (${CCI_INCLUDE_DIR})
   add_definitions           (-DTRANSPORT_CCI)
+  set                       (TRANSPORT_CCI ON)
 endif                       (transport_cci)
 
 # Boost
@@ -132,3 +134,8 @@ install                     (FILES ${FILES_TO_DEPLOY} DESTINATION ${CMAKE_INSTAL
 install                     (DIRECTORY ${DIRS_TO_DEPLOY} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/decaf)
 endif(build_decaf)
 install                     ( FILES cmake/FindDecaf.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/cmake)
+
+#Configure the config file
+configure_file              (include/config_decaf.h.cmakein include/config_decaf.h)
+install                     (FILES ${CMAKE_BINARY_DIR}/include/config_decaf.h
+                             DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

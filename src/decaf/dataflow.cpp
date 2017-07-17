@@ -164,6 +164,8 @@ Dataflow::setClose()
 
 decaf::
 Dataflow::Dataflow(CommHandle world_comm,
+                   int workflow_size,
+                   int workflow_rank,
                    DecafSizes& decaf_sizes,
                    int prod,
                    int dflow,
@@ -172,6 +174,8 @@ Dataflow::Dataflow(CommHandle world_comm,
                    Decomposition prod_dflow_redist,
                    Decomposition dflow_cons_redist):
     world_comm_(world_comm),
+    world_size_(workflow_size),
+    world_rank_(workflow_rank),
     sizes_(decaf_sizes),
     wflow_prod_id_(prod),
     wflow_dflow_id_(dflow),
@@ -208,8 +212,25 @@ Dataflow::Dataflow(CommHandle world_comm,
     assert(sizes_.dflow_start == decaf_sizes.dflow_start);
     assert(sizes_.con_start == decaf_sizes.con_start);
 
-    world_rank_ = CommRank(world_comm); // my place in the world
-    world_size_ = CommSize(world_comm);
+    TransportMethod transport = stringToTransportMethod(wflowLink.transport_method);
+
+    // Fetching the global size of the workflow
+    /*const char* env_decaf_size = std::getenv("DECAF_WORKFLOW_SIZE");
+    if (env_decaf_size != NULL)
+        world_size_ = atoi(env_decaf_size);
+    else
+        world_size_ = CommSize(world_comm);
+
+    // Fethcing the global rank of the current process
+    // The first rank is the global rank in the workflow
+    // The world_rank is then the rank of the process in the local communicator
+    // plus the rank of the first rank
+    const char* env_first_rank = std::getenv("DECAF_WORKFLOW_RANK");
+    int global_first_rank = 0;
+    if (env_first_rank != NULL)
+        global_first_rank = atoi(env_first_rank);
+    world_rank_ = CommRank(world_comm) + global_first_rank; // my place in the world
+    */
 
     // ensure sizes and starts fit in the world
     if (sizes_.prod_start + sizes_.prod_size > world_size_   ||
@@ -251,21 +272,48 @@ Dataflow::Dataflow(CommHandle world_comm,
             world_rank_ < sizes_.prod_start + sizes_.prod_size)
     {
         type_ |= DECAF_PRODUCER_COMM;
-        prod_comm_ = new Comm(world_comm, sizes_.prod_start, sizes_.prod_start + sizes_.prod_size - 1);
+        if (transport == DECAF_TRANSPORT_MPI)
+            prod_comm_ = new Comm(world_comm, sizes_.prod_start, sizes_.prod_start + sizes_.prod_size - 1);
+        else if (transport == DECAF_TRANSPORT_CCI)
+            prod_comm_ = new Comm(world_comm);
+        else
+        {
+            fprintf(stderr, "ERROR: Transport method not implemented.\n");
+            err_ = DECAF_TRANSPORT_METHOD;
+            return;
+        }
     }
 
     if (world_rank_ >= sizes_.dflow_start &&                  // dataflow
             world_rank_ < sizes_.dflow_start + sizes_.dflow_size)
     {
         type_ |= DECAF_DATAFLOW_COMM;
-        dflow_comm_ = new Comm(world_comm, sizes_.dflow_start, sizes_.dflow_start + sizes_.dflow_size - 1);
+        if (transport == DECAF_TRANSPORT_MPI)
+            dflow_comm_ = new Comm(world_comm, sizes_.dflow_start, sizes_.dflow_start + sizes_.dflow_size - 1);
+        else if (transport == DECAF_TRANSPORT_CCI)
+            dflow_comm_ = new Comm(world_comm);
+        else
+        {
+            fprintf(stderr, "ERROR: Transport method not implemented.\n");
+            err_ = DECAF_TRANSPORT_METHOD;
+            return;
+        }
     }
 
     if (world_rank_ >= sizes_.con_start &&                    // consumer
             world_rank_ < sizes_.con_start + sizes_.con_size)
     {
         type_ |= DECAF_CONSUMER_COMM;
-        con_comm_ = new Comm(world_comm, sizes_.con_start, sizes_.con_start + sizes_.con_size - 1);
+        if (transport == DECAF_TRANSPORT_MPI)
+            con_comm_ = new Comm(world_comm, sizes_.con_start, sizes_.con_start + sizes_.con_size - 1);
+        else if (transport == DECAF_TRANSPORT_CCI)
+            con_comm_ = new Comm(world_comm);
+        else
+        {
+            fprintf(stderr, "ERROR: Transport method not implemented.\n");
+            err_ = DECAF_TRANSPORT_METHOD;
+            return;
+        }
     }
 
     if( (type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM && (type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM)
@@ -277,35 +325,101 @@ Dataflow::Dataflow(CommHandle world_comm,
         prod_link_overlap = false;
     }
 
-
     // producer and dataflow
     if (sizes_.dflow_size > 0 && (
                 (world_rank_ >= sizes_.prod_start && world_rank_ < sizes_.prod_start + sizes_.prod_size) ||
                 (world_rank_ >= sizes_.dflow_start && world_rank_ < sizes_.dflow_start + sizes_.dflow_size)))
     {
+        string redist_name = wflowLink.name + string("_pd");
         switch(prod_dflow_redist)
         {
         case DECAF_ROUND_ROBIN_DECOMP:
         {
-            // fprintf(stderr, "Using Round for prod -> dflow\n");
-            redist_prod_dflow_ = new RedistRoundMPI(sizes_.prod_start,
-                                                    sizes_.prod_size,
-                                                    sizes_.dflow_start,
-                                                    sizes_.dflow_size,
-                                                    world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_dflow_ = new RedistRoundMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_dflow_ = new RedistRoundCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         case DECAF_CONTIG_DECOMP:
         {
-            // fprintf(stderr, "Using Count for prod -> dflow prod\n");
-            redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start,
-                                                    sizes_.prod_size,
-                                                    sizes_.dflow_start,
-                                                    sizes_.dflow_size,
-                                                    world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_dflow_ = new RedistCountCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
-        case DECAF_ZCURVE_DECOMP:
+        /*case DECAF_ZCURVE_DECOMP:
         {
             // fprintf(stderr, "Using ZCurve for prod -> dflow\n");
             redist_prod_dflow_ = new RedistZCurveMPI(sizes_.prod_start,
@@ -314,34 +428,98 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                      sizes_.dflow_size,
                                                      world_comm);
             break;
-        }
+        }*/
         case DECAF_BLOCK_DECOMP:
         {
-            redist_prod_dflow_ = new RedistBlockMPI(sizes_.prod_start,
-                                                    sizes_.prod_size,
-                                                    sizes_.dflow_start,
-                                                    sizes_.dflow_size,
-                                                    world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_dflow_ = new RedistBlockMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_dflow_ = new RedistBlockCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         case DECAF_PROC_DECOMP:
         {
-            redist_prod_dflow_ = new RedistProcMPI(sizes_.prod_start,
-                                                   sizes_.prod_size,
-                                                   sizes_.dflow_start,
-                                                   sizes_.dflow_size,
-                                                   world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_dflow_ = new RedistProcMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_dflow_ = new RedistProcCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         default:
         {
             fprintf(stderr, "ERROR: policy %d unrecognized to select a redistribution component. "
-                            "Using RedistCountMPI instead\n", prod_dflow_redist);
-            redist_prod_dflow_ = new RedistCountMPI(sizes_.prod_start,
-                                                    sizes_.prod_size,
-                                                    sizes_.dflow_start,
-                                                    sizes_.dflow_size,
-                                                    world_comm);
+                            "Abording.\n", prod_dflow_redist);
+            exit(-1);
             break;
         }
 
@@ -358,29 +536,96 @@ Dataflow::Dataflow(CommHandle world_comm,
                 (world_rank_ >= sizes_.dflow_start && world_rank_ < sizes_.dflow_start + sizes_.dflow_size) ||
                 (world_rank_ >= sizes_.con_start && world_rank_ < sizes_.con_start + sizes_.con_size)))
     {
+        string redist_name = wflowLink.name + string("_dc");
         switch(dflow_cons_redist)
         {
         case DECAF_ROUND_ROBIN_DECOMP:
         {
-            // fprintf(stderr, "Using Round for dflow -> cons\n");
-            redist_dflow_con_ = new RedistRoundMPI(sizes_.dflow_start,
-                                                   sizes_.dflow_size,
-                                                   sizes_.con_start,
-                                                   sizes_.con_size,
-                                                   world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_dflow_con_ = new RedistRoundMPI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_dflow_con_ = new RedistRoundCCI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         case DECAF_CONTIG_DECOMP:
         {
-            // fprintf(stderr, "Using Count for dflow -> cons\n");
-            redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start,
-                                                   sizes_.dflow_size,
-                                                   sizes_.con_start,
-                                                   sizes_.con_size,
-                                                   world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_dflow_con_ = new RedistCountCCI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
-        case DECAF_ZCURVE_DECOMP:
+        /*case DECAF_ZCURVE_DECOMP:
         {
             // fprintf(stderr, "Using ZCurve for dflow -> cons\n");
             redist_dflow_con_ = new RedistZCurveMPI(sizes_.dflow_start,
@@ -390,34 +635,98 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                     world_comm);
             break;
         }
+        */
         case DECAF_BLOCK_DECOMP:
         {
-            redist_dflow_con_ = new RedistBlockMPI(sizes_.dflow_start,
-                                                   sizes_.dflow_size,
-                                                   sizes_.con_start,
-                                                   sizes_.con_size,
-                                                   world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_dflow_con_ = new RedistBlockMPI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_dflow_con_ = new RedistBlockCCI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         case DECAF_PROC_DECOMP:
         {
-
-            redist_dflow_con_ = new RedistProcMPI(sizes_.dflow_start,
-                                                  sizes_.dflow_size,
-                                                  sizes_.con_start,
-                                                  sizes_.con_size,
-                                                  world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_dflow_con_ = new RedistProcMPI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_dflow_con_ = new RedistProcCCI(sizes_.dflow_start,
+                                                        sizes_.dflow_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         default:
         {
             fprintf(stderr, "ERROR: policy %d unrecognized to select a redistribution component. "
-                            "Using RedistCountMPI instead\n", prod_dflow_redist);
-            redist_dflow_con_ = new RedistCountMPI(sizes_.dflow_start,
-                                                   sizes_.dflow_size,
-                                                   sizes_.con_start,
-                                                   sizes_.con_size,
-                                                   world_comm);
+                            "Abording.\n", prod_dflow_redist);
+            exit(-1);
             break;
         }
 
@@ -427,7 +736,6 @@ Dataflow::Dataflow(CommHandle world_comm,
         //fprintf(stderr, "No redistribution between dflow and cons needed.\n");
         redist_dflow_con_ = NULL;
 
-
     // producer and consumer
     if (sizes_.dflow_size == 0 && (
                 (world_rank_ >= sizes_.prod_start && world_rank_ < sizes_.prod_start + sizes_.prod_size) ||
@@ -436,29 +744,97 @@ Dataflow::Dataflow(CommHandle world_comm,
         no_link_ = true;
         bContractLink_ = false; //TO be sure
 
+        string redist_name = wflowLink.name + string("_pc");
+
         switch(prod_dflow_redist)
         {
         case DECAF_ROUND_ROBIN_DECOMP:
         {
-            // fprintf(stderr, "Using Round for dflow -> cons\n");
-            redist_prod_con_ = new RedistRoundMPI(sizes_.prod_start,
-                                                  sizes_.prod_size,
-                                                  sizes_.con_start,
-                                                  sizes_.con_size,
-                                                  world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_con_ = new RedistRoundMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_con_ = new RedistRoundCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         case DECAF_CONTIG_DECOMP:
         {
-            // fprintf(stderr, "Using Count for dflow -> cons\n");
-            redist_prod_con_ = new RedistCountMPI(sizes_.prod_start,
-                                                  sizes_.prod_size,
-                                                  sizes_.con_start,
-                                                  sizes_.con_size,
-                                                  world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_con_ = new RedistCountMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_con_ = new RedistCountCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
-        case DECAF_ZCURVE_DECOMP:
+        /*case DECAF_ZCURVE_DECOMP:
         {
             // fprintf(stderr, "Using ZCurve for dflow -> cons\n");
             redist_prod_con_ = new RedistZCurveMPI(sizes_.prod_start,
@@ -467,35 +843,98 @@ Dataflow::Dataflow(CommHandle world_comm,
                                                    sizes_.con_size,
                                                    world_comm);
             break;
-        }
+        }*/
         case DECAF_BLOCK_DECOMP:
         {
-            redist_prod_con_ = new RedistBlockMPI(sizes_.prod_start,
-                                                  sizes_.prod_size,
-                                                  sizes_.con_start,
-                                                  sizes_.con_size,
-                                                  world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_con_ = new RedistBlockMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_con_ = new RedistBlockCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         case DECAF_PROC_DECOMP:
         {
-
-            redist_prod_con_ = new RedistProcMPI(sizes_.prod_start,
-                                                 sizes_.prod_size,
-                                                 sizes_.con_start,
-                                                 sizes_.con_size,
-                                                 world_comm);
+            switch (transport)
+            {
+            case DECAF_TRANSPORT_MPI:
+            {
+#ifdef TRANSPORT_MPI
+                // fprintf(stderr, "Using Round for prod -> dflow\n");
+                redist_prod_con_ = new RedistProcMPI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_comm);
+#else
+                fprintf(stderr, "ERROR: Requesting MPI transport method but Bredala was not compiled with MPI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            case DECAF_TRANSPORT_CCI:
+            {
+#ifdef TRANSPORT_CCI
+                redist_prod_con_ = new RedistProcCCI(sizes_.prod_start,
+                                                        sizes_.prod_size,
+                                                        sizes_.con_start,
+                                                        sizes_.con_size,
+                                                        world_rank_,
+                                                        world_comm,
+                                                        redist_name,
+                                                        DECAF_REDIST_P2P);
+#else
+                fprintf(stderr, "ERROR: Requesting CCI transport method but Bredala was not compiled with CCI transport method.");
+                exit(-1);
+#endif
+                break;
+            }
+            default:
+                fprintf(stderr,"ERROR: Transport method not implemented.\n");
+                exit(-1);
+            break;
+            }
             break;
         }
         default:
         {
             fprintf(stderr, "ERROR: policy %d unrecognized to select a redistribution component. "
-                            "Using RedistCountMPI instead\n", prod_dflow_redist);
-            redist_dflow_con_ = new RedistCountMPI(sizes_.prod_start,
-                                                   sizes_.prod_size,
-                                                   sizes_.con_start,
-                                                   sizes_.con_size,
-                                                   world_comm);
+                            "Abording.\n", prod_dflow_redist);
+            exit(-1);
             break;
         }
 
@@ -505,6 +944,12 @@ Dataflow::Dataflow(CommHandle world_comm,
         redist_prod_con_ = NULL;
 
     stream_policy_ = stringToStreamPolicy(wflowLink.manala_info.stream);
+
+    if (transport != DECAF_TRANSPORT_MPI && stream_policy_ != DECAF_STREAM_NONE)
+    {
+        fprintf(stderr, "Manala only available with MPI transport layer. Turning off.\n");
+        stream_policy_ = DECAF_STREAM_NONE;
+    }
 
     if ( stream_policy_ != DECAF_STREAM_NONE &&
             ((!no_link_ && wflowLink.manala_info.storages.size() > 0) || (no_link_ && stream_policy_ == DECAF_STREAM_SINGLE)))
