@@ -692,10 +692,34 @@ def getNodeWithRank(rank, graph):
     return ('notfound', 0) # should be the same since second value is not used in this case
 
 
+def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
+    print "Selecting the transport method..."
+
+    transport = ""
+    for graphEdge in graph.edges_iter(data=True):
+        edge = graphEdge[2]["edge"]
+        if "transport" in graphEdge[2]:
+            if transport == "":
+              transport = graphEdge[2]["transport"]
+            elif transport != graphEdge[2]["transport"]:
+              raise ValueError("ERROR: Mixing MPI and CCI transport communication.")
+        elif transport == "":
+            transport = "mpi"
+        elif transport != graphEdge[2]["transport"]:
+            raise ValueError("ERROR: Mixing MPI and CCI transport communication.")
+    print "Selected method: "+transport
+
+    if transport == "mpi":
+      MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
+    elif transport == "cci":
+      CCIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
+    else:
+      raise ValueError("ERROR: Unknow transport method selected %s" % (transport))
+
 # Build the mpirun command in MPMD mode
 # Parse the graph to sequence the executables with their
 # associated MPI ranks and arguments
-def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
+def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     print "Generating bash command script "+outputFile
 
     currentRank = 0
@@ -732,6 +756,72 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     content +="#! /bin/bash\n\n"
     content +=mpirunCommand
     content = content.rstrip(" : ") + "\n"
+
+    f.write(content)
+    f.close()
+    os.system("chmod a+rx "+outputFile)
+
+"""Build the various mpirun commands for each executable
+   The function generate the environment variables necesaries for CCI
+   to recreate the ranking of the workflow
+"""
+def CCIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
+    print "Generating bash command script for CCI "+outputFile
+
+    currentRank = 0
+    totalRank = 0
+    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" "
+    nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
+
+    commands = []
+
+    # Computing the total number of ranks with the workflow
+    #data["workflow"]["nodes"] = []
+    for val in graph.nodes_iter(data=True):
+        node = val[1]["node"]
+        totalRank+=node.nprocs
+
+
+    #data["workflow"]["edges"] = []
+    for graphEdge in graph.edges_iter(data=True):
+        edge = graphEdge[2]["edge"]
+        totalRank+=edge.nprocs
+
+    #print "Total number of ranks in the workflow: "+str(totalRank)
+
+    #Parsing the graph looking at the current rank
+    for i in range(0, nbExecutables):
+      (type, exe) = getNodeWithRank(currentRank, graph)
+      if type == 'none':
+        print 'ERROR: Unable to find an executable for the rank ' + str(rank)
+        exit()
+
+      if type == 'node':
+
+        if exe.nprocs == 0:
+          print 'ERROR: a node can not have 0 MPI rank.'
+          exit()
+
+        command = mpirunCommand+"-np "+str(exe.nprocs)
+        command+=" -x DECAF_WORKFLOW_SIZE="+str(totalRank)+" -x DECAF_WORKFLOW_RANK="+str(currentRank)
+        command += " "+str(exe.cmdline)+" &"
+        currentRank += exe.nprocs
+        commands.append(command)
+
+      if type == 'edge':
+
+        if exe.nprocs != 0:
+          command = mpirunCommand+"-np "+str(exe.nprocs)
+          command+=" -x DECAF_WORKFLOW_SIZE="+str(totalRank)+" -x DECAF_WORKFLOW_RANK="+str(currentRank)
+          command += " "+str(exe.cmdline)+" &"
+          currentRank += exe.nprocs
+          commands.append(command)
+    # Writting the final file
+    f = open(outputFile, "w")
+    content = ""
+    content +="#! /bin/bash\n\n"
+    for command in commands:
+      content+=command+"\n"
 
     f.write(content)
     f.close()
