@@ -100,7 +100,7 @@ void run(Workflow& workflow)                             // workflow
 {
     MPI_Init(NULL, NULL);
 
-#ifdef TRANSPORT_MPI
+#ifdef TRANSPORT_CCI
     uint32_t caps	= 0;
     int ret = cci_init(CCI_ABI_VERSION, 0, &caps);
     if (ret)

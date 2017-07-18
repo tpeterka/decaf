@@ -705,7 +705,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
               raise ValueError("ERROR: Mixing MPI and CCI transport communication.")
         elif transport == "":
             transport = "mpi"
-        elif transport != graphEdge[2]["transport"]:
+        elif transport != "mpi":
             raise ValueError("ERROR: Mixing MPI and CCI transport communication.")
     print "Selected method: "+transport
 
@@ -786,6 +786,7 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
     #Writing the hostfile
     f = open("hostfile_workflow.txt","w")
+    content = ""
     for host in hostlist:
       content += host + "\n"
     content = content.rstrip("\n")
