@@ -540,6 +540,10 @@ RedistCCI::RedistCCI(int rankSource,
     // Make sure that only the events from the constructor are received during this phase
     // ie the producer cannot start sending data before all the servers created their connections
     MPI_Barrier(task_communicator_);
+
+    // Everyone in the dataflow has read the file, the root clean the uri file
+    if (isDest() && task_rank_ == 0)
+        std::remove(name_.c_str());
 }
 
 decaf::
@@ -550,6 +554,12 @@ RedistCCI::~RedistCCI()
     //    MPI_Comm_free(&task_communicator_);
 
     // TODO: close the connections
+
+    // Removing the file if we are the server
+    if (isDest())
+    {
+        std::remove(name_.c_str());
+    }
 
     delete[] destBuffer_;
     delete[] sum_;
