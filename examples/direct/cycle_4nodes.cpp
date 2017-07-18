@@ -216,6 +216,17 @@ void run(Workflow& workflow)                     // workflow
 {
     MPI_Init(NULL, NULL);
 
+#ifdef TRANSPORT_CCI
+    uint32_t caps	= 0;
+    int ret = cci_init(CCI_ABI_VERSION, 0, &caps);
+    if (ret)
+    {
+        fprintf(stderr, "cci_init() failed with %s\n",
+            cci_strerror(NULL, (cci_status)ret));
+        exit(EXIT_FAILURE);
+    }
+#endif
+
     // create decaf
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 

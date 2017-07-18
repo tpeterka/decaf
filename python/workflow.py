@@ -741,15 +741,13 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
           exit()
 
         mpirunCommand += "-np "+str(exe.nprocs)
+
+        #Checking if a topology is specified. If no, fill a filehost with localhost
         if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
-          #print "Found a topology to use for the command line."
-          #mpirunCommand +=" --host "
           for host in exe.topology.hostlist:
-            #mpirunCommand += host+","
-          #mpirunCommand = mpirunCommand.rstrip(",")
             hostlist.append(host)
         else:
-            print "No topology found."
+            #print "No topology found."
             for j in range(0, exe.nprocs):
               hostlist.append("localhost")
         mpirunCommand += " "+str(exe.cmdline)+" : "
@@ -759,15 +757,12 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
         if exe.nprocs != 0:
           mpirunCommand += "-np "+str(exe.nprocs)
+
+          #Checking if a topology is specified. If no, fill a filehost with localhost
           if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
-            print "Found a topology to use for the command line."
-            #mpirunCommand +=" --host "
             for host in exe.topology.hostlist:
-              #mpirunCommand += host+","
               hostlist.append(host)
-            #mpirunCommand = mpirunCommand.rstrip(",")
           else:
-            print "No topology found."
             for j in range(0, exe.nprocs):
               hostlist.append("localhost")
           mpirunCommand += " "+str(exe.cmdline)+" : "
@@ -809,13 +804,11 @@ def CCIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     commands = []
 
     # Computing the total number of ranks with the workflow
-    #data["workflow"]["nodes"] = []
     for val in graph.nodes_iter(data=True):
         node = val[1]["node"]
         totalRank+=node.nprocs
 
 
-    #data["workflow"]["edges"] = []
     for graphEdge in graph.edges_iter(data=True):
         edge = graphEdge[2]["edge"]
         totalRank+=edge.nprocs
@@ -842,6 +835,7 @@ def CCIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
         command += " "+str(exe.cmdline)+" &"
         currentRank += exe.nprocs
 
+        #Checking if a topology is specified. If no, fill a filehost with localhost
         if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
           for host in exe.topology.hostlist:
             hostlist.append(host)
@@ -867,6 +861,7 @@ def CCIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
           currentRank += exe.nprocs
           commands.append(command)
 
+          #Checking if a topology is specified. If no, fill a filehost with localhost
           if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
             for host in exe.topology.hostlist:
               hostlist.append(host)
