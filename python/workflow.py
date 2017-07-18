@@ -566,7 +566,7 @@ def initParserForTopology(parser):
         )
 
 def topologyFromArgs(args):
-    return Topology("global", args.nprocs, hostfilename = args.hostfile)
+    return Topology("root", args.nprocs, hostfilename = args.hostfile)
 
 
 def workflowToJson(graph, outputFile, filter_level):
@@ -723,7 +723,8 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     print "Generating bash command script "+outputFile
 
     currentRank = 0
-    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" "
+    hostlist = []
+    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" --hostfile hostfile_workflow.txt "
     nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
 
     # Parsing the graph looking at the current rank
@@ -740,6 +741,17 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
           exit()
 
         mpirunCommand += "-np "+str(exe.nprocs)
+        if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+          #print "Found a topology to use for the command line."
+          #mpirunCommand +=" --host "
+          for host in exe.topology.hostlist:
+            #mpirunCommand += host+","
+          #mpirunCommand = mpirunCommand.rstrip(",")
+            hostlist.append(host)
+        else:
+            print "No topology found."
+            for j in range(0, exe.nprocs):
+              hostlist.append("localhost")
         mpirunCommand += " "+str(exe.cmdline)+" : "
         currentRank += exe.nprocs
 
@@ -747,6 +759,17 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
         if exe.nprocs != 0:
           mpirunCommand += "-np "+str(exe.nprocs)
+          if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+            print "Found a topology to use for the command line."
+            #mpirunCommand +=" --host "
+            for host in exe.topology.hostlist:
+              #mpirunCommand += host+","
+              hostlist.append(host)
+            #mpirunCommand = mpirunCommand.rstrip(",")
+          else:
+            print "No topology found."
+            for j in range(0, exe.nprocs):
+              hostlist.append("localhost")
           mpirunCommand += " "+str(exe.cmdline)+" : "
           currentRank += exe.nprocs
 
@@ -760,6 +783,15 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     f.write(content)
     f.close()
     os.system("chmod a+rx "+outputFile)
+
+    #Writing the hostfile
+    f = open("hostfile_workflow.txt","w")
+    for host in hostlist:
+      content += host + "\n"
+    content = content.rstrip("\n")
+    f.write(content)
+    f.close()
+    
 
 """Build the various mpirun commands for each executable
    The function generate the environment variables necesaries for CCI
@@ -791,31 +823,64 @@ def CCIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
     #Parsing the graph looking at the current rank
     for i in range(0, nbExecutables):
+      hostlist = []
       (type, exe) = getNodeWithRank(currentRank, graph)
       if type == 'none':
         print 'ERROR: Unable to find an executable for the rank ' + str(rank)
         exit()
 
+      hostfilename = "hostfile_task"+str(i)
       if type == 'node':
 
         if exe.nprocs == 0:
           print 'ERROR: a node can not have 0 MPI rank.'
           exit()
 
-        command = mpirunCommand+"-np "+str(exe.nprocs)
+        command = mpirunCommand+"-np "+str(exe.nprocs)+" --hostfile "+hostfilename
         command+=" -x DECAF_WORKFLOW_SIZE="+str(totalRank)+" -x DECAF_WORKFLOW_RANK="+str(currentRank)
         command += " "+str(exe.cmdline)+" &"
         currentRank += exe.nprocs
+
+        if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+          for host in exe.topology.hostlist:
+            hostlist.append(host)
+        else:
+            for j in range(0, exe.nprocs):
+              hostlist.append("localhost")
         commands.append(command)
+
+        f = open(hostfilename,"w")
+        content = ""
+        for host in hostlist:
+          content += host + "\n"
+        content = content.rstrip("\n")
+        f.write(content)
+        f.close()
 
       if type == 'edge':
 
         if exe.nprocs != 0:
-          command = mpirunCommand+"-np "+str(exe.nprocs)
+          command = mpirunCommand+"-np "+str(exe.nprocs)+" --hostfile "+hostfilename
           command+=" -x DECAF_WORKFLOW_SIZE="+str(totalRank)+" -x DECAF_WORKFLOW_RANK="+str(currentRank)
           command += " "+str(exe.cmdline)+" &"
           currentRank += exe.nprocs
           commands.append(command)
+
+          if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+            for host in exe.topology.hostlist:
+              hostlist.append(host)
+          else:
+            for j in range(0, exe.nprocs):
+              hostlist.append("localhost")
+
+          f = open(hostfilename,"w")
+          content = ""
+          for host in hostlist:
+            content += host + "\n"
+          content = content.rstrip("\n")
+          f.write(content)
+          f.close()
+
     # Writting the final file
     f = open(outputFile, "w")
     content = ""
