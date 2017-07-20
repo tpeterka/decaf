@@ -396,7 +396,8 @@ Decaf::get(vector< pConstructData >& containers)
 // Checks if there are still alive input Dataflows for this node
 bool
 decaf::
-Decaf::allQuit(){
+Decaf::allQuit()
+{
     for (pair<Dataflow*, int> df : node_in_dataflows)
     {
         if (!df.first->isClose())
@@ -419,6 +420,20 @@ Decaf::terminate()
     pConstructData quit_container;
     msgtools::set_quit(quit_container);
     put(quit_container);
+
+    // If the nodes has input, we wait that all the connections
+    // have received a terminate signal. This maintains the node alive
+    // and avoid deadlocks in case of a loop. This way all the nodes in the loop
+    // receive a quit message before leaving instead of sending the quit msg and
+    // exiting directly
+    for (pair<Dataflow*, int> df : node_in_dataflows)
+    {
+        while (!df.first->isClose())
+        {
+            pConstructData msg;
+            df.first->get(msg, DECAF_NODE);
+        }
+    }
 }
 
 // whether my rank belongs to this workflow node, identified by the name of its func field
@@ -1038,5 +1053,19 @@ Decaf::con_comm_size(int i)
         return out_dataflows[i]->sizes()->con_size;
 
     return 0;
+}
+
+int
+decaf::
+Decaf::workflow_comm_size()
+{
+   return workflow_size_;
+}
+
+int
+decaf::
+Decaf::workflow_comm_rank()
+{
+    return workflow_rank_;
 }
 
