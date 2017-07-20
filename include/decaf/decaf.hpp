@@ -116,6 +116,9 @@ public:
     int prod_comm_size(int i);          // Return the size of the communicator of the producer of the in dataflow i
     int con_comm_size(int i);           // Return the size of the communicator of the consumer of the out dataflow i
 
+    int workflow_comm_size();
+    int workflow_comm_rank();
+
 
     // return a pointer to this node's producer or consumer communicator
     Comm* prod_comm();
