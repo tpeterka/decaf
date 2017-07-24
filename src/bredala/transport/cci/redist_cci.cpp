@@ -954,14 +954,43 @@ RedistCCI::redistributeP2P(pConstructData& data, RedistRole role)
                     msg_cci msg_ack;
                     msg_ack.type = MSG_OK;
                     msg_ack.it = get_it;
-                    cci_send(event->recv.connection, &msg_ack, sizeof(msg_cci), (void*)1, 0);
-                    fprintf(stderr, "WARINING: Reception of a RMA sent which worked. Should NOT have worked.\n");
+                    cci_send(event->recv.connection, &msg_ack, sizeof(msg_cci), (void*)1, CCI_FLAG_BLOCKING);
+
+                    // Empty message case
+                    if(channel.buffer_size == 1)
+                    {
+                        nbRecep--;
+                        cci_return_event(event);
+                        continue;
+                    }
+
+                    // Full message case: merging the received msg
+                    data->allocate_serial_buffer(channel.buffer_size);
+                    memcpy(data->getInSerialBuffer(), &channel.buffer[0], channel.buffer_size);
+
+                    // The dynamic type of merge is given by the user
+                    // NOTE : examin if it's not more efficient to receive everything
+                    // and then merge. Memory footprint more important but allows to
+                    // aggregate the allocations etc
+                    if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+                        data->merge();
+                    else if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+                        //data->unserializeAndStore();
+                        data->unserializeAndStore(data->getInSerialBuffer(), channel.buffer_size);
+                    else
+                    {
+                        std::cout<<"ERROR : merge method not specified. Abording."<<std::endl;
+                        MPI_Abort(MPI_COMM_WORLD, 0);
+                    }
+
+                    nbRecep--;
                 }
                 else
                 {
                     // BUG: that corresponds to the message sent from the client
                     // at the end of the RDMA operation (MSG_RMA_SENT) but the content of the
                     // msg is corrupted.
+                    // Matthieu: Seems to work on Froggy
 
                     msg_cci msg_ack;
                     msg_ack.type = MSG_OK;
