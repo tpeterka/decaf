@@ -16,7 +16,7 @@
 using namespace decaf;
 using namespace std;
 
-string basename = "block_cci";
+string file_basename = "block_cci";
 
 void print_array(unsigned int* array, unsigned int size, unsigned int it)
 {
@@ -97,7 +97,7 @@ void run_client(int nb_client, int nb_server, int nb_it, bool use_mpi)
 
 
         stringstream filename;
-        filename<<j<<"_"<<basename<<rank<<"_before.ply";
+        filename<<j<<"_"<<file_basename<<rank<<"_before.ply";
         posToFile(array.getArray(), array.getNbItems(), filename.str(),r,g,b);
 
         redist->process(container, DECAF_REDIST_SOURCE);
@@ -150,7 +150,7 @@ void run_server(int nb_client, int nb_server, int nb_it, bool use_mpi)
         cout<<"==========================="<<endl;
 
         stringstream filename;
-        filename<<i<<"_"<<basename<<rank<<".ply";
+        filename<<i<<"_"<<file_basename<<rank<<".ply";
         ArrayFieldf pos = result->getFieldData<ArrayFieldf>("pos");
         posToFile(pos.getArray(), pos.getNbItems(), filename.str(),r,g,b);
         sleep(1);
