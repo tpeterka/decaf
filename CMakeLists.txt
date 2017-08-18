@@ -2,7 +2,7 @@ project                     (Decaf)
 cmake_minimum_required      (VERSION 3.0)
 
 option                      (transport_mpi      "Build Decaf with MPI transport layer"          ON)
-option                      (transport_cci      "Build Decaf with CCI transport layer"          ON)
+option                      (transport_cci      "Build Decaf with CCI transport layer"          OFF)
 option                      (tess_dense         "Build tessellation density estimator example"  OFF)
 option                      (build_bredala      "Build Bredala libraries and examples"          ON)
 option                      (build_manala       "Build Manala libraries and examples"           ON)
