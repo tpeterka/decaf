@@ -68,7 +68,7 @@ if                          (transport_cci)
 endif                       (transport_cci)
 
 # Boost
-find_package                (Boost COMPONENTS serialization REQUIRED)
+find_package                (Boost 1.59.0 COMPONENTS serialization REQUIRED)
 message                     (STATUS "Boost libraries: " ${Boost_LIBRARIES})
 
 # Set include directories
