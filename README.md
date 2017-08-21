@@ -4,10 +4,9 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 
 - C++11
 - MPI-3 (currently MPI is the only supported transport layer)
-- Boost
-- Optionally, if you want the python version of the examples to be built,
-    - Python
-    - Networkx
+- Boost 1.59 or higher
+- Python 2.7
+- Networkx
 
 # Building decaf:
 
@@ -35,6 +34,79 @@ export DECAF_PREFIX=/path/to/decaf/install
 export DYLD_LIBRARY_PATH=/path/to/decaf/install/lib:$DYLD_LIBRARY_PATH
 ```
 (The syntax above is for Bash and Mac OSX; other shells and unixes are similar; eg., the dynamic library path variable is ```LD_LIBRARY_PATH on Linux```. You may consider setting the environment variables in .bashrc or .profile)
+
+# Building Decaf on Ubuntu 17.04 from scratch
+
+The following instructuctions install Decaf and its dependencies on a new image of Ubuntu 17.04. The dependencies will be installed in ```$HOME/software/install``` and the Decaf project in ```$HOME/Decaf/install```. The paths and package might be modificed to fit your current environment or distribution.
+
+```
+#Install from a Ubuntu 17.04
+#GCC version : 6.3.0
+
+
+sudo apt-get install git
+sudo apt-get install cmake #version 3.6
+sudo apt-get install python-pip # version 2.7.13
+
+# Minimum version: 1.8
+sudo apt-get install openmpi-common
+sudo apt-get install openmpi-bin
+sudo apt-get install libopenmpi-dev
+
+cd $HOME
+mkdir software
+cd software
+mkdir install
+
+export PATH=$HOME/software/install/include:$HOME/software/install/bin:$PATH
+export LD_LIBRARY_PATH=$HOME/software/install/lib:$LD_LIBRARY_PATH
+
+# Dependencies installation
+
+#Boost
+cd $HOME/software
+wget https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.tar.gz
+tar -xf boost_1_64_0.tar.gz
+cd boost_1_64_0
+./bootstrap.sh --prefix=$HOME/software/install/
+./b2 install
+
+#NetworkX
+pip install networkx
+
+# Decaf build
+cd $HOME
+mkdir Decaf
+cd Decaf
+mkdir source build install
+cd source
+git clone https://bitbucket.org/tpeterka1/decaf.git .
+cd ../build
+cmake ../source/ -DCMAKE_INSTALL_PREFIX:PATH=$HOME/Decaf/install
+make -j4 install
+
+export LD_LIBRARY_PATH=$HOME/Decaf/install/lib:$LD_LIBRARY_PATH
+export DECAF_PREFIX=$HOME/Decaf/install/
+```
+
+# Testing the installation on a local machine
+
+Decaf provides several examples show casing simple workflows. Assuming Decaf was installed following the previous instructions, run the following commands:
+```
+# Testing examples
+# All the examples should complete
+cd $HOME/Decaf/install/examples/direct
+python linear-2nodes.py
+./linear2.sh
+
+cd $HOME/Decaf/install/examples/direct
+python linear-3nodes.py
+./linear3.sh
+
+cd $HOME/Decaf/install/examples/direct
+python cycle-4nodes.py
+./cycle.sh
+```
 
 # Building your project with decaf:
 
