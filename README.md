@@ -107,6 +107,17 @@ cd $HOME/Decaf/install/examples/direct
 python cycle-4nodes.py
 ./cycle.sh
 ```
+# Testing the installation on a distribued machine
+
+Certain python scripts from the examples take extra arguments to specify the number of cores and their respective hosts. The following gives an example to use the linear-2nodes examples in a distributed context:
+
+```
+# The linear-2nodes requires 8 procs (4 prod, 2 link, 2 cons)
+cd $HOME/Decaf/install/examples/direct
+echo -e "node1\nnode1\nnode1\nnode1\nnode2\nnode2\nnode3\nnode3" > hostfile.txt
+python linear-2nodes-topo1.py --np 8 --hostfile hostfile.txt
+./linear2.sh
+```
 
 # Building your project with decaf:
 

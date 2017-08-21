@@ -35,7 +35,7 @@ using namespace std;
 void prod(Decaf* decaf)
 {
     // produce data for some number of timesteps
-	for (int timestep = 2; timestep < 3; timestep++)
+	for (int timestep = 0; timestep < 10; timestep++)
     {
 		fprintf(stderr, "producer %d timestep %d\n", decaf->world->rank(), timestep);
 
