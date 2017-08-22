@@ -3,7 +3,7 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 # Decaf dependencies
 
 - C++11
-- MPI-3 (currently MPI is the only supported transport layer)
+- MPI-3
 - Boost 1.59 or higher
 - Python 2.7
 - Networkx
@@ -37,7 +37,7 @@ export DYLD_LIBRARY_PATH=/path/to/decaf/install/lib:$DYLD_LIBRARY_PATH
 
 # Building Decaf on Ubuntu 17.04 from scratch
 
-The following instructuctions install Decaf and its dependencies on a new image of Ubuntu 17.04. The dependencies will be installed in ```$HOME/software/install``` and the Decaf project in ```$HOME/Decaf/install```. The paths and package might be modificed to fit your current environment or distribution.
+The following instructuctions install Decaf with the MPI transport layer and its dependencies on a new image of Ubuntu 17.04. The dependencies will be installed in ```$HOME/software/install``` and the Decaf project in ```$HOME/Decaf/install```. The paths and package might be modified to fit your current environment or distribution. That procedure installs OpenMPI but any MPI package supporting MPI 3.0 can be used.
 
 ```
 #Install from a Ubuntu 17.04
@@ -48,7 +48,7 @@ sudo apt-get install git
 sudo apt-get install cmake #version 3.6
 sudo apt-get install python-pip # version 2.7.13
 
-# Minimum version: 1.8
+# Minimum OpenMPI version: 1.8
 sudo apt-get install openmpi-common
 sudo apt-get install openmpi-bin
 sudo apt-get install libopenmpi-dev
@@ -118,6 +118,36 @@ echo -e "node1\nnode1\nnode1\nnode1\nnode2\nnode2\nnode3\nnode3" > hostfile.txt
 python linear-2nodes-topo1.py --np 8 --hostfile hostfile.txt
 ./linear2.sh
 ```
+
+# Building Decaf with CCI support
+
+Decaf comes with several transport layer. The default transport layer relies on MPI. Right now, Decaf also supports CCI as its communication layer. The following instructions describe how to instal CCI and compile Decaf with CCI support activated:
+
+```
+# CCI installation
+cd $HOME/software
+wget http://cci-forum.com/wp-content/uploads/2017/05/cci-2.1.tar.gz
+tar -xf cci-2.1.tar.gz
+cd cci-2.1
+./configure --prefix=$HOME/software/install
+make -j4 install
+
+# Decaf build
+cd $HOME/Decaf/build
+cmake ../source/ -DCMAKE_INSTALL_PREFIX:PATH=$HOME/Decaf/install -Dtransport_cci=on
+make -j4 install
+
+```
+
+# Testing the installation on a local machine
+The cci transport layer can be activated on any previous example by adding the argument ```transport="cci"``` in the python script of a workflow, as can be seen in the linear-2nodes-cci.py example:
+
+```
+cd $HOME/install/examples/direct
+python linear-2nodes-cci.py
+./linear2.sh
+```
+
 
 # Building your project with decaf:
 
