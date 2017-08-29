@@ -18,10 +18,11 @@ add_executable              (pts_dflow          dflow.cpp)
 add_library                 (mod_pts_dflow      MODULE dflow.cpp)
 
 target_link_libraries       (points
-                             ${libraries}
-                             bredala_transport
-                             bredala_datamodel
-			     manala)
+                            ${libraries}
+                            ${bredala_transports}
+                            bredala_datamodel
+                            manala
+                            decaf)
 
 if                          (${serial} MATCHES "CGAL")
   include                   (${CGAL_USE_FILE})
@@ -32,17 +33,19 @@ if                          (${serial} MATCHES "CGAL")
                             ${TESS_LIBRARY}
                             ${CGAL_LIBRARY}
                             ${CGAL_3RD_PARTY_LIBRARIES}
-                            bredala_transport
+                            ${bredala_transports}
                             bredala_datamodel
-			    manala)
+                            manala
+                            decaf)
   target_link_libraries     (dense
                             ${libraries}
                             ${TESS_LIBRARY}
                             ${CGAL_LIBRARY}
                             ${CGAL_3RD_PARTY_LIBRARIES}
-                            bredala_transport
+                            ${bredala_transports}
                             bredala_datamodel
-			    manala)
+                            manala
+                            decaf)
   add_definitions           (-DTESS_CGAL_ALLOW_SPATIAL_SORT)
   add_definitions           (-DTESS_USE_CGAL)
 else                        ()
@@ -51,22 +54,32 @@ else                        ()
                             ${libraries}
                             ${TESS_LIBRARY}
                             ${QHull_LIBRARY}
-                            bredala_transport
+                            ${bredala_transports}
                             bredala_datamodel
-			    manala)
+                            manala
+                            decaf)
   target_link_libraries     (dense
                             ${libraries}
                             ${TESS_LIBRARY}
                             ${QHull_LIBRARY}
-                            bredala_transport
+                            ${bredala_transports}
                             bredala_datamodel
-			    manala)
+                            manala
+                            decaf)
 endif                       ()
 
 target_link_libraries       (pts_dflow
-  ${libraries} bredala_transport bredala_datamodel manala)
+                            ${libraries}
+                            ${bredala_transports}
+                            bredala_datamodel
+                            manala
+                            decaf)
 target_link_libraries       (mod_pts_dflow
-  ${libraries} bredala_transport bredala_datamodel manala)
+                            ${libraries}
+                            ${bredala_transports}
+                            bredala_datamodel
+                            manala
+                            decaf)
 
 # .SO file extension on Linux/Mac OS
 set_target_properties       (mod_pts_dflow PROPERTIES SUFFIX ".so")
