@@ -46,14 +46,17 @@ void node_a(Decaf* decaf)
     {
         int sum = 0;
 
-        if (timestep >= 0)
-        {
-            // receive data from all inbound dataflows
-            // in this example there is only one inbound dataflow,
-            // but in general there could be more
-            vector< pConstructData > in_data;
-            decaf->get(in_data);
 
+        // receive data from all inbound dataflows
+        // in this example there is only one inbound dataflow,
+        // but in general there could be more
+        vector< pConstructData > in_data;
+        decaf->get(in_data);
+
+        if(in_data.empty())
+            fprintf(stderr, "Reception of a token.\n");
+        else
+        {
             // get the values and add them
             for (size_t i = 0; i < in_data.size(); i++)
             {
@@ -67,9 +70,9 @@ void node_a(Decaf* decaf)
                         fprintf(stderr, "Error: null pointer in node_a\n");
                 }
             }
-        }
 
-        fprintf(stderr, "node_a: timestep %d sum = %d\n", timestep, sum);
+            fprintf(stderr, "node_a: timestep %d sum = %d\n", timestep, sum);
+        }
 
         // the data in this example is just the timestep, add it to a container
         SimpleFieldi data(timestep);

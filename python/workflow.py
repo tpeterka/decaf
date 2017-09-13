@@ -7,6 +7,7 @@ import exceptions
 import getopt
 import argparse
 import json
+import networkx as nx
 
 from collections import defaultdict
 
@@ -28,8 +29,12 @@ class Node:
     self.cmdline = cmdline
     self.start_proc = start_proc
     self.nprocs = nprocs
+    self.tokens = 0
     self.inports = {}
     self.outports = {}
+
+  def setTokens(self, tokens):
+    self.tokens = tokens
 
 
   def addInputPort(self, name, contract=0):
@@ -568,6 +573,31 @@ def initParserForTopology(parser):
 def topologyFromArgs(args):
     return Topology("root", args.nprocs, hostfilename = args.hostfile)
 
+def checkCycles(graph):
+
+    cycle_list = list(nx.simple_cycles(graph))
+    if len(cycle_list) > 0:
+      print "Decaf detected " + str(len(cycle_list)) + " cycles. Checking for tokens..."
+
+    for cycle in cycle_list:
+        # Checking if one of the node in the cycle has at least 1 token
+        found_token = False
+        for node in cycle:
+
+            # The list given by simple_cycles does not have the attribute
+            # We have to find back the correct node
+            for val in graph.nodes_iter(data=True):
+                if val[0] == node:
+                    if val[1]['node'].tokens > 0:
+                        found_token = True
+        if found_token:
+            print "Token detected in the cycle."
+        else:
+            raise ValueError("A cycle was detected within the cycle %s, but no token were inserted. Please insert at least one token in one of the cycle's tasks." % (cycle))
+
+
+
+
 
 def workflowToJson(graph, outputFile, filter_level):
     print "Generating graph description file "+outputFile
@@ -584,13 +614,10 @@ def workflowToJson(graph, outputFile, filter_level):
     i = 0
     for val in graph.nodes_iter(data=True):
         node = val[1]["node"]
-        tokens = 0
-        if "tokens" in val[1]:
-            tokens = val[1]["tokens"]
         data["workflow"]["nodes"].append({"start_proc" : node.start_proc,
                                           "nprocs" : node.nprocs,
                                           "func" : node.func,
-                                          "tokens" : tokens})
+                                          "tokens" : node.tokens})
 
 
         val[1]['index'] = i
@@ -907,6 +934,9 @@ def createObjects(graph):
         my_node = Node(node[0], node[1]['start_proc'], node[1]['nprocs'], node[1]['func'], node[1]['cmdline'])
         del node[1]['start_proc']
         del node[1]['nprocs']
+      if 'tokens' in node[1]:
+          my_node.setTokens(node[1]['tokens'])
+          del node[1]['tokens']
 
       node[1]['node'] = my_node # Insert the object and clean the other attributes
       del node[1]['func']
@@ -950,5 +980,6 @@ def createObjects(graph):
 def processGraph(graph, name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = ""):
     createObjects(graph)
     check_contracts(graph, filter_level)
+    checkCycles(graph)
     workflowToJson(graph, name+".json", filter_level)
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
