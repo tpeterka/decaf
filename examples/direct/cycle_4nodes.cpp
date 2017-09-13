@@ -46,7 +46,7 @@ void node_a(Decaf* decaf)
     {
         int sum = 0;
 
-        if (timestep > 0)
+        if (timestep >= 0)
         {
             // receive data from all inbound dataflows
             // in this example there is only one inbound dataflow,

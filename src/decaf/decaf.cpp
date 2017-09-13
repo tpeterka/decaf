@@ -44,6 +44,11 @@ Decaf::Decaf(CommHandle world_comm,
             nl.wflow_in_links =  set<int>(workflow_.nodes[i].in_links.begin(),
                                           workflow_.nodes[i].in_links.end());
             my_nodes_.push_back(nl);
+
+            // WARNING: this method will NOT work in the case of
+            // overlapping between nodes because the number of tokens
+            // may be erased by the number of token of another task
+            tokens_ = workflow_.nodes[i].tokens;
         }
     }
 
@@ -349,6 +354,13 @@ bool
 decaf::
 Decaf::get(vector< pConstructData >& containers)
 {
+    // Checking if we have a token. If yes, we directly return without messages
+    if(tokens_ > 0)
+    {
+        tokens_--;
+        return true;
+    }
+
     // TODO verify this
     // link ranks that do overlap this node need to be run in one-time mode, unless
     // the same rank also was a producer node for this link, in which case

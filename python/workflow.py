@@ -584,9 +584,15 @@ def workflowToJson(graph, outputFile, filter_level):
     i = 0
     for val in graph.nodes_iter(data=True):
         node = val[1]["node"]
+        tokens = 0
+        if "tokens" in val[1]:
+            tokens = val[1]["tokens"]
         data["workflow"]["nodes"].append({"start_proc" : node.start_proc,
                                           "nprocs" : node.nprocs,
-                                          "func" : node.func})
+                                          "func" : node.func,
+                                          "tokens" : tokens})
+
+
         val[1]['index'] = i
         i += 1
 

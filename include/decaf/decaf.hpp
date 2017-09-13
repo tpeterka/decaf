@@ -201,6 +201,8 @@ private:
     map<string, Dataflow*> inPortMap;		    // Map between an input port and its associated Dataflow
     map<string, vector<Dataflow*>> outPortMap;  // Map between an output port and the list of its associated Dataflow
 
+    int tokens_;                                // Number of empty messages to generate before doing a real get
+
 };
 
 } // namespace
