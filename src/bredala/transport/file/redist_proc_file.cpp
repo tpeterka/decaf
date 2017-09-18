@@ -62,6 +62,7 @@ RedistProcFile::computeGlobal(pConstructData& data, RedistRole role)
         {
             nbReceptions_ = nbSources_ / nbDests_;
             startReception_ = task_rank_ * nbReceptions_;
+            fprintf(stderr, "Will read from container %u to %u\n", startReception_, startReception_ + nbReceptions_);
         }
         else
             nbReceptions_ = 1;
@@ -234,7 +235,7 @@ RedistProcFile::redistribute(pConstructData& data, RedistRole role)
         file_id = H5Fopen(ss.str().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 
         // Reading all the dataset for this destination, one per source
-        for (unsigned int i = startReception_; i < nbReceptions_; i++)
+        for (unsigned int i = startReception_; i < startReception_ + nbReceptions_; i++)
         {
             // Creating the name of the dataset
             std::stringstream datasetname;
