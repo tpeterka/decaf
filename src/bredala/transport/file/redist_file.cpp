@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <sstream>
 #include <fstream>
+#include <hdf5.h>
 
 #include <bredala/transport/file/redist_file.h>
 
@@ -40,7 +41,9 @@ RedistFile::RedistFile(int rankSource,
     task_communicator_(communicator),
     sum_(NULL),
     destBuffer_(NULL),
-    name_(name)
+    name_(name),
+    send_it(0),
+    get_it(0)
 {
 
     // For File components, we only have the communicator of the local task
@@ -182,128 +185,196 @@ void
 decaf::
 RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
 {
-    fprintf(stderr, "ERROR: calling COLLECTIVE File\n");
-    // TODO: to reimplement with CCI
-/*    // debug
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    // producer root collects the number of messages for each source destination
-    if (role == DECAF_REDIST_SOURCE)
+    // TODO: write the chunks instead of the data
+    if(role == DECAF_REDIST_SOURCE)
     {
-        //for(int i = 0; i < nbDests_; i++)
-        //    std::cout<<summerizeDest_[i]<<" ";
-        //std::cout<<std::endl;
-        MPI_Reduce(summerizeDest_, sum_, nbDests_, MPI_INT, MPI_SUM,
-                   0, commSources_); // 0 Because we are in the source comm
-                  //local_source_rank_, commSources_);
-    }
+        hid_t file_id;
+        hid_t plist_id;                 /* property list identifier */
 
-    // overlapping source and destination
-    if (rank_ == local_source_rank_ && rank_ == local_dest_rank_)
-        memcpy(destBuffer_, sum_, nbDests_ * sizeof(int));
+        /*
+         * MPI variables
+         */
+        int mpi_size, mpi_rank;
+        MPI_Comm comm  = task_communicator_; // Communicator of the producer only
+        MPI_Info info  = MPI_INFO_NULL;
+        MPI_Comm_size(comm, &mpi_size);
+        MPI_Comm_rank(comm, &mpi_rank);
 
-    // disjoint source and destination
-    else
-    {
-        // Sending to the rank 0 of the destinations
-        if(role == DECAF_REDIST_SOURCE && rank_ == local_source_rank_)
+        /*
+         * Set up file access property list with parallel I/O access
+         */
+         plist_id = H5Pcreate(H5P_FILE_ACCESS);
+         H5Pset_fapl_mpio(plist_id, comm, info);
+
+        /*
+         * Create a new file collectively and release property list identifier.
+         */
+        std::stringstream ss;
+        ss<<"testhdf5_"<<send_it<<".h5";
+        file_id = H5Fcreate(ss.str().c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+        H5Pclose(plist_id);
+
+        // Create the local table of sizes
+        unsigned int* local_sizes = (unsigned int*)(malloc(nbDests_ * sizeof(unsigned int)));
+        for(unsigned int i = 0; i < nbDests_; i++)
+            local_sizes[i] = data->getOutSerialBufferSize();
+
+        // Aggregate the global table of sizes
+        unsigned int* global_sizes = (unsigned int*)(malloc(nbDests_ * nbSources_ * sizeof(unsigned int)));
+        MPI_Allgather(local_sizes, nbDests_, MPI_UNSIGNED, global_sizes, nbDests_ , MPI_UNSIGNED, task_communicator_);
+
+        // For each data model, creating a dataspace and writing the data collectively
+        for(unsigned int i = 0; i < nbDests_ * nbSources_; i++)
         {
-            MPI_Request req;
-            reqs.push_back(req);
-            MPI_Isend(sum_,  nbDests_, MPI_INT,  local_dest_rank_, MPI_METADATA_TAG,
-                      communicator_,&reqs.back());
-        }
+            hid_t filespace, memspace, dset_id, dataset_prod_id;
+            hsize_t	count[2];	          /* hyperslab selection parameters */
+            hsize_t	stride[2];
+            hsize_t	block[2];
+            hsize_t	offset[2];
+            hsize_t dims[1];
+            herr_t status;
 
+            // Individual size of the dataset, chunk and block
+            dims[0] = global_sizes[i];
 
-        // Getting the accumulated buffer on the destination side
-        if(role == DECAF_REDIST_DEST && rank_ ==  local_dest_rank_) //Root of destination
-        {
-            MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, MPI_METADATA_TAG, communicator_, &status);
-            if (status.MPI_TAG == MPI_METADATA_TAG)  // normal, non-null get
+            // Creating the dataspace
+            filespace = H5Screate_simple(1, dims, NULL); // Number of dimensions in the dataspace, size of each dimension
+
+            // Creating the memspace
+            memspace = H5Screate_simple(1, dims, NULL);
+
+            // Creating the name of the dataset
+            unsigned int source_id = i / nbDests_;
+            unsigned int dest_id = i % nbDests_;
+            std::stringstream datasetname;
+            datasetname<<"Container_"<<source_id<<"_"<<dest_id;
+
+            // Creating chunked dataset
+            //dset_id = H5Dcreate(file_id, datasetname.str().c_str(), H5T_NATIVE_CHAR, filespace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            plist_id = H5Pcreate(H5P_DATASET_CREATE);
+            H5Pset_chunk(plist_id, 1, dims);
+
+            dset_id = H5Dcreate(file_id, datasetname.str().c_str(), H5T_C_S1, filespace,
+                        H5P_DEFAULT, plist_id, H5P_DEFAULT);
+            H5Pclose(plist_id);
+            H5Sclose(filespace);
+
+            /*
+             * Select hyperslab in the file.
+             */
+            // Probably should use only 1D arrays for count, stride and block
+            if(source_id == mpi_rank) // If we have the actual data
             {
-                MPI_Recv(destBuffer_,  nbDests_, MPI_INT, local_source_rank_,
-                         MPI_METADATA_TAG, communicator_, MPI_STATUS_IGNORE);
+                count[0] = 1;
+                count[1] = 1 ;
+                stride[0] = 1;
+                stride[1] = 1;
+                block[0] = global_sizes[i];
+                block[1] = global_sizes[i];
             }
-
-        }
-    }
-
-    // producer ranks send data payload
-    if (role == DECAF_REDIST_SOURCE)
-    {
-        for (unsigned int i = 0; i <  destList_.size(); i++)
-        {
-            // sending to self, we store the data from the out to in
-            if (destList_.at(i) == rank_)
-                transit = splitChunks_.at(i);
-            else if (destList_.at(i) != -1)
-            {
-                MPI_Request req;
-                reqs.push_back(req);
-                // nonblocking send in case payload is too big send in immediate mode
-                MPI_Isend(splitChunks_.at(i)->getOutSerialBuffer(),
-                          splitChunks_.at(i)->getOutSerialBufferSize(),
-                          MPI_BYTE, destList_.at(i), send_data_tag, communicator_, &reqs.back());
-            }
-        }
-        send_data_tag = (send_data_tag == INT_MAX ? MPI_DATA_TAG : send_data_tag + 1);
-    }
-
-    // check if we have something in transit to/from self
-    if (role == DECAF_REDIST_DEST && !transit.empty())
-    {
-        if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
-            data->merge(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
-        else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
-            data->unserializeAndStore(transit->getOutSerialBuffer(), transit->getOutSerialBufferSize());
-        transit.reset();              // we don't need it anymore, clean for the next iteration
-        //return;
-    }
-
-    // only consumer ranks are left
-    if (role == DECAF_REDIST_DEST)
-    {
-        // scatter the number of messages to receive at each rank
-        int nbRecep;
-        MPI_Scatter(destBuffer_, 1, MPI_INT, &nbRecep, 1, MPI_INT, 0, commDests_);
-
-        // receive the payload (blocking)
-        // recv_data_tag forces messages from different ranks in the same workflow link
-        // (grouped by communicator) and in the same iteration to stay together
-        // because the tag is incremented with each iteration
-        for (int i = 0; i < nbRecep; i++)
-        {
-            MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, recv_data_tag, communicator_, &status);
-            int nbytes; // number of bytes in the message
-            MPI_Get_count(&status, MPI_BYTE, &nbytes);
-            data->allocate_serial_buffer(nbytes); // allocate necessary space
-            MPI_Recv(data->getInSerialBuffer(), nbytes, MPI_BYTE, status.MPI_SOURCE,
-                     recv_data_tag, communicator_, &status);
-
-            // The dynamic type of merge is given by the user
-            // NOTE: examine if it's not more efficient to receive everything
-            // and then merge. Memory footprint more important but allows to
-            // aggregate the allocations etc
-            if(mergeMethod_ == DECAF_REDIST_MERGE_STEP)
-                data->merge();
-            else if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
-                //data->unserializeAndStore();
-                data->unserializeAndStore(data->getInSerialBuffer(), nbytes);
             else
             {
-                std::cout<<"ERROR : merge method not specified. Abording."<<std::endl;
+                count[0] = 1;
+                count[1] = 1 ;
+                stride[0] = 1;
+                stride[1] = 1;
+                block[0] = 0;
+                block[1] = 0;
+            }
+
+            filespace = H5Dget_space(dset_id);
+            status = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
+
+
+
+            // Create the property list
+            dataset_prod_id = H5Pcreate(H5P_DATASET_XFER);
+            //H5Pset_dxpl_mpio(dataset_prod_id, H5FD_MPIO_COLLECTIVE);
+            H5Pset_dxpl_mpio(dataset_prod_id, H5FD_MPIO_INDEPENDENT);
+
+            // Write the dataset
+            if(source_id == mpi_rank) // If we have the actual data
+            {
+                status = H5Dwrite(dset_id, H5T_C_S1, H5S_ALL, H5S_ALL, dataset_prod_id, data->getOutSerialBuffer());
+                fprintf(stderr, "Writing a dataset of size %u, global size: %u\n", data->getOutSerialBufferSize(), global_sizes[i]);
+            }
+
+            H5Dclose(dset_id);
+            H5Sclose(filespace);
+            H5Pclose(dataset_prod_id);
+        }
+
+        // Cleaning memory
+        free(local_sizes);
+        free(global_sizes);
+
+        // Close the file
+        H5Fclose(file_id);
+        send_it++;
+    }
+
+    // Make sure that we process all the requests of 1 iteration before receiving events from the next one
+    // TODO: use the queue event to manage stored events belonging to other iterations
+    // NOTE Matthieu: Implemented poll_event. Have to check on a cluster to see if it holds.
+    //MPI_Barrier(task_communicator_);
+    if (role == DECAF_REDIST_DEST)
+    {
+        /*
+         * MPI variables
+         */
+        int mpi_size, mpi_rank;
+        MPI_Comm comm  = task_communicator_; // Communicator of the producer only
+        MPI_Comm_size(comm, &mpi_size);
+        MPI_Comm_rank(comm, &mpi_rank);
+
+        hid_t file_id, dset_id, dspace_id;
+
+        /*
+         * Create a new file collectively and release property list identifier.
+         */
+        std::stringstream ss;
+        ss<<"testhdf5_"<<get_it<<".h5";
+        file_id = H5Fopen(ss.str().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);;
+
+        // Reading all the dataset for this destination, one per source
+        for (unsigned int i = 0; i < nbSources_; i++)
+        {
+            // Creating the name of the dataset
+            std::stringstream datasetname;
+            datasetname<<"Container_"<<i<<"_"<<task_rank_;
+
+            // Opening the dataset
+            dset_id = H5Dopen(file_id, datasetname.str().c_str(), H5P_DEFAULT);
+
+            // Getting the size information of the dataset
+            dspace_id = H5Dget_space(dset_id);
+            hsize_t dims[1]; // We only have 1D arrays
+            H5Sget_simple_extent_dims(dspace_id, dims, NULL);
+            fprintf(stderr, "[%d]: Reading dataset \"%s\", size %llu\n", task_rank_, datasetname.str().c_str(), dims[0]);
+
+            // Reading the dataset
+            data->allocate_serial_buffer(dims[0]);
+            herr_t status = H5Dread(dset_id, H5T_C_S1, H5S_ALL, H5S_ALL, H5P_DEFAULT, data->getInSerialBuffer());
+
+            if (mergeMethod_ == DECAF_REDIST_MERGE_STEP)
+                data->merge();
+            else if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+                //data->unserializeAndStore();
+                data->unserializeAndStore(data->getInSerialBuffer(), dims[0]);
+            else
+            {
+                fprintf(stderr, "ERROR: merge method not specified. Aborting.\n");
                 MPI_Abort(MPI_COMM_WORLD, 0);
             }
         }
-        recv_data_tag = (recv_data_tag == INT_MAX ? MPI_DATA_TAG : recv_data_tag + 1);
 
-        if(mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
+        if (mergeMethod_ == DECAF_REDIST_MERGE_ONCE)
             data->mergeStoredData();
+
+        // TODO: destroy the file
+        get_it++;
+
     }
-*/
 }
 
 // point to point redistribution protocol

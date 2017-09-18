@@ -3,5 +3,6 @@
 
 #cmakedefine TRANSPORT_MPI
 #cmakedefine TRANSPORT_CCI
+#cmakedefine TRANSPORT_FILE
 
 #endif

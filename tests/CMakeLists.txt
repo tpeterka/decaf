@@ -31,6 +31,9 @@ endif(${transport_mpi})
 if(${transport_cci})
     list(APPEND bredala_transports bredala_transport_cci)
 endif(${transport_cci})
+if(${transport_file})
+    list(APPEND bredala_transports bredala_transport_file)
+endif(${transport_file})
 
 if(${transport_mpi})
 	add_executable              (testboost testBoost.cpp)
@@ -79,16 +82,16 @@ endif(${transport_mpi})
 
 if(${transport_cci})
 
-	add_executable		    (testcountcci testCountCCI.cpp)
+    add_executable              (testcountcci testCountCCI.cpp)
 	target_link_libraries	    (testcountcci ${libraries} ${bredala_transports} bredala_datamodel)
 
 	add_executable              (testroundcci testRoundCCI.cpp)
 	target_link_libraries       (testroundcci ${libraries} ${bredala_transports} bredala_datamodel)
 
-	add_executable		    (testproccci testProcCCI.cpp)
+    add_executable              (testproccci testProcCCI.cpp)
 	target_link_libraries	    (testproccci ${libraries} ${bredala_transports} bredala_datamodel)
 
-	add_executable		    (testblockcci testBlockCCI.cpp)
+    add_executable              (testblockcci testBlockCCI.cpp)
 	target_link_libraries	    (testblockcci ${libraries} ${bredala_transports} bredala_datamodel)
 
 	install(TARGETS testroundcci testcountcci testproccci testblockcci
@@ -97,5 +100,15 @@ if(${transport_cci})
   	)
 
 endif(${transport_cci})
+
+if(${transport_file})
+    add_executable              (testprocfile testProcFile.cpp)
+    target_link_libraries	    (testprocfile ${libraries} ${bredala_transports} bredala_datamodel)
+
+    install(TARGETS testprocfile
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
+    )
+endif(${transport_file})
 
 

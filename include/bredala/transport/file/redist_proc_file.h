@@ -63,6 +63,7 @@ namespace decaf
         int destination_;     // Rank of the first destination to send data (starting at 0)
         int nbSends_;         // Number of identicaf message to send to different destinations
         int nbReceptions_;
+        int startReception_;     // Rank of the first source to read
     };
 
 } // namespace

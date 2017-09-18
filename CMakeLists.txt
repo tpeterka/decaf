@@ -68,6 +68,16 @@ if                          (transport_cci)
   set                       (TRANSPORT_CCI ON)
 endif                       (transport_cci)
 
+#FILE
+#Should be used with the variable HDF5_PREFER_PARALLEL set to true
+if                          (transport_file)
+  find_package              (HDF5 REQUIRED)
+  include_directories       (${HDF5_INCLUDE_DIR})
+  set                       (transport_libraries    ${transport_libraries} ${HDF5_LIBRARIES})
+  add_definitions           (-DTRANSPORT_FILE)
+  set                       (TRANSPORT_FILE ON)
+endif                       (transport_file)
+
 # Boost
 find_package                (Boost 1.59.0 COMPONENTS serialization REQUIRED)
 message                     (STATUS "Boost libraries: " ${Boost_LIBRARIES})

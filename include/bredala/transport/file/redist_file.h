@@ -82,6 +82,8 @@ protected:
     std::string name_;                  // Used as the basename to generate the file names
 
     std::vector< pConstructData > splitBuffer_;	// Buffer of container to avoid reallocation// used by the consumer
+    int64_t send_it;                            // Iteration number of the send
+    int64_t get_it;                             // Iteration number of the get
 };
 
 } // namespace
