@@ -216,8 +216,24 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
 
         // Create the local table of sizes
         unsigned int* local_sizes = (unsigned int*)(malloc(nbDests_ * sizeof(unsigned int)));
+        bzero(local_sizes, nbDests_ * sizeof(unsigned int));
+
+        // Inverse list of destList
+        int* index_table_chunks = (int*)(malloc(nbDests_ * sizeof(unsigned int)));
+        unsigned int index_split_chunks = 0;
+
+        // TODO Matthieu
+        // Organisation of the destList, summerizeDest and ChunkList is very confusing
+        // Need to reorganize the way the split and redistribute functions are working together
         for(unsigned int i = 0; i < nbDests_; i++)
-            local_sizes[i] = splitChunks_[i]->getOutSerialBufferSize();
+        {
+            if(summerizeDest_[i] == 1)
+            {
+                local_sizes[i] = splitChunks_[index_split_chunks]->getOutSerialBufferSize();
+                index_table_chunks[i] = index_split_chunks;
+                index_split_chunks++;
+            }
+        }
 
         // Aggregate the global table of sizes
         unsigned int* global_sizes = (unsigned int*)(malloc(nbDests_ * nbSources_ * sizeof(unsigned int)));
@@ -226,6 +242,10 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
         // For each data model, creating a dataspace and writing the data collectively
         for(unsigned int i = 0; i < nbDests_ * nbSources_; i++)
         {
+            // No data to send for this destination
+            if(global_sizes[i] == 0)
+                continue;
+
             hid_t filespace, memspace, dset_id, dataset_prod_id;
             hsize_t	count[2];	          /* hyperslab selection parameters */
             hsize_t	stride[2];
@@ -285,8 +305,6 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
             filespace = H5Dget_space(dset_id);
             status = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 
-
-
             // Create the property list
             dataset_prod_id = H5Pcreate(H5P_DATASET_XFER);
             //H5Pset_dxpl_mpio(dataset_prod_id, H5FD_MPIO_COLLECTIVE);
@@ -295,8 +313,7 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
             // Write the dataset
             if(source_id == mpi_rank) // If we have the actual data
             {
-                status = H5Dwrite(dset_id, H5T_C_S1, H5S_ALL, H5S_ALL, dataset_prod_id, splitChunks_[dest_id]->getOutSerialBuffer());
-                fprintf(stderr, "Writing a dataset of size %u, global size: %u\n", splitChunks_[dest_id]->getOutSerialBufferSize(), global_sizes[i]);
+                status = H5Dwrite(dset_id, H5T_C_S1, H5S_ALL, H5S_ALL, dataset_prod_id, splitChunks_[index_table_chunks[dest_id]]->getOutSerialBuffer());
             }
 
             H5Dclose(dset_id);
@@ -307,6 +324,7 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
         // Cleaning memory
         free(local_sizes);
         free(global_sizes);
+        free(index_table_chunks);
 
         // Close the file
         H5Fclose(file_id);
@@ -350,6 +368,11 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
             std::stringstream datasetname;
             datasetname<<"Container_"<<i<<"_"<<task_rank_;
 
+            // Checking if the dataset exist
+            htri_t check = H5Lexists(file_id, datasetname.str().c_str(), H5P_DEFAULT);
+            if(check == 0)
+                continue;
+
             // Opening the dataset
             dset_id = H5Dopen(file_id, datasetname.str().c_str(), H5P_DEFAULT);
 
@@ -357,7 +380,6 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
             dspace_id = H5Dget_space(dset_id);
             hsize_t dims[1]; // We only have 1D arrays
             H5Sget_simple_extent_dims(dspace_id, dims, NULL);
-            fprintf(stderr, "[%d]: Reading dataset \"%s\", size %llu\n", task_rank_, datasetname.str().c_str(), dims[0]);
 
             // Reading the dataset
             data->allocate_serial_buffer(dims[0]);

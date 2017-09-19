@@ -105,7 +105,10 @@ if(${transport_file})
     add_executable              (testprocfile testProcFile.cpp)
     target_link_libraries	    (testprocfile ${libraries} ${bredala_transports} bredala_datamodel)
 
-    install(TARGETS testprocfile
+    add_executable              (testcountfile testCountFile.cpp)
+    target_link_libraries	    (testcountfile ${libraries} ${bredala_transports} bredala_datamodel)
+
+    install(TARGETS testprocfile testcountfile
     DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
     )
