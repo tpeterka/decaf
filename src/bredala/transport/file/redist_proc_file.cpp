@@ -1,6 +1,7 @@
 #include <bredala/transport/file/redist_proc_file.h>
 #include <bredala/data_model/arrayfield.hpp>
 #include <hdf5.h>
+#include <sys/stat.h>
 
 void print_array_debug(unsigned int* array, unsigned int size, unsigned int it)
 {
@@ -64,8 +65,13 @@ RedistProcFile::computeGlobal(pConstructData& data, RedistRole role)
             startReception_ = task_rank_ * nbReceptions_;
             fprintf(stderr, "Will read from container %u to %u\n", startReception_, startReception_ + nbReceptions_);
         }
-        else
+        else // Broadcast case
+        {
             nbReceptions_ = 1;
+            int destPerSource = nbDests_ / nbSources_;
+            startReception_ = task_rank_ / destPerSource;
+            fprintf(stderr, "Will read from container %u to %u\n", startReception_, startReception_ + nbReceptions_);
+        }
         initializedRecep_ = true;
     }
 
@@ -232,6 +238,13 @@ RedistProcFile::redistribute(pConstructData& data, RedistRole role)
          */
         std::stringstream ss;
         ss<<"testhdf5_"<<get_it<<".h5";
+
+        // Checking that the file exist
+        struct stat buffer;
+        while(stat(ss.str().c_str(), & buffer) != 0)
+            usleep(100000); // 100ms
+
+        // Opening the file
         file_id = H5Fopen(ss.str().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 
         // Reading all the dataset for this destination, one per source

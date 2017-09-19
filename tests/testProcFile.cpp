@@ -129,7 +129,7 @@ static void print_usage(char *proc)
     fprintf(stderr, "\t-n\tIndicate the number of clients\n");
     fprintf(stderr, "\t-m\tIndicate the number of servers\n");
     fprintf(stderr, "\t-i\tIndicate the number of iterations to redistribute\n");
-    fprintf(stderr, "\t-p\tUse MPI redistribution instead of CCI.\n");
+    fprintf(stderr, "\t-p\tUse MPI redistribution instead of File.\n");
     exit(EXIT_FAILURE);
 }
 

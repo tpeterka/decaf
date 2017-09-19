@@ -217,7 +217,7 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
         // Create the local table of sizes
         unsigned int* local_sizes = (unsigned int*)(malloc(nbDests_ * sizeof(unsigned int)));
         for(unsigned int i = 0; i < nbDests_; i++)
-            local_sizes[i] = data->getOutSerialBufferSize();
+            local_sizes[i] = splitChunks_[i]->getOutSerialBufferSize();
 
         // Aggregate the global table of sizes
         unsigned int* global_sizes = (unsigned int*)(malloc(nbDests_ * nbSources_ * sizeof(unsigned int)));
@@ -295,8 +295,8 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
             // Write the dataset
             if(source_id == mpi_rank) // If we have the actual data
             {
-                status = H5Dwrite(dset_id, H5T_C_S1, H5S_ALL, H5S_ALL, dataset_prod_id, data->getOutSerialBuffer());
-                fprintf(stderr, "Writing a dataset of size %u, global size: %u\n", data->getOutSerialBufferSize(), global_sizes[i]);
+                status = H5Dwrite(dset_id, H5T_C_S1, H5S_ALL, H5S_ALL, dataset_prod_id, splitChunks_[dest_id]->getOutSerialBuffer());
+                fprintf(stderr, "Writing a dataset of size %u, global size: %u\n", splitChunks_[dest_id]->getOutSerialBufferSize(), global_sizes[i]);
             }
 
             H5Dclose(dset_id);
@@ -334,7 +334,14 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
          */
         std::stringstream ss;
         ss<<"testhdf5_"<<get_it<<".h5";
-        file_id = H5Fopen(ss.str().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);;
+
+        // Checking that the file exist
+        struct stat buffer;
+        while(stat(ss.str().c_str(), & buffer) != 0)
+            usleep(100000); // 100ms
+
+        // Opening the file
+        file_id = H5Fopen(ss.str().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 
         // Reading all the dataset for this destination, one per source
         for (unsigned int i = 0; i < nbSources_; i++)
