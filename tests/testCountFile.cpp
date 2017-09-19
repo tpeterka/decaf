@@ -91,7 +91,7 @@ void run_server(int nb_client, int nb_server, int nb_it, bool use_mpi)
     else
         redist = new RedistCountFile(0, nb_client, nb_client, nb_server,
                                                 global_id, MPI_COMM_WORLD,
-                                                string("testcci.txt"),
+                                                string("testfile.txt"),
                                                 DECAF_REDIST_COLLECTIVE);
 
 

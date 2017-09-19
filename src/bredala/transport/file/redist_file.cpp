@@ -168,7 +168,9 @@ RedistFile::redistribute(pConstructData& data, RedistRole role)
         }
         case DECAF_REDIST_P2P:
         {
-            redistributeP2P(data, role);
+            fprintf(stderr, "WARNING: requested P2P redistribution but the method is not implemented yet. Using collective instead.\n");
+            redistributeCollective(data, role);
+            //redistributeP2P(data, role);
             break;
         }
         default:
@@ -210,7 +212,7 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
          * Create a new file collectively and release property list identifier.
          */
         std::stringstream ss;
-        ss<<"testhdf5_"<<send_it<<".h5";
+        ss<<name_<<"_"<<send_it<<".h5";
         file_id = H5Fcreate(ss.str().c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
         H5Pclose(plist_id);
 
@@ -351,7 +353,7 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
          * Create a new file collectively and release property list identifier.
          */
         std::stringstream ss;
-        ss<<"testhdf5_"<<get_it<<".h5";
+        ss<<name_<<"_"<<get_it<<".h5";
 
         // Checking that the file exist
         struct stat buffer;
