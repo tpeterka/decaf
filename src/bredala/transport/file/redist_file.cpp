@@ -361,7 +361,7 @@ RedistFile::redistributeCollective(pConstructData& data, RedistRole role)
             usleep(100000); // 100ms
 
         // Opening the file
-        file_id = H5Fopen(ss.str().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+        file_id = H5Fopen(ss.str().c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 
         // Reading all the dataset for this destination, one per source
         for (unsigned int i = 0; i < nbSources_; i++)
