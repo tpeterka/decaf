@@ -114,7 +114,7 @@ RedistProcFile::redistribute(pConstructData& data, RedistRole role)
          * Create a new file collectively and release property list identifier.
          */
         std::stringstream ss;
-        ss<<name_<<"_"<<send_it<<".h5";
+        ss<<name_<<"_"<<send_it<<".h5.tmp";
         file_id = H5Fcreate(ss.str().c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
         H5Pclose(plist_id);
 
@@ -214,6 +214,15 @@ RedistProcFile::redistribute(pConstructData& data, RedistRole role)
 
         // Close the file
         H5Fclose(file_id);
+
+        // Waiting that everyone write its data then changing the filename
+        MPI_Barrier(task_communicator_);
+        if (task_rank_ == 0)
+        {
+            std::stringstream filename;
+            filename<<name_<<"_"<<send_it<<".h5";
+            rename(ss.str().c_str(), filename.str().c_str());
+        }
         send_it++;
     }
 

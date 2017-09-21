@@ -702,17 +702,19 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
             if transport == "":
               transport = graphEdge[2]["transport"]
             elif transport != graphEdge[2]["transport"]:
-              raise ValueError("ERROR: Mixing MPI and CCI transport communication.")
+              raise ValueError("ERROR: Mixing transport communication methods.")
         elif transport == "":
             transport = "mpi"
         elif transport != "mpi":
-            raise ValueError("ERROR: Mixing MPI and CCI transport communication.")
+            raise ValueError("ERROR: Mixing transport communication methods.")
     print "Selected method: "+transport
 
     if transport == "mpi":
       MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
     elif transport == "cci":
-      CCIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
+      MPMDworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
+    elif transport == "file":
+      MPMDworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
     else:
       raise ValueError("ERROR: Unknow transport method selected %s" % (transport))
 
@@ -790,11 +792,11 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     
 
 """Build the various mpirun commands for each executable
-   The function generate the environment variables necesaries for CCI
+   The function generate the environment variables necesaries for Decaf
    to recreate the ranking of the workflow
 """
-def CCIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-    print "Generating bash command script for CCI "+outputFile
+def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
+    print "Generating bash command script for MPMD "+outputFile
 
     currentRank = 0
     totalRank = 0

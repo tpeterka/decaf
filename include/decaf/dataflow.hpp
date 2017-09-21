@@ -44,6 +44,13 @@
 #include <bredala/transport/cci/redist_round_cci.h>
 #endif
 
+#ifdef TRANSPORT_FILE
+#include <bredala/transport/file/redist_block_file.h>
+#include <bredala/transport/file/redist_count_file.h>
+#include <bredala/transport/file/redist_proc_file.h>
+#include <bredala/transport/file/redist_round_file.h>
+#endif
+
 #include <decaf/types.hpp>
 #include <decaf/workflow.hpp>
 #include <memory>
