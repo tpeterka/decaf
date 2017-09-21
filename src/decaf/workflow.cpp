@@ -111,6 +111,12 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
             node.nprocs = v.second.get<int>("nprocs");
             node.func = v.second.get<string>("func");
 
+            boost::optional<int> opt_tokens = v.second.get_optional<int>("tokens");
+            if(opt_tokens)
+                node.tokens = opt_tokens.get();
+            else
+                node.tokens = 0;
+
             workflow.nodes.push_back( node );
         } // End for workflow.nodes
 

@@ -43,13 +43,15 @@ struct WorkflowNode                          // a producer or consumer
         start_proc(start_proc_),
         nprocs(nprocs_),
         func(func_),
-        args(NULL)                                {}
+        args(NULL),
+        tokens(0){}
     vector<int> out_links; // indices of outgoing links
     vector<int> in_links;  // indices of incoming links
     int start_proc;        // starting proc rank in world communicator for this producer or consumer
     int nprocs;            // number of processes for this producer or consumer
     string func;           // name of node callback
     void* args;            // callback arguments
+    int tokens;            // Number of empty messages to receive before a real get
     void add_out_link(int link);
     void add_in_link(int link);
 };
