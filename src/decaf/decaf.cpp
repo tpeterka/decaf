@@ -20,7 +20,7 @@ Decaf::Decaf(CommHandle world_comm,
     else
         workflow_size_ = CommSize(world_comm);
 
-    // Fethcing the global rank of the current process
+    // Fetching the global rank of the current process
     // The first rank is the global rank in the workflow
     // The world_rank is then the rank of the process in the local communicator
     // plus the rank of the first rank

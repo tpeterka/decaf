@@ -246,9 +246,9 @@ void run(Workflow& workflow)                     // workflow
         node_d(decaf);
 
     // cleanup
+    fprintf(stderr, "Rank %d finished.\n", decaf->workflow_comm_rank());
     delete decaf;
     MPI_Finalize();
-    fprintf(stderr, "Rank %d finished.\n", decaf->workflow_comm_rank());
 }
 
 // test driver for debugging purposes

@@ -12,6 +12,9 @@ endif(${transport_mpi})
 if(${transport_cci})
     list(APPEND bredala_transports bredala_transport_cci)
 endif(${transport_cci})
+if(${transport_file})
+    list(APPEND bredala_transports bredala_transport_file)
+endif(${transport_file})
 
 target_link_libraries   (decaf
                         ${libraries} ${EXTRA_FLAGS} bredala_datamodel ${bredala_transports} ${Boost_LIBRARIES} manala)

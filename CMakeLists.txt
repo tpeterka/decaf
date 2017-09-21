@@ -3,6 +3,7 @@ cmake_minimum_required      (VERSION 3.0)
 
 option                      (transport_mpi      "Build Decaf with MPI transport layer"          ON)
 option                      (transport_cci      "Build Decaf with CCI transport layer"          OFF)
+option                      (transport_file     "Build Decaf with file transport layer"         ON)
 option                      (tess_dense         "Build tessellation density estimator example"  OFF)
 option                      (build_bredala      "Build Bredala libraries and examples"          ON)
 option                      (build_manala       "Build Manala libraries and examples"           ON)
@@ -66,6 +67,16 @@ if                          (transport_cci)
   add_definitions           (-DTRANSPORT_CCI)
   set                       (TRANSPORT_CCI ON)
 endif                       (transport_cci)
+
+#FILE
+#Should be used with the variable HDF5_PREFER_PARALLEL set to true
+if                          (transport_file)
+  find_package              (HDF5 REQUIRED)
+  include_directories       (${HDF5_INCLUDE_DIR})
+  set                       (transport_libraries    ${transport_libraries} ${HDF5_LIBRARIES})
+  add_definitions           (-DTRANSPORT_FILE)
+  set                       (TRANSPORT_FILE ON)
+endif                       (transport_file)
 
 # Boost
 find_package                (Boost 1.59.0 COMPONENTS serialization REQUIRED)
