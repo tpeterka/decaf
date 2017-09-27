@@ -30,6 +30,8 @@ Decaf::Decaf(CommHandle world_comm,
         global_first_rank = atoi(env_first_rank);
     workflow_rank_ = CommRank(world_comm) + global_first_rank; // my place in the world
 
+    fprintf(stderr, "[%d] Decaf constructor starting.\n", this->workflow_rank_);
+
     // build routing table
     // routing table is simply vectors of workflow nodes and links that belong to my process
 
@@ -65,30 +67,56 @@ Decaf::Decaf(CommHandle world_comm,
         }
     }
 
+    fprintf(stderr, "[%d] Building the dataflows...\n", this->workflow_rank_);
     // collect all dataflows
     build_dataflows(dataflows);
+    fprintf(stderr, "[%d] Dataflow built.\n", this->workflow_rank_);
 
     // inbound dataflows
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(workflow_rank_, i))        // I am a link and this dataflow is me
+        // I am a link and this dataflow is me
+        if (workflow_.my_link(workflow_rank_, i))
             link_in_dataflows.push_back(dataflows[i]);
-        if (workflow_.my_in_link(workflow_rank_, i)){     // I am a node and this dataflow is an input
+        // I am a node and this dataflow is an input
+        if (workflow_.my_in_link(workflow_rank_, i))
+        {
+            if(workflow_rank_ == 0)
+                fprintf(stderr, "[%d] Adding a node dataflow...\n", this->workflow_rank_);
             node_in_dataflows.push_back(pair<Dataflow*, int>(dataflows[i], i));
             if(dataflows[i]->destPort() != "")
+            {
                 inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
+            }
+            if(workflow_rank_ == 0)
+                fprintf(stderr, "[%d] Node dataflow added\n", this->workflow_rank_);
         }
     }
 
+    fprintf(stderr, "[%d] Building inbound dataflows done.\n", this->workflow_rank_);
+
+    if(workflow_rank_ == 0)
+        fprintf(stderr, "[%d] Number of links: %lu\n", this->workflow_rank_, workflow_.links.size());
     // outbound dataflows
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
+        if(workflow_rank_ == 0)
+            fprintf(stderr, "[%d] Testing the link... %llu\n", this->workflow_rank_, i);
+
         // I am a link and this dataflow is me
         // OR
         // I am a node and this dataflow is an output
         if ((workflow_.my_link(workflow_rank_, i)) || (workflow_.my_out_link(workflow_rank_, i)))
+        {
+            if(workflow_rank_ == 0)
+                fprintf(stderr, "[%d] Adding an out Dataflow\n", this->workflow_rank_);
             out_dataflows.push_back(dataflows[i]);
+        }
+        if(workflow_rank_ == 0)
+            fprintf(stderr, "[%d] Link %llu tested\n", this->workflow_rank_, i);
     }
+
+    fprintf(stderr, "[%d] Building outbound dataflows done.\n", this->workflow_rank_);
 
 
     // TODO once we are sure the unique_out_dataflows set is used for the overlapping thing,
@@ -107,6 +135,8 @@ Decaf::Decaf(CommHandle world_comm,
             }
         }
     }
+
+    fprintf(stderr, "[%d] Decaf constructor finish.\n", this->workflow_rank_);
 
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
