@@ -328,7 +328,7 @@ class Edge:
     self.prod_dflow_redist = prod_dflow_redist
     self.contract = contract
     self.src = outPort.owner.name   # Name of the node having the output port
-    self.dest = outPort.owner.name  # Name of the node having the input port
+    self.dest = inPort.owner.name   # Name of the node having the input port
 
     if nprocs != 0 and cmdline == '':
       raise ValueError("ERROR: Missing links arguments for the Edge \"%s->%s\"." % (src, dest))
@@ -1044,6 +1044,6 @@ def createObjects(graph):
 def processGraph(graph, name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = ""):
     createObjects(graph)
     check_contracts(graph, filter_level)
-    #checkCycles(graph)
+    checkCycles(graph)
     workflowToJson(graph, name+".json", filter_level)
     workflowToSh(graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
