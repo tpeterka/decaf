@@ -87,6 +87,7 @@ Decaf::Decaf(CommHandle world_comm,
             if(dataflows[i]->destPort() != "")
             {
                 inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
+                fprintf(stderr, "Adding the in port %s\n", dataflows[i]->destPort().c_str());
             }
             //if(workflow_rank_ == 0)
             //    fprintf(stderr, "[%d] Node dataflow added\n", this->workflow_rank_);
@@ -121,9 +122,11 @@ Decaf::Decaf(CommHandle world_comm,
 
     // TODO once we are sure the unique_out_dataflows set is used for the overlapping thing,
     // move this creation of the outPortMap ~5lines above in the "if i am a node"
+    fprintf(stderr, "Number of out dataflows: %lu\n", out_dataflows.size());
     for (Dataflow* df : out_dataflows)
     {
         if (df->srcPort() != ""){
+            fprintf(stderr, "Adding the out port %s\n", df->srcPort().c_str());
             if (outPortMap.count(df->srcPort()) == 1)
             {
                 outPortMap[df->srcPort()].push_back(df);
