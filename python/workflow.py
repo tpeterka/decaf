@@ -437,6 +437,19 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
     return (list_fields, 0, False) # This is the dict of fields to be exchanged in this edge; A field is an entry of a dict: name:[type, period]
 # end of checkWithPorts
 
+# Apply a round robin extension of the list
+# Ex: input  = hostlist= host1,host2  nprocs = 4
+#     output = host1,host2,host1,host2 
+def expandHostlist(hostlist, nprocs):
+
+  if len(hostlist) >= nprocs:
+    return hostlist
+
+  newHostList = []
+  for i in range(0, nprocs):
+    newHostList.append(hostlist[i % len(hostlist)])
+
+  return newHostList 
 
 class Topology:
   """ Object holder for informations about the plateform to use """
@@ -459,6 +472,9 @@ class Topology:
         content = f.read()
         content = content.rstrip(' \t\n\r') #Clean the last character, usually a \n
         self.hostlist = content.split('\n')
+        if len(self.hostlist) == 0:
+          raise ValueError("ERROR: the given hostfile does not contain any hostname")
+        self.hostlist = expandHostlist(self.hostlist, self.nProcs)
         self.nodes = list(set(self.hostlist))   # Removing the duplicate hosts
         self.nNodes = len(self.nodes)
       else:
@@ -466,8 +482,6 @@ class Topology:
         self.nodes = ["localhost"]
         self.nNodes = 1
 
-      if len(self.hostlist) != self.nProcs:
-          raise ValueError("The number of hosts does not match the number of procs.")
   # End of constructor
 
   def isInitialized(self):
