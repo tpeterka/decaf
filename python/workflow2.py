@@ -100,8 +100,6 @@ class Topology:
         splits.append(subTopo)
 
       return splits
-# End of class Topology
-
 
   def splitTopologyByDict(self, info):
 
@@ -115,7 +113,7 @@ class Topology:
         raise ValueError("Not enough rank available. Asked %s, given %s." % (sum, self.nProcs))
 
       offset = 0
-      splits = []
+      splits = {}
 
       for item in info:
         subTopo = Topology(item['name'], item['nprocs'], offsetRank = offset)
@@ -125,9 +123,10 @@ class Topology:
         subTopo.nNodes = len(subTopo.nodes)
         offset += item['nprocs']
 
-        splits.append(subTopo)
+        splits[item['name']] = subTopo
 
       return splits
+# End of class Topology
 
 def initParserForTopology(parser):
     """ Add the necessary arguments to initialize a topology.
@@ -244,12 +243,19 @@ class Port:
 
 """ Object holding information about a Node """
 class Node:
-  def __init__(self, name, start_proc, nprocs, func, cmdline):
+  def __init__(self, name, func, cmdline, start_proc = 0, nprocs = 0, topology = None):
     self.name = name
     self.func = func
     self.cmdline = cmdline
-    self.start_proc = start_proc
-    self.nprocs = nprocs
+    self.topology = topology
+
+    if self.topology != None:
+      self.start_proc = self.topology.offsetRank
+      self.nprocs = self.topology.nProcs
+    else:
+      self.nprocs = nprocs
+      self.start_proc = start_proc
+
     self.tokens = 0
     self.inports = {}
     self.outports = {}
@@ -336,12 +342,11 @@ def nodeFromTopo(name, func, cmdline, topology):
 
 """ Object holding information about an Edge """
 class Edge:
-  def __init__(self, outPort, inPort, start_proc, nprocs, prod_dflow_redist, func='', path='', dflow_con_redist='', cmdline='', contract=None):
+  def __init__(self, outPort, inPort, prod_dflow_redist, start_proc=0, nprocs=0, topology=None, func='', path='', dflow_con_redist='', cmdline='', contract=None):
 
     self.outPort = outPort  # Outport  = Producer
     self.inPort = inPort    # Inport = Consumer
-    self.start_proc = start_proc
-    self.nprocs = nprocs
+
     self.prod_dflow_redist = prod_dflow_redist
     self.contract = contract
     self.src = outPort.owner.name   # Name of the node having the output port
@@ -350,12 +355,20 @@ class Edge:
     self.outPort.addEdge(self) # Linking the edge to the port
     self.inPort.addEdge(self)
 
+    self.topology = topology
+
+    if self.topology != None:
+      self.start_proc = self.topology.offsetRank
+      self.nprocs = self.topology.nProcs
+    else:
+      self.nprocs = nprocs
+      self.start_proc = start_proc
 
 
-    if nprocs != 0 and cmdline == '':
+    if self.nprocs != 0 and cmdline == '':
       raise ValueError("ERROR: Missing links arguments for the Edge \"%s->%s\"." % (src, dest))
 
-    if nprocs != 0:
+    if self.nprocs != 0:
       self.func = func
       self.path = path
       self.dflow_con_redist = dflow_con_redist
@@ -386,7 +399,8 @@ class Edge:
 #    self.inputs = cLink.inputs
 #    self.outputs = cLink.outputs
 #    self.bAny = cLink.bAny
-    self.contract = cLink
+    else:
+      self.contract = cLink
 
 #  def addInputFromDict(self, dict):
 #    if self.nprocs == 0:
@@ -526,7 +540,7 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
           else:
             keys = 0
         else:
-          print "WARNING: The Output port of \"%s.%s->%s.%s\" can send anything, only fields needed by the link will be kept, the periodicity may not be correct." % (edge.src, OutportName, edge.dest InportName)
+          print "WARNING: The Output port of \"%s.%s->%s.%s\" can send anything, only fields needed by the link will be kept, the periodicity may not be correct." % (edge.src, OutportName, edge.dest, InportName)
           keys = Link.inputs
       else : # len(Outport) != 0
         list_fields = {}
@@ -880,7 +894,7 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
         mpirunCommand += "-np "+str(exe.nprocs)
 
         #Checking if a topology is specified. If no, fill a filehost with localhost
-        if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+        if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
           for host in exe.topology.hostlist:
             hostlist.append(host)
         else:
@@ -896,7 +910,7 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
           mpirunCommand += "-np "+str(exe.nprocs)
 
           #Checking if a topology is specified. If no, fill a filehost with localhost
-          if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+          if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
             for host in exe.topology.hostlist:
               hostlist.append(host)
           else:
@@ -973,7 +987,7 @@ def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
         currentRank += exe.nprocs
 
         #Checking if a topology is specified. If no, fill a filehost with localhost
-        if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+        if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
           for host in exe.topology.hostlist:
             hostlist.append(host)
         else:
@@ -999,7 +1013,7 @@ def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
           commands.append(command)
 
           #Checking if a topology is specified. If no, fill a filehost with localhost
-          if hasattr(exe, 'topology') and len(exe.topology.hostlist) > 0:
+          if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
             for host in exe.topology.hostlist:
               hostlist.append(host)
           else:
@@ -1025,7 +1039,7 @@ def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     f.close()
     os.system("chmod a+rx "+outputFile)
 
-""" Used for the retrocompatibility when not using Node and Edge objects in the graph
+""" DEPRECATED: Used for the retrocompatibility when not using Node and Edge objects in the graph
     For each node and edge of the graph, retrieves its attributes and replace them by the corresponding object
 """
 def createObjects(graph):
