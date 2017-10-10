@@ -151,7 +151,7 @@ def topologyFromArgs(args):
     return Topology("root", args.nprocs, hostfilename = args.hostfile)
 
 
-
+# Contract functions
 class Filter_level:
   NONE, PYTHON, PY_AND_SOURCE, EVERYWHERE = range(4)
   dictReverse = {
@@ -222,12 +222,17 @@ class ContractLink:
 
 class Port:
 
-  def __init__(self, owner, name, direction):
+  def __init__(self, owner, name, direction, contract = None, tokens = 0):
     self.owner = owner          # A Node
     self.name = name            # Name of the port
     self.direction = direction  # 'in' or 'out'
-    self.contract = None        # Contract associated to the port
+    self.contract = contract    # Contract associated to the port
     self.edges = []             # List of edges connected to this port
+    self.tokens = 0             # Number of empty messages to receive on an input port
+    if self.direction == 'in':
+      if tokens < 0:
+          raise ValueError("ERROR: the number of tokens for the port %s.%s should be 0 or higher." % (self.owner.name, self.name))
+      self.tokens = tokens
 
   def addEdge(self, edge):
     if len(self.edges) > 1 and self.direction == 'in':
@@ -240,6 +245,12 @@ class Port:
 
   def getContract(self):
     return self.contract
+
+  def setTokens(self, tokens):
+    if self.direction == 'in':
+      if tokens < 0:
+        raise ValueError("ERROR: the number of tokens for the port %s.%s should be 0 or higher." % (self.owner.name, self.name))
+      self.tokens = tokens      # Number of empty messages to receive on an input port
 
 """ Object holding information about a Node """
 class Node:
@@ -256,15 +267,11 @@ class Node:
       self.nprocs = nprocs
       self.start_proc = start_proc
 
-    self.tokens = 0
     self.inports = {}
     self.outports = {}
 
     # Adding the node into the workflow
     workflow_graph.add_node(self.name, node=self)
-
-  def setTokens(self, tokens):
-    self.tokens = tokens
 
   def addInputPort(self, portname):
     if portname in self.inports:
@@ -498,10 +505,7 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
   #else:
   #  my_list.append(s)
 
-  print "Processing contracts..."
-
   if edge.nprocs != 0 and hasattr(Link,'bAny'):
-    print "Checking a link with a contract"
     keys = {}
     keys_link = {}
     attachAny = False
@@ -688,25 +692,26 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
 
 def checkCycles(graph):
 
-    cycle_list = list(nx.simple_cycles(graph))
-    if len(cycle_list) > 0:
-      print "Decaf detected " + str(len(cycle_list)) + " cycles. Checking for tokens..."
+  cycle_list = list(nx.simple_cycles(graph))
+  if len(cycle_list) > 0:
+    print "Decaf detected " + str(len(cycle_list)) + " cycles. Checking for tokens..."
 
-    for cycle in cycle_list:
-        # Checking if one of the node in the cycle has at least 1 token
-        found_token = False
-        for node in cycle:
+  for cycle in cycle_list:
+    # Checking if one of the node in the cycle has at least 1 token
+    found_token = False
+    for node in cycle:
 
-            # The list given by simple_cycles does not have the attribute
-            # We have to find back the correct node
-            for val in graph.nodes_iter(data=True):
-                if val[0] == node:
-                    if val[1]['node'].tokens > 0:
-                        found_token = True
-        if found_token:
-            print "Token detected in the cycle."
-        else:
-            raise ValueError("A cycle was detected within the cycle %s, but no token were inserted. Please insert at least one token in one of the cycle's tasks." % (cycle))
+      # The list given by simple_cycles does not have the attribute
+      # We have to find back the correct node
+      for val in graph.nodes_iter(data=True):
+        if val[0] == node:
+          for name,port in val[1]['node'].inports.iteritems():
+            if port.tokens > 0:
+              found_token = True
+    if found_token:
+      print "Token detected in the cycle."
+    else:
+      raise ValueError("A cycle was detected within the cycle %s, but no token were inserted. Please insert at least one token in one of the cycle's tasks." % (cycle))
 
 
 
@@ -729,8 +734,7 @@ def workflowToJson(graph, outputFile, filter_level):
         node = val[1]["node"]
         data["workflow"]["nodes"].append({"start_proc" : node.start_proc,
                                           "nprocs" : node.nprocs,
-                                          "func" : node.func,
-                                          "tokens" : node.tokens})
+                                          "func" : node.func})
 
 
         val[1]['index'] = i
@@ -750,7 +754,8 @@ def workflowToJson(graph, outputFile, filter_level):
                                           "prod_dflow_redist" : edge.prod_dflow_redist,
                                           "name" : graphEdge[0] + "_" + graphEdge[1],
                                           "sourcePort" : edge.outPort.name,
-                                          "targetPort" : edge.inPort.name})
+                                          "targetPort" : edge.inPort.name,
+                                          "tokens" : edge.inPort.tokens})
 
         if "transport" in graphEdge[2]:
             data["workflow"]["edges"][i]["transport"] = graphEdge[2]['transport']

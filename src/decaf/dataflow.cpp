@@ -455,6 +455,7 @@ Dataflow::Dataflow(CommHandle world_comm,
     check_level_(wflowLink.check_level),
     srcPort_(wflowLink.srcPort),
     destPort_(wflowLink.destPort),
+    tokens_(0),
     bAny_(wflowLink.bAny),
     iteration(0),
     bClose_(false),
@@ -588,6 +589,8 @@ Dataflow::Dataflow(CommHandle world_comm,
             err_ = DECAF_TRANSPORT_METHOD;
             return;
         }
+
+        tokens_ = wflowLink.tokens;
     }
 
     if( (type_ & DECAF_PRODUCER_COMM) == DECAF_PRODUCER_COMM && (type_ & DECAF_DATAFLOW_COMM) == DECAF_DATAFLOW_COMM)
@@ -933,6 +936,14 @@ Dataflow::get(pConstructData& data, TaskType role)
     }
     else if (role == DECAF_NODE)
     {
+        // Checking if we have a token. If yes, we directly return without messages
+        if(tokens_ > 0)
+        {
+            tokens_--;
+            data->setToken(true);
+            return true;
+        }
+
         // Comnsumer side
         if(use_stream_)
             stream_->processCon(data);

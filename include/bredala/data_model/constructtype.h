@@ -128,6 +128,10 @@ public:
 
 	virtual bool isEmpty();
 
+    virtual void setToken(bool bToken);
+
+    virtual bool isToken();
+
 	bool isCountable();
 
 	bool isPartiallyCountable();
@@ -238,6 +242,7 @@ protected:
 	std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
 	std::vector<std::vector<int> > rangeItems_;
 	bool bSystem_;
+    bool bToken_;
 	int nbSystemFields_;
 	bool bEmpty_;
 	bool bCountable_;

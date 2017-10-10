@@ -124,7 +124,7 @@ void run(Workflow& workflow)                             // workflow
         con(decaf);
 
     // cleanup
-    delete decaf;
+    //delete decaf;
     MPI_Finalize();
 }
 

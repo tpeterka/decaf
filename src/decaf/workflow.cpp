@@ -111,12 +111,6 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
             node.nprocs = v.second.get<int>("nprocs");
             node.func = v.second.get<string>("func");
 
-            boost::optional<int> opt_tokens = v.second.get_optional<int>("tokens");
-            if(opt_tokens)
-                node.tokens = opt_tokens.get();
-            else
-                node.tokens = 0;
-
             workflow.nodes.push_back( node );
         } // End for workflow.nodes
 
@@ -142,6 +136,11 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
             link.check_level = check_level;
             link.name = v.second.get<string>("name");
             link.transport_method = v.second.get<string>("transport");
+            boost::optional<int> opt_tokens = v.second.get_optional<int>("tokens");
+            if(opt_tokens)
+                link.tokens = opt_tokens.get();
+            else
+                link.tokens = 0;
 
             if(link.nprocs != 0){ // Only used if there are procs on this link
                 link.path = v.second.get<string>("path");
