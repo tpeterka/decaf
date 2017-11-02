@@ -5,7 +5,7 @@
 import networkx as nx
 import os
 import imp
-wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/workflow2.py')
+wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/decaf.py')
 
 # --- set your options here ---
 
