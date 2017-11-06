@@ -740,9 +740,14 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
             transport = "mpi"
         elif transport != "mpi":
             raise ValueError("ERROR: Mixing transport communication methods.")
-    print "Selected method: "+transport
+    if graph.number_of_edges() == 0:
+      print "Selected transport method: None"
+    else:
+      print "Selected transport method: "+transport
 
-    if transport == "mpi":
+    if graph.number_of_edges() == 0:
+      MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
+    elif transport == "mpi":
       MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
     elif transport == "cci":
       MPMDworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
