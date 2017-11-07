@@ -48,7 +48,7 @@ void prod(Decaf* decaf)
 
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container, "out");
+        decaf->put(container);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -59,19 +59,21 @@ void prod(Decaf* decaf)
 // consumer
 void con(Decaf* decaf)
 {
-    map<string, pConstructData> in_data;
+    vector< pConstructData > in_data;
+
     while (decaf->get(in_data))
     {
-        int sum = -1;
-
+        int sum = 0;
+		fprintf(stderr, "con %d in_data size %lu\n", decaf->world->rank(), in_data.size());
         // get the values and add them
-        SimpleFieldi field = in_data.at("in")->getFieldData<SimpleFieldi>("var");
-        if (field)
-            sum = field.getData();
-        else
-            fprintf(stderr, "Error: null pointer in con\n");
-
-
+        for (size_t i = 0; i < in_data.size(); i++)
+        {
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
+            if (field)
+                sum += field.getData();
+            else
+                fprintf(stderr, "Error: null pointer in con\n");
+        }
 		fprintf(stderr, "consumer %d sum = %d\n", decaf->world->rank(), sum);
     }
 
@@ -124,7 +126,7 @@ void run(Workflow& workflow)                             // workflow
         con(decaf);
 
     // cleanup
-    //delete decaf;
+    delete decaf;
     MPI_Finalize();
 }
 
@@ -133,9 +135,8 @@ void run(Workflow& workflow)                             // workflow
 int main(int argc,
          char** argv)
 {
-    fprintf(stderr, "Hello from the test.\n");
     Workflow workflow;
-    Workflow::make_wflow_from_json(workflow, "linear2_test.json");
+    Workflow::make_wflow_from_json(workflow, "linear2.json");
 
     // run decaf
     run(workflow);

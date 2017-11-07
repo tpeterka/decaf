@@ -11,7 +11,7 @@ wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/decaf.py'
 # --- set your options here ---
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_2nodes_test.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/direct/mod_linear_2nodes.so'
 
 # --- topology declaration ---
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -41,17 +41,17 @@ linkContract = wf.ContractLink(True)
 #  dataflow can be overlapped, but currently all disjoint procs (simplest case)
 
 # --- Graph definition ---
-prod = wf.Node("prod", topology = subtopos['prod'], func='prod', cmdline='./linear_2nodes_test')
+prod = wf.Node("prod", topology = subtopos['prod'], func='prod', cmdline='./linear_2nodes')
 outPort = prod.addOutputPort("out")
 outPort.setContract(prodContract)
 
-con = wf.Node("con", topology = subtopos['con'], func='con', cmdline='./linear_2nodes_test')
+con = wf.Node("con", topology = subtopos['con'], func='con', cmdline='./linear_2nodes')
 inPort = con.addInputPort("in")
 inPort.setContract(conContract)
 
 link = wf.Edge(prod.getOutputPort("out"), con.getInputPort("in"), topology = subtopos['dflow'], func='dflow',
-        path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='./linear_2nodes_test')
+        path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='./linear_2nodes')
 link.setContractLink(linkContract)
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph("linear2_test", filter_level = wf.Filter_level.PYTHON)
+wf.processGraph("linear2", filter_level = wf.Filter_level.PYTHON)
