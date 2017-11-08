@@ -111,6 +111,34 @@ Decaf::Decaf(CommHandle world_comm,
         }
     }
 
+    // Adding the Input and Output Port which are not connected
+    // to any Dataflows but still declared by the user.
+    // WARNING: will not work with overlapping of NODES, currently not supported by Decaf
+    for (size_t i = 0; i < workflow_.nodes.size(); i++)
+    {
+        if (workflow_.my_node(workflow_rank_, i))
+        {
+            for (string outPortName : workflow_.nodes[i].outports)
+            {
+                if (outPortMap.count(outPortName) == 0)
+                {
+                    fprintf(stderr, "WARNING: Output port %s is declared but not connected.\n", outPortName.c_str());
+                    vector<Dataflow*> vect;
+                    outPortMap.emplace(outPortName, vect);
+                }
+            }
+
+            for (string inPortName : workflow_.nodes[i].inports)
+            {
+                if (inPortMap.count(inPortName) == 0)
+                {
+                    fprintf(stderr, "WARNING: Intput port %s is declared but not connected.\n", inPortName.c_str());
+                    inPortMap.emplace(inPortName, nullptr);
+                }
+            }
+        }
+    }
+
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
     /*for (size_t i = 0; i < workflow_.nodes.size(); i++)
@@ -240,10 +268,18 @@ Decaf::get(pConstructData container, string port)
         MPI_Abort(MPI_COMM_WORLD, 0);
     }
 
+    if (it->second == nullptr)
+    {
+        // The input port is declared but not connected
+        return false;
+    }
+
     if (it->second->isClose())
     {// A quit message has already been received, nothing to get anymore
         return false;
     }
+
+
 
     // TODO remove the loop, with the given port in argument we know whether there is an ovelapping or not
     // link ranks that do overlap this node need to be run in one-time mode, unless
@@ -301,7 +337,9 @@ Decaf::get(map<string, pConstructData> &containers)
     for (std::pair<string, Dataflow*> pair : inPortMap)
     {
         pConstructData container;
-        if(pair.second->isClose())
+
+        // If the input port is not connected or already closed
+        if (pair.second == nullptr || pair.second->isClose())
         {
             containers.emplace(pair.first, container);
         }

@@ -29,6 +29,7 @@
 #include <manala/types.h>
 #include <decaf/tools.hpp>
 #include <manala/tools.h>
+#include <string>
 
 namespace bpt = boost::property_tree;
 
@@ -44,12 +45,14 @@ struct WorkflowNode                          // a producer or consumer
         nprocs(nprocs_),
         func(func_),
         args(NULL){}
-    vector<int> out_links; // indices of outgoing links
-    vector<int> in_links;  // indices of incoming links
-    int start_proc;        // starting proc rank in world communicator for this producer or consumer
-    int nprocs;            // number of processes for this producer or consumer
-    string func;           // name of node callback
-    void* args;            // callback arguments
+    vector<int> out_links;      // indices of outgoing links
+    vector<int> in_links;       // indices of incoming links
+    int start_proc;             // starting proc rank in world communicator for this producer or consumer
+    int nprocs;                 // number of processes for this producer or consumer
+    string func;                // name of node callback
+    void* args;                 // callback arguments
+    vector<string> inports;     // Input ports, if available
+    vector<string> outports;    //Output ports, if available
     void add_out_link(int link);
     void add_in_link(int link);
 };

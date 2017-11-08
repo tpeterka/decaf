@@ -735,7 +735,16 @@ def workflowToJson(graph, outputFile, filter_level):
         data["workflow"]["nodes"].append({"start_proc" : node.start_proc,
                                           "nprocs" : node.nprocs,
                                           "func" : node.func})
+        inputPorts = []
+        for port in node.inports:
+            inputPorts.append(port)
 
+        outputPorts = []
+        for port in node.outports:
+            outputPorts.append(port)
+
+        data["workflow"]["nodes"][i].update({"inports" : inputPorts,
+                                            "outports" : outputPorts})
 
         val[1]['index'] = i
         i += 1
