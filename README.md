@@ -6,7 +6,7 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 - MPI-3
 - Boost 1.59 or higher
 - Python 2.7
-- Networkx 1.11 (2.0 and higher are NOT compatible)
+- Networkx 2.0
 - CMake 3.0 or higher
 - CCI 2.1 or higher (optional)
 
