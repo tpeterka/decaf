@@ -227,7 +227,7 @@ def check_contracts(graph, filter_level):
       
     my_list = [] # To check if an input port is connected to only one output port
     
-    for graphEdge in graph.edges_iter(data=True):
+    for graphEdge in graph.edges(data=True):
         edge = graphEdge[2]["edge"]              # Edge object
         prod = graph.node[graphEdge[0]]["node"]  # Node object for prod
         con = graph.node[graphEdge[1]]["node"]   # Node object for con
@@ -600,7 +600,7 @@ def checkCycles(graph):
 
             # The list given by simple_cycles does not have the attribute
             # We have to find back the correct node
-            for val in graph.nodes_iter(data=True):
+            for val in graph.nodes(data=True):
                 if val[0] == node:
                     if val[1]['node'].tokens > 0:
                         found_token = True
@@ -626,7 +626,7 @@ def workflowToJson(graph, outputFile, filter_level):
 
     data["workflow"]["nodes"] = []
     i = 0
-    for val in graph.nodes_iter(data=True):
+    for val in graph.nodes(data=True):
         node = val[1]["node"]
         data["workflow"]["nodes"].append({"start_proc" : node.start_proc,
                                           "nprocs" : node.nprocs,
@@ -640,7 +640,7 @@ def workflowToJson(graph, outputFile, filter_level):
 
     data["workflow"]["edges"] = []
     i = 0
-    for graphEdge in graph.edges_iter(data=True):
+    for graphEdge in graph.edges(data=True):
         edge = graphEdge[2]["edge"]
         prod_id  = graph.node[graphEdge[0]]['index']
         con_id   = graph.node[graphEdge[1]]['index']
@@ -725,17 +725,16 @@ def addDirectSyncStream(graph, prod, con, prod_output_freq = 1):
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):
 
-    for val in graph.nodes_iter(data=True):
+    for val in graph.nodes(data=True):
         node = val[1]["node"]
         if node.start_proc == rank:
             return ('node', node)
 
-    for val in graph.edges_iter(data=True):
+    for val in graph.edges(data=True):
         edge = val[2]["edge"]
         if (edge.start_proc == rank) and (edge.nprocs != 0):
             return ('edge', edge)
 
-    #return ('notfound', graph.nodes_iter())
     return ('notfound', 0) # should be the same since second value is not used in this case
 
 
@@ -743,7 +742,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     print "Selecting the transport method..."
 
     transport = ""
-    for graphEdge in graph.edges_iter(data=True):
+    for graphEdge in graph.edges(data=True):
         edge = graphEdge[2]["edge"]
         if "transport" in graphEdge[2]:
             if transport == "":
@@ -853,12 +852,12 @@ def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     commands = []
 
     # Computing the total number of ranks with the workflow
-    for val in graph.nodes_iter(data=True):
+    for val in graph.nodes(data=True):
         node = val[1]["node"]
         totalRank+=node.nprocs
 
 
-    for graphEdge in graph.edges_iter(data=True):
+    for graphEdge in graph.edges(data=True):
         edge = graphEdge[2]["edge"]
         totalRank+=edge.nprocs
 
@@ -941,7 +940,7 @@ def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     For each node and edge of the graph, retrieves its attributes and replace them by the corresponding object
 """
 def createObjects(graph):
-  for node in graph.nodes_iter(data=True):
+  for node in graph.nodes(data=True):
     if not 'node' in node[1]:
       if 'topology' in node[1]:
         my_node = nodeFromTopo(node[0], node[1]['func'], node[1]['cmdline'], node[1]['topology'])
@@ -958,7 +957,7 @@ def createObjects(graph):
       del node[1]['func']
       del node[1]['cmdline']
       
-  for edge in graph.edges_iter(data=True):
+  for edge in graph.edges(data=True):
     if not 'edge' in edge[2]:
       if 'topology' in edge[2]:
         if edge[2]['topology'].nProcs != 0:
