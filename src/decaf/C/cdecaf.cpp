@@ -32,6 +32,7 @@ using namespace decaf;
         {
             communicator_ = communicator;
             decaf_ = NULL;
+            hasReceivedTerminate_ = false;
         }
 
         ~DecafHolder()
@@ -89,10 +90,21 @@ using namespace decaf;
 
         Decaf* getDecaf(){ return decaf_; }
 
-        bool get(){ return decaf_->get(messages_); }
+        bool get()
+        {
+            if(!decaf_->get(messages_))
+            {
+                hasReceivedTerminate_ = true;
+                return false;
+            }
+
+            return true;
+        }
 
         unsigned int getNbMessages(){ return messages_.size(); }
         pConstructData* getMessages(){ return &messages_[0]; }
+
+        bool getTerminated(){ return hasReceivedTerminate_; }
 
         void initFromJSON(const char* path)
         {
@@ -105,6 +117,7 @@ using namespace decaf;
         Decaf* decaf_;
         MPI_Comm communicator_;
         vector<pConstructData> messages_;
+        bool hasReceivedTerminate_;
     };
 
     //--------------------------------------
@@ -272,6 +285,12 @@ extern "C"
     dca_my_node(dca_decaf decaf, const char* name)
     {
         return unbox(decaf)->getDecaf()->my_node(name);
+    }
+
+    bool
+    dca_has_terminated(dca_decaf decaf)
+    {
+        return unbox(decaf)->getTerminated();
     }
 
     void

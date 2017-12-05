@@ -73,6 +73,9 @@ extern "C" {
     void
     dca_terminate(dca_decaf decaf);
 
+    bool
+    dca_has_terminated(dca_decaf decaf);
+
     int
     dca_get_dataflow_con_size(dca_decaf decaf, int dataflow);
 
