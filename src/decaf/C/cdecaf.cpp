@@ -94,7 +94,12 @@ using namespace decaf;
         {
             if(!decaf_->get(messages_))
             {
-                hasReceivedTerminate_ = true;
+                // Has to check if get return 0 because all the ports
+                // have received a terminate message or if it is because there is
+                // no input ports
+                // If no input ports, we don't receive terminate
+                if(messages_.size() > 0)
+                    hasReceivedTerminate_ = true;
                 return false;
             }
 
