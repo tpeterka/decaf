@@ -32,7 +32,7 @@ RedistCountMPI::computeGlobal(pConstructData& data, RedistRole role)
             MPI_Abort(MPI_COMM_WORLD, 0);
         }
 
-        int nbItems = data->getNbItems();
+        unsigned long long nbItems = data->getNbItems();
 
         if(nbSources_ == 1)
         {
@@ -42,17 +42,19 @@ RedistCountMPI::computeGlobal(pConstructData& data, RedistRole role)
         else
         {
             //Computing the index of the local first item in the global array of data
-            MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_INT,
+            MPI_Scan(&nbItems, &global_item_rank_, 1, MPI_UNSIGNED_LONG_LONG,
                      MPI_SUM, commSources_);
             global_item_rank_ -= nbItems;   // Process rank 0 has the item 0,
                                             // rank 1 has the item nbItems(rank 0)
                                             // and so on
 
             //Compute the number of items in the global array
-            MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_INT,
+            MPI_Allreduce(&nbItems, &global_nb_items_, 1, MPI_UNSIGNED_LONG_LONG,
                           MPI_SUM, commSources_);
 
         }
+
+        //fprintf(stderr, "Total number of items: %llu, item rank: %llu\n", global_nb_items_, global_item_rank_);
     }
 }
 

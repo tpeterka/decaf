@@ -70,7 +70,10 @@ if(${transport_mpi})
 	add_executable              (testserialization testSerialization.cpp)
 	target_link_libraries       (testserialization ${libraries} ${bredala_transports} bredala_datamodel)
 
-	install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage 
+	add_executable              (testcountoverflow testCountOverflow.cpp)
+	target_link_libraries       (testcountoverflow ${libraries} ${bredala_transports} bredala_datamodel)
+
+	install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testcountoverflow
   	DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   	)

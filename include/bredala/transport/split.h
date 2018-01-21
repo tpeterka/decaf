@@ -11,8 +11,8 @@ namespace decaf {
 
 bool split_by_count(pConstructData& data,                        // Data model to split
                            RedistRole role,                             // Role in the redistribution
-                           int global_nb_items,                         // Total number of items to split
-                           int global_item_rank,                        // Global rank of the first item of the data model
+                           unsigned long long global_nb_items,          // Total number of items to split
+                           unsigned long long global_item_rank,         // Global rank of the first item of the data model
                            std::vector<pConstructData>& splitChunks,    // Data models produced by the split. Should match the number of destinations
                            std::vector<pConstructData>& splitBuffer,    // Data models pre allocated.
                            int nbDests,                                 // Number of destinations = number of sub data models to produce

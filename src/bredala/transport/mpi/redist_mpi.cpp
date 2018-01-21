@@ -366,6 +366,7 @@ RedistMPI::redistributeP2P(pConstructData& data, RedistRole role)
             }
             else if(destList_[i] != -1)
             {
+                //fprintf(stderr, "Sending a message size: %i\n", splitChunks_[i]->getOutSerialBufferSize());
                 MPI_Request req;
                 reqs.push_back(req);
                 MPI_Isend( splitChunks_[i]->getOutSerialBuffer(),

@@ -6,8 +6,8 @@ using namespace std;
 bool
 decaf::split_by_count(pConstructData& data,                             // Data model to split
                             RedistRole role,                            // Role in the redistribution
-                            int global_nb_items,                        // Total number of items to split
-                            int global_item_rank,                       // Global rank of the first item of the data model
+                            unsigned long long global_nb_items,                        // Total number of items to split
+                            unsigned long long global_item_rank,                       // Global rank of the first item of the data model
                             std::vector<pConstructData>& splitChunks,   // Data models produced by the split. Should match the number of destinations
                             std::vector<pConstructData>& splitBuffer,   // Data models pre allocated.
                             int nbDests,                                // Number of destinations = number of sub data models to produce
@@ -19,6 +19,8 @@ decaf::split_by_count(pConstructData& data,                             // Data 
 {
     if(role == DECAF_REDIST_SOURCE)
     {
+        //fprintf(stderr, "Trying to split %llu items, rank %llu\n", global_nb_items, global_item_rank);
+
         // Create the array which represents where the current source will emit toward
         // the destinations rank. 0 is no send to that rank, 1 is send
         // Used only with commMethod = DECAF_REDIST_COLLECTIVE
@@ -69,14 +71,14 @@ decaf::split_by_count(pConstructData& data,                             // Data 
             // We have to split global_nb_items_ into nbDest in total
 
             //Computing the number of elements to split
-            int items_per_dest = global_nb_items /  nbDests;
+            unsigned long long items_per_dest = global_nb_items /  nbDests;
 
-            int rankOffset = global_nb_items %  nbDests;
+            unsigned long long rankOffset = global_nb_items %  nbDests;
 
             //Computing how to split the data
 
             //Compute the destination rank of the first item
-            int first_rank;
+            unsigned long long first_rank;
             if(items_per_dest > 0) // More items than number of destination
             {
                 if( rankOffset == 0) //  Case where nbDest divide the total number of item
@@ -135,16 +137,16 @@ decaf::split_by_count(pConstructData& data,                             // Data 
 
             //Compute the split vector and the destination ranks
             std::vector<int> split_ranges;
-            int items_left = data->getNbItems();
-            int current_rank = first_rank;
+            unsigned long long items_left = data->getNbItems();
+            unsigned long long current_rank = first_rank;
 
             unsigned int nbChunks = 0;
             while(items_left != 0)
             {
-                int currentNbItems;
+                unsigned long long currentNbItems;
                 //We may have to complete the rank
                 if(current_rank == first_rank){
-                    int global_item_firstrank;
+                    unsigned long long global_item_firstrank;
                     if(first_rank < rankOffset)
                     {
                         global_item_firstrank = first_rank * (items_per_dest + 1);
