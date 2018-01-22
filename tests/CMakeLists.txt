@@ -73,11 +73,14 @@ if(${transport_mpi})
 	add_executable              (testcountoverflow testCountOverflow.cpp)
 	target_link_libraries       (testcountoverflow ${libraries} ${bredala_transports} bredala_datamodel)
 
-	install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testcountoverflow
+	add_executable              (testroundoverflow testRoundOverflow.cpp)
+	target_link_libraries       (testroundoverflow ${libraries} ${bredala_transports} bredala_datamodel)
+
+	install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testcountoverflow testroundoverflow
   	DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   	)
-	install(FILES BOOST_TEST ZCURVE_TEST ROUND_TEST COUNT_TEST BLOCK_TEST PROC_TEST EMPTY_TEST OVERFLOW_TEST gdb.run
+	install(FILES BOOST_TEST ZCURVE_TEST ROUND_TEST COUNT_TEST BLOCK_TEST PROC_TEST EMPTY_TEST OVERFLOW_COUNT_TEST OVERFLOW_ROUND_TEST gdb.run
   	DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   	)

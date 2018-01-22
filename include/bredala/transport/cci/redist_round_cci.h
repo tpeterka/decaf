@@ -51,8 +51,8 @@ namespace decaf
         virtual void splitData(pConstructData& data, RedistRole role);
 
         // We keep these values so we can reuse them between 2 iterations
-        int global_item_rank_;    // Index of the first item in the global array
-        int global_nb_items_;     // Number of items in the global array
+        unsigned long long global_item_rank_;    // Index of the first item in the global array
+        unsigned long long global_nb_items_;     // Number of items in the global array
 
     };
 

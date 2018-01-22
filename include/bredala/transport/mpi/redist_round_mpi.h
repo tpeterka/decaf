@@ -48,7 +48,7 @@ namespace decaf
         // and fill the splitChunks vector
         virtual void splitData(pConstructData& data, RedistRole role);
 
-        int global_item_rank_;    // Index of the first item in the global array
+        unsigned long long global_item_rank_;    // Index of the first item in the global array
     };
 
 } // namespace

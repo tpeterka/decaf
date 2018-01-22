@@ -17,7 +17,7 @@
 #include <bredala/data_model/pconstructtype.h>
 #include <bredala/data_model/boost_macros.h>
 
-#include <bredala/transport/mpi/redist_count_mpi.h>
+#include <bredala/transport/mpi/redist_round_mpi.h>
 #include "tools.hpp"
 
 
@@ -35,7 +35,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
             && !isBetween(rank, startReceptors1, nbReceptors1))
         return;
 
-    RedistCountMPI *component1 = nullptr;
+    RedistRoundMPI *component1 = nullptr;
     unsigned int* buffer = nullptr;
 
     std::cout<<"Current rank : "<<rank<<std::endl;
@@ -44,7 +44,7 @@ void runTestParallel2RedistOverlap(int startSource, int nbSource,
             || isBetween(rank, startReceptors1, nbReceptors1))
     {
         std::cout <<"consutrcution for the first component ."<<std::endl;
-        component1 = new RedistCountMPI(startSource,
+        component1 = new RedistRoundMPI(startSource,
                                         nbSource,
                                         startReceptors1,
                                         nbReceptors1,
