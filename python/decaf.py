@@ -24,12 +24,13 @@ class Topology:
       self.name = name                  # Name of the topology
       self.nProcs = nProcs              # Total number of MPI ranks in the topology
       self.hostfilename = hostfilename  # File containing the list of hosts. Must match  totalProc
-      self.hostlist = []                # List of hosts.
+      self.hostlist = []                # Complete list of hosts.
       self.offsetRank = offsetRank      # Rank of the first rank in this topology
       self.nNodes = 0                   # Number of nodes
       self.nodes = []                   # List of nodes
       self.procPerNode = procPerNode    # Number of MPI ranks per node. If not given, deduced from the host list
       self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
+      self.procs = []                   # List of cores per node
 
 
       if hostfilename != "":
@@ -39,13 +40,19 @@ class Topology:
         self.hostlist = content.split('\n')
         self.nodes = list(set(self.hostlist))   # Removing the duplicate hosts
         self.nNodes = len(self.nodes)
+        self.procPerNode = len(self.hostlist) / self.nNodes
+        self.nProcs = len(self.hostlist)
+        for i in range(0, self.procPerNode):
+          self.procs.append(i)
+
       else:
         self.hostlist = ["localhost"] * self.nProcs # should be the same as the 3 above lines
         self.nodes = ["localhost"]
+        for i in range(0, len(self.hostlist)):
+          self.procs.append(i)
+        self.procPerNode = len(self.procs)
         self.nNodes = 1
 
-      if len(self.hostlist) != self.nProcs:
-          raise ValueError("The number of hosts does not match the number of procs.")
   # End of constructor
 
   def isInitialized(self):
@@ -58,6 +65,7 @@ class Topology:
       content += "nProcs: " + str(self.nProcs) + "\n"
       content += "offsetRank: " + str(self.offsetRank) + "\n"
       content += "host list: " + str(self.hostlist) + "\n"
+      content += "core list per node: " + str(self.procs) + "\n"
 
       return content
 
@@ -126,6 +134,55 @@ class Topology:
         splits[item['name']] = subTopo
 
       return splits
+
+  def selectNodeByName(self, name, hosts):
+
+    subNodes = []
+    subHostList = []
+
+    for host in hosts:
+      #Looking for the hostname name
+      if self.nodes.count(host) == 0:
+        raise ValueError("Error: Requesting a node not available in the current Topology (" + host + ")")
+      subNodes.append(host)
+      for j in range(0, self.procPerNode):
+        subHostList.append(host)
+
+    # Creating an empty topology
+    subTopo = Topology(name)
+    subTopo.nodes = subNodes
+    subTopo.hostlist = subHostList
+    subTopo.nNodes = len(subTopo.nodes)
+    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
+    subTopo.nProcs = len(subTopo.hostlist)
+    subTopo.procs = self.procs
+
+    return subTopo
+
+  def removeNodeByName(self, name, hosts):
+
+    subNodes = self.nodes
+    subHostList = self.hostlist
+
+    for host in hosts:
+      #Looking for the hostname name
+      while subNodes.count(host) > 0:
+        subNodes.remove(host)
+      while subHostList.count(host) > 0:
+        subHostList.remove(host)
+
+    # Creating an empty topology
+    subTopo = Topology(name)
+    subTopo.nodes = subNodes
+    subTopo.hostlist = subHostList
+    subTopo.nNodes = len(subTopo.nodes)
+    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
+    subTopo.nProcs = len(subTopo.hostlist)
+    subTopo.procs = self.procs
+
+    return subTopo
+
+
 # End of class Topology
 
 def initParserForTopology(parser):
@@ -136,8 +193,7 @@ def initParserForTopology(parser):
         "-n", "--np",
         help = "Total number of MPI ranks used in the workflow",
         type=int,
-        default=1,
-        required=True,
+        default=0,
         dest="nprocs"
         )
     parser.add_argument(
