@@ -447,6 +447,7 @@ class Node:
     self.outports = {}
 
     # Adding the node into the workflow
+    global workflow_graph
     workflow_graph.add_node(self.name, node=self)
 
   def addInputPort(self, portname):
@@ -557,6 +558,7 @@ class Edge:
       self.dflow_con_redist = dflow_con_redist
       self.cmdline = cmdline
 
+    global workflow_graph
     workflow_graph.add_edge(self.src, self.dest, edge=self)
 
     #if ('.' in srcString) and ('.' in destString): #In case we have ports
