@@ -8,6 +8,7 @@ import getopt
 import argparse
 import json
 import networkx as nx
+from collections import OrderedDict
 
 from collections import defaultdict
 
@@ -38,7 +39,7 @@ class Topology:
         content = f.read()
         content = content.rstrip(' \t\n\r') #Clean the last character, usually a \n
         self.hostlist = content.split('\n')
-        self.nodes = list(set(self.hostlist))   # Removing the duplicate hosts
+        self.nodes = list(OrderedDict.fromkeys(self.hostlist))   # Removing the duplicate hosts while preserving the order
         self.nNodes = len(self.nodes)
         self.procPerNode = len(self.hostlist) / self.nNodes
         self.nProcs = len(self.hostlist)
@@ -155,14 +156,29 @@ class Topology:
     subTopo.nNodes = len(subTopo.nodes)
     subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
     subTopo.nProcs = len(subTopo.hostlist)
-    subTopo.procs = self.procs
+    subTopo.procs = list(self.procs)
+
+    return subTopo
+
+  def selectNodeByIndex(self, name, startIndex, nbNodes):
+    subNodes = list(self.nodes[startIndex:startIndex+nbNodes])
+    subHostList = list(self.hostlist[startIndex*self.procPerNode:(startIndex+nbNodes)*self.procPerNode])
+
+    # Creating an empty topology
+    subTopo = Topology(name)
+    subTopo.nodes = subNodes
+    subTopo.hostlist = subHostList
+    subTopo.nNodes = len(subTopo.nodes)
+    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
+    subTopo.nProcs = len(subTopo.hostlist)
+    subTopo.procs = list(self.procs)
 
     return subTopo
 
   def removeNodeByName(self, name, hosts):
 
-    subNodes = self.nodes
-    subHostList = self.hostlist
+    subNodes = list(self.nodes)
+    subHostList = list(self.hostlist)
 
     for host in hosts:
       #Looking for the hostname name
@@ -178,10 +194,54 @@ class Topology:
     subTopo.nNodes = len(subTopo.nodes)
     subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
     subTopo.nProcs = len(subTopo.hostlist)
-    subTopo.procs = self.procs
+    subTopo.procs = list(self.procs)
 
     return subTopo
 
+  def removeNodeByIndex(self, name, startIndex, nbNodes):
+    subNodes = list(self.nodes)
+    subHostList = list(self.hostlist)
+
+    del subNodes[startIndex:startIndex+nbNodes]
+    del subHostList[startIndex*self.procPerNode:(startIndex+nbNodes)*self.procPerNode]
+
+    # Creating an empty topology
+    subTopo = Topology(name)
+    subTopo.nodes = subNodes
+    subTopo.hostlist = subHostList
+    subTopo.nNodes = len(subTopo.nodes)
+    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
+    subTopo.nProcs = len(subTopo.hostlist)
+    subTopo.procs = list(self.procs)
+
+    return subTopo
+
+  def selectCores(self, name, cores):
+    subNodes = list(self.nodes)
+
+    subHostList = []
+    for host in subNodes:
+      for i in range(0,len(cores)):
+        subHostList.append(host)
+
+    # Checking that all the requested cores are available and not duplicated
+    for core in cores:
+      if cores.count(core) > 1:
+        raise ValueError("ERROR: requesting multiple time the same core within the same topology.")
+      if self.procs.count(core) == 0:
+        raise ValueError("ERROR: the request core is not available in the current topology.")
+
+    # Now we know that the cores list is valid
+    # Creating an empty topology
+    subTopo = Topology(name)
+    subTopo.nodes = subNodes
+    subTopo.hostlist = subHostList
+    subTopo.nNodes = len(subTopo.nodes)
+    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
+    subTopo.nProcs = len(subTopo.hostlist)
+    subTopo.procs = list(cores)
+
+    return subTopo
 
 # End of class Topology
 
