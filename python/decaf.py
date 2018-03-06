@@ -20,7 +20,7 @@ workflow_graph = nx.DiGraph()
 # rank again the topologies once all the topologies are declared
 # Ranking the topogies is required when removing nodes from a topology
 # or when threading is used
-requireTopologyRanking = True
+requireTopologyRanking = False
 
 
 class Topology:
@@ -169,6 +169,7 @@ class Topology:
     subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
     subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
 
+    global requireTopologyRanking
     requireTopologyRanking = True
 
     return subTopo
@@ -188,6 +189,7 @@ class Topology:
     subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
     subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
 
+    global requireTopologyRanking
     requireTopologyRanking = True
 
     return subTopo
@@ -215,6 +217,7 @@ class Topology:
     subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
     subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
 
+    global requireTopologyRanking
     requireTopologyRanking = True
 
     return subTopo
@@ -237,6 +240,7 @@ class Topology:
     subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
     subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
 
+    global requireTopologyRanking
     requireTopologyRanking = True
 
     return subTopo
@@ -272,6 +276,7 @@ class Topology:
     subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
     subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
 
+    global requireTopologyRanking
     requireTopologyRanking = True
 
     return subTopo
@@ -288,6 +293,7 @@ class Topology:
     self.procPerNode = len(self.procs) / self.threadPerProc
     self.nProcs = self.nNodes * self.procPerNode
 
+    global requireTopologyRanking
     requireTopologyRanking = True
 
 # End of class Topology
@@ -1109,15 +1115,15 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = "", envTarget =
 # Parse the graph to sequence the executables with their
 # associated MPI ranks and arguments
 def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-    print "Generating bash command script "+outputFile+ " for a generic MPI implementation."
+    print "Generating bash command script "+outputFile+ " for OpenMPI."
 
     currentRank = 0
     hostlist = []
-    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" --hostfile hostfile_workflow.txt "
+    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" --hostfile hostfile_workflow.txt --rankfile rankfile_workflow.txt "
     nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
     rankfileContent = ""
 
-    print "Number of executable to find: %s" % (nbExecutables)
+    #print "Number of executable to find: %s" % (nbExecutables)
 
     # Parsing the graph looking at the current rank
     for i in range(0, nbExecutables):
@@ -1127,7 +1133,7 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
         exit()
 
       if type == 'node':
-        print "Processing a node..."
+        #print "Processing a node..."
         if exe.nprocs == 0:
           print 'ERROR: a node can not have 0 MPI rank.'
           exit()
@@ -1145,13 +1151,13 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
         hostfileRank = currentRank
         for host in exe.topology.nodes:
           for index in range(0, exe.topology.procPerNode):
-            rankfileContent += "rank%s=%s slots=" % (hostfileRank,host)
+            rankfileContent += "rank %s=%s slot=" % (hostfileRank,host)
             for coreIndex in range(index*exe.topology.threadPerProc, (index+1)*exe.topology.threadPerProc):
               rankfileContent+=str(exe.topology.procs[coreIndex]) +','
             rankfileContent = rankfileContent.rstrip(',') + '\n'
             hostfileRank += 1
-        print "Content after the node " + exe.name
-        print rankfileContent
+        #print "Content after the node " + exe.name
+        #print rankfileContent
 
         mpirunCommand += " "+str(exe.cmdline)+" : "
         currentRank += exe.nprocs
@@ -1172,7 +1178,7 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
           hostfileRank = currentRank
           for host in exe.topology.nodes:
             for index in range(0, exe.topology.procPerNode):
-              rankfileContent += "rank%s=%s slots="
+              rankfileContent += "rank %s=%s slot="
               for coreIndex in range(index*exe.topology.threadPerProc, (index+1)*exe.topology.threadPerProc):
                 rankfileContent+=str(exe.topology.procs[coreIndex])+','
               rankfileContent = rankfileContent.rstrip(',') + '\n'
@@ -1201,15 +1207,19 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     f.write(content)
     f.close()
 
-    print "Printing the content of the rankfile..."
-    print rankfileContent
+    #print "Printing the content of the rankfile..."
+    rankfileContent = rankfileContent.rstrip('\n')
+    f = open("rankfile_workflow.txt", "w")
+    f.write(rankfileContent)
+    f.close()
+    #print rankfileContent
 
 # Build the mpirun command in MPMD mode
 # Parse the graph to sequence the executables with their
 # associated MPI ranks and arguments, generate a hostfile and rankfile
 # to associate the correct CPU enveloppe to each
 def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-    print "Generating bash command script targeted for OpenMPI "+outputFile
+    print "Generating bash command script "+outputFile+" for a generic MPI environment."
 
     currentRank = 0
     hostlist = []
