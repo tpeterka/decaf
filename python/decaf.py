@@ -20,7 +20,7 @@ workflow_graph = nx.DiGraph()
 # rank again the topologies once all the topologies are declared
 # Ranking the topogies is required when removing nodes from a topology
 # or when threading is used
-requireTopologyRanking = False
+requireTopologyRanking = True
 
 
 class Topology:
@@ -287,6 +287,8 @@ class Topology:
       self.useOpenMP = False
     self.procPerNode = len(self.procs) / self.threadPerProc
     self.nProcs = self.nNodes * self.procPerNode
+
+    requireTopologyRanking = True
 
 # End of class Topology
 
@@ -1006,7 +1008,7 @@ def addLowHighStream(graph, prod, con, low_freq, high_freq, buffers = ["mainmem"
 def addDirectSyncStream(graph, prod, con, prod_output_freq = 1):
     updateLinkStream(graph, prod, con, 'single', 'seq', 'greedy', [], [], prod_output_freq)
 
-def checkTopologyRanking(workflow_graph):
+def checkTopologyRanking(graph):
     if not requireTopologyRanking:
         # We don't need to update the ranking of the topologies,
         # it is already setup and consistent
@@ -1028,8 +1030,8 @@ def checkTopologyRanking(workflow_graph):
     for val in graph.edges(data=True):
         edge = val[2]["edge"]
         if hasattr(edge, 'topology') and edge.topology != None:
-            topologies.append(node.topology)
-        else:
+            topologies.append(edge.topology)
+        elif edge.nprocs > 0:
             raise ValueError("ERROR: no topology attribute while updating the ranking.")
 
     # Updating the ranking in the topology
@@ -1043,12 +1045,14 @@ def checkTopologyRanking(workflow_graph):
         node = val[1]["node"]
         node.start_proc = node.topology.offsetRank
         node.nprocs = node.topology.nProcs
+        print "Setting the topology for " + node.name + " start: "+str(node.start_proc)
 
 
     for val in graph.edges(data=True):
         edge = val[2]["edge"]
-        edge.start_proc = node.topology.offsetRank
-        edge.nprocs = node.topology.nProcs
+        if edge.nprocs > 0:
+            edge.start_proc = edge.topology.offsetRank
+            edge.nprocs = edge.topology.nProcs
 
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):
@@ -1113,6 +1117,8 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
     rankfileContent = ""
 
+    print "Number of executable to find: %s" % (nbExecutables)
+
     # Parsing the graph looking at the current rank
     for i in range(0, nbExecutables):
       (type, exe) = getNodeWithRank(currentRank, graph)
@@ -1121,7 +1127,7 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
         exit()
 
       if type == 'node':
-
+        print "Processing a node..."
         if exe.nprocs == 0:
           print 'ERROR: a node can not have 0 MPI rank.'
           exit()
@@ -1144,12 +1150,14 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
               rankfileContent+=str(exe.topology.procs[coreIndex]) +','
             rankfileContent = rankfileContent.rstrip(',') + '\n'
             hostfileRank += 1
+        print "Content after the node " + exe.name
+        print rankfileContent
 
         mpirunCommand += " "+str(exe.cmdline)+" : "
         currentRank += exe.nprocs
 
       if type == 'edge':
-
+        print "Processing an edge"
         if exe.nprocs != 0:
           mpirunCommand += "-np "+str(exe.nprocs)
 
