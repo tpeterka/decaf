@@ -276,6 +276,18 @@ class Topology:
 
     return subTopo
 
+  def setThreadsPerRank(self, threadsPerRank):
+    if len(cores) % threadsPerCore > 0:
+      raise ValueError("Error: the requested number of threads per rank.")
+
+    self.threadPerProc = threadsPerRank
+    if threadsPerRank > 1:
+      self.useOpenMP = True
+    else:
+      self.useOpenMP = False
+    self.procPerNode = len(self.procs) / self.threadPerProc
+    self.nProcs = self.nNodes * self.procPerNode
+
 # End of class Topology
 
 def rankTopologies(topologies):
