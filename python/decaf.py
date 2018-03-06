@@ -16,6 +16,12 @@ from collections import defaultdict
 # Used to perform graph analysis and generate the json file
 workflow_graph = nx.DiGraph()
 
+# Set to True if the user performed an operation which require to
+# rank again the topologies once all the topologies are declared
+# Ranking the topogies is required when removing nodes from a topology
+# or when threading is used
+requireTopologyRanking = False
+
 
 class Topology:
   """ Object holder for informations about the plateform to use """
@@ -32,6 +38,8 @@ class Topology:
       self.procPerNode = procPerNode    # Number of MPI ranks per node. If not given, deduced from the host list
       self.offsetProcPerNode = offsetProcPerNode    # Offset of the proc ID to start per node with process pinning
       self.procs = []                   # List of cores per node
+      self.threadPerProc = 1            # Number of threads per MPI rank
+      self.useOpenMP = False            # Use OpenMP for this topology, look at the procPerNode to know how many threads per proc
 
 
       if hostfilename != "":
@@ -63,7 +71,8 @@ class Topology:
   def toStr(self):
       content = ""
       content += "name: " + self.name + "\n"
-      content += "nProcs: " + str(self.nProcs) + "\n"
+      content += "Number of MPI ranks: " + str(self.nProcs) + "\n"
+      content += "Threads per MPI rank: " + str(self.threadPerProc) + "\n"
       content += "offsetRank: " + str(self.offsetRank) + "\n"
       content += "host list: " + str(self.hostlist) + "\n"
       content += "core list per node: " + str(self.procs) + "\n"
@@ -154,9 +163,13 @@ class Topology:
     subTopo.nodes = subNodes
     subTopo.hostlist = subHostList
     subTopo.nNodes = len(subTopo.nodes)
-    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
-    subTopo.nProcs = len(subTopo.hostlist)
     subTopo.procs = list(self.procs)
+    subTopo.threadPerProc = self.threadPerProc
+    subTopo.useOpenMP = self.useOpenMP
+    subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
+    subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
+
+    requireTopologyRanking = True
 
     return subTopo
 
@@ -169,9 +182,13 @@ class Topology:
     subTopo.nodes = subNodes
     subTopo.hostlist = subHostList
     subTopo.nNodes = len(subTopo.nodes)
-    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
-    subTopo.nProcs = len(subTopo.hostlist)
     subTopo.procs = list(self.procs)
+    subTopo.threadPerProc = self.threadPerProc
+    subTopo.useOpenMP = self.useOpenMP
+    subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
+    subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
+
+    requireTopologyRanking = True
 
     return subTopo
 
@@ -192,9 +209,13 @@ class Topology:
     subTopo.nodes = subNodes
     subTopo.hostlist = subHostList
     subTopo.nNodes = len(subTopo.nodes)
-    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
-    subTopo.nProcs = len(subTopo.hostlist)
     subTopo.procs = list(self.procs)
+    subTopo.threadPerProc = self.threadPerProc
+    subTopo.useOpenMP = self.useOpenMP
+    subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
+    subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
+
+    requireTopologyRanking = True
 
     return subTopo
 
@@ -210,9 +231,13 @@ class Topology:
     subTopo.nodes = subNodes
     subTopo.hostlist = subHostList
     subTopo.nNodes = len(subTopo.nodes)
-    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
-    subTopo.nProcs = len(subTopo.hostlist)
     subTopo.procs = list(self.procs)
+    subTopo.threadPerProc = self.threadPerProc
+    subTopo.useOpenMP = self.useOpenMP
+    subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
+    subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
+
+    requireTopologyRanking = True
 
     return subTopo
 
@@ -231,19 +256,34 @@ class Topology:
       if self.procs.count(core) == 0:
         raise ValueError("ERROR: the request core is not available in the current topology.")
 
+    # Checking that the number of threads per core still divide the number of cores
+    if len(cores) % self.threadPerProc != 0:
+      raise ValueError("ERROR: the number of threads does not divide anymore the number of core for the topology.")
+
     # Now we know that the cores list is valid
     # Creating an empty topology
     subTopo = Topology(name)
     subTopo.nodes = subNodes
     subTopo.hostlist = subHostList
     subTopo.nNodes = len(subTopo.nodes)
-    subTopo.procPerNode = len(subTopo.hostlist) / subTopo.nNodes
-    subTopo.nProcs = len(subTopo.hostlist)
-    subTopo.procs = list(cores)
+    subTopo.procs = cores
+    subTopo.threadPerProc = self.threadPerProc
+    subTopo.useOpenMP = self.useOpenMP
+    subTopo.procPerNode = len(subTopo.procs) / subTopo.threadPerProc
+    subTopo.nProcs = subTopo.nNodes * subTopo.procPerNode
+
+    requireTopologyRanking = True
 
     return subTopo
 
 # End of class Topology
+
+def rankTopologies(topologies):
+
+    currentRank = 0
+    for topo in topologies:
+      topo.offsetRank = currentRank
+      currentRank += topo.nProcs
 
 def initParserForTopology(parser):
     """ Add the necessary arguments to initialize a topology.
@@ -954,6 +994,50 @@ def addLowHighStream(graph, prod, con, low_freq, high_freq, buffers = ["mainmem"
 def addDirectSyncStream(graph, prod, con, prod_output_freq = 1):
     updateLinkStream(graph, prod, con, 'single', 'seq', 'greedy', [], [], prod_output_freq)
 
+def checkTopologyRanking(workflow_graph):
+    if not requireTopologyRanking:
+        # We don't need to update the ranking of the topologies,
+        # it is already setup and consistent
+        print "No need to update the topologies ranking."
+        return
+    else:
+        print "Updating the topologies ranking."
+
+    # Collecting all the topologies in the graph
+    topologies = []
+    for val in graph.nodes(data=True):
+        node = val[1]["node"]
+        if hasattr(node, 'topology') and node.topology != None:
+            topologies.append(node.topology)
+        else:
+            raise ValueError("ERROR: no topology attribute while updating the ranking.")
+
+
+    for val in graph.edges(data=True):
+        edge = val[2]["edge"]
+        if hasattr(edge, 'topology') and edge.topology != None:
+            topologies.append(node.topology)
+        else:
+            raise ValueError("ERROR: no topology attribute while updating the ranking.")
+
+    # Updating the ranking in the topology
+    rankTopologies(topologies)
+
+    # Updating the start_proc and nprocs in the Nodes and edges
+    # This is for retro compatibility: previous API did not have
+    # topologies and their MPI commands were generated from the
+    # start_proc and nprocs attributes
+    for val in graph.nodes(data=True):
+        node = val[1]["node"]
+        node.start_proc = node.topology.offsetRank
+        node.nprocs = node.topology.nProcs
+
+
+    for val in graph.edges(data=True):
+        edge = val[2]["edge"]
+        edge.start_proc = node.topology.offsetRank
+        edge.nprocs = node.topology.nProcs
+
 # Looking for a node/edge starting at a particular rank
 def getNodeWithRank(rank, graph):
 
@@ -1235,5 +1319,6 @@ def processGraph( name, filter_level = Filter_level.NONE, mpirunPath = "", mpiru
     createObjects(workflow_graph)
     check_contracts(workflow_graph, filter_level)
     checkCycles(workflow_graph)
+    checkTopologyRanking(workflow_graph)
     workflowToJson(workflow_graph, name+".json", filter_level)
     workflowToSh(workflow_graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
