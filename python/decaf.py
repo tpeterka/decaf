@@ -1067,7 +1067,7 @@ def getNodeWithRank(rank, graph):
     return ('notfound', 0) # should be the same since second value is not used in this case
 
 
-def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
+def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = "", envTarget = "generic"):
     print "Selecting the transport method..."
 
     transport = ""
@@ -1090,8 +1090,10 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
     if graph.number_of_edges() == 0:
         MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
-    elif transport == "mpi":
+    elif transport == "mpi" and envTarget == "generic":
       MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
+    elif transport ==  "mpi" and envTarget == "openmpi":
+      OpenMPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
     elif transport == "cci":
       MPMDworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
     elif transport == "file":
@@ -1102,8 +1104,104 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 # Build the mpirun command in MPMD mode
 # Parse the graph to sequence the executables with their
 # associated MPI ranks and arguments
+def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
+    print "Generating bash command script "+outputFile+ " for a generic MPI implementation."
+
+    currentRank = 0
+    hostlist = []
+    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" --hostfile hostfile_workflow.txt "
+    nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
+    rankfileContent = ""
+
+    # Parsing the graph looking at the current rank
+    for i in range(0, nbExecutables):
+      (type, exe) = getNodeWithRank(currentRank, graph)
+      if type == 'none':
+        print 'ERROR: Unable to find an executable for the rank ' + str(rank)
+        exit()
+
+      if type == 'node':
+
+        if exe.nprocs == 0:
+          print 'ERROR: a node can not have 0 MPI rank.'
+          exit()
+
+        mpirunCommand += "-np "+str(exe.nprocs)
+
+        #Checking if a topology is specified.
+        if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
+          for host in exe.topology.hostlist:
+            hostlist.append(host)
+        else:
+            raise ValueError("ERROR: The target OpenMPI requires to use Topologies. Use Topologies to allocate resources to each task or request the generic target instead. ")
+
+        # Generating the rankfile entries for each rank
+        hostfileRank = currentRank
+        for host in exe.topology.nodes:
+          for index in range(0, exe.topology.procPerNode):
+            rankfileContent += "rank%s=%s slots=" % (hostfileRank,host)
+            for coreIndex in range(index*exe.topology.threadPerProc, (index+1)*exe.topology.threadPerProc):
+              rankfileContent+=str(exe.topology.procs[coreIndex]) +','
+            rankfileContent = rankfileContent.rstrip(',') + '\n'
+            hostfileRank += 1
+
+        mpirunCommand += " "+str(exe.cmdline)+" : "
+        currentRank += exe.nprocs
+
+      if type == 'edge':
+
+        if exe.nprocs != 0:
+          mpirunCommand += "-np "+str(exe.nprocs)
+
+          #Checking if a topology is specified. If no, fill a filehost with localhost
+          if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
+            for host in exe.topology.hostlist:
+              hostlist.append(host)
+          else:
+              raise ValueError("ERROR: The target OpenMPI requires to use Topologies. Use Topologies to allocate resources to each task or request the generic target instead. ")
+
+          # Generating the rankfile entries for each rank
+          hostfileRank = currentRank
+          for host in exe.topology.nodes:
+            for index in range(0, exe.topology.procPerNode):
+              rankfileContent += "rank%s=%s slots="
+              for coreIndex in range(index*exe.topology.threadPerProc, (index+1)*exe.topology.threadPerProc):
+                rankfileContent+=str(exe.topology.procs[coreIndex])+','
+              rankfileContent = rankfileContent.rstrip(',') + '\n'
+              hostfileRank += 1
+
+          mpirunCommand += " "+str(exe.cmdline)+" : "
+          currentRank += exe.nprocs
+
+    # Writting the final file
+    f = open(outputFile, "w")
+    content = ""
+    content +="#! /bin/bash\n\n"
+    content +=mpirunCommand
+    content = content.rstrip(" : ") + "\n"
+
+    f.write(content)
+    f.close()
+    os.system("chmod a+rx "+outputFile)
+
+    #Writing the hostfile
+    f = open("hostfile_workflow.txt","w")
+    content = ""
+    for host in hostlist:
+      content += host + "\n"
+    content = content.rstrip("\n")
+    f.write(content)
+    f.close()
+
+    print "Printing the content of the rankfile..."
+    print rankfileContent
+
+# Build the mpirun command in MPMD mode
+# Parse the graph to sequence the executables with their
+# associated MPI ranks and arguments, generate a hostfile and rankfile
+# to associate the correct CPU enveloppe to each
 def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-    print "Generating bash command script "+outputFile
+    print "Generating bash command script targeted for OpenMPI "+outputFile
 
     currentRank = 0
     hostlist = []
@@ -1170,7 +1268,6 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     content = content.rstrip("\n")
     f.write(content)
     f.close()
-    
 
 """Build the various mpirun commands for each executable
    The function generate the environment variables necesaries for Decaf
@@ -1327,10 +1424,10 @@ def createObjects(graph):
 
 """ Process the graph and generate the necessary files
 """
-def processGraph( name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = ""):
+def processGraph( name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = "", envTarget = "generic"):
     createObjects(workflow_graph)
     check_contracts(workflow_graph, filter_level)
     checkCycles(workflow_graph)
     checkTopologyRanking(workflow_graph)
     workflowToJson(workflow_graph, name+".json", filter_level)
-    workflowToSh(workflow_graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath)
+    workflowToSh(workflow_graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath, envTarget = envTarget)
