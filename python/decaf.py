@@ -1053,7 +1053,7 @@ def checkTopologyRanking(graph):
         node = val[1]["node"]
         node.start_proc = node.topology.offsetRank
         node.nprocs = node.topology.nProcs
-        print "Setting the topology for " + node.name + " start: "+str(node.start_proc)
+        #print "Setting the topology for " + node.name + " start: "+str(node.start_proc)
 
 
     for val in graph.edges(data=True):
