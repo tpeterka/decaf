@@ -282,7 +282,7 @@ class Topology:
     return subTopo
 
   def setThreadsPerRank(self, threadsPerRank):
-    if len(cores) % threadsPerCore > 0:
+    if len(self.procs) % threadsPerRank > 0:
       raise ValueError("Error: the requested number of threads per rank.")
 
     self.threadPerProc = threadsPerRank
