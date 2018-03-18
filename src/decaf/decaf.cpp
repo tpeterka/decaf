@@ -44,11 +44,6 @@ Decaf::Decaf(CommHandle world_comm,
             nl.wflow_in_links =  set<int>(workflow_.nodes[i].in_links.begin(),
                                           workflow_.nodes[i].in_links.end());
             my_nodes_.push_back(nl);
-
-            // WARNING: this method will NOT work in the case of
-            // overlapping between nodes because the number of tokens
-            // may be erased by the number of token of another task
-            tokens_ = workflow_.nodes[i].tokens;
         }
     }
 
@@ -71,31 +66,39 @@ Decaf::Decaf(CommHandle world_comm,
     // inbound dataflows
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
-        if (workflow_.my_link(workflow_rank_, i))        // I am a link and this dataflow is me
+        // I am a link and this dataflow is me
+        if (workflow_.my_link(workflow_rank_, i))
             link_in_dataflows.push_back(dataflows[i]);
-        if (workflow_.my_in_link(workflow_rank_, i)){     // I am a node and this dataflow is an input
+        // I am a node and this dataflow is an input
+        if (workflow_.my_in_link(workflow_rank_, i))
+        {
             node_in_dataflows.push_back(pair<Dataflow*, int>(dataflows[i], i));
-            if(dataflows[i]->destPort() != "")
+            if (dataflows[i]->destPort() != "")
+            {
                 inPortMap.emplace(dataflows[i]->destPort(), dataflows[i]);
+            }
         }
     }
 
-    // outbound dataflows
+     // outbound dataflows
     for (size_t i = 0; i < workflow_.links.size(); i++)
     {
         // I am a link and this dataflow is me
         // OR
         // I am a node and this dataflow is an output
         if ((workflow_.my_link(workflow_rank_, i)) || (workflow_.my_out_link(workflow_rank_, i)))
-            out_dataflows.push_back(dataflows[i]);
-    }
+        {
 
+            out_dataflows.push_back(dataflows[i]);
+        }
+    }
 
     // TODO once we are sure the unique_out_dataflows set is used for the overlapping thing,
     // move this creation of the outPortMap ~5lines above in the "if i am a node"
     for (Dataflow* df : out_dataflows)
     {
-        if (df->srcPort() != ""){
+        if (df->srcPort() != "")
+        {
             if (outPortMap.count(df->srcPort()) == 1)
             {
                 outPortMap[df->srcPort()].push_back(df);
@@ -108,13 +111,42 @@ Decaf::Decaf(CommHandle world_comm,
         }
     }
 
+    // Adding the Input and Output Port which are not connected
+    // to any Dataflows but still declared by the user.
+    // WARNING: will not work with overlapping of NODES, currently not supported by Decaf
+    for (size_t i = 0; i < workflow_.nodes.size(); i++)
+    {
+        if (workflow_.my_node(workflow_rank_, i))
+        {
+            for (string outPortName : workflow_.nodes[i].outports)
+            {
+                if (outPortMap.count(outPortName) == 0)
+                {
+                    fprintf(stderr, "WARNING: Output port %s is declared but not connected.\n", outPortName.c_str());
+                    vector<Dataflow*> vect;
+                    outPortMap.emplace(outPortName, vect);
+                }
+            }
+
+            for (string inPortName : workflow_.nodes[i].inports)
+            {
+                if (inPortMap.count(inPortName) == 0)
+                {
+                    fprintf(stderr, "WARNING: Intput port %s is declared but not connected.\n", inPortName.c_str());
+                    inPortMap.emplace(inPortName, nullptr);
+                }
+            }
+        }
+    }
+
     // link ranks that do not overlap nodes need to be started running
     // first eliminate myself if I belong to a node
     /*for (size_t i = 0; i < workflow_.nodes.size(); i++)
         if (workflow_.my_node(workflow_rank_, i)){
             return;
     TODO verify that the following does the same, without a loop */
-    if(my_nodes_.size() > 0){
+    if (my_nodes_.size() > 0)
+    {
         return;
     }
 
@@ -236,10 +268,18 @@ Decaf::get(pConstructData container, string port)
         MPI_Abort(MPI_COMM_WORLD, 0);
     }
 
+    if (it->second == nullptr)
+    {
+        // The input port is declared but not connected
+        return false;
+    }
+
     if (it->second->isClose())
     {// A quit message has already been received, nothing to get anymore
         return false;
     }
+
+
 
     // TODO remove the loop, with the given port in argument we know whether there is an ovelapping or not
     // link ranks that do overlap this node need to be run in one-time mode, unless
@@ -297,7 +337,9 @@ Decaf::get(map<string, pConstructData> &containers)
     for (std::pair<string, Dataflow*> pair : inPortMap)
     {
         pConstructData container;
-        if(pair.second->isClose())
+
+        // If the input port is not connected or already closed
+        if (pair.second == nullptr || pair.second->isClose())
         {
             containers.emplace(pair.first, container);
         }
@@ -354,13 +396,6 @@ bool
 decaf::
 Decaf::get(vector< pConstructData >& containers)
 {
-    // Checking if we have a token. If yes, we directly return without messages
-    if(tokens_ > 0)
-    {
-        tokens_--;
-        return true;
-    }
-
     // TODO verify this
     // link ranks that do overlap this node need to be run in one-time mode, unless
     // the same rank also was a producer node for this link, in which case
@@ -775,7 +810,19 @@ Decaf::router(list< pConstructData >& in_data, // input messages
         else if (src_type(*it) & DECAF_LINK)
             dest_node = dest_id(*it);
         else if (src_type(*it) == DECAF_NONE)
-            fprintf(stderr, "ERROR: reception of a none source msg.\n");
+        {
+            fprintf(stderr, "[%i] ERROR: reception of a none source msg.\n", workflow_rank_);
+            fprintf(stderr, "[%i] ERROR: number of fields: %u.\n", workflow_rank_, (*it)->getNbFields());
+            (*it)->printKeys();
+            shared_ptr<SimpleConstructData<TaskType> > ptr =
+                    (*it)->getTypedData<SimpleConstructData<TaskType> >("src_type");
+            if (ptr)
+            {
+                fprintf(stderr, "Value for the src_type: %d\n", ptr->getData());
+            }
+            else
+                fprintf(stderr, "ERROR: the access of the src_type failed.\n");
+        }
 
         if (dest_node >= 0)               // destination is a node
         {

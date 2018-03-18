@@ -69,11 +69,11 @@ void
 Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
 {
     string json_filename = json_path;
-    if(json_filename.length() == 0)
+    if (json_filename.length() == 0)
     {
         fprintf(stderr, "No name filename provided for the JSON file. Falling back on the DECAF_JSON environment variable\n");
         const char* env_path = std::getenv("DECAF_JSON");
-        if(env_path == NULL)
+        if (env_path == NULL)
         {
             fprintf(stderr, "ERROR: The environment variable DECAF_JSON is not defined. Unable to find the workflow graph definition.\n");
             exit(1);
@@ -101,21 +101,34 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
         /*
         * iterate over the list of nodes, creating and populating WorkflowNodes as we go
         */
-        for( auto &&v : root.get_child( "workflow.nodes" ) ) {
+        for ( auto &&v : root.get_child( "workflow.nodes" ) )
+        {
             WorkflowNode node;
             node.out_links.clear();
             node.in_links.clear();
+            node.inports.clear();
+            node.outports.clear();
             /* we defer actually linking nodes until we read the edge list */
 
             node.start_proc = v.second.get<int>("start_proc");
             node.nprocs = v.second.get<int>("nprocs");
             node.func = v.second.get<string>("func");
 
-            boost::optional<int> opt_tokens = v.second.get_optional<int>("tokens");
-            if(opt_tokens)
-                node.tokens = opt_tokens.get();
-            else
-                node.tokens = 0;
+            // Retrieving the input ports, if present
+            boost::optional<bpt::ptree&> pt_inputs = v.second.get_child_optional("inports");
+            if (pt_inputs)
+            {
+                for (auto& item : pt_inputs->get_child(""))
+                    node.inports.push_back(item.second.get_value<string>());
+            }
+
+            // Retrieving the output ports, if present
+            boost::optional<bpt::ptree&> pt_outputs = v.second.get_child_optional("outports");
+            if (pt_outputs)
+            {
+                for (auto& item : pt_outputs->get_child(""))
+                    node.outports.push_back(item.second.get_value<string>());
+            }
 
             workflow.nodes.push_back( node );
         } // End for workflow.nodes
@@ -126,7 +139,8 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
         /*
         * similarly for the edges
         */
-        for( auto &&v : root.get_child( "workflow.edges" ) ) {
+        for ( auto &&v : root.get_child( "workflow.edges" ) )
+        {
             WorkflowLink link;
 
             /* link the nodes correctly(?) */
@@ -142,6 +156,11 @@ Workflow::make_wflow_from_json( Workflow& workflow, const string& json_path )
             link.check_level = check_level;
             link.name = v.second.get<string>("name");
             link.transport_method = v.second.get<string>("transport");
+            boost::optional<int> opt_tokens = v.second.get_optional<int>("tokens");
+            if(opt_tokens)
+                link.tokens = opt_tokens.get();
+            else
+                link.tokens = 0;
 
             if(link.nprocs != 0){ // Only used if there are procs on this link
                 link.path = v.second.get<string>("path");

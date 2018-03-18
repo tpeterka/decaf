@@ -1,12 +1,10 @@
 ﻿//---------------------------------------------------------------------------
 //
-// 3-node linear coupling example
+// 2-node producer-consumer coupling example
 //
-// node0 (4 procs) - node1 (2 procs) - node2 (1 proc)
-// node0[0,3] -> dflow[4,6] -> node1[7,8] -> dflow[9,10] -> node2[11]
+// prod (4 procs) - con (2 procs)
 //
-// entire workflow takes 12 procs (3 dataflow procs between node0 and node1 and
-// 2 dataflow procs between node1 and node2)
+// entire workflow takes 8 procs (2 dataflow procs between prod and con)
 //
 // Tom Peterka
 // Argonne National Laboratory
@@ -19,7 +17,9 @@
 #include <decaf/decaf.hpp>
 #include <bredala/data_model/pconstructtype.h>
 #include <bredala/data_model/simplefield.hpp>
-
+#ifdef TRANSPORT_CCI
+#include <cci.h>
+#endif
 #include <bredala/data_model/boost_macros.h>
 
 #include <assert.h>
@@ -32,16 +32,15 @@ using namespace decaf;
 using namespace std;
 
 // producer
-void node0(Decaf* decaf)
+void prod(Decaf* decaf)
 {
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 10; timestep++)
+	for (int timestep = 0; timestep < 10; timestep++)
     {
-        fprintf(stderr, "node0 timestep %d\n", timestep);
+		fprintf(stderr, "producer %d timestep %d\n", decaf->world->rank(), timestep);
 
-        // the data in this example is just the timestep; add it to a container
+		// the data in this example is just the timestep; add it to a container
         SimpleFieldi data(timestep);
-
         pConstructData container;
         container->appendData("var", data,
                               DECAF_NOFLAG, DECAF_PRIVATE,
@@ -49,76 +48,41 @@ void node0(Decaf* decaf)
 
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container, "out");
+        decaf->put(container);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "node0 terminating\n");
-    decaf->terminate();
-}
-
-// intermediate node is both a consumer and producer
-void node1(Decaf* decaf)
-{
-    map<string, pConstructData> in_data;
-    while (decaf->get(in_data))
-    {
-        int sum = 0;
-
-        // get the values and add them
-        for (size_t i = 0; i < in_data.size(); i++)
-        {
-            SimpleFieldi field = in_data.at("in")->getFieldData<SimpleFieldi>("var");
-            if(field)
-                sum += field.getData();
-            else
-                fprintf(stderr, "Error: null pointer in node1\n");
-        }
-
-        fprintf(stderr, "node1: sum = %d\n", sum);
-
-        // append the sum to a container
-        SimpleFieldi data(sum);
-        pConstructData container;
-        container->appendData("var", data,
-                              DECAF_NOFLAG, DECAF_PRIVATE,
-                              DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
-
-        // send the data on all outbound dataflows
-        // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container, "out");
-    }
-
-    // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "node1 terminating\n");
+	fprintf(stderr, "producer %d terminating\n", decaf->world->rank());
     decaf->terminate();
 }
 
 // consumer
-void node2(Decaf* decaf)
+void con(Decaf* decaf)
 {
-    map<string, pConstructData> in_data;
+    vector< pConstructData > in_data;
+
     while (decaf->get(in_data))
     {
         int sum = 0;
-
+		fprintf(stderr, "con %d in_data size %lu\n", decaf->world->rank(), in_data.size());
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data.at("in")->getFieldData<SimpleFieldi >("var");
-            if(field)
+            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
+            if (field)
                 sum += field.getData();
             else
-                fprintf(stderr, "Error: null pointer in node2\n");
+                fprintf(stderr, "Error: null pointer in con\n");
         }
-        fprintf(stderr, "node2 sum = %d\n", sum);
+		fprintf(stderr, "consumer %d sum = %d\n", decaf->world->rank(), sum);
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "node2 terminating\n");
+	fprintf(stderr, "consumer %d terminating\n", decaf->world->rank());
     decaf->terminate();
 }
 
+// link callback function
 extern "C"
 {
     // dataflow just forwards everything that comes its way in this example
@@ -126,11 +90,13 @@ extern "C"
                Dataflow* dataflow,                  // dataflow
                pConstructData in_data)   // input data
     {
+		int var = in_data->getFieldData<SimpleFieldi>("var").getData();
+		fprintf(stderr, "Forwarding data %d in dflow\n", var);
         dataflow->put(in_data, DECAF_LINK);
     }
 } // extern "C"
 
-void run(Workflow& workflow)                         // workflow
+void run(Workflow& workflow)                             // workflow
 {
     MPI_Init(NULL, NULL);
 
@@ -154,12 +120,10 @@ void run(Workflow& workflow)                         // workflow
     // e.g., if they overlap in rank, it is up to the user to call them in an order that makes
     // sense (threaded, alternting, etc.)
     // also, the user can define any function signature she wants
-    if (decaf->my_node("node0"))
-        node0(decaf);
-    if (decaf->my_node("node1"))
-        node1(decaf);
-    if (decaf->my_node("node2"))
-        node2(decaf);
+    if (decaf->my_node("prod"))
+        prod(decaf);
+    if (decaf->my_node("con"))
+        con(decaf);
 
     // cleanup
     delete decaf;
@@ -172,7 +136,7 @@ int main(int argc,
          char** argv)
 {
     Workflow workflow;
-    Workflow::make_wflow_from_json(workflow, "linear3.json");
+    Workflow::make_wflow_from_json(workflow, "linear2.json");
 
     // run decaf
     run(workflow);

@@ -29,6 +29,7 @@
 #include <manala/types.h>
 #include <decaf/tools.hpp>
 #include <manala/tools.h>
+#include <string>
 
 namespace bpt = boost::property_tree;
 
@@ -43,15 +44,15 @@ struct WorkflowNode                          // a producer or consumer
         start_proc(start_proc_),
         nprocs(nprocs_),
         func(func_),
-        args(NULL),
-        tokens(0){}
-    vector<int> out_links; // indices of outgoing links
-    vector<int> in_links;  // indices of incoming links
-    int start_proc;        // starting proc rank in world communicator for this producer or consumer
-    int nprocs;            // number of processes for this producer or consumer
-    string func;           // name of node callback
-    void* args;            // callback arguments
-    int tokens;            // Number of empty messages to receive before a real get
+        args(NULL){}
+    vector<int> out_links;      // indices of outgoing links
+    vector<int> in_links;       // indices of incoming links
+    int start_proc;             // starting proc rank in world communicator for this producer or consumer
+    int nprocs;                 // number of processes for this producer or consumer
+    string func;                // name of node callback
+    void* args;                 // callback arguments
+    vector<string> inports;     // Input ports, if available
+    vector<string> outports;    //Output ports, if available
     void add_out_link(int link);
     void add_in_link(int link);
 };
@@ -97,6 +98,7 @@ struct WorkflowLink                          // a dataflow
 
     string srcPort;                 // Portname of the source
     string destPort;                // Portname of the dest
+    int tokens;                     // Number of empty messages to receive on destPort before a real get
 
     vector<ContractKey> keys_link;  // List of keys to be exchanged b/w the link and the consumer
     vector<ContractKey> list_keys;  // list of key to be exchanged b/w the producer and consumer or producer and link

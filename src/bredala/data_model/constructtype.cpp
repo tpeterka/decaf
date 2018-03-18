@@ -64,7 +64,8 @@ decaf::
 ConstructData::ConstructData() :
     BaseData(), nbFields_(0), bZCurveIndex_(false),
     zCurveIndex_(NULL), bZCurveKey_(false), zCurveKey_(NULL),
-    bSystem_(false), nbSystemFields_(0), bEmpty_(true), bCountable_(true), bPartialCountable_(true)
+    bSystem_(false), nbSystemFields_(0), bEmpty_(true),
+    bToken_(false),bCountable_(true), bPartialCountable_(true)
 {
 	container_ = std::make_shared<std::map<std::string, datafield> >();
 	//data_ = static_pointer_cast<void>(container_);
@@ -457,6 +458,20 @@ decaf::
 ConstructData::isEmpty()
 {
 	return bEmpty_;
+}
+
+void
+decaf::
+ConstructData::setToken(bool bToken)
+{
+    bToken_ = bToken;
+}
+
+bool
+decaf::
+ConstructData::isToken()
+{
+    return bToken_;
 }
 
 

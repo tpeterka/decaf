@@ -50,10 +50,11 @@ void node_a(Decaf* decaf)
         // receive data from all inbound dataflows
         // in this example there is only one inbound dataflow,
         // but in general there could be more
-        vector< pConstructData > in_data;
+        map<string, pConstructData> in_data;
         decaf->get(in_data);
 
-        if(in_data.empty())
+        pConstructData& inMsg = in_data.at("in");
+        if(inMsg->isToken())
             fprintf(stderr, "Reception of a token.\n");
         else
         {
@@ -61,9 +62,9 @@ void node_a(Decaf* decaf)
             for (size_t i = 0; i < in_data.size(); i++)
             {
                 // Only the first rank will receive a data
-                if(in_data[i]->hasData("vars"))
+                if(inMsg->hasData("vars"))
                 {
-                    SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("vars");
+                    SimpleFieldi field = inMsg->getFieldData<SimpleFieldi >("vars");
                     if(field)
                         sum += field.getData();
                     else
@@ -83,7 +84,7 @@ void node_a(Decaf* decaf)
 
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container);
+        decaf->put(container, "out");
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -93,8 +94,7 @@ void node_a(Decaf* decaf)
 
 void node_b(Decaf* decaf)
 {
-    vector< pConstructData > in_data;
-
+    map<string, pConstructData> in_data;
     while (decaf->get(in_data))
     {
         int sum = 0;
@@ -102,7 +102,7 @@ void node_b(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
+            SimpleFieldi field = in_data.at("in")->getFieldData<SimpleFieldi >("var");
             if(field)
                 sum += field.getData();
             else
@@ -120,7 +120,7 @@ void node_b(Decaf* decaf)
 
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container);
+        decaf->put(container, "out");
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -130,8 +130,7 @@ void node_b(Decaf* decaf)
 
 void node_c(Decaf* decaf)
 {
-    vector< pConstructData > in_data;
-
+    map<string, pConstructData> in_data;
     while (decaf->get(in_data))
     {
         int sum = 0;
@@ -139,7 +138,7 @@ void node_c(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
+            SimpleFieldi field = in_data.at("in")->getFieldData<SimpleFieldi >("var");
             if(field)
                 sum += field.getData();
             else
@@ -157,7 +156,7 @@ void node_c(Decaf* decaf)
 
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container);
+        decaf->put(container, "out");
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
@@ -167,8 +166,7 @@ void node_c(Decaf* decaf)
 
 void node_d(Decaf* decaf)
 {
-    vector< pConstructData > in_data;
-
+    map<string, pConstructData> in_data;
     while (decaf->get(in_data))
     {
         int sum = 0;
@@ -176,7 +174,7 @@ void node_d(Decaf* decaf)
         // get the values and add them
         for (size_t i = 0; i < in_data.size(); i++)
         {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
+            SimpleFieldi field = in_data.at("in")->getFieldData<SimpleFieldi >("var");
             if(field)
                 sum += field.getData();
             else
@@ -186,7 +184,8 @@ void node_d(Decaf* decaf)
         fprintf(stderr, "node_d: sum = %d\n", sum);
 
         // add 1 to the sum and send it back (for example)
-        sum++;
+        // Matthieu: end of the graph, we do not need to send the result
+        /*sum++;
         SimpleFieldi data(sum);
         pConstructData container;
         container->appendData(string("var"), data,
@@ -194,7 +193,7 @@ void node_d(Decaf* decaf)
                               DECAF_SPLIT_KEEP_VALUE, DECAF_MERGE_ADD_VALUE);
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container);
+        decaf->put(container, "out");*/
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
