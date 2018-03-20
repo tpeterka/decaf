@@ -540,6 +540,7 @@ class Edge:
     self.inPort.addEdge(self)
 
     self.topology = topology
+    self.manala = False
 
     if self.topology != None:
       self.start_proc = self.topology.offsetRank
