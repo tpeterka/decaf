@@ -48,7 +48,7 @@ void prod(Decaf* decaf)
 
         // send the data on all outbound dataflows
         // in this example there is only one outbound dataflow, but in general there could be more
-        decaf->put(container);
+        decaf->put(container, "out");
 
         // Sleeping 1 sec to slow down the producer
         sleep(2);

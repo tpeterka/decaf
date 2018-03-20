@@ -42,21 +42,18 @@ static int send = 0;
 // consumer
 void con(Decaf* decaf)
 {
-    vector< pConstructData > in_data;
-
+    map<string, pConstructData> in_data;
     while (decaf->get(in_data))
     {
         int sum = 0;
 
-        // get the values and add them
-        for (size_t i = 0; i < in_data.size(); i++)
-        {
-            SimpleFieldi field = in_data[i]->getFieldData<SimpleFieldi >("var");
-            if (field)
-                sum += field.getData();
-            else
-                fprintf(stderr, "Error: null pointer in con\n");
-        }
+        // get the value
+        SimpleFieldi field = in_data.at("in")->getFieldData<SimpleFieldi >("var");
+        if (field)
+            sum = field.getData();
+        else
+            fprintf(stderr, "Error: null pointer in con\n");
+
         fprintf(stderr, "consumer sum = %d\n", sum);
 
         // Signaling the dflow to forward the next message
