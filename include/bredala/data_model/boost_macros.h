@@ -14,6 +14,7 @@
 #define _BOOST_MACROS
 
 #include <boost/serialization/export.hpp>
+#include <string>
 //#include "blockconstructdata.hpp"
 //#include <bredala/data_model/array3dconstructdata.hpp>
 
@@ -30,6 +31,7 @@ BOOST_CLASS_EXPORT_GUID(decaf::ConstructData,"ConstructData")
 BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<float>,"VectorConstructData<float>")
 BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<int>,"VectorConstructData<int>")
 BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<double>,"VectorConstructData<double>")
+BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<unsigned int>,"VectorConstructData<unsigned int")
 BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<char>,"VectorConstructData<char>")
 #endif
 
@@ -37,9 +39,12 @@ BOOST_CLASS_EXPORT_GUID(decaf::VectorConstructData<char>,"VectorConstructData<ch
 BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<float>,"SimpleConstructData<float>")
 BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<int>,"SimpleConstructData<int>")
 BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<double>,"SimpleConstructData<double>")
+BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<unsigned int>,"SimpleConstructData<unsigned int>")
 BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<char>,"SimpleConstructData<char>")
 BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<unsigned char>,
                         "SimpleConstructData<unsigned char>")
+//BOOST_CLASS_EXPORT_GUID(decaf::SimpleConstructData<std::string>,
+//                        "SimpleConstructData<std::string>")
 #endif
 
 #ifdef ARRAY_CONSTRUCT_DATA

@@ -117,6 +117,7 @@ typedef ArrayField<int> ArrayFieldi;
 typedef ArrayField<unsigned int> ArrayFieldu;
 typedef ArrayField<float> ArrayFieldf;
 typedef ArrayField<double> ArrayFieldd;
+typedef ArrayField<char> ArrayFieldc;
 
 } // namespace
 #endif
