@@ -1,9 +1,11 @@
+# requires python3
+
 # converts an nx graph into a workflow data structure and runs the workflow
 
 import imp
 import sys
 import os
-import exceptions
+#import exceptions # execeptions module not available in python3 (built in instead)
 import getopt
 import argparse
 import json
@@ -352,7 +354,7 @@ class Contract:
       return contract[name]
 
   def printContract(self):
-      print self.contract
+      print(self.contract)
 
 
 """ Object for contract associated to a link """
@@ -608,7 +610,8 @@ class Edge:
 
   def setContractLink(self, cLink):
     if self.nprocs == 0:
-      print "WARNING: There is no proc in the Edge \"%s->%s\", adding a ContractLink is useless, continuing." % (self.src, self.dest)
+      print("WARNING: There is no proc in the Edge \"%s->%s\", adding a ContractLink is useless, continuing." %
+              (self.src, self.dest))
 #    self.inputs = cLink.inputs
 #    self.outputs = cLink.outputs
 #    self.bAny = cLink.bAny
@@ -734,7 +737,7 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
             #if new_val != Inport[key][1]: # no need to print this warning since the field is just here to be forwarded to the consumer
             #  print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, new_val, con_in[key][1])
           if len(intersection_keys) != 0:
-            print "WARNING: the link of \"%s.%s->%s.%s\" has no input contract, only fields needed by the input port of the consumer will be received" % (edge.src, OutportName, edge.dest, InportName)
+            print("WARNING: the link of \"%s.%s->%s.%s\" has no input contract, only fields needed by the input port of the consumer will be received" % (edge.src, OutportName, edge.dest, InportName))
             keys = intersection_keys
           else: # There is nothing to sent by the producer, would block at runtime
             raise ValueError("ERROR: the link of \"%s.%s->%s.%s\" has no inputs and there is no field in common between the Output and Input ports, aborting." % (edge.src, OutportName, edge.dest, InportName))
@@ -743,14 +746,16 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
     else: # len(edge.inputs) != 0
       if len(OutportContract) == 0:
         if Link.bAny == True:
-          print "WARNING: The link of \"%s.%s->%s.%s\" will accept anything from the Output port." % (edge.src, OutportName, edge.dest, InportName)
+          print("WARNING: The link of \"%s.%s->%s.%s\" will accept anything from the Output port." %
+                  (edge.src, OutportName, edge.dest, InportName))
           if len(InportContract) == 0:
             attachAny = True
             keys = Link.inputs
           else:
             keys = 0
         else:
-          print "WARNING: The Output port of \"%s.%s->%s.%s\" can send anything, only fields needed by the link will be kept, the periodicity may not be correct." % (edge.src, OutportName, edge.dest, InportName)
+          print("WARNING: The Output port of \"%s.%s->%s.%s\" can send anything, only fields needed by the link will be kept, the periodicity may not be correct." %
+                  (edge.src, OutportName, edge.dest, InportName))
           keys = Link.inputs
       else : # len(Outport) != 0
         list_fields = {}
@@ -763,7 +768,8 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
               new_val = val[1] * OutportContract[key][1]
               list_fields[key] = [val[0], new_val]
               if new_val != val[1]:
-                print "WARNING: the link of \"%s.%s->%s.%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, edge.dest, InportName, key, new_val, val[1])
+                print("WARNING: the link of \"%s.%s->%s.%s\" will receive %s with periodicity %s instead of %s." %
+                        (edge.src, OutportName, edge.dest, InportName, key, new_val, val[1]))
             else:
               raise ValueError("ERROR: the types of \"%s\" does not match for the Output port and the link of \"%s.%s->%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
         if sk != "":
@@ -792,20 +798,23 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
                 new_val = val[1] * OutportContract[key][1]
                 list_fields[key] = [val[0], new_val]
                 if new_val != val[1]:
-                  print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, new_val, val[1])
+                  print("WARNING: %s will receive %s with periodicity %s instead of %s." %
+                          (edge.dest, key, new_val, val[1]))
               else:
                 raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
 
           if sk != "":
             raise ValueError("ERROR: the fields \"%s\" are not sent in the Output port \"%s.%s\", aborting." % (sk.rstrip(", "), edge.src, OutportName))
           keys_link = list_fields
-          print "WARNING: The link of \"%s.%s->%s.%s\" has no output contract, all fields needed by the Input port of the consumer will be forwarded." % (edge.src, OutportName, edge.dest, InportName)
+          print("WARNING: The link of \"%s.%s->%s.%s\" has no output contract, all fields needed by the Input port of the consumer will be forwarded." %
+                  (edge.src, OutportName, edge.dest, InportName))
     else: # len(edge.outputs) != 0
       if len(InportContract) == 0:
         if Link.bAny == False:
           keys_link = Link.outputs
         else: # Need to attach keys of output link and of output Port
-          print "WARNING: The link of \"%s.%s->%s.%s\" will forward anything to the Input port." % (edge.src, OutportName, edge.dest, InportName)
+          print("WARNING: The link of \"%s.%s->%s.%s\" will forward anything to the Input port." %
+                  (edge.src, OutportName, edge.dest, InportName))
           if len(OutportContract) == 0: # If there are no contracts on Nodes but only contract on the Link
             attachAny = True
             keys_link = edge.outputs
@@ -826,7 +835,8 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
               new_val = val[1] * Link.outputs[key][1]
               list_fields[key] = [val[0], new_val]
               if new_val != val[1]:
-                print "WARNING: the Input port of \"%s.%s->%s.%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, edge.dest, InportName, key, new_val, val[1])
+                print("WARNING: the Input port of \"%s.%s->%s.%s\" will receive %s with periodicity %s instead of %s." %
+                        (edge.src, OutportName, edge.dest, InportName, key, new_val, val[1]))
             else:
               raise ValueError("ERROR: the types of \"%s\" does not match for the link and the Input port of \"%s.%s->%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
         if edge.bAny == False:
@@ -841,7 +851,8 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
           if len(OutportContract) == 0: # The Outport can send anything, assume the missing keys are sent
             for key, val in tmp.items():
               list_fields[key] = val
-            print "WARNING: The link of \"%s.%s->%s.%s\" will forward anything from the Output port, cannot guarantee the fields needed by the Input port will be present." % (edge.src, OutportName, edge.dest, InportName)
+            print("WARNING: The link of \"%s.%s->%s.%s\" will forward anything from the Output port, cannot guarantee the fields needed by the Input port will be present." %
+                    (edge.src, OutportName, edge.dest, InportName))
             keys_link = list_fields
           else: # Complete with the keys of the Output port
             sk = ""
@@ -853,7 +864,8 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
                   new_val = val[1] * OutportContract[key][1]
                   list_fields[key] = [val[0], new_val]
                   if new_val != val[1]:
-                    print "WARNING: the Input port of \"%s.%s->%s.%s\" will receive %s with periodicity %s instead of %s." % (edge.src, OutportName, edge.dest, InportName, key, new_val, val[1])
+                    print("WARNING: the Input port of \"%s.%s->%s.%s\" will receive %s with periodicity %s instead of %s." %
+                            (edge.src, OutportName, edge.dest, InportName, key, new_val, val[1]))
                 else:
                   raise ValueError("ERROR: the types of \"%s\" does not match for the Output port and the Input port of \"%s.%s->%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
             if sk != "":
@@ -865,13 +877,15 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
   else:
     if len(InportContract) == 0: # The Input port accepts anything, send only keys in the output port contract
       if len(OutportContract) == 0:
-        print "WARNING: The port \"%s\" will accept everything sent by \"%s.%s\"." % (InportName, edge.src, OutportName)
+        print("WARNING: The port \"%s\" will accept everything sent by \"%s.%s\"." %
+                (InportName, edge.src, OutportName))
         return (0,0, False)
       else:
         return (OutportContract, 0, False)
 
     if len(OutportContract) == 0: # The Output port can send anything, keep only the list of fields needed by the consumer
-      print "WARNING: The Output port \"%s.%s\" can send anything, only fields needed by the Input port \"%s\" will be kept, the periodicity may not be correct." % (edge.src, OutportName, InportName)
+      print("WARNING: The Output port \"%s.%s\" can send anything, only fields needed by the Input port \"%s\" will be kept, the periodicity may not be correct." %
+              (edge.src, OutportName, InportName))
       return (InportContract, 0, False)
 
     else: # Checks if the list of fields of the consumer is a subset of the list of fields from the producer
@@ -885,7 +899,8 @@ def checkWithPorts(edge, prod, con, my_list, filter_level):
             new_val = val[1] * OutportContract[key][1]
             list_fields[key] = [val[0], new_val]
             if new_val != val[1]:
-              print "WARNING: %s will receive %s with periodicity %s instead of %s." % (edge.dest, key, new_val, val[1])
+              print("WARNING: %s will receive %s with periodicity %s instead of %s." %
+                      (edge.dest, key, new_val, val[1]))
           else:
             raise ValueError("ERROR: the types of \"%s\" does not match for the ports \"%s.%s\" and \"%s.%s\", aborting." % (key, edge.src, OutportName, edge.dest, InportName))
 
@@ -900,7 +915,7 @@ def checkCycles(graph):
 
   cycle_list = list(nx.simple_cycles(graph))
   if len(cycle_list) > 0:
-    print "Decaf detected " + str(len(cycle_list)) + " cycles. Checking for tokens..."
+    print("Decaf detected " + str(len(cycle_list)) + " cycles. Checking for tokens...")
 
   for cycle in cycle_list:
     # Checking if one of the node in the cycle has at least 1 token
@@ -915,7 +930,7 @@ def checkCycles(graph):
             if port.tokens > 0:
               found_token = True
     if found_token:
-      print "Token detected in the cycle."
+      print("Token detected in the cycle.")
     else:
       raise ValueError("A cycle was detected within the cycle %s, but no token were inserted. Please insert at least one token in one of the cycle's tasks." % (cycle))
 
@@ -924,7 +939,7 @@ def checkCycles(graph):
 
 
 def workflowToJson(graph, outputFile, filter_level):
-    print "Generating graph description file "+outputFile
+    print("Generating graph description file "+outputFile)
 
     nodes   = []
     links   = []
@@ -1021,10 +1036,10 @@ def checkTopologyRanking(graph):
     if not requireTopologyRanking:
         # We don't need to update the ranking of the topologies,
         # it is already setup and consistent
-        print "No need to update the topologies ranking."
+        print("No need to update the topologies ranking.")
         return
     else:
-        print "Updating the topologies ranking."
+        print("Updating the topologies ranking.")
 
     # Collecting all the topologies in the graph
     topologies = []
@@ -1081,7 +1096,7 @@ def getNodeWithRank(rank, graph):
 
 
 def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = "", envTarget = "generic"):
-    print "Selecting the transport method..."
+    print("Selecting the transport method...")
 
     transport = ""
     for graphEdge in graph.edges(data=True):
@@ -1097,9 +1112,9 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = "", envTarget =
             raise ValueError("ERROR: Mixing transport communication methods.")
 
     if graph.number_of_edges() == 0:
-        print "Selected transport method: None"
+        print("Selected transport method: None")
     else:
-        print "Selected transport method: "+transport
+        print("Selected transport method: "+transport)
 
     if graph.number_of_edges() == 0:
         MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
@@ -1118,7 +1133,7 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = "", envTarget =
 # Parse the graph to sequence the executables with their
 # associated MPI ranks and arguments
 def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-    print "Generating bash command script "+outputFile+ " for OpenMPI."
+    print("Generating bash command script "+outputFile+ " for OpenMPI.")
 
     currentRank = 0
     hostlist = []
@@ -1132,13 +1147,13 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     for i in range(0, nbExecutables):
       (type, exe) = getNodeWithRank(currentRank, graph)
       if type == 'none':
-        print 'ERROR: Unable to find an executable for the rank ' + str(rank)
+        print('ERROR: Unable to find an executable for the rank ' + str(rank))
         exit()
 
       if type == 'node':
         #print "Processing a node..."
         if exe.nprocs == 0:
-          print 'ERROR: a node can not have 0 MPI rank.'
+          print('ERROR: a node can not have 0 MPI rank.')
           exit()
 
         mpirunCommand += "-np "+str(exe.nprocs)
@@ -1166,7 +1181,7 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
         currentRank += exe.nprocs
 
       if type == 'edge':
-        print "Processing an edge"
+        print("Processing an edge")
         if exe.nprocs != 0:
           mpirunCommand += "-np "+str(exe.nprocs)
 
@@ -1222,7 +1237,7 @@ def OpenMPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 # associated MPI ranks and arguments, generate a hostfile and rankfile
 # to associate the correct CPU enveloppe to each
 def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-    print "Generating bash command script "+outputFile+" for a generic MPI environment."
+    print("Generating bash command script "+outputFile+" for a generic MPI environment.")
 
     currentRank = 0
     hostlist = []
@@ -1233,13 +1248,13 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     for i in range(0, nbExecutables):
       (type, exe) = getNodeWithRank(currentRank, graph)
       if type == 'none':
-        print 'ERROR: Unable to find an executable for the rank ' + str(rank)
+        print('ERROR: Unable to find an executable for the rank ' + str(rank))
         exit()
 
       if type == 'node':
 
         if exe.nprocs == 0:
-          print 'ERROR: a node can not have 0 MPI rank.'
+          print('ERROR: a node can not have 0 MPI rank.')
           exit()
 
         mpirunCommand += "-np "+str(exe.nprocs)
@@ -1295,7 +1310,7 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
    to recreate the ranking of the workflow
 """
 def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
-    print "Generating bash command script for MPMD "+outputFile
+    print("Generating bash command script for MPMD "+outputFile)
 
     currentRank = 0
     totalRank = 0
@@ -1321,14 +1336,14 @@ def MPMDworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
       hostlist = []
       (type, exe) = getNodeWithRank(currentRank, graph)
       if type == 'none':
-        print 'ERROR: Unable to find an executable for the rank ' + str(rank)
+        print('ERROR: Unable to find an executable for the rank ' + str(rank))
         exit()
 
       hostfilename = "hostfile_task"+str(i)
       if type == 'node':
 
         if exe.nprocs == 0:
-          print 'ERROR: a node can not have 0 MPI rank.'
+          print('ERROR: a node can not have 0 MPI rank.')
           exit()
 
         command = mpirunCommand+"-np "+str(exe.nprocs)+" --hostfile "+hostfilename

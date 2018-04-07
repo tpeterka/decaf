@@ -23,6 +23,9 @@
 #include <bredala/data_model/pconstructtype.h>
 #include <bredala/data_model/vectorfield.hpp>
 #include <bredala/data_model/boost_macros.h>
+#ifdef TRANSPORT_CCI
+#include <cci.h>
+#endif
 
 #include <assert.h>
 #include <math.h>
@@ -168,7 +171,7 @@ extern "C"
     // dataflow just forwards everything that comes its way in this example
     void dflow(void* args,                          // arguments to the callback
                Dataflow* dataflow,                  // dataflow
-               pConstructData in_data)   // input data
+               pConstructData in_data)              // input data
     {
         dataflow->put(in_data, DECAF_LINK);
     }
@@ -183,11 +186,6 @@ void run(Workflow& workflow,                 // workflow
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
     // run workflow node tasks
-    // decaf simply tells the user whether this rank belongs to a workflow node
-    // how the tasks are called is entirely up to the user
-    // e.g., if they overlap in rank, it is up to the user to call them in an order that makes
-    // sense (threaded, alternting, etc.)
-    // also, the user can define any function signature she wants
     if (decaf->my_node("lammps"))
         lammps(decaf, lammps_nsteps, analysis_interval, infile);
     if (decaf->my_node("print"))
@@ -195,19 +193,17 @@ void run(Workflow& workflow,                 // workflow
     if (decaf->my_node("print2"))
         print2(decaf);
 
-    // MPI_Barrier(MPI_COMM_WORLD);
-
     // cleanup
     delete decaf;
     MPI_Finalize();
 }
 
-// test driver for debugging purposes
-// normal entry point is run(), called by python
 int main(int argc,
          char** argv)
 {
     Workflow workflow;
+    Workflow::make_wflow_from_json(workflow, "lammps.json");
+
     int lammps_nsteps     = 1;
     int analysis_interval = 1;
     char * prefix         = getenv("DECAF_PREFIX");
@@ -221,74 +217,6 @@ int main(int argc,
     path.append(string("/examples/lammps/mod_lammps.so"));
     string infile = argv[1];
 
-
-    // fill workflow nodes
-    WorkflowNode node;
-    node.in_links.push_back(1);              // print1
-    node.start_proc = 5;
-    node.nprocs = 1;
-    node.func = "print";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();
-    node.in_links.clear();
-    node.in_links.push_back(0);              // print3
-    node.start_proc = 9;
-    node.nprocs = 1;
-    node.func = "print";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();
-    node.in_links.clear();
-    node.out_links.push_back(0);             // print2
-    node.in_links.push_back(2);
-    node.start_proc = 7;
-    node.nprocs = 1;
-    node.func = "print2";
-    workflow.nodes.push_back(node);
-
-    node.out_links.clear();
-    node.in_links.clear();
-    node.out_links.push_back(1);             // lammps
-    node.out_links.push_back(2);
-    node.start_proc = 0;
-    node.nprocs = 4;
-    node.func = "lammps";
-    workflow.nodes.push_back(node);
-
-    // fill workflow links
-    WorkflowLink link;
-    link.prod = 2;                           // print2 - print3
-    link.con = 1;
-    link.start_proc = 8;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
-    link.prod = 3;                           // lammps - print1
-    link.con = 0;
-    link.start_proc = 4;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
-    link.prod = 3;                           // lammps - print2
-    link.con = 2;
-    link.start_proc = 6;
-    link.nprocs = 1;
-    link.func = "dflow";
-    link.path = path;
-    link.prod_dflow_redist = "count";
-    link.dflow_con_redist = "count";
-    workflow.links.push_back(link);
-
-    // run decaf
     run(workflow, lammps_nsteps, analysis_interval, infile);
 
     return 0;
