@@ -51,7 +51,7 @@ class Topology:
         self.hostlist = content.split('\n')
         self.nodes = list(OrderedDict.fromkeys(self.hostlist))   # Removing the duplicate hosts while preserving the order
         self.nNodes = len(self.nodes)
-        self.procPerNode = len(self.hostlist) / self.nNodes
+        self.procPerNode = len(self.hostlist) // self.nNodes
         self.nProcs = len(self.hostlist)
         for i in range(0, self.procPerNode):
           self.procs.append(i)
@@ -926,7 +926,7 @@ def checkCycles(graph):
       # We have to find back the correct node
       for val in graph.nodes(data=True):
         if val[0] == node:
-          for name,port in val[1]['node'].inports.iteritems():
+          for name,port in val[1]['node'].inports.items():
             if port.tokens > 0:
               found_token = True
     if found_token:
