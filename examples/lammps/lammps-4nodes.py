@@ -1,5 +1,8 @@
 # a small 4-node example
 
+# input file
+infile = 'in.melt'
+
 # --- include the following 4 lines each time ---
 
 import networkx as nx
@@ -46,8 +49,8 @@ link1    = wf.Edge(lammps.getOutputPort("out"), print1.getInputPort("in"), start
 link2    = wf.Edge(lammps.getOutputPort("out"), print2.getInputPort("in"), start_proc=6, nprocs=1, func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='./lammps')
 
-link3    = wf.Edge(print2.getOutputPort("out"), print1.getInputPort("in"), start_proc=8, nprocs=1, func='dflow',
+link3    = wf.Edge(print2.getOutputPort("out"), print3.getInputPort("in"), start_proc=8, nprocs=1, func='dflow',
            path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='./lammps')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph("lammps")
+wf.processGraph("lammps",infile)

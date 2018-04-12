@@ -1095,7 +1095,7 @@ def getNodeWithRank(rank, graph):
     return ('notfound', 0) # should be the same since second value is not used in this case
 
 
-def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = "", envTarget = "generic"):
+def workflowToSh(graph, outputFile, inputFile, mpirunOpt = "", mpirunPath = "", envTarget = "generic"):
     print("Selecting the transport method...")
 
     transport = ""
@@ -1116,8 +1116,13 @@ def workflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = "", envTarget =
     else:
         print("Selected transport method: "+transport)
 
+    if inputFile == "":
+      print("No input file is provided")
+      
     if graph.number_of_edges() == 0:
         MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
+    elif transport == "mpi" and inputFile != "":
+      SPMDworkflowToSh(graph,outputFile,inputFile,mpirunOpt,mpirunPath)
     elif transport == "mpi" and envTarget == "generic":
       MPIworkflowToSh(graph,outputFile,mpirunOpt,mpirunPath)
     elif transport ==  "mpi" and envTarget == "openmpi":
@@ -1305,6 +1310,100 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
     f.write(content)
     f.close()
 
+def SPMDworkflowToSh(graph, outputFile, inputFile, mpirunOpt = "", mpirunPath = ""):
+    print("Generating bash command script "+outputFile+" for a generic MPI environment.")
+
+    currentRank = 0
+    hostlist = []
+    mode = "spmd"
+    mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" --hostfile hostfile_workflow.txt "
+    nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
+
+    (type, exe) = getNodeWithRank(currentRank, graph)
+    nameExec = str(exe.cmdline)
+    
+    # Iterating over the graph for finding about the mode (MPMD vs SPMD) 
+    for i in range(0, nbExecutables):
+      (type, exe) = getNodeWithRank(currentRank, graph)
+      if type == 'none':
+        print('ERROR: Unable to find an executable for the rank ' + str(rank))
+        exit()
+
+      if str(exe.cmdline) != nameExec:
+        mode = "mpmd"
+
+      currentRank += exe.nprocs
+
+    currentRank = 0
+    
+    # Parsing the graph looking at the current rank
+    for i in range(0, nbExecutables):
+      (type, exe) = getNodeWithRank(currentRank, graph)
+      #if type == 'none':
+      #  print('ERROR: Unable to find an executable for the rank ' + str(rank))
+      #  exit()
+
+      if type == 'node':
+
+        if exe.nprocs == 0:
+          print('ERROR: a node can not have 0 MPI rank.')
+          exit()
+
+        if mode == 'mpmd':
+          mpirunCommand += "-np "+str(exe.nprocs)
+
+        #Checking if a topology is specified. If no, fill a filehost with localhost
+        if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
+          for host in exe.topology.hostlist:
+            hostlist.append(host)
+        else:
+            #print "No topology found."
+            for j in range(0, exe.nprocs):
+              hostlist.append("localhost")
+        currentRank += exe.nprocs
+        #print('node' + str(currentRank))
+        if mode == 'mpmd':             
+          mpirunCommand += " "+str(exe.cmdline)+" : "
+
+      if type == 'edge':
+
+        if exe.nprocs != 0 and mode == 'mpmd':
+          mpirunCommand += "-np "+str(exe.nprocs)
+          
+          #Checking if a topology is specified. If no, fill a filehost with localhost
+        if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
+          for host in exe.topology.hostlist:
+            hostlist.append(host)
+        else:
+          for j in range(0, exe.nprocs):
+            hostlist.append("localhost")
+        currentRank += exe.nprocs
+        #print('edge' + str(currentRank))
+        if mode == 'mpmd':
+            mpirunCommand += " "+str(exe.cmdline)+" : "
+
+    if mode == 'spmd':
+      mpirunCommand += "-np "+str(currentRank)+" "+str(exe.cmdline)+" "+str(inputFile)
+    # Writing the final file
+    f = open(outputFile, "w")
+    content = ""
+    content +="#! /bin/bash\n\n"
+    content +=mpirunCommand
+    content = content.rstrip(" : ") + "\n"
+
+    f.write(content)
+    f.close()
+    os.system("chmod a+rx "+outputFile)
+
+    #Writing the hostfile
+    f = open("hostfile_workflow.txt","w")
+    content = ""
+    for host in hostlist:
+      content += host + "\n"
+    content = content.rstrip("\n")
+    f.write(content)
+    f.close()
+
 """Build the various mpirun commands for each executable
    The function generate the environment variables necesaries for Decaf
    to recreate the ranking of the workflow
@@ -1460,10 +1559,10 @@ def createObjects(graph):
 
 """ Process the graph and generate the necessary files
 """
-def processGraph( name, filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = "", envTarget = "generic"):
+def processGraph( name, inputFile = "", filter_level = Filter_level.NONE, mpirunPath = "", mpirunOpt = "", envTarget = "generic"):
     createObjects(workflow_graph)
     check_contracts(workflow_graph, filter_level)
     checkCycles(workflow_graph)
     checkTopologyRanking(workflow_graph)
     workflowToJson(workflow_graph, name+".json", filter_level)
-    workflowToSh(workflow_graph, name+".sh", mpirunOpt = mpirunOpt, mpirunPath = mpirunPath, envTarget = envTarget)
+    workflowToSh(workflow_graph, name+".sh", inputFile, mpirunOpt = mpirunOpt, mpirunPath = mpirunPath, envTarget = envTarget)
