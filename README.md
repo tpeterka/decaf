@@ -5,7 +5,7 @@ This document uses the [Markdown](http://daringfireball.net/projects/markdown/) 
 - C++11
 - MPI-3
 - Boost 1.59 or higher
-- Python 2.7
+- Python 3.0 or higher
 - Networkx 2.0
 - CMake 3.0 or higher
 - CCI 2.1 or higher (optional)
