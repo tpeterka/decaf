@@ -28,11 +28,12 @@ requireTopologyRanking = False
 class Topology:
   """ Object holder for informations about the plateform to use """
 
-  def __init__(self, name, nProcs = 0, hostfilename = "", offsetRank = 0, procPerNode = 0, offsetProcPerNode = 0):
+  def __init__(self, name, nProcs = 0, hostfilename = "", customArgs = "", offsetRank = 0, procPerNode = 0, offsetProcPerNode = 0):
 
       self.name = name                  # Name of the topology
       self.nProcs = nProcs              # Total number of MPI ranks in the topology
       self.hostfilename = hostfilename  # File containing the list of hosts. Must match  totalProc
+      self.customArgs = customArgs      # Optional custom task arguments
       self.hostlist = []                # Complete list of hosts.
       self.offsetRank = offsetRank      # Rank of the first rank in this topology
       self.nNodes = 0                   # Number of nodes
@@ -43,7 +44,7 @@ class Topology:
       self.threadPerProc = 1            # Number of threads per MPI rank
       self.useOpenMP = False            # Use OpenMP for this topology, look at the procPerNode to know how many threads per proc
 
-
+      
       if hostfilename != "":
         f = open(hostfilename, "r")
         content = f.read()
@@ -94,6 +95,8 @@ class Topology:
       subTopo.nodes = list(set(subTopo.hostlist))
       subTopo.nNodes = len(subTopo.nodes)
 
+      #Giving the custom args to subtopos
+      subTopo.customArgs = self.customArgs
       return subTopo
 
   def splitTopology(self, names, nProcs):
@@ -116,6 +119,9 @@ class Topology:
         subTopo.nodes = list(set(subTopo.hostlist))
         subTopo.nNodes = len(subTopo.nodes)
         offset += nProcs[i]
+
+        #Giving the custom args to subtopos
+        subTopo.customArgs = self.customArgs
 
         splits.append(subTopo)
 
@@ -324,9 +330,16 @@ def initParserForTopology(parser):
         default="",
         dest="hostfile"
         )
+    parser.add_argument(
+        "-args", "--args",
+        help = "Optional custom task arguments",
+        type=str,
+        default="",
+        dest="custom_args"
+        )    
 
 def topologyFromArgs(args):
-    return Topology("root", args.nprocs, hostfilename = args.hostfile)
+    return Topology("root", args.nprocs, hostfilename = args.hostfile, customArgs = args.custom_args)
 
 
 # Contract functions
@@ -1266,13 +1279,13 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
         #Checking if a topology is specified. If no, fill a filehost with localhost
         if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
+          mpirunCommand += " "+str(exe.cmdline)+" "+str(exe.topology.customArgs)+" : "
           for host in exe.topology.hostlist:
             hostlist.append(host)
         else:
-            #print "No topology found."
-            for j in range(0, exe.nprocs):
-              hostlist.append("localhost")
-        mpirunCommand += " "+str(exe.cmdline)+" : "
+          mpirunCommand += " "+str(exe.cmdline)+" : "
+          for j in range(0, exe.nprocs):
+            hostlist.append("localhost")
         currentRank += exe.nprocs
 
       if type == 'edge':
@@ -1282,12 +1295,13 @@ def MPIworkflowToSh(graph, outputFile, mpirunOpt = "", mpirunPath = ""):
 
           #Checking if a topology is specified. If no, fill a filehost with localhost
           if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
+            mpirunCommand += " "+str(exe.cmdline)+" "+str(exe.topology.customArgs)+" : "
             for host in exe.topology.hostlist:
               hostlist.append(host)
           else:
+            mpirunCommand += " "+str(exe.cmdline)+" : "
             for j in range(0, exe.nprocs):
               hostlist.append("localhost")
-          mpirunCommand += " "+str(exe.cmdline)+" : "
           currentRank += exe.nprocs
 
     # Writting the final file
@@ -1316,11 +1330,9 @@ def SPMDworkflowToSh(graph, outputFile, inputFile, mpirunOpt = "", mpirunPath = 
     currentRank = 0
     hostlist = []
     mode = "spmd"
+    flag = 0
     mpirunCommand = mpirunPath+"mpirun "+mpirunOpt+" --hostfile hostfile_workflow.txt "
     nbExecutables = graph.number_of_nodes() + graph.number_of_edges()
-
-    (type, exe) = getNodeWithRank(currentRank, graph)
-    nameExec = str(exe.cmdline)
     
     # Iterating over the graph for finding about the mode (MPMD vs SPMD) 
     for i in range(0, nbExecutables):
@@ -1329,10 +1341,16 @@ def SPMDworkflowToSh(graph, outputFile, inputFile, mpirunOpt = "", mpirunPath = 
         print('ERROR: Unable to find an executable for the rank ' + str(rank))
         exit()
 
-      if str(exe.cmdline) != nameExec:
-        mode = "mpmd"
-
-      currentRank += exe.nprocs
+      if type == 'node':
+        if flag == 0:
+          nameExec = str(exe.cmdline)
+          flag = 1
+        if str(exe.cmdline) != nameExec:
+          mode = "mpmd"
+        currentRank += exe.nprocs
+          
+      if type == 'edge' and exe.nprocs!=0:
+        currentRank += exe.nprocs
 
     currentRank = 0
     
@@ -1363,27 +1381,28 @@ def SPMDworkflowToSh(graph, outputFile, inputFile, mpirunOpt = "", mpirunPath = 
         currentRank += exe.nprocs
         #print('node' + str(currentRank))
         if mode == 'mpmd':             
-          mpirunCommand += " "+str(exe.cmdline)+" : "
+          mpirunCommand += " "+str(exe.cmdline)+" "+str(inputFile)+" : "
+
 
       if type == 'edge':
 
-        if exe.nprocs != 0 and mode == 'mpmd':
-          mpirunCommand += "-np "+str(exe.nprocs)
-          
+        if exe.nprocs != 0:
+          if mode == 'mpmd':
+            mpirunCommand += "-np "+str(exe.nprocs)
+
           #Checking if a topology is specified. If no, fill a filehost with localhost
-        if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
-          for host in exe.topology.hostlist:
-            hostlist.append(host)
-        else:
-          for j in range(0, exe.nprocs):
-            hostlist.append("localhost")
-        currentRank += exe.nprocs
-        #print('edge' + str(currentRank))
-        if mode == 'mpmd':
-            mpirunCommand += " "+str(exe.cmdline)+" : "
+          if hasattr(exe, 'topology') and exe.topology != None and len(exe.topology.hostlist) > 0:
+            for host in exe.topology.hostlist:
+              hostlist.append(host)
+          else:
+            for j in range(0, exe.nprocs):
+              hostlist.append("localhost")
+          if mode == 'mpmd':
+            mpirunCommand += " "+str(exe.cmdline)+" "+str(inputFile)+" : "
+          currentRank += exe.nprocs
 
     if mode == 'spmd':
-      mpirunCommand += "-np "+str(currentRank)+" "+str(exe.cmdline)+" "+str(inputFile)
+      mpirunCommand += "-np "+str(currentRank)+" "+str(nameExec)+" "+str(inputFile)
     # Writing the final file
     f = open(outputFile, "w")
     content = ""

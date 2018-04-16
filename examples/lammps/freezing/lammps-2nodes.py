@@ -27,7 +27,7 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/melting/mod_lammps.so'
 lammps   = wf.Node("lammps", start_proc=0, nprocs=4, func='lammps', cmdline='./lammps')
 outPort0 = lammps.addOutputPort("out")
 
-detect   = wf.Node("detect", start_proc=5, nprocs=4, func='detect', cmdline='./detect')
+detect   = wf.Node("detect", start_proc=4, nprocs=4, func='detect', cmdline='./detect')
 inPort1  = detect.addInputPort("in")
 
 lammps_detect = wf.Edge(lammps.getOutputPort("out"), detect.getInputPort("in"),
