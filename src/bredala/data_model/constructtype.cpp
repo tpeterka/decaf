@@ -1757,6 +1757,8 @@ ConstructData::unserializeAndStore(char* buffer, int bufferSize)
 		ia >> container_;
 
 		data_ = std::static_pointer_cast<void>(container_);
+
+		updateMetaData();
 	}
 	// Otherwise unserialize and store the map. To be merged later on
 	else
