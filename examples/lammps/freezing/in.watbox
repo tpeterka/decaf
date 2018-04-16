@@ -1,0 +1,42 @@
+# LAMMPS input script
+
+variable seed equal 7545
+
+boundary p p p
+units       metal
+atom_style  atomic
+atom_modify map array sort 0 0
+read_data data.init
+pair_style tersoff
+pair_coeff  * *  AW.tersoff AW
+
+# ----- Variables -----
+variable T equal 180
+variable P equal 1.0
+variable Nrestart equal 100
+
+# ----- Initialize -----
+velocity  all create ${T} ${seed}
+neighbor 2.0 nsq
+neigh_modify delay 0 every 1 check yes
+fix rmMomentum all  momentum 1 linear 1 1 1
+
+# ----- Computes -----
+compute msd all  msd com yes
+
+# ----- Log -----
+thermo        ${Nrestart}
+thermo_style custom step atoms pe ke temp press density lx ly lz etotal enthalpy c_msd[4]
+thermo_modify line multi norm yes flush yes format float %.8g
+
+# ----- Minimize -----
+
+minimize 1e-4 1e-6 1000 10000
+min_style cg
+
+dump positions all   custom ${Nrestart} frames/step.*.lammpstrj id type x y z vx vy vz
+
+timestep 0.01
+fix integrate all      npt temp ${T} ${T} 0.5 iso ${P} ${P} 5
+# run 50000000
+run 1000

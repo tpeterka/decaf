@@ -13,7 +13,7 @@ wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/decaf.py'
 # --- set your options here ---
 
 # path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/mod_lammps.so'
+mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/melting/mod_lammps.so'
 
 
 # define workflow graph

@@ -1,0 +1,19 @@
+# Tersoff parameters for various elements and mixtures
+# multiple entries can be added to this file, LAMMPS reads the ones it
+# needs
+# these entries are in LAMMPS metal units:
+#   A,B = eV; lambda1,lambda2,lambda3 = 1/Angstroms; R,D = Angstroms
+#   other quantities are unitless
+
+# format of a single entry (one or more lines):
+#   element 1, element 2, element 3,
+#   m, gamma, lambda3, c, d, costheta0, n, beta, lambda2, B, R, D, lambda1, A
+
+# 1) fitting_U/run17_gen187, best fitted to EOS
+#AW AW AW  1 1 0 66156.6 14.9391 -0.579605 0.764155 9.95741e-07 2.02514 428.012 3.33185 0.2 2.60008 1578.81
+
+# 2) fitting_density/simplex/run4, captured liquid density abnormality, ice density too low, mp ~ 259K
+#AW AW AW 1 1 0 67780.5855 15.3058431 -0.576446148 0.782911316 1.00637546e-06 2.03300396 421.133471 3.38000986 0.2 2.59322145 1543.95887
+
+# 3) manually tweaked 2, mp ~ 275K
+AW AW AW 1 1 0 67980.5855 15.3058431 -0.576446148 0.782911316 1.00737546e-06 2.03300396 422.133471 3.38000986 0.2 2.59322145 1533.95887
