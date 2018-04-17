@@ -21,7 +21,7 @@
 
 namespace decaf
 {
-
+//! Round robin redistribution component
     class RedistRoundMPI : public RedistMPI
     {
     public:

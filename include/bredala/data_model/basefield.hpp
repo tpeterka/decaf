@@ -6,6 +6,10 @@
 
 namespace decaf {
 
+//! Base abstract class for field which is the association of a storage container and an elementary data type.
+/** Currently supported data types: simple, array, vector and block.
+*/
+
 class BaseField {
 
 public:
@@ -24,6 +28,7 @@ public:
 
     virtual bool empty() = 0;
 
+    //! returns the number of semantic items
     virtual int getNbItems() = 0;
 
 };

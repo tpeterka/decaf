@@ -24,7 +24,7 @@
 
 namespace decaf
 {
-
+//! Block redistribution component
     class RedistBlockMPI : public RedistMPI
     {
     public:
@@ -65,7 +65,7 @@ namespace decaf
         int global_item_rank_;    // Index of the first item in the global array
         int global_nb_items_;     // Number of items in the global array
 
-        std::vector<Block<3> > subblocks_; // Subblocks for the destinations
+        std::vector<Block<3> > subblocks_; ///< Subblocks for the destinations
     };
 
 

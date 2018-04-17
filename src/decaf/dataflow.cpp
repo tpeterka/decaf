@@ -833,7 +833,7 @@ Dataflow::put(pConstructData& data, TaskType role)
             if (data_removed_by_period)
                 redist_prod_con_->clearBuffers(); // We clear the buffers before and after the sending
 
-            /// send the message
+            // send the message
             if (use_stream_)
                 stream_->processProd(data_filtered);
             else
@@ -861,7 +861,7 @@ Dataflow::put(pConstructData& data, TaskType role)
             if (data_removed_by_period)
                 redist_prod_dflow_->clearBuffers(); // We clear the buffers before and after the sending
 
-            /// send the message
+            // send the message
             if (use_stream_)
                 stream_->processProd(data_filtered);
             else
