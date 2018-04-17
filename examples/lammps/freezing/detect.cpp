@@ -23,7 +23,9 @@ using namespace decaf;
 using namespace LAMMPS_NS;
 using namespace std;
 
-void detect(Decaf* decaf)
+void detect(
+        Decaf* decaf,
+        string outfile)         // currently unused but will be needed once detector write output files
 {
     vector< pConstructData > in_data;
 
@@ -36,7 +38,7 @@ void detect(Decaf* decaf)
             if (pos)
             {
                 // debug
-                fprintf(stderr, "consumer print1 or print3 printing %d atoms\n",
+                fprintf(stderr, "detector received %d atoms; printing first 10:\n",
                         pos.getNbItems());
                 for (int i = 0; i < 10; i++)               // print first few atoms
                     fprintf(stderr, "%.3lf %.3lf %.3lf\n",
@@ -45,23 +47,20 @@ void detect(Decaf* decaf)
                             pos.getVector()[3 * i + 2]);
             }
             else
-                fprintf(stderr, "Error: null pointer in node2\n");
+                fprintf(stderr, "Error: null pointer in detector\n");
         }
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "print terminating\n");
+    fprintf(stderr, "detector terminating\n");
     decaf->terminate();
 }
 
-int main(int argc,
+int main(int    argc,
          char** argv)
 {
     Workflow workflow;
     Workflow::make_wflow_from_json(workflow, "lammps.json");
-
-    int lammps_nsteps     = 1;
-    int analysis_interval = 1;
     char * prefix         = getenv("DECAF_PREFIX");
     if (prefix == NULL)
     {
@@ -69,12 +68,16 @@ int main(int argc,
                 "DECAF_PREFIX to point to the root of your decaf install directory.\n");
         exit(1);
     }
+    string outfile = argv[2];
 
+    // init
     MPI_Init(NULL, NULL);
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);
 
-    detect(decaf);
+    // run
+    detect(decaf, outfile);
 
+    // finalize
     delete decaf;
     MPI_Finalize();
 

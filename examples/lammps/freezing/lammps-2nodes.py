@@ -1,16 +1,22 @@
 # a small 2-node example
+# usage: python3 lammps-2nodes.py -ca "<infile> <outfile>"
 
-# input file
-infile = 'in.watbox'
-
-# --- include the following 4 lines each time ---
+# --- include the following lines each time ---
 
 import networkx as nx
 import os
 import imp
+import argparse
+
 wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/decaf.py')
 
 # --- set your options here ---
+
+# parse command line args
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-ca", "--custom_args", dest="custom_args", type=str,
+                    default="", help="Optional custom task arguments")
+args = parser.parse_args()
 
 # define workflow graph
 
@@ -30,6 +36,5 @@ lammps_detect = wf.Edge(lammps.getOutputPort("out"), detect.getInputPort("in"),
         start_proc=0,  nprocs=0, func='', prod_dflow_redist='count', dflow_con_redist='count')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-# wf.processGraph("lammps", infile)
-wf.processGraph("lammps")   # temporarily need to remove infile until a bug is fixed
+wf.processGraph("lammps", args.custom_args)
 

@@ -39,4 +39,4 @@ dump positions all   custom ${Nrestart} frames/step.*.lammpstrj id type x y z vx
 timestep 0.01
 fix integrate all      npt temp ${T} ${T} 0.5 iso ${P} ${P} 5
 # run 50000000
-run 1000
+run 500
