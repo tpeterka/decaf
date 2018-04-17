@@ -24,6 +24,8 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/tess_dense/mod_pts_dflow.so'
 # parse command line args
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 wf.initParserForTopology(parser)
+parser.add_argument("-args", "--args", dest="custom_args", type=str,
+                    default="", help="Optional custom task arguments")
 args = parser.parse_args()
 
 # create the topology
@@ -54,4 +56,5 @@ tess_dense  = wf.Edge(tess.getOutputPort("tess_out"), dense.getInputPort("dense_
         start_proc=0,  nprocs=0, func='', path=mod_path, prod_dflow_redist='count', dflow_con_redist='count', cmdline='./pts_dflow')
 
 # --- convert the graph into a workflow ---
-wf.processGraph("tess_dense")
+# wf.processGraph("tess_dense", custom_args)
+wf.processGraph("tess_dense")           # temporarily need to remove args until a bug is fixed

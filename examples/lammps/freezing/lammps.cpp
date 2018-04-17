@@ -55,16 +55,16 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
                 VectorFliedd data(x, 3 * natoms, 3);
 
                 container->appendData("pos", data,
-                                      DECAF_NOFLAG, DECAF_PRIVATE,
-                                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+                        DECAF_NOFLAG, DECAF_PRIVATE,
+                        DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
             }
             else
             {
                 vector<double> pos;
                 VectorFliedd data(pos, 3);
                 container->appendData("pos", data,
-                                      DECAF_NOFLAG, DECAF_PRIVATE,
-                                      DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
+                        DECAF_NOFLAG, DECAF_PRIVATE,
+                        DECAF_SPLIT_DEFAULT, DECAF_MERGE_DEFAULT);
             }
 
             decaf->put(container);
@@ -80,7 +80,7 @@ void lammps(Decaf* decaf, int nsteps, int analysis_interval, string infile)
 }
 
 int main(int argc,
-         char** argv)
+        char** argv)
 {
     Workflow workflow;
     Workflow::make_wflow_from_json(workflow, "lammps.json");
@@ -94,8 +94,6 @@ int main(int argc,
                 "DECAF_PREFIX to point to the root of your decaf install directory.\n");
         exit(1);
     }
-    string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/lammps/mod_lammps.so"));
     string infile = argv[1];
 
     MPI_Init(NULL, NULL);

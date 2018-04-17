@@ -69,9 +69,6 @@ int main(int argc,
                 "DECAF_PREFIX to point to the root of your decaf install directory.\n");
         exit(1);
     }
-    string path = string(prefix , strlen(prefix));
-    path.append(string("/examples/lammps/mod_lammps.so"));
-    string infile = argv[1];
 
     MPI_Init(NULL, NULL);
     Decaf* decaf = new Decaf(MPI_COMM_WORLD, workflow);

@@ -12,10 +12,6 @@ wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/decaf.py'
 
 # --- set your options here ---
 
-# path to .so module for dataflow callback functions
-mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/melting/mod_lammps.so'
-
-
 # define workflow graph
 
 # 2-node workflow
@@ -24,15 +20,16 @@ mod_path = os.environ['DECAF_PREFIX'] + '/examples/lammps/melting/mod_lammps.so'
 #
 
 # --- Graph definition ---
-lammps   = wf.Node("lammps", start_proc=0, nprocs=4, func='lammps', cmdline='./lammps')
+lammps   = wf.Node("lammps", start_proc=0, nprocs=4, func='lammps', cmdline='./freeze')
 outPort0 = lammps.addOutputPort("out")
 
-detect   = wf.Node("detect", start_proc=5, nprocs=4, func='detect', cmdline='./detect')
+detect   = wf.Node("detect", start_proc=4, nprocs=4, func='detect', cmdline='./detect')
 inPort1  = detect.addInputPort("in")
 
 lammps_detect = wf.Edge(lammps.getOutputPort("out"), detect.getInputPort("in"),
-        start_proc=0,  nprocs=0, func='', path=mod_path, prod_dflow_redist='count',
-        dflow_con_redist='count', cmdline='./lammps')
+        start_proc=0,  nprocs=0, func='', prod_dflow_redist='count', dflow_con_redist='count')
 
 # --- convert the nx graph into a workflow data structure and run the workflow ---
-wf.processGraph("lammps",infile)
+# wf.processGraph("lammps", infile)
+wf.processGraph("lammps")   # temporarily need to remove infile until a bug is fixed
+
