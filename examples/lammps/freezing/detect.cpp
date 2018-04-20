@@ -38,21 +38,21 @@ void detect(
             if (pos)
             {
                 // debug
-                fprintf(stderr, "detector received %d atoms; printing first 10:\n",
+                fprintf(stdout, "detector received %d atoms; printing first 10:\n",
                         pos.getNbItems());
                 for (int i = 0; i < 10; i++)               // print first few atoms
-                    fprintf(stderr, "%.3lf %.3lf %.3lf\n",
+                    fprintf(stdout, "%.3lf %.3lf %.3lf\n",
                             pos.getVector()[3 * i],
                             pos.getVector()[3 * i + 1],
                             pos.getVector()[3 * i + 2]);
             }
             else
-                fprintf(stderr, "Error: null pointer in detector\n");
+                fprintf(stdout, "Error: null pointer in detector\n");
         }
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "detector terminating\n");
+    fprintf(stdout, "detector terminating\n");
     decaf->terminate();
 }
 
@@ -64,7 +64,7 @@ int main(int    argc,
     char * prefix         = getenv("DECAF_PREFIX");
     if (prefix == NULL)
     {
-        fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
+        fprintf(stdout, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
                 "DECAF_PREFIX to point to the root of your decaf install directory.\n");
         exit(1);
     }

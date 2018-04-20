@@ -45,10 +45,10 @@ void lammps(
         // lammps gathered all positions to rank 0
         if (decaf->prod_comm()->rank() == 0)
         {
-            fprintf(stderr, "lammps sending time step %d with %d atoms to detector\n", timestep, natoms);
+            fprintf(stdout, "lammps sending time step %d with %d atoms to detector\n", timestep, natoms);
             // debug
             //         for (int i = 0; i < 10; i++)         // print first few atoms
-            //           fprintf(stderr, "%.3lf %.3lf %.3lf\n",
+            //           fprintf(stdout, "%.3lf %.3lf %.3lf\n",
             // x[3 * i], x[3 * i + 1], x[3 * i + 2]);
 
             VectorFliedd data(x, 3 * natoms, 3);
@@ -71,7 +71,7 @@ void lammps(
     }
 
     // terminate the task (mandatory) by sending a quit message to the rest of the workflow
-    fprintf(stderr, "lammps terminating\n");
+    fprintf(stdout, "lammps terminating\n");
     decaf->terminate();
 
     delete lps;
@@ -85,7 +85,7 @@ int main(int    argc,
     char * prefix         = getenv("DECAF_PREFIX");
     if (prefix == NULL)
     {
-        fprintf(stderr, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
+        fprintf(stdout, "ERROR: environment variable DECAF_PREFIX not defined. Please export "
                 "DECAF_PREFIX to point to the root of your decaf install directory.\n");
         exit(1);
     }
