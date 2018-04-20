@@ -63,22 +63,25 @@ namespace decaf
 class Dataflow
 {
 public:
-    Dataflow(CommHandle world_comm,             // world communicator
-             int workflow_size,                 // Size of the workflow
-             int workflow_rank,                 // Rank in the workflow
-             DecafSizes& decaf_sizes,           // sizes of producer, dataflow, consumer
-             int prod,                          // id in workflow structure of producer node
-             int dflow,                         // id in workflow structure of dataflow link
-             int con,                           // id in workflow structure of consumer node
+    Dataflow(CommHandle world_comm,             ///<  world communicator
+             int workflow_size,                 ///<  size of the workflow
+             int workflow_rank,                 ///<  rank in the workflow
+             DecafSizes& decaf_sizes,           ///<  sizes of producer, dataflow, consumer
+             int prod,                          ///<  id in workflow structure of producer node
+             int dflow,                         ///<  id in workflow structure of dataflow link
+             int con,                           ///<  id in workflow structure of consumer node
              WorkflowLink wflowLink,
-             Decomposition prod_dflow_redist,   // decompositon between producer and dataflow
-             Decomposition dflow_cons_redist);   // decomposition between dataflow and consumer
+             Decomposition prod_dflow_redist,   ///<  decompositon between producer and dataflow
+	     //! decomposition between dataflow and consumer
+             Decomposition dflow_cons_redist);
 
     ~Dataflow();
+    //! passes the data to the corresponding redistribution component that manipulates and transmits the data to its destination.
     bool put(pConstructData& data, TaskType role);
+    //! receives the data on the corresponding redistribution component and transmits it to the task.
     bool get(pConstructData& data, TaskType role);
 
-    void signalReady();
+    void signalReady(); ///< deprecated (not used)
 
     pConstructData& filterPut(pConstructData& data, pConstructData& data_filtered, TaskType& role, bool& data_changed, bool& filtered_empty);
     void filterGet(pConstructData& data, TaskType role);
@@ -99,7 +102,7 @@ public:
     Comm* prod_comm();
     Comm* dflow_comm();
     Comm* con_comm();
-    void forward();
+    void forward(); ///< deprecated (not used)
 
     vector<ContractKey>& keys();
     bool has_contract();

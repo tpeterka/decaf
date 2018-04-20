@@ -8,7 +8,7 @@
 
 namespace decaf {
 
-
+//! Field with a simple data type.
 template <typename T>
 class SimpleField : public BaseField {
 
@@ -28,6 +28,9 @@ public:
             ptr_ = std::make_shared<SimpleConstructData<T> >(map, bCountable);
    }
 
+   /// @param value:       		the data point
+   /// @param map:			a container, map of fields with the field name as key and with additional information per field
+   /// @param bCountable:   		indicates whether this data type is countable or not
 
    SimpleField(const T& value, mapConstruct map = mapConstruct(),
                bool bCountable = true)

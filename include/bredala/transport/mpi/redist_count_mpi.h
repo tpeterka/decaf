@@ -21,7 +21,7 @@
 
 namespace decaf
 {
-
+//! Contiguous redistribution component
     class RedistCountMPI : public RedistMPI
     {
     public:

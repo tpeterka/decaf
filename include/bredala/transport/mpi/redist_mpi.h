@@ -40,7 +40,10 @@ namespace decaf
                   MergeMethod mergeMethod);
         virtual ~RedistMPI();
 
+	//! makes sure that all communication requests are completed
         virtual void flush();
+
+	//! deprecated
         void shutdown();
 
         virtual void clearBuffers();
@@ -63,18 +66,20 @@ namespace decaf
         virtual void redistribute(pConstructData& data, RedistRole role);
 
         //Redistribution method using only point to point All to All communication
+	//! redistribution via point to point communication
         void redistributeP2P(pConstructData& data, RedistRole role);
 
         //Redistribution method collective and sending only the necessary messages
+	//! redistribution via collective method
         void redistributeCollective(pConstructData& data, RedistRole role);
 
-        CommHandle communicator_;          // communicator for all the processes involved in redist
-        CommHandle commSources_;           // communicator of the sources
-        CommHandle commDests_;             // communicator of the destinations
-        std::vector<CommRequest> reqs;     // pending communication requests
-        pConstructData transit; // used when a source and destination are overlapping
-        int *sum_;                         // used by the producer
-        int *destBuffer_;
+        CommHandle communicator_;          ///< communicator for all the processes involved in redistribution
+        CommHandle commSources_;           ///< communicator of the sources
+        CommHandle commDests_;             ///< communicator of the destinations
+        std::vector<CommRequest> reqs;     ///< pending communication requests (async. send requests from sources)
+        pConstructData transit; 	   ///< used when a source and destination are overlapping (time-partitioning mode)
+        int *sum_;                         ///< The aggregated array on the producer root which gathers all the ranks of the destinations for all sources
+        int *destBuffer_;		   ///< Copy of the aggregated destination list (sum). Consumer root scatters this list among all destinations so that they will know how many messages they will receive.
 
         std::vector< pConstructData > splitBuffer_;	// Buffer of container to avoid reallocation// used by the consumer
     };

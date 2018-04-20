@@ -6,7 +6,7 @@
 #include <memory>
 
 namespace decaf {
-
+//! Field with a block data type.
 class BlockField : public BaseField {
 
 public:

@@ -55,6 +55,7 @@ public:
 
 	virtual ~ConstructData(){}
 
+        //! appends the data field (which has associated flags for its type, scope, split and merge policies) to the data model
 	bool appendData(std::string name,
 	                std::shared_ptr<BaseConstructData>  data,
 	                ConstructTypeFlag flags = DECAF_NOFLAG,     // DECAF_NBITEMS, DECAF_ZCURVE_KEY
@@ -86,7 +87,7 @@ public:
 	bool appendData(pConstructData data, const std::string name);
 	bool appendData(pConstructData data, const char* name);
 
-
+	//! deprecated
 	bool appendItem(std::shared_ptr<ConstructData> dest, unsigned int index);
 
 	//void preallocMultiple(int nbCopies , int nbItems, std::vector<pConstructData >& result);
@@ -98,12 +99,13 @@ public:
 
 	int getNbFields();
 
-	// Returns false if name is not present in the container
-	// Returns true if name is present and type is the typename of the field
+	//! returns true if name is present and type is the typename of the field
 	bool getTypename(std::string &name, std::string &type);
 
+	//! deprecated
 	bool isCoherent();
 
+	//! returns the container (collection of the fields)
 	std::shared_ptr<std::map<std::string, datafield> > getMap();
 
 	void printKeys();
@@ -132,7 +134,7 @@ public:
 
     virtual bool isToken();
 
-	bool isCountable();
+	bool isCountable(); ///< returns true when the data model is countable/splitable
 
 	bool isPartiallyCountable();
 
@@ -199,11 +201,11 @@ public:
 
 	bool hasData(std::string key);
 
-	bool setMergeOrder(std::vector<std::string>& merge_order);
-	const std::vector<std::string>& getMergeOrder();
+	bool setMergeOrder(std::vector<std::string>& merge_order); ///< applies the priority order for merge. Currently, it only checks whether the size of the merge order matches with the number of fields in the container. Checking the name of the fields is not implemented yet.
+	const std::vector<std::string>& getMergeOrder(); ///< returns the priority order for merge
 
-	bool setSplitOrder(std::vector<std::string>& split_order);
-	const std::vector<std::string>& getSplitOrder();
+	bool setSplitOrder(std::vector<std::string>& split_order); ///< applies the priority order for split. Similar to merge, it doesn't yet check the name of the fields in the split order.
+	const std::vector<std::string>& getSplitOrder(); ///< returns the priority order for split
 
 	template<typename T>
 	std::shared_ptr<T> getTypedData(const char* key);
@@ -213,15 +215,15 @@ public:
 
 	void updateNbItems();
 
-	void copySystemFields(pConstructData& source);
+	void copySystemFields(pConstructData& source); ///< copies the system fields which have to be sent to every destination regardless of the split policy
 
 protected:
-	mapConstruct container_;
-	int nbFields_;
-	bool bZCurveKey_;
-	bool bZCurveIndex_;
-	std::shared_ptr<BaseConstructData> zCurveKey_;
-	std::shared_ptr<BaseConstructData> zCurveIndex_;
+	mapConstruct container_; ///< collection of fields, the data model
+	int nbFields_; ///< number of fields in the data model
+	bool bZCurveKey_; ///<  true when the data field can be used to compute a Z curve (position)
+	bool bZCurveIndex_; ///< true when the data field can be used to compute a Z curve (Morton code)
+	std::shared_ptr<BaseConstructData> zCurveKey_; ///< the field containing the positions to compute the ZCurve (position)
+	std::shared_ptr<BaseConstructData> zCurveIndex_;  ///< the field containing the positions to compute the ZCurve (Morton code)
 
 	friend class boost::serialization::access;
 	template<class Archive>
@@ -233,19 +235,19 @@ protected:
 
 	bool updateMetaData();
 
-	std::string out_serial_buffer_;
-	std::string in_serial_buffer_;
+	std::string out_serial_buffer_; ///< output buffer for serialization
+	std::string in_serial_buffer_; ///< input buffer to fetch the serialized data (before deserializing it)
 
-	std::vector<std::string> merge_order_;
-	std::vector<std::string> split_order_;
+	std::vector<std::string> merge_order_; ///< a priority order for merge
+	std::vector<std::string> split_order_; ///< a priority order for split
 
 	std::vector<std::shared_ptr<std::map<std::string, datafield> > > partialData;
-	std::vector<std::vector<int> > rangeItems_;
+	std::vector<std::vector<int> > rangeItems_; ///< used for computing indexes from blocks -- related to zCurve (position and Morton) flag
 	bool bSystem_;
-    bool bToken_;
-	int nbSystemFields_;
-	bool bEmpty_;
-	bool bCountable_;
+    	bool bToken_;
+	int nbSystemFields_; ///< number of system fields in the data model
+	bool bEmpty_; ///< if it is false: there is some user data
+	bool bCountable_; ///< indicates whether the data model is countable/splitable
 	bool bPartialCountable_;
 };
 

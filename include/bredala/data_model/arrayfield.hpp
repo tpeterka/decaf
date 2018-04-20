@@ -8,7 +8,7 @@
 
 namespace decaf {
 
-
+//! Field with an array type.
 template <typename T>
 class ArrayField : public BaseField {
 
@@ -28,6 +28,12 @@ public:
         if (init)
             ptr_ = std::make_shared<ArrayConstructData<T> >(map);
     }
+
+    /// @param array:                the array
+    /// @param size:                 size of the array
+    /// @param element_per_items:    number of required items to construct a semantic item
+    /// @param map:		     a container, map of fields with the field name as key and with additional information per field
+    /// @param bCountable:   	     indicates whether this data type is countable or not
 
     ArrayField(T* array,
                int size,

@@ -35,16 +35,16 @@ namespace decaf
 // node or link in routing table
 struct RoutingNode
 {
-    int idx;                             // node index in workflow
-    set<int> wflow_in_links;             // input links in workflow for this node
-    set<int> ready_in_links;             // input links with ready data items
-    bool done;                           // node is all done
+    int idx;                             ///<  node index in workflow
+    set<int> wflow_in_links;             ///<  input links in workflow for this node
+    set<int> ready_in_links;             ///<  input links with ready data items
+    bool done;                           ///<  node is all done (will be set to true when receiving the quit message)
 };
 struct RoutingLink
 {
-    int idx;                             // link index in workflow
-    int nin;                             // number of ready input data items
-    bool done;                           // link is all done
+    int idx;                             ///<  link index in workflow
+    int nin;                             ///<  number of ready input data items
+    bool done;                           ///<  link is all done (will be set to true when receiving the quit message)
 };
 
 class Decaf
@@ -57,71 +57,77 @@ public:
     void run_links(bool run_once);       // run the link dataflows
     void print_workflow();               // debug: print the workflow
 
-    // put a message on all outbound links
     // returns true = ok, false = function terminate() has been called
+    //! put a message on all outbound links
     bool put(pConstructData container);
 
-    // put a message on a particular outbound link
+    //! put a message on a particular outbound link
     // returns true = ok, false = function terminate() has been called
     bool put(pConstructData container, int i);
 
-    // put a message on outbound link(s) associated to the output port
+    //! put a message on outbound link(s) associated to the output port
     // returns true = ok, false = function terminate() has been called
     bool put(pConstructData container, string port);
 
-    // get a message from an inbound link associated to the input port
+    //! get a message from an inbound link associated to the input port
     // returns true = process message, false = error occured or quit message
     bool get(pConstructData container, string port);
 
-    // get message from all input ports of a node
+    //! get message from all input ports of a node
     // returns true = process messages, false = error occured or all quit messages
     // if an input port is closed, the container in the returned map is empty
     bool get(map<string, pConstructData> &containers);
 
-    // get message from all input links of a node
+    //! get message from all input links of a node
     // returns true = process messages, false = error occured or all quit messages
     // if an input link is closed, the container in the returned map is empty
     bool get(map<int, pConstructData> &containers);
 
-    // get messages from all inbound links
+    //! get messages from all inbound links
     // returns true = process messages, false = break (quit received)
     bool get(vector< pConstructData >& containers);
 
-    // Checks if there are still alive input Dataflows for this node
+    //! checks if there are still alive input Dataflows for this node
     bool allQuit();
 
-    // terminate a node task by sending a quit message to the rest of the workflow
+    //! terminates a node task by sending a quit message to the rest of the workflow
     void terminate();
 
-    // whether my rank belongs to this workflow node, identified by the name of its func field
+    //! whether my rank belongs to this workflow node, identified by the name of its func field
     bool my_node(const char* name);
 
-    // return a pointer to a dataflow, identified by its index in the workflow structure
+    //! return a pointer to a dataflow, identified by its index in the workflow structure
     Dataflow* dataflow(int i);
 
-    // Return the total number of dataflows build by this instance of Decaf
+    //! returns the total number of dataflows build by this instance of Decaf
     unsigned int nb_dataflows();
 
+    //! clears the buffers of the output dataflows
     void clearBuffers(TaskType role);
 
-    // return a handle for this node's producer or consumer communicator
+    //! returns a handle for this node's producer communicator
     CommHandle prod_comm_handle();
+    //! returns a handle for this node's consumer communicator
     CommHandle con_comm_handle();
+    //! returns the size of the producers
     int prod_comm_size();
+    //! returns the size of the consumers
     int con_comm_size();
 
     int local_comm_size();              // Return the size of the communicator of the local task
     CommHandle local_comm_handle();     // Return the communicator of the local task
     int local_comm_rank();              // Return the rank of the process within the local rank
-    int prod_comm_size(int i);          // Return the size of the communicator of the producer of the in dataflow i
-    int con_comm_size(int i);           // Return the size of the communicator of the consumer of the out dataflow i
+    int prod_comm_size(int i);          ///< return the size of the communicator of the producer of the in dataflow i
+    int con_comm_size(int i);           ///< return the size of the communicator of the consumer of the out dataflow i
 
+    //! returns the size of the workflow
     int workflow_comm_size();
+    //! returns the rank within the workflow
     int workflow_comm_rank();
 
-
-    // return a pointer to this node's producer or consumer communicator
+    //! return a pointer to this node's producer communicator
     Comm* prod_comm();
+    //! return a pointer to this node's consumer communicator
     Comm* con_comm();
 
     Comm* world;

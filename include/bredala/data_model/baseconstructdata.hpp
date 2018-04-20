@@ -70,11 +70,16 @@ namespace decaf {
 
 class BaseConstructData {
 public:
+
+    /// @param map:		a container, map of fields with the field name as key and with additional information per field
+    /// @param bCountable:      indicates whether this data type is countable or not
+
     BaseConstructData(mapConstruct map = mapConstruct(), bool bCountable = true) :
         map_(map), bCountable_(bCountable){}
 
     virtual ~BaseConstructData(){}
 
+    //! serialization via boost
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
@@ -91,12 +96,15 @@ public:
         bCountable_ = bCountable;
     }
 
+    //! returns the number of semantic items
     virtual int getNbItems() = 0;
 
-	virtual std::string getTypename() = 0;
+    //! returns the typename of a field
+    virtual std::string getTypename() = 0;
 
     virtual bool isBlockSplitable() = 0;
 
+    //! deprecated
     virtual bool appendItem(std::shared_ptr<BaseConstructData> dest, unsigned int index, ConstructTypeMergePolicy = DECAF_MERGE_DEFAULT) = 0;
 
     virtual void preallocMultiple(int nbCopies , int nbItems, std::vector<std::shared_ptr<BaseConstructData> >& result) = 0;
@@ -144,8 +152,8 @@ public:
     mapConstruct getMap(){ return map_; }
 
 protected:
-    mapConstruct map_;
-    bool bCountable_;
+    mapConstruct map_;  ///<  a container, map of fields with the field name as key and with additional information per field
+    bool bCountable_;   ///<  indicates whether this data type is countable or not
 
 };
 

@@ -8,7 +8,7 @@
 
 namespace decaf {
 
-
+//! Field with a vector type.
 template <typename T>
 class VectorField : public BaseField {
 
@@ -28,6 +28,10 @@ public:
             ptr_ = std::make_shared<VectorConstructData<T> >(map, bCountable);
     }
 
+    /// @param value:       		the vector values
+    /// @param element_per_items:       number of required items to construct a semantic item
+    /// @param map:			a container, map of fields with the field name as key and with additional information per field
+    /// @param bCountable:   		indicates whether this data type is countable or not
 
     VectorField(std::vector<T>& value, int element_per_items, mapConstruct map = mapConstruct(),
                 bool bCountable = true)
