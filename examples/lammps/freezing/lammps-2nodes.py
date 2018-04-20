@@ -14,8 +14,7 @@ wf = imp.load_source('workflow', os.environ['DECAF_PREFIX'] + '/python/decaf.py'
 
 # parse command line args
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("-ca", "--custom_args", dest="custom_args", type=str,
-                    default="", help="Optional custom task arguments")
+wf.initParserForTopology(parser)
 args = parser.parse_args()
 
 # define workflow graph
