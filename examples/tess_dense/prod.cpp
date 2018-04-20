@@ -26,23 +26,21 @@ using namespace decaf;
 using namespace std;
 
 
-int tot_nb_particles;
-
 // producer
-void prod(Decaf* decaf)
+void prod(Decaf* decaf, int tot_npts, int nsteps)
 {
     // hacc produces 3 arrays of position coordinates
     // we're making up some synthetic data instead
 
     // number of points, randomly placed in a box of size [0, npts - 1]^3
-    int npts = tot_nb_particles / decaf->local_comm_size();
+    int npts = tot_npts / decaf->local_comm_size();
     fprintf(stderr, "Generates locally %i particles.\n", npts);
 
     // add 1 to the rank because on some compilers, srand(0) = srand(1)
     srand(decaf->world->rank() + 1);
 
     // produce data for some number of timesteps
-    for (int timestep = 0; timestep < 1; timestep++)
+    for (int timestep = 0; timestep < nsteps; timestep++)
     {
         // create the synthetic points for the timestep
         fprintf(stderr, "producer timestep %d\n", timestep);
@@ -138,14 +136,15 @@ int main(int argc,
 {
     MPI_Init(NULL, NULL);
 
-    if(argc != 2)
+    if(argc < 3)
     {
-        fprintf(stderr, "Usage: points tot_nb_particles\n");
+        fprintf(stderr, "Usage: points tot_npts nsteps\n");
         MPI_Abort(MPI_COMM_WORLD, 0);
     }
 
-    tot_nb_particles = atoi(argv[1]);
-    fprintf(stderr, "Will generate %i particles in total.\n", tot_nb_particles);
+    int tot_npts = atoi(argv[1]);
+    int nsteps   = atoi(argv[2]);
+    fprintf(stderr, "Will generate %i particles in total.\n", tot_npts);
 
     // define the workflow
     Workflow workflow;
@@ -161,7 +160,7 @@ int main(int argc,
         fprintf(stderr, "*** workflow starting time = %.3lf s. ***\n", t0);
 
     // start the task
-    prod(decaf);
+    prod(decaf, tot_npts, nsteps);
 
     // timing
     MPI_Barrier(decaf->prod_comm_handle());

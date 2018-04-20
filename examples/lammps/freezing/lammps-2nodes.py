@@ -1,5 +1,5 @@
 # a small 2-node example
-# usage: python3 lammps-2nodes.py -ca "<infile> <outfile>"
+# usage: python3 lammps-2nodes.py --args "<infile> <outfile>"
 
 # --- include the following lines each time ---
 

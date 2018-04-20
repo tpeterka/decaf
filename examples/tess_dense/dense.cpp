@@ -79,8 +79,6 @@ void output(DBlock* d, const diy::Master::ProxyWithLink& cp)
      fprintf(stderr, "\n");
 }
 
-int tot_blocks;
-
 // fill blocks with incoming data
 void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assigner& assigner)
 {
@@ -195,7 +193,11 @@ void fill_blocks(vector<pConstructData>& in_data, diy::Master& master, diy::Assi
 }
 
 // consumer
-void density_estimate(Decaf* decaf, MPI_Comm comm)
+void density_estimate(
+        Decaf*      decaf,
+        int         tot_blocks,
+        string      outfile_base,
+        MPI_Comm    comm)
 {
     // set some default arguments
     float mass           = 1.0;                 // particle mass
@@ -206,7 +208,7 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
     int glo_num_idx[3]   = {512, 512, 512};     // global grid number of points
     int num_threads      = 1;                   // threads diy can use
     int mem_blocks       = -1;                  // max blocks in memory
-    char outfile[256]    = "dense.raw";         // output file name
+    char full_outfile[256];                     // full output file name
 
     int nblocks;                                // my local number of blocks
     int maxblocks;                              // max blocks in any process
@@ -245,12 +247,6 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         MPI_Barrier(comm);
         times[INPUT_TIME] = MPI_Wtime() - times[INPUT_TIME];
         times[COMP_TIME] = MPI_Wtime();
-
-        // following must match tess.cpp
-        //int tot_blocks    = decaf->prod_comm_size();                      // total number of blocks in the domain
-        //fprintf(stderr, "Total number of block given: %i\n", tot_blocks);
-        //fprintf(stderr, "Number of dataflows available: %u\n", decaf->nb_dataflows());
-        // MATTHIEU: the total number of blocks is now given by the cmdline
 
         fprintf(stderr, "Size of my producer on inbound 0: %i\n", decaf->prod_comm_size(0));
 
@@ -300,8 +296,8 @@ void density_estimate(Decaf* decaf, MPI_Comm comm)
         // write file
         // NB: all blocks need to be in memory; WriteGrid is not diy2'ed yet
         times[OUTPUT_TIME] = MPI_Wtime();
-        sprintf(outfile, "dense%d.raw", step);
-        WriteGrid(maxblocks, tot_blocks, outfile, project, glo_num_idx, eps, data_mins, data_maxs,
+        sprintf(full_outfile, "%s%d.raw", outfile_base.c_str(), step);
+        WriteGrid(maxblocks, tot_blocks, full_outfile, project, glo_num_idx, eps, data_mins, data_maxs,
                   num_given_bounds, given_mins, given_maxs, master, assigner);
         MPI_Barrier(comm);
         times[OUTPUT_TIME] = MPI_Wtime() - times[OUTPUT_TIME];
@@ -325,13 +321,14 @@ int main(int argc,
 {
     MPI_Init(NULL, NULL);
 
-    if(argc != 2)
+    if(argc < 5)
     {
-        fprintf(stderr, "Usage: dense tot_block\n");
+        fprintf(stderr, "Usage: dense <unused> <unused> tot_blocks outfile\n");
         MPI_Abort(MPI_COMM_WORLD, 0);
     }
 
-    tot_blocks = atoi(argv[1]);
+    int tot_blocks = atoi(argv[3]);
+    string outfile = argv[4];
     fprintf(stderr,"Generating %i blocks total.\n", tot_blocks);
 
     // define the workflow
@@ -351,7 +348,7 @@ int main(int argc,
     double t0 = MPI_Wtime();
 
     // start the task
-    density_estimate(decaf, decaf->con_comm_handle());
+    density_estimate(decaf, tot_blocks, outfile, decaf->con_comm_handle());
 
     // timing
     MPI_Barrier(decaf->con_comm_handle());

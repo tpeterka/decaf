@@ -31,8 +31,6 @@
 using namespace decaf;
 using namespace std;
 
-int tot_blocks;
-
 // a light copy of small data (quantities, bounding boxes, etc) and pointer to the heavy data
 // (particles, tets)
 void copy_block(SerBlock* dest, DBlock* src, diy::Master& master, int lid)
@@ -181,7 +179,10 @@ void deduplicate(DBlock*                           b,
 }
 
 // consumer
-void tessellate(Decaf* decaf, MPI_Comm comm)
+void tessellate(
+        Decaf*      decaf,
+        int         tot_blocks,
+        MPI_Comm    comm)
 {
     static int step = 0;
 
@@ -209,12 +210,6 @@ void tessellate(Decaf* decaf, MPI_Comm comm)
                     "in the data model.\n");
             return;
         }
-
-        // 1 block per process in this example
-        //int size;
-        //MPI_Comm_size(comm, &size);
-        //int tot_blocks    = size;                      // total number of blocks in the domain
-        // MATTHIEU: the total number of block is now given by the python script
 
         float* xyz        = xyzpos.getArray();      // points
         Block<3>* blk     = block.getBlock();       // domain and block info
@@ -368,13 +363,13 @@ int main(int argc,
 {
     MPI_Init(NULL, NULL);
 
-    if(argc != 2)
+    if(argc < 4)
     {
-        fprintf(stderr, "Usage: tess tot_block\n");
+        fprintf(stderr, "Usage: tess <unused> <unused> tot_blocks\n");
         MPI_Abort(MPI_COMM_WORLD, 0);
     }
 
-    tot_blocks = atoi(argv[1]);
+    int tot_blocks = atoi(argv[3]);
     fprintf(stderr,"Generating %i blocks total.\n", tot_blocks);
 
     // define the workflow
@@ -393,7 +388,7 @@ int main(int argc,
     double t0 = MPI_Wtime();
 
     // start the task
-    tessellate(decaf, decaf->con_comm_handle());
+    tessellate(decaf, tot_blocks, decaf->con_comm_handle());
 
     // timing
     MPI_Barrier(decaf->con_comm_handle());
