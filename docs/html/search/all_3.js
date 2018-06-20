@@ -12,7 +12,5 @@ var searchData=
   ['destlist_5f',['destList_',['../classdecaf_1_1_redist_comp.html#afa18f866d48bdf54b9449d90c94bf96e',1,'decaf::RedistComp']]],
   ['destport',['destPort',['../struct_workflow_link.html#a903344173241ddc1cec01679bf252d61',1,'WorkflowLink']]],
   ['dflow_5fcon_5fredist',['dflow_con_redist',['../struct_workflow_link.html#a4256d2f9def6617db1eb4342225d3c7a',1,'WorkflowLink']]],
-  ['done',['done',['../structdecaf_1_1_routing_node.html#aaf28e2028a82d25d8dbdbcbc4f652ea7',1,'decaf::RoutingNode::done()'],['../structdecaf_1_1_routing_link.html#a7c436213ff382690a471c79dc83f6384',1,'decaf::RoutingLink::done()']]],
-  ['data_20model',['Data Model',['../md_doc_data.html',1,'']]],
-  ['decaf_20documentation',['Decaf Documentation',['../md_doc_home.html',1,'']]]
+  ['done',['done',['../structdecaf_1_1_routing_node.html#aaf28e2028a82d25d8dbdbcbc4f652ea7',1,'decaf::RoutingNode::done()'],['../structdecaf_1_1_routing_link.html#a7c436213ff382690a471c79dc83f6384',1,'decaf::RoutingLink::done()']]]
 ];

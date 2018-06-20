@@ -13,7 +13,5 @@ var searchData=
   ['constructdata',['ConstructData',['../classdecaf_1_1_construct_data.html',1,'decaf']]],
   ['container_5f',['container_',['../classdecaf_1_1_construct_data.html#a08218556a40b23a64fb0e62ef26ca811',1,'decaf::ConstructData']]],
   ['contractkey',['ContractKey',['../struct_contract_key.html',1,'']]],
-  ['copysystemfields',['copySystemFields',['../classdecaf_1_1_construct_data.html#a965080503b8fcae45291a0ec061afe55',1,'decaf::ConstructData']]],
-  ['class_20organization',['Class Organization',['../md_doc_classes.html',1,'']]],
-  ['communicators',['Communicators',['../md_doc_comm.html',1,'']]]
+  ['copysystemfields',['copySystemFields',['../classdecaf_1_1_construct_data.html#a965080503b8fcae45291a0ec061afe55',1,'decaf::ConstructData']]]
 ];

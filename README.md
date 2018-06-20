@@ -98,9 +98,9 @@ wf.processGraph("linear2")
 ```
 # Licensing
 
-Decaf is [public domain](https://bitbucket.org/tpeterka1/decaf/src/master/COPYING) software.
+Decaf is [public domain](https://github.com/tpeterka/decaf/blob/master/COPYING) software.
 
 # Learning more about Decaf:
 
-See the documents [here](https://bitbucket.org/tpeterka1/decaf/wiki/public-docs/public-docs.md).
+See the documents [here](https://tpeterka.github.io/decaf/).
 

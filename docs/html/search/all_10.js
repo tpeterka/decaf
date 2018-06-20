@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['transport_20layer',['Transport Layer',['../md_doc_transport.html',1,'']]],
-  ['terminate',['terminate',['../classdecaf_1_1_decaf.html#a7fe458684b47079ebc800bf02c75a6b5',1,'decaf::Decaf']]],
-  ['tokens',['tokens',['../struct_workflow_link.html#a82040d06680ce9bcb31b5a09dbcdcaaa',1,'WorkflowLink']]],
-  ['transit',['transit',['../classdecaf_1_1_redist_m_p_i.html#aba4f1d0552c731c88799f81646af64c5',1,'decaf::RedistMPI']]],
-  ['transport_5fmethod',['transport_method',['../struct_workflow_link.html#ae5e62a9d40c94f50df88bcd0d02d6913',1,'WorkflowLink']]]
+  ['unserialize',['unserialize',['../classdecaf_1_1_base_data.html#a41a224a94987f6403ecc89499960de27',1,'decaf::BaseData::unserialize()'],['../classdecaf_1_1_construct_data.html#ad94b4e6711e7ea015988da470def4650',1,'decaf::ConstructData::unserialize()']]],
+  ['unserializeandstore',['unserializeAndStore',['../classdecaf_1_1_base_data.html#aa40f21dc6f42abea5dd5c4adca61ff33',1,'decaf::BaseData::unserializeAndStore()'],['../classdecaf_1_1_construct_data.html#ac9ccf9ccdf288c9e53c70b193147f7ab',1,'decaf::ConstructData::unserializeAndStore()']]]
 ];
