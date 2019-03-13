@@ -1,4 +1,18 @@
-This document uses the [Markdown](http://daringfireball.net/projects/markdown/) syntax.
+# Decaf
+
+Decaf is a dataflow system for the parallel communication of coupled tasks in an
+HPC workflow. The dataflow can perform arbitrary data transformations ranging
+from simply forwarding data to complex data redistribution. Decaf does this by
+allowing the user to allocate resources and execute custom code in the dataflow.
+All communication through the dataflow is efficient parallel message passing
+over MPI. The runtime for calling tasks is entirely message-driven; Decaf
+executes a task when all messages for the task have been received. Such a
+message-driven runtime allows cyclic task dependencies in the workflow graph,
+for example, to enact computational steering based on the result of downstream
+tasks. Decaf includes a simple Python API for describing the workflow graph.
+This allows Decaf to stand alone as a complete workflow system, but Decaf
+can also be used as the dataflow layer by one or more other workflow systems
+to form a heterogeneous task-based computing environment.
 
 # Decaf dependencies
 
