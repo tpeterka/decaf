@@ -26,7 +26,7 @@ to form a heterogeneous task-based computing environment.
 
 
 
-# Building Decaf:
+# Building Decaf
 
 Retrieve the sources of Decaf (in the current directory, e.g.):
 ```
@@ -52,7 +52,7 @@ export LD_LIBRARY_PATH=/path/to/decaf/install/lib:$LD_LIBRARY_PATH
 eg., the dynamic library path variable is ```DYLD_LIBRARY_PATH on Mac OSX```.
 You may consider setting the environment variables in .bashrc or .profile)
 
-# Run examples
+# Running examples
 
 Decaf provides several examples of simple workflows. Assuming Decaf was installed following the previous instructions, run the following commands:
 ```
@@ -67,9 +67,9 @@ python3 cycle-4nodes.py
 
 ```
 
-# Wrapping your project in Python
+# Describing a workflow in Python
 
-The workflow can be hand-coded in C++, but the python instructions below
+The workflow can be hand-coded in C++, but the Python instructions below
 describe an easier way to define the network. The Python program creates a JSON
 configuration file that Decaf reads.
 
@@ -114,7 +114,7 @@ wf.processGraph("linear2")
 
 Decaf is open source software under a [BSD-3 license](https://github.com/tpeterka/decaf/blob/master/COPYING).
 
-# Learning more about Decaf:
+# Learning more about Decaf
 
 See the documents [here](https://tpeterka.github.io/decaf/).
 
