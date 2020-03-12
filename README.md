@@ -30,7 +30,7 @@ to form a heterogeneous task-based computing environment.
 
 Retrieve the sources of Decaf (in the current directory, e.g.):
 ```
-git clone https://bitbucket.org/tpeterka1/decaf.git .
+git clone https://github.com/tpeterka/decaf.git .
 ```
 
 Decaf is built using CMake. Assuming that you created a build directory, then:
