@@ -689,8 +689,8 @@ def check_contracts(graph, filter_level):
     
     for graphEdge in graph.edges(data=True):
         edge = graphEdge[2]["edge"]              # Edge object
-        prod = graph.node[graphEdge[0]]["node"]  # Node object for prod
-        con = graph.node[graphEdge[1]]["node"]   # Node object for con
+        prod = graph.nodes[graphEdge[0]]["node"]  # Node object for prod
+        con = graph.nodes[graphEdge[1]]["node"]   # Node object for con
 
         #if edge.srcPort != '' and edge.destPort != '' : # If the prod/con of this edge have ports
         (keys, keys_link, attachAny) = checkWithPorts(edge, prod, con, my_list, filter_level)
@@ -988,8 +988,8 @@ def workflowToJson(graph, outputFile, filter_level):
     i = 0
     for graphEdge in graph.edges(data=True):
         edge = graphEdge[2]["edge"]
-        prod_id  = graph.node[graphEdge[0]]['index']
-        con_id   = graph.node[graphEdge[1]]['index']
+        prod_id  = graph.nodes[graphEdge[0]]['index']
+        con_id   = graph.nodes[graphEdge[1]]['index']
         data["workflow"]["edges"].append({"start_proc" : edge.start_proc,
                                           "nprocs" : edge.nprocs,
                                           "source" : prod_id,
