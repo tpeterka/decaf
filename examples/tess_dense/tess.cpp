@@ -225,7 +225,7 @@ void tessellate(
 
         // data extents
         typedef     diy::ContinuousBounds         Bounds;
-        Bounds domain;
+        Bounds domain{3};
         for(int i = 0; i < 3; i++)
         {
             domain.min[i] = global_box[i];
