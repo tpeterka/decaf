@@ -14,7 +14,42 @@ This allows Decaf to stand alone as a complete workflow system, but Decaf
 can also be used as the dataflow layer by one or more other workflow systems
 to form a heterogeneous task-based computing environment.
 
-# Decaf dependencies
+# Installation
+
+You can either install Decaf using [Spack](https://spack.readthedocs.io/en/latest/) (recommended), or manually.
+
+## Installing with Spack
+
+First, install Spack as explained [here](https://spack.readthedocs.io/en/latest/getting_started.html). Once Spack is
+installed and available in your path, clone the Decaf repository and add it to your local Spack repositories:
+
+```
+git clone https://github.com/tpeterka/decaf.git .
+spack repo add /path/to/decaf/
+```
+
+You can confirm that Spack can find Decaf:
+```
+spack info decaf
+```
+
+Then install Decaf. This could take some time depending on whether you already have a Spack system with MPI
+installed. The first time you use Spack, many dependencies need to be satisfied, which by default are installed from
+scratch. If you are an experienced Spack user, you can tell Spack to use existing dependencies from
+elsewhere in your system.
+
+```
+spack install decaf
+```
+
+Then, set the environment variables:
+```
+export DECAF_PREFIX=/path/to/decaf/install
+```
+
+## Installing manually
+
+Build dependencies
 
 - C++11
 - MPI-3
@@ -24,9 +59,7 @@ to form a heterogeneous task-based computing environment.
 - CMake 3.0 or higher
 - CCI 2.1 or higher (optional)
 
-
-
-# Building Decaf
+Building Decaf
 
 Retrieve the sources of Decaf (in the current directory, e.g.):
 ```
