@@ -89,6 +89,7 @@ typedef SimpleField<int> SimpleFieldi;
 typedef SimpleField<unsigned int> SimpleFieldu;
 typedef SimpleField<float> SimpleFieldf;
 typedef SimpleField<double> SimpleFieldd;
-
+typedef SimpleField<char> SimpleFieldc;
+typedef SimpleField<unsigned char> SimpleFielduc;
 } // namespace
 #endif

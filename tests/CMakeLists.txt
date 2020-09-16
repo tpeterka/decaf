@@ -42,8 +42,8 @@ if(${transport_mpi})
 	#    add_executable              (redistboost redist_boost.cpp)
 	#    target_link_libraries       (redistboost     ${libraries} ${bredala_transports} bredala_datamodel)
 
-	add_executable              (testzcurve testZCurve.cpp)
-	target_link_libraries       (testzcurve ${libraries} ${bredala_transports} bredala_datamodel)
+	#add_executable              (testzcurve testZCurve.cpp)
+	#target_link_libraries       (testzcurve ${libraries} ${bredala_transports} bredala_datamodel)
 
 	add_executable              (testround testRound.cpp)
 	target_link_libraries       (testround ${libraries} ${bredala_transports} bredala_datamodel)
@@ -76,7 +76,7 @@ if(${transport_mpi})
 	add_executable              (testroundoverflow testRoundOverflow.cpp)
 	target_link_libraries       (testroundoverflow ${libraries} ${bredala_transports} bredala_datamodel)
 
-	install(TARGETS testboost testzcurve testround testcount testblock testproc testmem testserialization testemptymessage testcountoverflow testroundoverflow
+	install(TARGETS testboost testround testcount testblock testproc testmem testserialization testemptymessage testcountoverflow testroundoverflow
   	DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/
   	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE
   	)

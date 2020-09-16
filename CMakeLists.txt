@@ -9,7 +9,10 @@ option                      (build_bredala      "Build Bredala libraries and exa
 option                      (build_manala       "Build Manala libraries and examples"           ON)
 option                      (build_decaf        "Build the Decaf workflow system"               ON)
 option                      (build_tests        "Build the tests examples"                      ON)
+option                      (python        "Build Python bindings"                      ON)
 set                         (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+
+add_subdirectory        (include/pybind11)
 
 if(build_manala)
     set                     (build_bredala  true)
@@ -45,8 +48,8 @@ if                          (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif                       (${CMAKE_SYSTEM_NAME} MATCHES      "Darwin")
 
 # C++11
-set                         (CMAKE_CXX_STANDARD        11)
-set                         (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set                         (CMAKE_CXX_STANDARD        14)
+set                         (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 # MPI
 if                          (transport_mpi)
@@ -102,6 +105,10 @@ set (CMAKE_LINKER_FLAGS ${CMAKE_LINKER_FLAGS} "-Wl,--export-dynamic -dynamic")
 add_subdirectory            (src)
 add_subdirectory            (examples)
 add_subdirectory            (python)
+
+if                          (python)
+    add_subdirectory        (bindings/python)
+endif                       (python)
 
 if                          (build_tests)
   add_subdirectory          (tests)

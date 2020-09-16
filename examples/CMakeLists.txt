@@ -35,3 +35,4 @@ endif(${build_decaf})
 
 add_subdirectory                (C)
 
+add_subdirectory                (python)
