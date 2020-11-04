@@ -12,8 +12,6 @@
     add_subdirectory              (manala)
     add_subdirectory              (contract)
 
-    #  add_subdirectory            (flowvr)
-
     if                            (LAMMPS_INCLUDE_DIR AND
                                 LAMMPS_LIBRARY     AND
                                 FFTW_INCLUDE_DIR   AND
@@ -28,9 +26,6 @@
     add_subdirectory            (tess_dense)
     endif                         ()
 
-    #add_subdirectory          (block_data_model)
-
-    #add_subdirectory            (cfd)
 endif(${build_decaf})
 
 add_subdirectory                (C)

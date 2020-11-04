@@ -1,8 +1,0 @@
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  $ENV{FlowVR_DIR})
-find_package(FlowVR)
-if(FlowVR_FOUND)
-    message(status "Building the FlowVR examples")
-    add_subdirectory(simple)
-elseif(FlowVR_FOUND)
-    message(status "FlowVR not found. The FlowVR example won't be built")
-endif(FlowVR_FOUND)
